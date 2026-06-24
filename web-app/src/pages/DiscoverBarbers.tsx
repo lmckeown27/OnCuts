@@ -148,7 +148,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto"></div>
           <p className="mt-4 text-gray-600">Finding great barbers...</p>
         </div>
       </div>
@@ -546,7 +546,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <select
               value={formData.serviceType}
               onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               required
             >
               <option value="haircut">Haircut</option>
@@ -579,7 +579,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   min={getMinDate()}
-                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 hover:border-gray-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
                   style={{
                     colorScheme: 'light',
                     accentColor: '#708d81',
@@ -609,7 +609,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <select
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-2"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 mb-2"
               required
             >
               <option value="on-campus">On Campus</option>
@@ -621,7 +621,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               value={formData.locationDetails}
               onChange={(e) => setFormData({ ...formData, locationDetails: e.target.value })}
               placeholder="Specific location details (e.g., Building name, Room number)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
             />
           </div>
 
@@ -634,7 +634,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Tell the barber what style you're looking for, or any special requests..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               rows={4}
             />
           </div>

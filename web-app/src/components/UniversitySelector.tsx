@@ -214,7 +214,7 @@ export default function UniversitySelector({
       {/* Input Field */}
       <div
         className={`relative flex items-center bg-white border-2 rounded-xl transition-all ${
-          isOpen ? 'border-primary-500 shadow-lg' : 'border-gray-200 hover:border-gray-300'
+          isOpen ? 'border-gray-900 shadow-lg' : 'border-gray-200 hover:border-gray-300'
         }`}
       >
         <input
@@ -301,7 +301,7 @@ export default function UniversitySelector({
                     })
                     .catch(() => setIsLoading(false));
                 }}
-                className="mt-2 text-sm text-primary-600 hover:underline"
+                className="mt-2 text-sm text-gray-900 hover:underline"
               >
                 Try again
               </button>

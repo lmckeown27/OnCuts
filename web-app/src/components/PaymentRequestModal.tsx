@@ -117,7 +117,7 @@ export default function PaymentRequestModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">
               {step === 'payment' && 'Complete Payment'}
@@ -153,7 +153,7 @@ export default function PaymentRequestModal({
                     onClick={() => setPaymentMethod('card')}
                     className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                       paymentMethod === 'card'
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        ? 'border-gray-900 bg-primary-50 text-primary-700'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                     }`}
                   >
@@ -196,7 +196,7 @@ export default function PaymentRequestModal({
                       }}
                       className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
                         selectedTip === 0 && !customTip
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          ? 'border-gray-900 bg-primary-50 text-primary-700'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
@@ -211,7 +211,7 @@ export default function PaymentRequestModal({
                         }}
                         className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
                           selectedTip === option.value && !customTip
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            ? 'border-gray-900 bg-primary-50 text-primary-700'
                             : 'border-gray-200 hover:border-gray-300 text-gray-700'
                         }`}
                       >
@@ -237,8 +237,8 @@ export default function PaymentRequestModal({
                           setSelectedTip(0);
                         }
                       }}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
-                        customTip ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
+                        customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
                       }`}
                     />
                   </div>
@@ -296,7 +296,7 @@ export default function PaymentRequestModal({
               ) : (
                 <button
                   onClick={handleCardPayment}
-                  className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
                   Continue to Pay ${baseAmountDollars.toFixed(2)}
@@ -364,7 +364,7 @@ export default function PaymentRequestModal({
                   onChange={(e) => setReviewComment(e.target.value)}
                   placeholder="Share your experience..."
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
               </div>
 
@@ -379,7 +379,7 @@ export default function PaymentRequestModal({
                 <button
                   onClick={handleSubmitReview}
                   disabled={rating === 0 || isProcessing}
-                  className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isProcessing ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

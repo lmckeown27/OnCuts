@@ -54,7 +54,7 @@ export default function GDPRPage() {
                 CampusCuts is committed to complying with GDPR for users located in the EU and EEA. This page explains
                 how we process your personal data and your rights. For a full description of the data we collect and
                 how we use it, see our{' '}
-                <Link to="/privacy" className="text-primary-600 hover:text-primary-700 underline">
+                <Link to="/privacy" className="text-primary-600 hover:text-black underline">
                   Privacy Policy
                 </Link>
                 .

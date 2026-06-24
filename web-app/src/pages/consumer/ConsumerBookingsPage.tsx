@@ -197,7 +197,7 @@ export default function ConsumerBookingsPage() {
             onClick={() => setTab(key)}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
               tab === key
-                ? 'bg-primary-500 text-white shadow-sm'
+                ? 'bg-gray-900 text-white shadow-sm'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >

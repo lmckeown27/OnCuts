@@ -216,7 +216,7 @@ export default function TimeInput({
             : hasError
               ? 'bg-red-50 border-red-400 text-red-700 ring-2 ring-red-200'
               : isFocused
-                ? 'bg-white border-primary-400 ring-2 ring-primary-100 text-gray-900'
+                ? 'bg-white border-gray-400 ring-2 ring-primary-100 text-gray-900'
                 : 'bg-white border-gray-300 hover:border-gray-400 text-gray-900'
           }
         `}

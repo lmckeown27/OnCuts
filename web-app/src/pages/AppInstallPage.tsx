@@ -142,7 +142,7 @@ export default function AppInstallPage() {
             {deferredPrompt && (platform === 'android' || platform === 'desktop') && (
               <button
                 onClick={handleInstallClick}
-                className="w-full bg-primary-400 text-white rounded-2xl p-6 mb-6 active:scale-98 transition-transform shadow-lg"
+                className="w-full bg-gray-900 text-white rounded-2xl p-6 mb-6 active:scale-98 transition-transform shadow-lg"
               >
                 <div className="flex items-center justify-center gap-3 mb-2">
                   <Download className="w-8 h-8" />
@@ -164,7 +164,7 @@ export default function AppInstallPage() {
 
                 <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Tap the <strong>Share</strong> button <Share2 className="w-5 h-5 inline text-blue-600" /> at the bottom
@@ -173,7 +173,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Scroll and tap <strong>"Add to Home Screen"</strong> <Plus className="w-5 h-5 inline text-blue-600" />
@@ -182,7 +182,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Tap <strong>"Add"</strong> to complete installation
@@ -211,7 +211,7 @@ export default function AppInstallPage() {
 
                 <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Tap the <strong>menu</strong> (⋮) in the top-right
@@ -220,7 +220,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>
@@ -229,7 +229,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Tap <strong>"Install"</strong> to complete
@@ -252,7 +252,7 @@ export default function AppInstallPage() {
 
                 <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Look for the <strong>install icon</strong> <Download className="w-5 h-5 inline text-primary-600" /> in address bar
@@ -261,7 +261,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         Click the icon and then <strong>"Install"</strong>
@@ -270,7 +270,7 @@ export default function AppInstallPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
                         CampusCuts opens in its own window!
@@ -329,7 +329,7 @@ export default function AppInstallPage() {
       <div className="border-t border-gray-200 p-4 bg-white safe-area-inset-bottom">
         <button
           onClick={() => navigate(isInstalled ? '/app' : '/')}
-          className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
+          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
         >
           {isInstalled ? 'Open CampusCuts' : 'Continue to Website'}
         </button>

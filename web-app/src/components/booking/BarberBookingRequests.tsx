@@ -143,7 +143,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
     return (
       <Card>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading requests...</p>
         </div>
       </Card>
@@ -172,7 +172,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
             {/* Customer Info */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white font-bold">
                   {request.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -291,7 +291,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
             <div className="space-y-4">
               {/* Profile Header */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white font-bold text-2xl">
                   {selectedRequest.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>

@@ -154,7 +154,7 @@ export default function BookingPage() {
       <div className="mb-8">
         <button
           onClick={() => navigate(`/student/barbers/${barberId}`)}
-          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4"
+          className="flex items-center gap-2 text-primary-600 hover:text-black mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Profile
@@ -179,7 +179,7 @@ export default function BookingPage() {
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full ${
                   currentStep === step.id
-                    ? 'bg-primary-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : array.findIndex((s) => s.id === currentStep) > index
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-300 text-gray-600'
@@ -219,8 +219,8 @@ export default function BookingPage() {
                   onClick={() => handleServiceSelect(service)}
                   className={`w-full p-4 border-2 rounded-lg text-left transition-all hover:shadow-md ${
                     bookingData.service?.id === service.id
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-gray-200 hover:border-primary-300'
+                      ? 'border-gray-900 bg-primary-50'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <div className="flex justify-between items-start">
@@ -259,8 +259,8 @@ export default function BookingPage() {
                     onClick={() => handleDateSelect(day)}
                     className={`p-4 border-2 rounded-lg text-center transition-all ${
                       bookingData.date?.toDateString() === day.toDateString()
-                        ? 'border-primary-600 bg-primary-50'
-                        : 'border-gray-200 hover:border-primary-300'
+                        ? 'border-gray-900 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <p className="text-xs text-gray-600 font-medium">
@@ -285,8 +285,8 @@ export default function BookingPage() {
                       onClick={() => handleTimeSelect(time)}
                       className={`p-3 border-2 rounded-lg text-center transition-all ${
                         bookingData.time === time
-                          ? 'border-primary-600 bg-primary-50 font-semibold'
-                          : 'border-gray-200 hover:border-primary-300'
+                          ? 'border-gray-900 bg-primary-50 font-semibold'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       {time}
@@ -326,7 +326,7 @@ export default function BookingPage() {
                 value={bookingData.location}
                 onChange={(e) => setBookingData({ ...bookingData, location: e.target.value })}
                 placeholder="e.g., Your dorm, campus barbershop..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none"
               />
             </div>
 
@@ -339,7 +339,7 @@ export default function BookingPage() {
                 onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
                 placeholder="Any specific preferences or instructions..."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none"
               />
             </div>
 
@@ -397,7 +397,7 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+            <div className="bg-primary-50 border border-gray-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-primary-800">
                 <strong>Secure Payment:</strong> Your payment will be held in escrow until service completion. 
                 You can also add a tip for your barber on the next screen.

@@ -78,7 +78,7 @@ export default function InvisibleUsdcBalance({ suiAddress, className }: Props) {
     <div
       className={
         className ||
-        'flex items-center justify-between rounded-xl border border-primary-200 bg-primary-50/60 px-4 py-3 text-sm'
+        'flex items-center justify-between rounded-xl border border-gray-200 bg-primary-50/60 px-4 py-3 text-sm'
       }
     >
       <div className="flex items-center gap-2 text-gray-800">

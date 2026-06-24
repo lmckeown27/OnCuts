@@ -37,7 +37,7 @@ export default function Avatar({ src, alt = 'Profile', size = 'md', className = 
 
   // Default avatar with user icon
   return (
-    <div className={`${sizeClass} bg-primary-400 rounded-full flex items-center justify-center text-white ${className}`}>
+    <div className={`${sizeClass} bg-gray-800 rounded-full flex items-center justify-center text-white ${className}`}>
       <User className={iconSize} />
     </div>
   );

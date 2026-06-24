@@ -275,7 +275,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
       return (
         <div 
           key={date.toISOString()} 
-          className={`p-2 rounded border text-center ${isCurrentDate ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}
+          className={`p-2 rounded border text-center ${isCurrentDate ? 'border-gray-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}
         >
           <p className={`text-xs font-medium ${isCurrentDate ? 'text-primary-700' : 'text-gray-600'}`}>{shortDayNames[date.getDay()]}</p>
           <p className={`text-xs ${isCurrentDate ? 'text-primary-600' : 'text-gray-500'}`}>{date.getDate()}</p>
@@ -329,7 +329,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
               <div
                 key={idx}
                 className={`h-6 rounded flex items-center justify-center text-xs ${
-                  isToday ? 'bg-primary-500 text-white font-bold' : hasAvailability ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
+                  isToday ? 'bg-gray-900 text-white font-bold' : hasAvailability ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
                 }`}
               >
                 {date.getDate()}
@@ -345,7 +345,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
         </div>
       </Card>
     );
@@ -378,7 +378,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
             {currentDate.toDateString() !== new Date().toDateString() && (
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="text-xs text-primary-600 hover:underline"
+                className="text-xs text-gray-900 hover:underline"
               >
                 Go to today
               </button>
@@ -961,7 +961,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Student Union, Dorm Building A"
-                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               />
             </div>
             <div>
@@ -973,7 +973,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Brief description of this location"
                 rows={2}
-                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
               />
             </div>
             
@@ -989,7 +989,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     name="availability-inline"
                     checked={formData.isUniversal}
                     onChange={() => setFormData({ ...formData, isUniversal: true, restrictedToBarberId: '' })}
-                    className="text-primary-600 focus:ring-primary-400"
+                    className="text-gray-900 focus:ring-gray-400"
                   />
                   <div>
                     <span className="font-medium text-gray-900">All Barbers</span>
@@ -1002,7 +1002,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     name="availability-inline"
                     checked={!formData.isUniversal}
                     onChange={() => setFormData({ ...formData, isUniversal: false })}
-                    className="text-primary-600 focus:ring-primary-400"
+                    className="text-gray-900 focus:ring-gray-400"
                   />
                   <div>
                     <span className="font-medium text-gray-900">Specific Barber Only</span>
@@ -1016,7 +1016,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                   <select
                     value={formData.restrictedToBarberId}
                     onChange={(e) => setFormData({ ...formData, restrictedToBarberId: e.target.value })}
-                    className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   >
                     <option value="">Select a barber...</option>
                     {campusBarbers.map((barber) => (
@@ -1105,7 +1105,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     className={`w-full p-3 rounded-lg border transition-colors ${
                       isAssigned 
                         ? 'bg-green-50 border-green-200' 
-                        : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer'
+                        : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                     }`}
                     onClick={() => !isAssigned && !saving && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
                   >
@@ -1147,7 +1147,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
           onClick={() => setActiveSubTab('barbers')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             activeSubTab === 'barbers'
-              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              ? 'bg-primary-100 text-primary-700 border border-gray-300'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
           }`}
         >
@@ -1175,7 +1175,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
           onClick={() => setActiveSubTab('approved')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             activeSubTab === 'approved'
-              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              ? 'bg-primary-100 text-primary-700 border border-gray-300'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
           }`}
         >
@@ -1545,7 +1545,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     <select
                       value={approvalData.restrictedToBarberId}
                       onChange={(e) => setApprovalData({ ...approvalData, restrictedToBarberId: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-gray-900"
                     >
                       <option value="">Assign to the requesting barber</option>
                       {campusBarbers.map((barber) => (
@@ -1907,7 +1907,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                 onClick={() => handlePageChange(page, position)}
                 className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === page
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-gray-900 text-white'
                     : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                 }`}
               >
@@ -2100,7 +2100,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
           onClick={() => handleTabChange('upcoming')}
           className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
             activeTab === 'upcoming'
-              ? 'bg-primary-500 text-white shadow-md'
+              ? 'bg-gray-900 text-white shadow-md'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -2110,7 +2110,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
           onClick={() => handleTabChange('completed')}
           className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
             activeTab === 'completed'
-              ? 'bg-primary-500 text-white shadow-md'
+              ? 'bg-gray-900 text-white shadow-md'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -2168,7 +2168,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                     <select
                       value={selectedBarberId}
                       onChange={(e) => setSelectedBarberId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     >
                       <option value="all">All Barbers</option>
                       {barbers.map((barber) => (
@@ -2183,7 +2183,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                     <select
                       value={sortOrder}
                       onChange={(e) => setSortOrder(e.target.value as 'latest' | 'furthest')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     >
                       <option value="latest">Latest First</option>
                       <option value="furthest">Furthest First</option>
@@ -2197,7 +2197,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                       <select
                         value={selectedPaymentMethod}
                         onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                       >
                         <option value="all">All</option>
                         <option value="card">Card</option>
@@ -2277,7 +2277,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                     </div>
                   )}
                   {booking.paymentMethod && (
-                    <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-500 text-white">
+                    <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">
                       {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
                     </div>
                   )}
@@ -2684,7 +2684,7 @@ export const ServicesManagementPanel: React.FC = () => {
               type="checkbox"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="rounded border-gray-300 text-gray-900 focus:ring-gray-400"
             />
             Show Deleted
           </label>
@@ -2695,7 +2695,7 @@ export const ServicesManagementPanel: React.FC = () => {
                 type="checkbox"
                 checked={showInactive}
                 onChange={(e) => setShowInactive(e.target.checked)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-gray-300 text-gray-900 focus:ring-gray-400"
               />
               Show Deleted
             </label>
@@ -2732,14 +2732,14 @@ export const ServicesManagementPanel: React.FC = () => {
         {showAddModal && (
           <form
             onSubmit={handleAddService}
-            className="p-3 rounded-lg border-2 border-dashed border-primary-400 bg-primary-50"
+            className="p-3 rounded-lg border-2 border-dashed border-gray-400 bg-primary-50"
           >
             <div className="mb-2">
               <input
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-300 rounded focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white"
                 placeholder="Service name"
                 autoFocus
               />
@@ -2752,7 +2752,7 @@ export const ServicesManagementPanel: React.FC = () => {
                 pattern="[0-9]*"
                 value={formBasePrice}
                 onChange={(e) => setFormBasePrice(e.target.value.replace(/[^0-9.]/g, ''))}
-                className="w-14 text-lg font-bold text-gray-900 border-b-2 border-primary-300 focus:border-primary-500 focus:outline-none bg-transparent"
+                className="w-14 text-lg font-bold text-gray-900 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent"
                 placeholder="0"
               />
             </div>
@@ -2762,7 +2762,7 @@ export const ServicesManagementPanel: React.FC = () => {
             <div className="flex gap-1">
               <button
                 type="submit"
-                className="flex-1 text-xs px-2 py-1 bg-primary-500 text-white rounded hover:bg-primary-600"
+                className="flex-1 text-xs px-2 py-1 bg-brand-500 text-white rounded hover:bg-brand-600"
               >
                 Add
               </button>
@@ -2788,7 +2788,7 @@ export const ServicesManagementPanel: React.FC = () => {
               key={service.id}
               className={`p-3 rounded-lg border-2 transition-all ${
                 service.isActive
-                  ? 'border-primary-400 bg-primary-50'
+                  ? 'border-gray-400 bg-primary-50'
                   : 'border-red-200 bg-red-50 opacity-60'
               }`}
             >
@@ -2801,7 +2801,7 @@ export const ServicesManagementPanel: React.FC = () => {
                   {!isEditing && (
                     <button
                       onClick={() => startEditingBounds(service)}
-                      className="p-1 text-gray-400 hover:text-primary-600 rounded transition-colors"
+                      className="p-1 text-gray-400 hover:text-gray-900 rounded transition-colors"
                       title="Edit limits"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -2862,7 +2862,7 @@ export const ServicesManagementPanel: React.FC = () => {
                         value={editingBounds.basePrice}
                         onChange={(e) => setEditingBounds((prev) => ({ ...prev, basePrice: e.target.value.replace(/[^0-9]/g, '') }))}
                         autoFocus
-                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-primary-300 rounded bg-white"
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
                       />
                     </label>
                     <label className="text-gray-500">
@@ -2902,7 +2902,7 @@ export const ServicesManagementPanel: React.FC = () => {
                     <button
                       onClick={() => saveInlineBounds(service.id)}
                       disabled={savingBounds}
-                      className="flex-1 text-xs px-2 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50"
+                      className="flex-1 text-xs px-2 py-1 bg-brand-500 text-white rounded hover:bg-brand-600 disabled:opacity-50"
                     >
                       {savingBounds ? 'Saving...' : 'Save'}
                     </button>

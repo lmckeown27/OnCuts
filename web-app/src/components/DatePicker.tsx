@@ -243,12 +243,12 @@ export default function DatePicker({
                       text-sm font-medium rounded-lg transition-all
                       ${disabled 
                         ? 'text-gray-300 cursor-not-allowed' 
-                        : 'hover:bg-primary-50 cursor-pointer'
+                        : 'hover:bg-gray-50 cursor-pointer'
                       }
                       ${!currentMonth && !disabled ? 'text-gray-400' : ''}
                       ${currentMonth && !disabled && !selected ? 'text-gray-900' : ''}
                       ${selected 
-                        ? 'bg-primary-500 text-white hover:bg-primary-600' 
+                        ? 'bg-gray-900 text-white hover:bg-brand-600' 
                         : ''
                       }
                     `}

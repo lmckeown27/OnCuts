@@ -139,11 +139,11 @@ export default function BrowseRadiusSlider({
       >
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-gray-200" />
         <div
-          className="absolute top-1/2 -translate-y-1/2 left-0 h-2 rounded-full bg-primary-500 pointer-events-none"
+          className="absolute top-1/2 -translate-y-1/2 left-0 h-2 rounded-full bg-gray-900 pointer-events-none"
           style={{ width: `${fillPercent}%` }}
         />
         <div
-          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 border-white bg-primary-600 shadow-md pointer-events-none ${
+          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 border-white bg-gray-900 shadow-md pointer-events-none ${
             isDragging ? 'scale-110' : ''
           } transition-transform`}
           style={{ left: `${fillPercent}%` }}

@@ -98,7 +98,7 @@ export default function DiscoveryPage() {
                 </span>
               </div>
               {barber.pricing && barber.pricing.length > 0 && (
-                <p className="text-sm text-primary-600 font-medium mt-2">
+                <p className="text-sm text-gray-600 font-medium mt-2">
                   From ${Math.min(...barber.pricing.map(p => p.price))}
                 </p>
               )}

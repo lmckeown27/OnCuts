@@ -101,7 +101,7 @@ export default function PaymentProcessingPage() {
         )}
         <Link
           to="/web/consumer/booking-status"
-          className="inline-block px-4 py-2 bg-primary-500 text-white rounded-lg font-medium"
+          className="inline-block px-4 py-2 bg-brand-500 text-white rounded-lg font-medium"
         >
           View bookings
         </Link>

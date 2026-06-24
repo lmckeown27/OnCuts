@@ -349,7 +349,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           </p>
           <button
             onClick={handleCloseSuccessPopup}
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            className="px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
           >
             Got it
           </button>
@@ -376,7 +376,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-3 border-primary-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-3 border-gray-400 border-t-transparent rounded-full animate-spin" />
             <p className="text-gray-600">Loading...</p>
           </div>
         </div>
@@ -444,7 +444,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 href="mailto:campuscuthelp@gmail.com?subject=Barber Access Removed - Appeal"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
               >
                 <Mail className="w-4 h-4" />
                 campuscuthelp@gmail.com
@@ -518,7 +518,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative">
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative">
             <div className="flex flex-col items-center text-center">
               <div className="p-2 bg-white/20 rounded-lg mb-2">
                 <Clock className="w-6 h-6 text-white" />
@@ -561,7 +561,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
               >
                 <Mail className="w-4 h-4" />
                 campuscuthelp@gmail.com
@@ -581,7 +581,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </button>
                 <button
                   onClick={() => setExistingApplication(null)}
-                  className="flex-1 px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                  className="flex-1 px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
                 >
                   Reapply
                 </button>
@@ -589,7 +589,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             ) : (
               <button
                 onClick={handleClose}
-                className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                className="w-full px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
                 Got it
               </button>
@@ -614,7 +614,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
             <h2 className="text-xl font-bold text-white">Become a CampusCuts Barber</h2>
             <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
@@ -637,7 +637,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               {guestMode && (
                 <>
                   {/* First Name and Last Name */}
-                  <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                  <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       <UserIcon className="w-4 h-4 inline mr-2 text-primary-600" />
                       Your Name *
@@ -651,20 +651,20 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                         value={form.firstName}
                         onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                         placeholder="First Name"
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white"
                       />
                       <input
                         type="text"
                         value={form.lastName}
                         onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                         placeholder="Last Name"
-                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white"
                       />
                     </div>
                   </div>
 
                   {/* Email Field */}
-                  <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                  <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       <Mail className="w-4 h-4 inline mr-2 text-primary-600" />
                       Your Email Address *
@@ -677,8 +677,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="your.email@university.edu"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white ${
-                        form.email && !isValidEmail(form.email) ? 'border-red-400' : 'border-primary-300'
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white ${
+                        form.email && !isValidEmail(form.email) ? 'border-red-400' : 'border-gray-300'
                       }`}
                     />
                     {form.email && !isValidEmail(form.email) && (
@@ -716,7 +716,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     setForm({ ...form, phoneNumber: formatted });
                   }}
                   placeholder="(555) 123-4567"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 />
               </div>
 
@@ -729,7 +729,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <select
                     value={form.yearsExperience}
                     onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   >
                     <option value="">Select experience level</option>
                     <option value="less-than-1">Less than 1 year</option>
@@ -768,7 +768,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       placeholder="What tools do you need?"
                       value={form.toolsNeeded}
                       onChange={(e) => setForm({ ...form, toolsNeeded: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     />
                   )}
                 </div>
@@ -788,13 +788,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                         onClick={() => handleSpecialtyToggle(service.name)}
                         className={`px-3 py-2 rounded-lg border-2 transition-all cursor-pointer flex items-center gap-2 ${
                           isSelected
-                            ? 'border-primary-400 bg-primary-50'
+                            ? 'border-gray-400 bg-primary-50'
                             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
                         <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                               isSelected
-                                ? 'bg-primary-400 border-primary-400'
+                                ? 'bg-primary-400 border-gray-400'
                                 : 'border-gray-300'
                             }`}>
                           {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
@@ -830,7 +830,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <label
                     className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       form.licenseDeclared === 'yes'
-                        ? 'border-primary-500 bg-primary-50'
+                        ? 'border-gray-900 bg-primary-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -846,7 +846,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <label
                     className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       form.licenseDeclared === 'no'
-                        ? 'border-primary-500 bg-primary-50'
+                        ? 'border-gray-900 bg-primary-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -878,7 +878,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     value={form.licenseNumber}
                     onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
                     placeholder="State license or certification number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     autoComplete="off"
                   />
                   <p className="text-xs text-gray-500 mt-2">
@@ -906,7 +906,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             /* Step 3: Campus & About You */
             <div className="space-y-6">
               {/* Campus Selection */}
-              <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+              <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Which campus do you want to cut at? *
                 </label>
@@ -915,7 +915,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </p>
                 {loadingCampuses ? (
                   <div className="flex items-center gap-2 text-gray-500">
-                    <span className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                     Loading campuses...
                   </div>
                 ) : (
@@ -946,7 +946,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                           }, 150);
                         }}
                         placeholder="Search and select your campus..."
-                        className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white"
                       />
                       <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
                     </div>
@@ -976,7 +976,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                                   setCampusSearchQuery(campus.name);
                                   setShowCampusDropdown(false);
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
+                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
                                   form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
                                 }`}
                               >
@@ -1008,7 +1008,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   onChange={(e) => setForm({ ...form, whyBeBarber: e.target.value })}
                   placeholder="Tell us about your passion for barbering and why you'd be a great fit for CampusCuts..."
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
               </div>
 
@@ -1020,7 +1020,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <select
                     value={form.availableHours}
                     onChange={(e) => setForm({ ...form, availableHours: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   >
                     <option value="">Select availability</option>
                     <option value="5-10">5-10 hours/week</option>
@@ -1039,7 +1039,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     placeholder="Instagram handle or link"
                     value={form.socialMedia}
                     onChange={(e) => setForm({ ...form, socialMedia: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   />
                 </div>
               </div>
@@ -1161,7 +1161,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 disabled={
                   step === 1 ? !canProceedStep1 : step === 2 ? !canProceedStep2 : !canProceedStep3
                 }
-                className="px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue
               </button>
@@ -1169,7 +1169,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit || isSubmitting}
-                className="px-8 py-2.5 bg-primary-500 text-white font-semibold rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-8 py-2.5 bg-brand-500 text-white font-semibold rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>

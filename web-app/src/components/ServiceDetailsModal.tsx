@@ -196,7 +196,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
               onClick={() => setActiveTab('customer')}
               className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'customer'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-gray-900 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -210,7 +210,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
               onClick={() => setActiveTab('service')}
               className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'service'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-gray-900 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -224,7 +224,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
               onClick={() => setActiveTab('location')}
               className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'location'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-gray-900 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -238,7 +238,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
               onClick={() => setActiveTab('payment')}
               className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'payment'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-gray-900 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -378,7 +378,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
                   ? 'bg-green-50 border-green-200' 
                   : appointment.price.paymentStatus === 'pay_later'
                   ? 'bg-amber-50 border-amber-200'
-                  : 'bg-primary-50 border-primary-200'
+                  : 'bg-primary-50 border-gray-200'
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <p className={`font-semibold text-sm sm:text-base ${
@@ -419,7 +419,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
 
               {/* Collect Payment Button for Pay Later */}
               {appointment.price.paymentStatus === 'pay_later' && (
-                <Card className="p-4 bg-gradient-to-r from-primary-50 to-green-50 border-2 border-primary-200">
+                <Card className="p-4 bg-gradient-to-r from-primary-50 to-green-50 border-2 border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">Ready to collect payment?</p>

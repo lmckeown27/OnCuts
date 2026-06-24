@@ -620,10 +620,10 @@ export default function AuthPage() {
                     name="email"
                     value={loginData.email}
                     onChange={handleLoginChange}
-                    className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                    className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                       loginData.email && isValidEmail(loginData.email) 
                         ? 'border-green-400 focus:border-green-500' 
-                        : 'border-primary-400 focus:border-primary-500'
+                        : 'border-gray-400 focus:border-gray-900'
                     }`}
                     placeholder="you@example.com"
                     autoComplete="email"
@@ -654,7 +654,7 @@ export default function AuthPage() {
                   name="password"
                   value={loginData.password}
                   onChange={handleLoginChange}
-                  className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                  className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 transition-all duration-200 text-gray-900 placeholder-gray-400"
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
@@ -684,7 +684,7 @@ export default function AuthPage() {
                 disabled={!isLoginFormValid || isLoading}
                 className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                   isLoginFormValid && !isLoading
-                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -703,7 +703,7 @@ export default function AuthPage() {
                 <button 
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
-                  className="text-primary-500 hover:text-primary-600 text-sm font-medium transition-colors"
+                  className="text-primary-500 hover:text-gray-900 text-sm font-medium transition-colors"
                 >
                   Forgot your password?
                 </button>
@@ -728,7 +728,7 @@ export default function AuthPage() {
                     setPhoneLogin(e.target.value);
                     if (error) setError(null);
                   }}
-                  className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900 placeholder-gray-400"
+                  className="w-full pt-5 pb-3 px-4 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 text-gray-900 placeholder-gray-400"
                   placeholder="+14155552671"
                   autoComplete="tel"
                 />
@@ -769,7 +769,7 @@ export default function AuthPage() {
                       setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
                       if (error) setError(null);
                     }}
-                    className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 tracking-widest text-center text-lg"
+                    className="w-full pt-5 pb-3 px-4 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 tracking-widest text-center text-lg"
                     placeholder="000000"
                   />
                 </div>
@@ -789,7 +789,7 @@ export default function AuthPage() {
                 disabled={!isLoginFormValid || isLoading || !phoneCodeSent}
                 className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                   isLoginFormValid && !isLoading && phoneCodeSent
-                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -866,8 +866,8 @@ export default function AuthPage() {
                         name="firstName"
                         value={signupData.firstName}
                         onChange={handleSignupChange}
-                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                          validationErrors.firstName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          validationErrors.firstName ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                         }`}
                         placeholder="John"
                       />
@@ -885,8 +885,8 @@ export default function AuthPage() {
                         name="lastName"
                         value={signupData.lastName}
                         onChange={handleSignupChange}
-                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                          validationErrors.lastName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          validationErrors.lastName ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                         }`}
                         placeholder="Doe"
                       />
@@ -907,12 +907,12 @@ export default function AuthPage() {
                         name="email"
                         value={signupData.email}
                         onChange={handleSignupChange}
-                        className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                        className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                           validationErrors.email
                             ? 'border-red-400'
                             : signupData.email && isValidEmail(signupData.email)
                               ? 'border-green-400 focus:border-green-500'
-                              : 'border-primary-400 focus:border-primary-500'
+                              : 'border-gray-400 focus:border-gray-900'
                         }`}
                         placeholder="you@example.com"
                         autoComplete="email"
@@ -945,8 +945,8 @@ export default function AuthPage() {
                       name="password"
                       value={signupData.password}
                       onChange={handleSignupChange}
-                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                        validationErrors.password ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                        validationErrors.password ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                       }`}
                       placeholder="••••••••"
                       autoComplete="new-password"
@@ -995,11 +995,11 @@ export default function AuthPage() {
                       name="confirmPassword"
                       value={signupData.confirmPassword}
                       onChange={handleSignupChange}
-                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                         validationErrors.confirmPassword ||
                         (signupData.confirmPassword && signupData.password !== signupData.confirmPassword)
                           ? 'border-red-400'
-                          : 'border-primary-400 focus:border-primary-500'
+                          : 'border-gray-400 focus:border-gray-900'
                       }`}
                       placeholder="••••••••"
                       autoComplete="new-password"
@@ -1044,7 +1044,7 @@ export default function AuthPage() {
                     disabled={!isSignupFormValid || isLoading}
                     className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                       isSignupFormValid && !isLoading
-                        ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                        ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
@@ -1077,8 +1077,8 @@ export default function AuthPage() {
                           name="phoneNumber"
                           value={signupData.phoneNumber}
                           onChange={handleSignupChange}
-                          className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                            validationErrors.phoneNumber ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                          className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            validationErrors.phoneNumber ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                           }`}
                           placeholder="+14155552671"
                           autoComplete="tel"
@@ -1123,7 +1123,7 @@ export default function AuthPage() {
                               setSignupPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
                               if (error) setError(null);
                             }}
-                            className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 tracking-widest text-center text-lg"
+                            className="w-full pt-5 pb-3 px-4 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 tracking-widest text-center text-lg"
                             placeholder="000000"
                           />
                         </div>
@@ -1143,7 +1143,7 @@ export default function AuthPage() {
                           canSendSignupPhoneCode &&
                           signupPhoneCodeSent &&
                           /^\d{6}$/.test(signupPhoneOtp.trim())
-                            ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                            ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1175,8 +1175,8 @@ export default function AuthPage() {
                             name="firstName"
                             value={signupData.firstName}
                             onChange={handleSignupChange}
-                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                              validationErrors.firstName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                              validationErrors.firstName ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                             }`}
                             placeholder="John"
                           />
@@ -1194,8 +1194,8 @@ export default function AuthPage() {
                             name="lastName"
                             value={signupData.lastName}
                             onChange={handleSignupChange}
-                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                              validationErrors.lastName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                              validationErrors.lastName ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                             }`}
                             placeholder="Doe"
                           />
@@ -1216,12 +1216,12 @@ export default function AuthPage() {
                             name="email"
                             value={signupData.email}
                             onChange={handleSignupChange}
-                            className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                               validationErrors.email
                                 ? 'border-red-400'
                                 : signupData.email && isValidEmail(signupData.email)
                                   ? 'border-green-400 focus:border-green-500'
-                                  : 'border-primary-400 focus:border-primary-500'
+                                  : 'border-gray-400 focus:border-gray-900'
                             }`}
                             placeholder="you@example.com"
                             autoComplete="email"
@@ -1254,8 +1254,8 @@ export default function AuthPage() {
                           name="password"
                           value={signupData.password}
                           onChange={handleSignupChange}
-                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                            validationErrors.password ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            validationErrors.password ? 'border-red-400' : 'border-gray-400 focus:border-gray-900'
                           }`}
                           placeholder="••••••••"
                           autoComplete="new-password"
@@ -1304,11 +1304,11 @@ export default function AuthPage() {
                           name="confirmPassword"
                           value={signupData.confirmPassword}
                           onChange={handleSignupChange}
-                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                             validationErrors.confirmPassword ||
                             (signupData.confirmPassword && signupData.password !== signupData.confirmPassword)
                               ? 'border-red-400'
-                              : 'border-primary-400 focus:border-primary-500'
+                              : 'border-gray-400 focus:border-gray-900'
                           }`}
                           placeholder="••••••••"
                           autoComplete="new-password"
@@ -1356,7 +1356,7 @@ export default function AuthPage() {
                       disabled={!isSignupFormValid || isLoading}
                       className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                         isSignupFormValid && !isLoading
-                          ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                          ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                     >
@@ -1381,7 +1381,7 @@ export default function AuthPage() {
               Need help?{' '}
               <a 
                 href="mailto:campuscuthelp@gmail.com"
-                className="text-primary-500 hover:text-primary-600 transition-colors inline-flex items-center gap-1"
+                className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
                 Contact Support
@@ -1447,7 +1447,7 @@ export default function AuthPage() {
                     id="forgot-email"
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                    className="w-full pt-5 pb-3 px-4 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 transition-all duration-200 text-gray-900 placeholder-gray-400"
                     placeholder="you@example.com"
                     autoFocus
                   />
@@ -1456,7 +1456,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={isSendingReset}
-                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
                 >
                   {isSendingReset ? 'Sending...' : 'Send Reset Link'}
                 </button>
@@ -1480,7 +1480,7 @@ export default function AuthPage() {
                 </p>
                 <button
                   onClick={closeForgotPassword}
-                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors"
+                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors"
                 >
                   Back to Sign In
                 </button>

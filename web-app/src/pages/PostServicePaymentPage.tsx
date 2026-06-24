@@ -144,7 +144,7 @@ function PaymentFormInner({
       <button
         type="submit"
         disabled={!stripe || isProcessing || isUpdatingIntent}
-        className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isUpdatingIntent ? (
           <>
@@ -286,7 +286,7 @@ function PaymentForm({
         <p className="text-red-600 mb-4">{intentError}</p>
         <button
           onClick={createPaymentIntent}
-          className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+          className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
         >
           Try Again
         </button>
@@ -327,7 +327,7 @@ function PaymentForm({
             onClick={() => setPaymentMethod('card')}
             className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
               paymentMethod === 'card'
-                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                ? 'border-gray-900 bg-primary-50 text-primary-700'
                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
             }`}
           >
@@ -378,7 +378,7 @@ function PaymentForm({
                 }}
                 className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                   selectedTip === option.value && !customTip
-                    ? 'border-primary-500 bg-primary-50 text-primary-600'
+                    ? 'border-gray-900 bg-primary-50 text-primary-600'
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
               >
@@ -402,8 +402,8 @@ function PaymentForm({
                   setSelectedTip(0);
                 }
               }}
-              className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
-                customTip ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+              className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
+                customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
               }`}
             />
           </div>
@@ -532,7 +532,7 @@ function ReviewForm({
         onChange={(e) => setComment(e.target.value)}
         placeholder="Share your experience (optional)..."
         rows={3}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
       />
 
       <div className="flex gap-3">
@@ -545,7 +545,7 @@ function ReviewForm({
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             <>
@@ -778,7 +778,7 @@ export default function PostServicePaymentPage() {
             <div className="space-y-3">
               <button
                 onClick={handleLogoutAndLogin}
-                className="w-full px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+                className="w-full px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
               >
                 Log in with a different account
               </button>
@@ -792,7 +792,7 @@ export default function PostServicePaymentPage() {
           ) : (
             <button
               onClick={() => navigate(-1)}
-              className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
             >
               Go Back
             </button>
@@ -819,7 +819,7 @@ export default function PostServicePaymentPage() {
             </p>
             <button
               onClick={() => navigate('/web/barber')}
-              className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
             >
               Return to Dashboard
             </button>
@@ -933,7 +933,7 @@ export default function PostServicePaymentPage() {
             {isPaid ? (
               <button
                 onClick={() => navigate('/web/barber')}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+                className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
               >
                 Return to Dashboard
               </button>

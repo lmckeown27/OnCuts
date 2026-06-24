@@ -543,7 +543,7 @@ export default function BarberPage() {
               {/* Consumer Chat Button */}
               <button
                 onClick={() => navigate(`${platformPrefix}/barber/messages`)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary-50 hover:bg-primary-100 border border-primary-200 transition-colors relative"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary-50 hover:bg-primary-100 border border-gray-200 transition-colors relative"
                 title="Consumer Chat"
               >
                 <Send className="w-5 h-5 text-primary-600" />
@@ -589,7 +589,7 @@ export default function BarberPage() {
                       navigate(`${platformPrefix}/consumer`);
                       setShowProfileDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50"
+                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50"
                   >
                     Switch to Consumer
                   </button>
@@ -828,7 +828,7 @@ export default function BarberPage() {
               ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Edit Profile</h2>
                 <p className="text-white/80 text-sm">Update your barber profile</p>
@@ -858,7 +858,7 @@ export default function BarberPage() {
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Services & Pricing</h2>
                 <p className="text-white/80 text-sm">Manage your service offerings</p>
@@ -908,7 +908,7 @@ export default function BarberPage() {
                           setAdminCampusSearchQuery('');
                         }}
                         placeholder="All Universities"
-                        className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                        className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-gray-400 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-gray-300 outline-none"
                       />
                       <ChevronDown
                         onClick={() => setShowAdminCampusDropdown(!showAdminCampusDropdown)}
@@ -1084,7 +1084,7 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex-shrink-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="flex-shrink-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">
@@ -1133,7 +1133,7 @@ export default function BarberPage() {
                     onClick={() => setNotificationFilter(tab.key as any)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                       notificationFilter === tab.key
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-gray-900 text-white'
                         : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                     }`}
                   >
@@ -2230,7 +2230,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 onClick={() => setScheduleView(id)}
                 className={`px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
                   scheduleView === id
-                    ? 'bg-primary-400 text-white'
+                    ? 'bg-gray-900 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -2346,7 +2346,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             <button
               type="button"
               onClick={() => onEditAvailability?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm inline-flex items-center justify-center gap-2"
             >
               <Settings className="w-4 h-4" />
               Edit Schedule
@@ -2507,7 +2507,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             <div className="max-w-2xl mx-auto">
               {isLoadingBookings || isLoadingWeeklySchedule ? (
                 <div className="text-center py-8 sm:py-12">
-                  <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
+                  <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4"></div>
                   <p className="text-gray-500">{isLoadingWeeklySchedule ? 'Loading availability...' : 'Loading appointments...'}</p>
                 </div>
               ) : !daySchedule?.enabled || intervals.length === 0 ? (
@@ -2609,7 +2609,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         <div 
                           key={idx}
                           onClick={() => onBlockTime?.(dateStr, slot.start, slot.end)}
-                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
+                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-gray-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-gray-300 transition-colors"
                         >
                           <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                           {formatTime12(slot.start)} - {formatTime12(slot.end)}
@@ -2636,7 +2636,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         <button
                           type="button"
                           onClick={() => onDisconnectGoogleCalendar?.()}
-                          className="text-xs text-primary-600 hover:text-primary-700 hover:underline"
+                          className="text-xs text-primary-600 hover:text-black hover:underline"
                         >
                           Google Calendar connected — disconnect
                         </button>
@@ -2645,7 +2645,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           type="button"
                           onClick={() => onConnectGoogleCalendar?.()}
                           disabled={googleCalendarLoading}
-                          className="text-xs text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                          className="text-xs text-primary-600 hover:text-black hover:underline disabled:opacity-50"
                         >
                           {googleCalendarLoading ? 'Connecting Google Calendar…' : 'Connect Google Calendar'}
                         </button>
@@ -2738,7 +2738,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
-                          ? 'bg-primary-400 text-white border-primary-500'
+                          ? 'bg-gray-900 text-white border-gray-900'
                           : 'bg-gray-50 border-gray-200'
                       } cursor-pointer`}
                     >
@@ -2829,8 +2829,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
-                          ? 'bg-primary-400 text-white border-primary-500'
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-300'
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                       } cursor-pointer transition-colors`}
                     >
                       <div className="text-center mb-4">
@@ -2968,8 +2968,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
-                          ? 'bg-primary-400 text-white border-primary-500' 
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-300'
+                          ? 'bg-gray-900 text-white border-gray-900' 
+                          : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                       } cursor-pointer active:scale-95 transition-all`}
                     >
                       <div className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1">{day}</div>
@@ -3075,7 +3075,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header - changes based on whether viewing booking details */}
-            <div className="bg-primary-400 text-white p-6">
+            <div className="bg-gray-900 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">
@@ -3133,7 +3133,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           value={cancelReason}
                           onChange={(e) => setCancelReason(e.target.value)}
                           placeholder="e.g., Schedule conflict, emergency..."
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900 resize-none"
                           rows={3}
                         />
                       </div>
@@ -3218,7 +3218,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           value={editedLocation}
                           onChange={(e) => setEditedLocation(e.target.value)}
                           placeholder="e.g., Smith Hall, Room 204"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 text-base"
                         />
                       </div>
                       {selectedBookingInline.notes && (
@@ -3240,7 +3240,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         <button
                           onClick={handleSaveBookingChanges}
                           disabled={isSavingBooking}
-                          className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                         >
                           {isSavingBooking ? (
                             <>
@@ -3402,7 +3402,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 {canEdit && (
                                   <button
                                     onClick={startEditingBooking}
-                                    className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                                   >
                                     <Pencil className="w-4 h-4" />
                                     Edit
@@ -3428,7 +3428,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 </p>
                                 <button
                                   onClick={() => setIsUndoingComplete(true)}
-                                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
+                                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
                                 >
                                   Undo Complete
                                 </button>
@@ -3438,7 +3438,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             {/* Undo Complete Confirmation */}
                             {isUndoingComplete && (
                               <div className="space-y-3">
-                                <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                                <div className="p-3 bg-primary-50 rounded-lg border border-gray-200">
                                   <p className="font-semibold text-gray-800 text-sm">Undo completion?</p>
                                   <p className="text-xs text-gray-600">This will revert the booking to accepted status.</p>
                                 </div>
@@ -3453,7 +3453,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   <button
                                     onClick={handleUndoComplete}
                                     disabled={isSavingBooking}
-                                    className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                                    className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
                                   >
                                     {isSavingBooking ? (
                                       <>
@@ -3531,7 +3531,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     if (isLoadingWeeklySchedule || !weeklySchedule) {
                       return (
                         <div className="text-center py-8">
-                          <div className="animate-spin w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-3"></div>
+                          <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-3"></div>
                           <p className="text-gray-500 text-sm">Loading availability...</p>
                         </div>
                       );
@@ -3674,7 +3674,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           ) : googleCalendarConnected ? (
                             <button
                               onClick={() => onDisconnectGoogleCalendar?.()}
-                              className="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-medium rounded-lg transition-colors border border-primary-300 flex flex-col items-center"
+                              className="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex flex-col items-center"
                             >
                               <span>Google Calendar Connected</span>
                               <span className="text-xs text-primary-500 sm:hidden">(Tap to Disconnect)</span>
@@ -3702,7 +3702,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               setSelectedDate(null);
                               onEditAvailability?.();
                             }}
-                            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                            className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                           >
                             <span className="sm:hidden">Tap here to Edit Availability</span>
                             <span className="hidden sm:inline">Click here to Edit Availability</span>
@@ -3797,7 +3797,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   onBlockTime?.(dateStr, slot.start, slot.end);
                                   setSelectedDate(null); // Close the day detail modal
                                 }}
-                                className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
+                                className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-gray-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-gray-300 transition-colors"
                               >
                                 <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                                 {formatTime(slot.start)} - {formatTime(slot.end)}
@@ -3991,7 +3991,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
                         <div>
             <h2 className="text-2xl font-bold">Bookings</h2>
             <p className="text-white/80 text-sm">{bookings.filter(b => b.status === 'ACCEPTED').length} active, {bookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length} completed</p>
@@ -4016,7 +4016,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
               onClick={() => setActiveTab(tab.key as any)}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                 activeTab === tab.key
-                  ? 'text-primary-600 border-b-2 border-primary-500 bg-primary-50'
+                  ? 'text-primary-600 border-b-2 border-gray-900 bg-primary-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -4029,7 +4029,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
         <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
             </div>
           ) : filteredBookings.length === 0 ? (
             <div className="text-center py-12">
@@ -4056,7 +4056,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                         ? 'bg-gray-50 border-gray-200 hover:border-gray-400'
                         : isPaymentDue(booking) || booking.status === 'COMPLETED'
                           ? 'bg-amber-50 border-amber-200 hover:border-amber-400'
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-400 hover:shadow-md'
+                          : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:shadow-md'
                     }`}
                           onClick={() => {
                       setSelectedBooking(booking);
@@ -4530,7 +4530,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Set Your Availability</h2>
             <p className="text-white/80 text-sm">Add multiple time slots per day</p>
@@ -4547,7 +4547,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
             </div>
           ) : (
             <div className="space-y-4">
@@ -4556,7 +4556,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                   key={key}
                   className={`rounded-xl border-2 transition-all overflow-hidden ${
                     availability[key].enabled && availability[key].intervals.length > 0
-                      ? 'border-primary-200 bg-primary-50/50' 
+                      ? 'border-gray-200 bg-primary-50/50' 
                       : 'border-gray-200 bg-gray-50'
                   }`}
                 >
@@ -4565,7 +4565,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                     {/* Day abbreviation badge */}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
                       availability[key].enabled && availability[key].intervals.length > 0
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-gray-900 text-white'
                         : 'bg-gray-200 text-gray-500'
                     }`}>
                       {shortLabel}

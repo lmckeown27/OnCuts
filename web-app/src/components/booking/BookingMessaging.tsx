@@ -92,7 +92,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
     return (
       <Card>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading messages...</p>
         </div>
       </Card>
@@ -125,7 +125,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
                 <div
                   className={`max-w-[70%] rounded-lg px-4 py-2 ${
                     isOwn
-                      ? 'bg-primary-400 text-white'
+                      ? 'bg-gray-900 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
@@ -160,7 +160,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
           disabled={sending}
         />
         <Button

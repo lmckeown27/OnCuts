@@ -152,7 +152,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                       setShowCampusDropdown(true);
                     }}
                     onFocus={() => setShowCampusDropdown(true)}
-                    className="w-full pr-8 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                    className="w-full pr-8 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-gray-400 px-3 rounded-lg transition-colors border border-transparent focus:border-gray-300 outline-none"
                   />
                   <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
                 </div>
@@ -170,7 +170,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                               e.preventDefault();
                               handleCampusSelect(campus);
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors text-sm ${
+                            className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors text-sm ${
                               selectedCampus?.id === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
                             }`}
                           >
@@ -205,7 +205,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
               placeholder="Search barbers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
             />
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                     )}
                   </div>
                   {barber.unreadCount > 0 && (
-                    <span className="px-2 py-0.5 bg-primary-500 text-white text-xs font-bold rounded-full">
+                    <span className="px-2 py-0.5 bg-gray-900 text-white text-xs font-bold rounded-full">
                       {barber.unreadCount}
                     </span>
                   )}

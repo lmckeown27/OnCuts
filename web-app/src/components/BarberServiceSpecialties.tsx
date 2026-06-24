@@ -349,7 +349,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                 }}
                 className={`p-3 rounded-lg border-2 transition-all ${
                   service.isOffered
-                    ? 'border-primary-400 bg-primary-50'
+                    ? 'border-gray-400 bg-primary-50'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                 } ${saving ? 'opacity-70' : ''}`}
               >
@@ -363,7 +363,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                     }}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 mt-0.5 ${
                       service.isOffered
-                        ? 'bg-primary-400 border-primary-400 cursor-pointer hover:bg-primary-500'
+                        ? 'bg-primary-400 border-gray-400 cursor-pointer hover:bg-gray-500'
                         : 'border-gray-300'
                     }`}
                   >
@@ -393,7 +393,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         className={`w-14 text-lg font-bold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
                           hasChanges
                             ? 'border-orange-400'
-                            : 'border-primary-300 focus:border-primary-500'
+                            : 'border-gray-300 focus:border-gray-900'
                         }`}
                       />
                     </div>
@@ -413,7 +413,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         className={`w-12 text-sm font-semibold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
                           hasChanges
                             ? 'border-orange-400'
-                            : 'border-primary-300 focus:border-primary-500'
+                            : 'border-gray-300 focus:border-gray-900'
                         }`}
                       />
                       <span className="text-xs text-gray-500">min</span>

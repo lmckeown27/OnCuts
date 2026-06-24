@@ -371,7 +371,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                 >
                   {/* Customer Info */}
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {request.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -452,7 +452,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 text-white p-4 sm:p-6">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white p-4 sm:p-6">
               {/* Desktop: Show title row */}
               <div className="hidden sm:flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Customer Details</h2>
@@ -653,7 +653,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                     value={customReason}
                     onChange={(e) => setCustomReason(e.target.value)}
                     placeholder="Enter your reason..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-gray-900 resize-none"
                     rows={3}
                     maxLength={200}
                   />

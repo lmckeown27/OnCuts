@@ -332,7 +332,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
             onClick={() => setActiveSection('profile')}
             className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'profile'
-                ? 'border-primary-400 text-primary-400'
+                ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -343,7 +343,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
             onClick={() => setActiveSection('notifications')}
             className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'notifications'
-                ? 'border-primary-400 text-primary-400'
+                ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -354,7 +354,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
             onClick={() => setActiveSection('security')}
             className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'security'
-                ? 'border-primary-400 text-primary-400'
+                ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -419,7 +419,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   required
                 />
               </div>
@@ -432,7 +432,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   required
                 />
               </div>
@@ -460,7 +460,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell barbers about yourself (optional)..."
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               maxLength={300}
             />
             <p className="text-xs text-gray-500 mt-2">{bio.length}/300 characters</p>
@@ -562,7 +562,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                       setCurrentPassword(e.target.value);
                       if (currentPasswordError) setCurrentPasswordError('');
                     }}
-                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
                       currentPasswordError ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -588,7 +588,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   />
                   <button
                     type="button"
@@ -610,7 +610,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
                       confirmPassword && newPassword && confirmPassword !== newPassword
                         ? 'border-red-500'
                         : 'border-gray-300'
@@ -674,7 +674,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                     setDeletePasswordError('');
                   }}
                   placeholder="Your password"
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent ${
+                  className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900 ${
                     deletePasswordError ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -701,7 +701,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900"
               />
             </div>
 

@@ -109,7 +109,7 @@ export default function LandingPage() {
 
             <button
               onClick={() => navigate('/web')}
-              className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
+              className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-lg transition-colors shadow-sm"
             >
               Book Here
             </button>
@@ -118,14 +118,14 @@ export default function LandingPage() {
       </nav>
 
       {/* Stats Banner */}
-      <div className="pt-20 bg-gradient-to-br from-primary-50 via-white to-pink-50">
+      <div className="pt-20 bg-gradient-to-br from-gray-50 via-white to-pink-50">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
           <div className="flex flex-row items-center justify-center gap-4 sm:gap-12 md:gap-20">
             {/* Stat 1 - Total Cuts */}
             <div className="text-center">
               <div className="flex items-baseline justify-center gap-0.5 sm:gap-1">
-                <span className="text-2xl sm:text-5xl font-bold text-primary-600">1,000</span>
-                <span className="text-lg sm:text-3xl font-bold text-primary-500">+</span>
+                <span className="text-2xl sm:text-5xl font-bold text-gray-900">1,000</span>
+                <span className="text-lg sm:text-3xl font-bold text-gray-700">+</span>
               </div>
               <p className="text-gray-600 text-xs sm:text-base mt-0.5 sm:mt-1">completed cuts nationwide</p>
             </div>
@@ -136,8 +136,8 @@ export default function LandingPage() {
             {/* Stat 2 - Reviews */}
             <div className="text-center">
               <div className="flex items-baseline justify-center gap-0.5 sm:gap-1">
-                <span className="text-2xl sm:text-5xl font-bold text-primary-600">100</span>
-                <span className="text-lg sm:text-3xl font-bold text-primary-500">+</span>
+                <span className="text-2xl sm:text-5xl font-bold text-gray-900">100</span>
+                <span className="text-lg sm:text-3xl font-bold text-gray-700">+</span>
               </div>
               <div className="flex items-center justify-center gap-1 mt-0.5 sm:mt-1">
                 <span className="text-xs sm:text-base font-semibold text-gray-700">5</span>
@@ -160,7 +160,7 @@ export default function LandingPage() {
       <IosAppPromoSection />
 
       {/* Hero Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
+      <div className="py-20 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
           <div className="w-full max-w-xl mb-6 text-center px-2">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
               Don&apos;t have an iOS Device?
@@ -192,7 +192,7 @@ export default function LandingPage() {
               disabled={!selectedUniversity}
               className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
                 selectedUniversity 
-                  ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
+                  ? 'bg-brand-500 hover:bg-brand-600 text-white cursor-pointer' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -201,7 +201,7 @@ export default function LandingPage() {
       </div>
 
       {/* Barber CTA */}
-      <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
+      <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Want to be a CampusCuts Barber?
@@ -209,9 +209,9 @@ export default function LandingPage() {
           <div className="flex justify-center">
             <button 
               onClick={() => setShowBarberApplication(true)}
-              className="px-6 py-4 rounded-lg bg-white border-2 border-primary-500 hover:bg-primary-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-6 py-4 rounded-lg bg-white border-2 border-gray-900 hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              <span className="text-lg font-semibold text-primary-600">Become a Barber</span>
+              <span className="text-lg font-semibold text-white">Become a Barber</span>
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function LandingPage() {
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>
                           Download{' '}
-                          <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">
+                          <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             CampusCuts
                           </a>{' '}
                           on iPhone, or select your university here and tap &quot;Find Barber&quot; on the web.
@@ -391,7 +391,7 @@ export default function LandingPage() {
                         <li>Tap &quot;Become a Barber&quot; on this site and submit your application.</li>
                         <li>
                           Once approved, download{' '}
-                          <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">
+                          <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             InteraProvider
                           </a>{' '}
                           from the App Store.
@@ -501,7 +501,7 @@ export default function LandingPage() {
             </p>
             <button
               onClick={openContactPopup}
-              className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-primary-400 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-primary-500"
+              className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-brand-500 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-brand-600"
             >
               <Mail className="h-5 w-5" />
               Connect with the Team
@@ -546,7 +546,7 @@ export default function LandingPage() {
                 <p className="text-gray-600 mb-6">We'll get back to you as soon as possible.</p>
                 <button
                   onClick={closeContactPopup}
-                  className="px-6 py-2 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+                  className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors"
                 >
                   Close
                 </button>
@@ -573,7 +573,7 @@ export default function LandingPage() {
                     required
                     value={contactForm.name}
                     onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
@@ -588,7 +588,7 @@ export default function LandingPage() {
                     required
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none transition-colors"
                     placeholder="john@university.edu"
                   />
                 </div>
@@ -603,14 +603,14 @@ export default function LandingPage() {
                     rows={4}
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none transition-colors resize-none"
                     placeholder="How can we help you?"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full px-6 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <Mail className="w-5 h-5" />
                   Send Message

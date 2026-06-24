@@ -15,7 +15,7 @@ export default function Loading({ fullScreen = false, size = 'md', text }: Loadi
   
   const content = (
     <div className="flex flex-col items-center justify-center gap-3">
-      <Loader2 className={`${sizeClasses[size]} text-primary-600 animate-spin`} />
+      <Loader2 className={`${sizeClasses[size]} text-gray-800 animate-spin`} />
       {text && <p className="text-gray-600 font-medium">{text}</p>}
     </div>
   );

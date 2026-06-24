@@ -193,7 +193,7 @@ export default function PrivacyPolicyPage() {
               </ul>
               <p className="mt-3">
                 EU/EEA users: see our{' '}
-                <Link to="/gdpr" className="text-primary-600 hover:text-primary-700 underline">
+                <Link to="/gdpr" className="text-primary-600 hover:text-black underline">
                   GDPR page
                 </Link>{' '}
                 for additional rights. To exercise any rights, contact us at campuscuthelp@gmail.com.
@@ -241,7 +241,7 @@ export default function PrivacyPolicyPage() {
                   href="https://developers.google.com/terms/api-services-user-data-policy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-600 hover:text-primary-700 underline"
+                  className="text-primary-600 hover:text-black underline"
                 >
                   Google API Services User Data Policy
                 </a>

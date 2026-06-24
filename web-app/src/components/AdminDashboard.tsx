@@ -1108,7 +1108,7 @@ export function AdminDashboard({
               onClick={() => setAdminView(view)}
               className={`py-2.5 px-3 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 adminView === view
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-gray-900 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -1152,7 +1152,7 @@ export function AdminDashboard({
               }}
               onFocus={() => setShowCampusDropdown(true)}
               placeholder="All Universities"
-              className={`w-full text-base bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-2.5 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none ${
+              className={`w-full text-base bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-gray-400 px-3 py-2.5 rounded-lg transition-colors border border-transparent focus:border-gray-300 outline-none ${
                 selectedCampus ? 'text-gray-900 pr-16' : 'text-gray-700 pr-8'
               }`}
             />
@@ -1484,7 +1484,7 @@ export function AdminDashboard({
             {!selectedCampus && (
             <div className={`p-3 rounded-lg border-2 ${
               (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                ? 'bg-primary-50 border-primary-300' 
+                ? 'bg-primary-50 border-gray-300' 
                 : 'bg-red-50 border-red-300'
             }`}>
               <p className="text-xs font-medium text-gray-700 mb-2">Platform Profit Summary</p>
@@ -1507,7 +1507,7 @@ export function AdminDashboard({
                 </div>
                 <div className={`flex justify-between border-t-2 pt-2 ${
                   (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                    ? 'border-primary-400' 
+                    ? 'border-gray-400' 
                     : 'border-red-400'
                 }`}>
                   <span className="font-bold text-gray-900">= Platform Profit</span>
@@ -1527,7 +1527,7 @@ export function AdminDashboard({
             {selectedCampus && (
             <div className={`p-3 rounded-lg border-2 ${
               (performance.netPlatformRevenue || 0) >= 0 
-                ? 'bg-primary-50 border-primary-300' 
+                ? 'bg-primary-50 border-gray-300' 
                 : 'bg-red-50 border-red-300'
             }`}>
               <p className="text-xs font-medium text-gray-700 mb-2">Campus Revenue Summary</p>
@@ -1542,7 +1542,7 @@ export function AdminDashboard({
                 </div>
                 <div className={`flex justify-between border-t-2 pt-2 ${
                   (performance.netPlatformRevenue || 0) >= 0 
-                    ? 'border-primary-400' 
+                    ? 'border-gray-400' 
                     : 'border-red-400'
                 }`}>
                   <span className="font-bold text-gray-900">= Campus Net Revenue</span>
@@ -1709,7 +1709,7 @@ export function AdminDashboard({
                           {booking.status}
                         </span>
                         {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-900 text-white">
                             {booking.payment_method === 'card' ? 'Card' : 'Cash'}
                           </span>
                         )}
@@ -1806,7 +1806,7 @@ export function AdminDashboard({
               <input
                 type="text"
                 placeholder="Search barbers by name, email, or campus..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                 value={allBarberSearchQuery}
                 onChange={(e) => setAllBarberSearchQuery(e.target.value)}
               />
@@ -1820,7 +1820,7 @@ export function AdminDashboard({
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
-                    ? 'border-primary-500 text-primary-600'
+                    ? 'border-gray-900 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -1830,7 +1830,7 @@ export function AdminDashboard({
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'applications'
-                    ? 'border-primary-500 text-primary-600'
+                    ? 'border-gray-900 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -2061,7 +2061,7 @@ export function AdminDashboard({
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                            className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
+                            className="hidden sm:flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors flex-shrink-0"
                           >
                             Schedule Interview
                           </button>
@@ -2069,7 +2069,7 @@ export function AdminDashboard({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                          className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
+                          className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors"
                         >
                           Schedule Interview
                         </button>
@@ -2101,8 +2101,8 @@ export function AdminDashboard({
                             <p className="font-semibold text-gray-900">{selectedApplication.phone_number || 'Not provided'}</p>
                             {selectedApplication.phone_number && (
                               <div className="flex gap-2 mt-2">
-                                <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-primary-600 hover:underline">Call</a>
-                                <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-primary-600 hover:underline">Text</a>
+                                <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Call</a>
+                                <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Text</a>
                               </div>
                             )}
                           </div>
@@ -2248,7 +2248,7 @@ export function AdminDashboard({
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
-                    ? 'border-primary-500 text-primary-600'
+                    ? 'border-gray-900 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -2258,7 +2258,7 @@ export function AdminDashboard({
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'applications'
-                    ? 'border-primary-500 text-primary-600'
+                    ? 'border-gray-900 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -2268,7 +2268,7 @@ export function AdminDashboard({
                 onClick={() => { setBarberViewTab('availability'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'availability'
-                    ? 'border-primary-500 text-primary-600'
+                    ? 'border-gray-900 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -2350,7 +2350,7 @@ export function AdminDashboard({
                     value={barberSearchQuery}
                     onChange={(e) => setBarberSearchQuery(e.target.value)}
                     placeholder="Search barbers..."
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
                 
@@ -2509,7 +2509,7 @@ export function AdminDashboard({
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                        className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
+                        className="hidden sm:flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors flex-shrink-0"
                       >
                         Schedule Interview
                       </button>
@@ -2517,7 +2517,7 @@ export function AdminDashboard({
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                      className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
+                      className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors"
                     >
                       Schedule Interview
                     </button>
@@ -2545,8 +2545,8 @@ export function AdminDashboard({
                         <p className="font-semibold text-gray-900">{selectedApplication.phone_number || 'Not provided'}</p>
                         {selectedApplication.phone_number && (
                           <div className="flex gap-2 mt-2">
-                            <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-primary-600 hover:underline">Call</a>
-                            <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-primary-600 hover:underline">Text</a>
+                            <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Call</a>
+                            <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Text</a>
                           </div>
                         )}
                       </div>
@@ -2797,7 +2797,7 @@ export function AdminDashboard({
                           {booking.status}
                         </span>
                         {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-900 text-white">
                             {booking.payment_method === 'card' ? 'Card' : 'Cash'}
                           </span>
                         )}
@@ -2917,7 +2917,7 @@ export function AdminDashboard({
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
                 placeholder="Search consumers..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             
@@ -3264,7 +3264,7 @@ export function AdminDashboard({
                   onClick={confirmApplicationAction}
                   className={`flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors ${
                     pendingApplicationAction.action === 'approve'
-                      ? 'bg-primary-600 hover:bg-primary-700'
+                      ? 'bg-brand-600 hover:bg-brand-700'
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >

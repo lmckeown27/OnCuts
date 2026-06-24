@@ -114,7 +114,7 @@ export default function LoginPrompt({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5 relative">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-5 relative">
           <div className="flex items-center justify-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <User className="w-6 h-6 text-white" />
@@ -139,7 +139,7 @@ export default function LoginPrompt({
           <div className="flex flex-col gap-3">
             <button
               onClick={handleSignIn}
-              className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
             >
               <LogIn className="w-5 h-5" />
               Sign In / Create Account

@@ -386,7 +386,7 @@ export default function AppointmentDetailsPage() {
               <span className="font-bold text-2xl text-green-600">${appointment.price.total.toFixed(2)}</span>
             </div>
             
-            <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+            <div className="p-3 bg-primary-50 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <p className="font-semibold text-primary-700">Payment Status</p>
                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-semibold">

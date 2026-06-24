@@ -1142,7 +1142,7 @@ export default function MessagesPage() {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => photoInputRef.current?.click()}
             disabled={isSending}
-            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-primary-600 disabled:opacity-50"
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
             aria-label="Attach photo"
           >
             <ImagePlus className="w-5 h-5" />
@@ -1154,7 +1154,7 @@ export default function MessagesPage() {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             placeholder={pendingImageAttachment ? 'Add a caption (optional)...' : 'Type a message...'}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
             disabled={isSending}
           />
           <button
@@ -1164,7 +1164,7 @@ export default function MessagesPage() {
             disabled={!canSend}
             className={`p-2 rounded-full transition-colors ${
               canSend
-                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                ? 'bg-gray-900 text-white hover:bg-brand-600'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
@@ -1219,7 +1219,7 @@ export default function MessagesPage() {
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent"></div>
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -1294,7 +1294,7 @@ export default function MessagesPage() {
                       {conv.lastMessage?.content || 'No messages yet'}
                     </p>
                     {conv.unreadCount > 0 && (
-                      <span className="ml-2 px-2 py-0.5 bg-primary-500 text-white text-xs font-bold rounded-full flex-shrink-0">
+                      <span className="ml-2 px-2 py-0.5 bg-gray-900 text-white text-xs font-bold rounded-full flex-shrink-0">
                         {conv.unreadCount}
                       </span>
                     )}
@@ -1356,7 +1356,7 @@ export default function MessagesPage() {
 
             {/* Desktop - Compact inline booking context */}
             {selectedConversation.booking && (
-              <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-lg text-xs">
+              <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-primary-50 border border-gray-200 rounded-lg text-xs">
                 <div className="flex items-center gap-1 text-primary-700">
                   <Scissors className="w-3.5 h-3.5" />
                   <span className="font-medium">{selectedConversation.booking.serviceName}</span>
@@ -1384,7 +1384,7 @@ export default function MessagesPage() {
             {/* Service Details Button - Mobile Only (panel is visible on desktop) */}
             <button 
               onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowServiceDetails(true); }}
-              className="md:hidden p-2 hover:bg-primary-50 rounded-lg transition-colors"
+              className="md:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors"
               title="View Service Details"
             >
               <Info className="w-5 h-5 text-primary-600" />
@@ -1418,7 +1418,7 @@ export default function MessagesPage() {
               {/* Mobile - Interactive button to open service details modal */}
               <button 
                 onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowServiceDetails(true); }}
-                className="md:hidden mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
+                className="md:hidden mt-3 w-full p-3 bg-primary-50 border border-gray-200 rounded-lg hover:bg-primary-100 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -1518,7 +1518,7 @@ export default function MessagesPage() {
                       <div
                         className={`px-4 py-2 rounded-2xl ${
                           isOwn 
-                            ? 'bg-primary-500 text-white rounded-br-sm' 
+                            ? 'bg-gray-900 text-white rounded-br-sm' 
                             : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                         }`}
                       >
@@ -1704,7 +1704,7 @@ export default function MessagesPage() {
                           navigate(`${platformPrefix}/consumer`);
                           setShowProfileDropdown(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50"
+                        className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50"
                       >
                         Switch to Consumer
                       </button>
@@ -1715,7 +1715,7 @@ export default function MessagesPage() {
                             navigate(`${platformPrefix}/barber`);
                             setShowProfileDropdown(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50 flex items-center gap-3"
+                          className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50 flex items-center gap-3"
                         >
                           <Scissors className="w-4 h-4 text-primary-500" />
                           Switch to Barber
@@ -1814,7 +1814,7 @@ export default function MessagesPage() {
             {selectedConversation?.booking ? (
               <>
                 {/* Panel Header - Fixed */}
-                <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-5 py-4 flex-shrink-0">
+                <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-5 py-4 flex-shrink-0">
                   <h2 className="text-lg font-bold text-white">Service Details</h2>
                   <p className="text-white/80 text-sm">Booking Information</p>
                 </div>
@@ -1917,7 +1917,7 @@ export default function MessagesPage() {
                         <select
                           value={editLocation}
                           onChange={(e) => setEditLocation(e.target.value)}
-                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                         >
                           <option value="">Select a location</option>
                           {barberLocations.map((loc) => (
@@ -1932,7 +1932,7 @@ export default function MessagesPage() {
                           value={editLocation}
                           onChange={(e) => setEditLocation(e.target.value)}
                           placeholder="Enter location"
-                          className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                          className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                         />
                       )
                     ) : (
@@ -2065,7 +2065,7 @@ export default function MessagesPage() {
                           <button
                             onClick={saveBookingEdits}
                             disabled={isSavingEdit}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors text-sm font-medium disabled:opacity-50"
                           >
                             <Check className="w-4 h-4" />
                             {isSavingEdit
@@ -2128,7 +2128,7 @@ export default function MessagesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Service Details</h2>
                 <p className="text-white/80 text-sm">Booking Information</p>
@@ -2242,7 +2242,7 @@ export default function MessagesPage() {
                     <select
                       value={editLocation}
                       onChange={(e) => setEditLocation(e.target.value)}
-                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     >
                       <option value="">Select a location</option>
                       {barberLocations.map((loc) => (
@@ -2257,7 +2257,7 @@ export default function MessagesPage() {
                       value={editLocation}
                       onChange={(e) => setEditLocation(e.target.value)}
                       placeholder="Enter location"
-                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     />
                   )
                 ) : (
@@ -2401,7 +2401,7 @@ export default function MessagesPage() {
                       <button
                         onClick={saveBookingEdits}
                         disabled={isSavingEdit}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors font-medium disabled:opacity-50"
                       >
                         <Check className="w-4 h-4" />
                         {isSavingEdit
@@ -2519,7 +2519,7 @@ export default function MessagesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">

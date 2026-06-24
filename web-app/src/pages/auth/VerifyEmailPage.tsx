@@ -310,7 +310,7 @@ export default function VerifyEmailPage() {
                 Enter the email and password you used to sign up, and accept our{' '}
                 <Link
                   to="/terms"
-                  className="text-primary-600 font-medium underline hover:text-primary-700"
+                  className="text-primary-600 font-medium underline hover:text-black"
                 >
                   Terms of Service
                 </Link>
@@ -326,7 +326,7 @@ export default function VerifyEmailPage() {
                   autoComplete="email"
                   value={gateEmail}
                   onChange={(e) => setGateEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 text-gray-900"
                   placeholder="you@example.com"
                 />
               </div>
@@ -341,7 +341,7 @@ export default function VerifyEmailPage() {
                     autoComplete="current-password"
                     value={gatePassword}
                     onChange={(e) => setGatePassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900"
+                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 text-gray-900"
                     placeholder="••••••••"
                   />
                   <button
@@ -360,7 +360,7 @@ export default function VerifyEmailPage() {
                   type="checkbox"
                   checked={termsGateChecked}
                   onChange={(e) => setTermsGateChecked(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400"
                 />
                 <span className="text-sm text-gray-700">
                   I have read and agree to the Terms of Service.
@@ -372,7 +372,7 @@ export default function VerifyEmailPage() {
                 onClick={() => void handleVerifyGateContinue()}
                 className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
                   gateFormValid && !gateSubmitting
-                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg'
+                    ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -406,9 +406,9 @@ export default function VerifyEmailPage() {
                     onChange={(e) => handleInputChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 ${
+                    className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 ${
                       digit 
-                        ? 'border-primary-400 bg-primary-50 text-primary-700' 
+                        ? 'border-gray-400 bg-primary-50 text-primary-700' 
                         : 'border-gray-300 text-gray-900'
                     }`}
                   />
@@ -436,7 +436,7 @@ export default function VerifyEmailPage() {
                   <button
                     type="button"
                     onClick={() => navigate('/web/signup')}
-                    className="w-full bg-primary-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors"
+                    className="w-full bg-brand-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-600 transition-colors"
                   >
                     Sign Up Again
                   </button>
@@ -463,7 +463,7 @@ export default function VerifyEmailPage() {
               disabled={!isCodeComplete || isSubmitting || isLoading}
               className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
                 isCodeComplete && !isSubmitting
-                  ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -493,7 +493,7 @@ export default function VerifyEmailPage() {
             <button
               onClick={handleResend}
               disabled={isResending}
-              className={`inline-flex items-center gap-2 text-primary-500 hover:text-primary-600 font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 text-primary-500 hover:text-gray-900 font-medium transition-colors ${
                 isResending ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -503,7 +503,7 @@ export default function VerifyEmailPage() {
           </div>
 
           {/* Spam Notice */}
-          <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+          <div className="mt-6 p-4 bg-primary-50 border border-gray-200 rounded-lg">
             <p className="text-sm text-primary-800 text-center">
               <strong>Check your spam/junk folder</strong> if you don't see the email.
               Sometimes verification emails end up there.
@@ -516,7 +516,7 @@ export default function VerifyEmailPage() {
               Need help?{' '}
               <a 
                 href="mailto:campuscuthelp@gmail.com"
-                className="text-primary-500 hover:text-primary-600 transition-colors inline-flex items-center gap-1"
+                className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
                 Contact Support

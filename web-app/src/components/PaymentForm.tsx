@@ -143,7 +143,7 @@ export default function PaymentForm({
               onClick={() => setPaymentMethod('card')}
               className={`p-4 border-2 rounded-lg flex items-center justify-center gap-2 transition-colors ${
                 paymentMethod === 'card'
-                  ? 'border-primary-400 bg-primary-50 text-primary-500'
+                  ? 'border-gray-400 bg-primary-50 text-primary-500'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -155,7 +155,7 @@ export default function PaymentForm({
               onClick={() => setPaymentMethod('saved')}
               className={`p-4 border-2 rounded-lg flex items-center justify-center gap-2 transition-colors ${
                 paymentMethod === 'saved'
-                  ? 'border-primary-400 bg-primary-50 text-primary-500'
+                  ? 'border-gray-400 bg-primary-50 text-primary-500'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
               disabled
@@ -178,7 +178,7 @@ export default function PaymentForm({
                 type="text"
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 placeholder="John Doe"
                 required
               />
@@ -193,7 +193,7 @@ export default function PaymentForm({
                 type="text"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 placeholder="4242 4242 4242 4242"
                 maxLength={19}
                 required
@@ -213,7 +213,7 @@ export default function PaymentForm({
                   type="text"
                   value={cardExpiry}
                   onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   placeholder="MM / YY"
                   maxLength={7}
                   required
@@ -227,7 +227,7 @@ export default function PaymentForm({
                   type="text"
                   value={cardCvc}
                   onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   placeholder="123"
                   maxLength={4}
                   required

@@ -63,7 +63,7 @@ export default function AppStatus() {
       {/* Update Available Prompt */}
       {showUpdatePrompt && updateAvailable && (
         <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto animate-slide-up">
-          <div className="bg-white rounded-lg shadow-2xl border-2 border-primary-500 p-4">
+          <div className="bg-white rounded-lg shadow-2xl border-2 border-gray-900 p-4">
             <div className="flex items-start gap-4">
               <div className="bg-primary-100 rounded-full p-3 flex-shrink-0">
                 <Download className="w-6 h-6 text-primary-600" />
@@ -79,7 +79,7 @@ export default function AppStatus() {
                   <Button
                     onClick={handleUpdate}
                     size="sm"
-                    className="bg-primary-400 hover:bg-primary-500 flex-1"
+                    className="bg-primary-400 hover:bg-gray-500 flex-1"
                   >
                     Update Now
                   </Button>

@@ -233,7 +233,7 @@ export default function BarberServiceHistoryPage() {
                 placeholder="Search by customer name or service type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               />
             </div>
 
@@ -243,7 +243,7 @@ export default function BarberServiceHistoryPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               >
                 <option value="all">All Status</option>
                 <option value="completed">Completed</option>
@@ -257,7 +257,7 @@ export default function BarberServiceHistoryPage() {
               <select
                 value={filterRating}
                 onChange={(e) => setFilterRating(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               >
                 <option value="all">All Ratings</option>
                 <option value="5">5 Stars</option>

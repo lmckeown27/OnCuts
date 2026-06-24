@@ -195,7 +195,7 @@ export default function LiveTransactionFeed() {
     return (
       <Card>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400"></div>
         </div>
       </Card>
     );
@@ -242,7 +242,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'all'
-                ? 'bg-primary-400 text-white'
+                ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -252,7 +252,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('sui')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'sui'
-                ? 'bg-primary-400 text-white'
+                ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -262,7 +262,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('stripe')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'stripe'
-                ? 'bg-primary-400 text-white'
+                ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >

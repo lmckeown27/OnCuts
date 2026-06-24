@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 transition-all duration-200 text-gray-900"
+                  className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 transition-all duration-200 text-gray-900"
                   placeholder="••••••••"
                 />
                 <button
@@ -193,10 +193,10 @@ export default function ResetPasswordPage() {
                   id="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 ${
+                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 ${
                     confirmPassword && password !== confirmPassword
                       ? 'border-red-400'
-                      : 'border-primary-400 focus:border-primary-500'
+                      : 'border-gray-400 focus:border-gray-900'
                   }`}
                   placeholder="••••••••"
                 />
@@ -220,7 +220,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !password || !confirmPassword || password !== confirmPassword}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Resetting...' : 'Reset Password'}
               </button>
@@ -245,7 +245,7 @@ export default function ResetPasswordPage() {
               </p>
               <Link
                 to="/web"
-                className="block w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors text-center"
+                className="block w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors text-center"
               >
                 Sign In
               </Link>

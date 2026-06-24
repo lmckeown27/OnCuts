@@ -274,7 +274,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
 
       {/* Path to Next Level */}
       {score.overall_score < 95 && (
-        <Card className="bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
+        <Card className="bg-gradient-to-r from-primary-50 to-blue-50 border-gray-200">
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Target className="w-5 h-5 text-primary-400" />
             Path to {score.overall_score >= 85 ? 'VIP Status' : 'Next Level'}

@@ -605,7 +605,7 @@ export default function ConsumerPage() {
               {user?.user_type === 'barber' || user?.user_type === 'admin' || user?.has_barber_profile ? (
                 <button
                   onClick={() => navigate('/web/barber')}
-                  className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
                   title="Switch to barber view"
                 >
                   <span className="text-xs sm:text-sm font-medium text-primary-700">Barber View</span>
@@ -613,7 +613,7 @@ export default function ConsumerPage() {
               ) : (
                 <button
                   onClick={handleBecomeBarberClick}
-                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
+                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
                   title="Apply to become a barber"
                 >
                   <span className="text-sm sm:text-base font-semibold text-white">Become a Barber</span>
@@ -750,7 +750,7 @@ export default function ConsumerPage() {
                 /* Sign In button for unauthenticated users */
                 <button
                   onClick={() => navigate('/web')}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors"
                 >
                   <UserIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">Sign In</span>
@@ -832,14 +832,14 @@ export default function ConsumerPage() {
                 href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="text-primary-600 hover:text-black font-medium"
               >
                 campuscuthelp@gmail.com
               </a>
             </p>
             <button
               onClick={closePendingPopup}
-              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+              className="px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
             >
               Got it
             </button>
@@ -882,7 +882,7 @@ export default function ConsumerPage() {
                   setHasRejectedApplication(false);
                   scrollToTopAndOpen(setShowBarberApplication);
                 }}
-                className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                className="px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
                 Apply Again
               </button>
@@ -913,7 +913,7 @@ export default function ConsumerPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">
@@ -1169,7 +1169,7 @@ export default function ConsumerPage() {
                   setShowDeclinedModal(false);
                   setDeclinedModalData(null);
                 }}
-                className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                className="w-full px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
                 Find Another Barber
               </button>
@@ -1191,7 +1191,7 @@ export default function ConsumerPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-slide-up flex flex-col">
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
               <div className="flex flex-col items-center text-center">
                 <h2 className="text-xl font-bold text-white">Booking Cancelled</h2>
                 <p className="text-white/80 text-sm mt-1">Find an available barber for this time</p>
@@ -1221,7 +1221,7 @@ export default function ConsumerPage() {
               </div>
 
               {/* Original Time Slot */}
-              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
+              <div className="bg-primary-50 border border-gray-200 rounded-xl p-4 mb-6">
                 <h4 className="font-semibold text-primary-800 mb-2">Original Time Slot</h4>
                 <p className="text-primary-700 text-sm">
                   {new Date(alternativeBarbersData.scheduledTime).toLocaleDateString('en-US', {
@@ -1248,7 +1248,7 @@ export default function ConsumerPage() {
 
               {loadingAlternativeBarbers ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                 </div>
               ) : alternativeBarbers.length > 0 ? (
                 <div className="space-y-3">
@@ -1267,7 +1267,7 @@ export default function ConsumerPage() {
                           }
                         });
                       }}
-                      className="w-full p-4 border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-colors text-left flex items-center gap-4"
+                      className="w-full p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors text-left flex items-center gap-4"
                     >
                       <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                         {(barber.profile_picture_url || barber.profile_photo_url) ? (
@@ -1309,7 +1309,7 @@ export default function ConsumerPage() {
                       setAlternativeBarbersData(null);
                       setAlternativeBarbers([]);
                     }}
-                    className="text-primary-600 font-medium text-sm hover:text-primary-700"
+                    className="text-primary-600 font-medium text-sm hover:text-black"
                   >
                     Browse all barbers
                   </button>
@@ -1630,7 +1630,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           <span className="text-gray-400">•</span>
           <button 
             onClick={() => navigate('/')}
-            className="text-primary-600 hover:text-primary-700 underline"
+            className="text-primary-600 hover:text-black underline"
           >
             Change
           </button>
@@ -1644,7 +1644,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               type="checkbox"
               checked={constrainByDistance}
               onChange={(e) => handleConstrainByDistanceChange(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400"
             />
           </label>
           {constrainByDistance && (
@@ -1709,7 +1709,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           <button
             type="button"
             onClick={() => handleMaxDistanceChange(Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10))}
-            className="text-primary-600 hover:text-primary-700 underline"
+            className="text-primary-600 hover:text-black underline"
           >
             Expand to {Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10)} mi
           </button>
@@ -1731,7 +1731,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             </p>
             <button 
               onClick={() => navigate('/')}
-              className="text-primary-600 hover:text-primary-700 underline"
+              className="text-primary-600 hover:text-black underline"
             >
               Change search area
             </button>
@@ -1744,9 +1744,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             </p>
             <button
               onClick={onBecomeBarberClick}
-              className="px-6 py-4 rounded-lg bg-white border-2 border-primary-500 hover:bg-primary-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-6 py-4 rounded-lg bg-white border-2 border-gray-900 hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              <span className="text-lg font-semibold text-primary-600">Become a Barber</span>
+              <span className="text-lg font-semibold text-brand-600">Become a Barber</span>
             </button>
           </div>
         </Card>
@@ -1807,15 +1807,15 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                       {barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Barber'}
                     </h3>
                     {minPrice !== undefined && (
-                      <span className="text-primary-500 font-bold text-xl flex-shrink-0 mr-2">
+                      <span className="text-gray-900 font-bold text-xl flex-shrink-0 mr-2">
                         {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
                       </span>
                     )}
                   </div>
                   {distanceLabel && (
                     <div className="flex items-center gap-1.5 mt-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-                      <span className="text-sm text-primary-600 font-medium">{distanceLabel}</span>
+                      <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                      <span className="text-sm text-gray-600 font-medium">{distanceLabel}</span>
                     </div>
                   )}
                   {barber.instagram_handle && (
@@ -1858,7 +1858,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                 </div>
                 {/* Price Overlay - Bottom Left */}
                 {minPrice !== undefined && (
-                  <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tr-lg rounded-bl-lg">
+                  <div className="absolute bottom-0 left-0 bg-gray-900/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tr-lg rounded-bl-lg">
                     <div className="flex items-center text-white">
                       <span className="font-bold text-sm sm:text-base">
                         {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
@@ -2013,7 +2013,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                               key={location.id}
                                               className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                                                 location.is_primary
-                                                  ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                                                  ? 'bg-primary-100 text-primary-700 border border-gray-200'
                                                   : 'bg-gray-100 text-gray-700'
                                               }`}
                                             >
@@ -2038,7 +2038,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                           key={location.id}
                                           className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                                             location.is_primary
-                                              ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                                              ? 'bg-primary-100 text-primary-700 border border-gray-200'
                                               : 'bg-gray-100 text-gray-700'
                                           }`}
                                         >
@@ -2104,7 +2104,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                           </div>
                                         )}
                                         {loadingBarberDetails && (
-                                          <div className="w-4 h-4 border-2 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
+                                          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
                                         )}
                                       </div>
                                       <ChevronDown className={`absolute right-0 sm:relative w-5 h-5 text-gray-400 transition-transform duration-200 ${reviewsExpanded ? 'rotate-180' : ''}`} />

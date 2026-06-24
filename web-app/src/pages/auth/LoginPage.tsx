@@ -157,10 +157,10 @@ export default function LoginPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                     formData.email && isValidEmail(formData.email) 
                       ? 'border-green-400 focus:border-green-500' 
-                      : 'border-primary-400 focus:border-primary-500'
+                      : 'border-gray-400 focus:border-gray-900'
                   }`}
                   placeholder="you@example.com"
                   autoComplete="email"
@@ -192,7 +192,7 @@ export default function LoginPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                className="w-full pt-5 pb-3 px-4 pr-12 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 focus:border-gray-900 transition-all duration-200 text-gray-900 placeholder-gray-400"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
@@ -225,7 +225,7 @@ export default function LoginPage() {
               disabled={!isFormValid || isLoading}
               className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                 isFormValid && !isLoading
-                  ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -243,7 +243,7 @@ export default function LoginPage() {
             <div className="text-center">
               <Link 
                 to="#" 
-                className="text-primary-500 hover:text-primary-600 text-sm font-medium transition-colors"
+                className="text-primary-500 hover:text-gray-900 text-sm font-medium transition-colors"
               >
                 Forgot your password?
               </Link>
@@ -263,7 +263,7 @@ export default function LoginPage() {
               Don't have an account?{' '}
               <Link 
                 to={ROUTES.SIGNUP} 
-                className="text-primary-500 hover:text-primary-600 font-semibold transition-colors"
+                className="text-primary-500 hover:text-gray-900 font-semibold transition-colors"
               >
                 Sign up
               </Link>
@@ -274,7 +274,7 @@ export default function LoginPage() {
               Need help?{' '}
               <a 
                 href="mailto:campuscuthelp@gmail.com"
-                className="text-primary-500 hover:text-primary-600 transition-colors inline-flex items-center gap-1"
+                className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
                 Contact Support

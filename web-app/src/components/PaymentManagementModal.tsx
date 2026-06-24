@@ -155,7 +155,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
           <div>
             <h2 className="text-2xl font-bold">Business Analytics</h2>
           </div>
@@ -171,7 +171,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
         <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {isLoading ? (
             <div className="text-center py-16">
-              <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4" />
+              <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4" />
               <p className="text-gray-500">Loading business analytics…</p>
             </div>
           ) : connected ? (
@@ -214,7 +214,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
                     type="button"
                     onClick={() => void openStripeDashboard()}
                     disabled={connectBusy !== null}
-                    className="mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="mt-4 text-sm text-primary-600 hover:text-black font-medium"
                   >
                     Open Stripe dashboard
                   </button>

@@ -103,7 +103,7 @@ export default function MobileAppDownloadPage() {
 
             <button
               onClick={() => navigate('/app')}
-              className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-all active:scale-95 shadow-lg mb-3"
+              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-all active:scale-95 shadow-lg mb-3"
             >
               Open CampusCuts
             </button>
@@ -143,7 +143,7 @@ export default function MobileAppDownloadPage() {
                 alt="CampusCuts"
                 className="w-24 h-24 rounded-3xl shadow-2xl mx-auto mb-4"
               />
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-primary-400 rounded-full flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center shadow-lg">
                 <Download className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -268,7 +268,7 @@ export default function MobileAppDownloadPage() {
 
             <div className="space-y-5">
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">1</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">1</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Tap the <Share2 className="w-5 h-5 inline mx-1 text-blue-500" /> <strong>Share</strong> icon
@@ -277,7 +277,7 @@ export default function MobileAppDownloadPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">2</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">2</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Press <Plus className="w-5 h-5 inline mx-1 text-blue-500" /> <strong>"Add to Home Screen"</strong>
@@ -286,7 +286,7 @@ export default function MobileAppDownloadPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">3</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">3</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Press <strong>"Add"</strong>
@@ -335,7 +335,7 @@ export default function MobileAppDownloadPage() {
 
             <div className="space-y-5">
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">1</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">1</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Tap the <strong>⋮ menu</strong> button in the top-right
@@ -344,7 +344,7 @@ export default function MobileAppDownloadPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">2</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">2</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Press <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>
@@ -353,7 +353,7 @@ export default function MobileAppDownloadPage() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">3</div>
+                <div className="bg-gray-900 text-white rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 font-bold text-xl">3</div>
                 <div className="flex-1 pt-3">
                   <p className="text-gray-800 text-lg leading-relaxed">
                     Press <strong>"Install"</strong>

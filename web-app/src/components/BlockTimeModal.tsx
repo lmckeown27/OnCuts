@@ -219,7 +219,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-white">Block Time</h2>
             <p className="text-primary-100 text-sm">One-time blocks only</p>
@@ -325,7 +325,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                       <select
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                       >
                         {TIME_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -341,7 +341,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                       <select
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                       >
                         {TIME_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>

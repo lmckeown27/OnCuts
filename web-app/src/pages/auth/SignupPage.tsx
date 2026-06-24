@@ -254,8 +254,8 @@ export default function SignupPage() {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    validationErrors.firstName ? 'border-red-400 focus:border-red-500' : 'border-primary-400 focus:border-primary-500'
+                  className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                    validationErrors.firstName ? 'border-red-400 focus:border-red-500' : 'border-gray-400 focus:border-gray-900'
                   }`}
                   placeholder="John"
                 />
@@ -278,8 +278,8 @@ export default function SignupPage() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    validationErrors.lastName ? 'border-red-400 focus:border-red-500' : 'border-primary-400 focus:border-primary-500'
+                  className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                    validationErrors.lastName ? 'border-red-400 focus:border-red-500' : 'border-gray-400 focus:border-gray-900'
                   }`}
                   placeholder="Doe"
                 />
@@ -304,10 +304,10 @@ export default function SignupPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                     validationErrors.email ? 'border-red-400 focus:border-red-500' : 
                     (formData.email && isUniversityEmail(formData.email)) ? 'border-green-400 focus:border-green-500' :
-                    'border-primary-400 focus:border-primary-500'
+                    'border-gray-400 focus:border-gray-900'
                   }`}
                   placeholder="you@example.com"
                   autoComplete="email"
@@ -343,8 +343,8 @@ export default function SignupPage() {
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleInputChange}
-                className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                  validationErrors.phoneNumber ? 'border-red-400 focus:border-red-500' : 'border-primary-400 focus:border-primary-500'
+                className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                  validationErrors.phoneNumber ? 'border-red-400 focus:border-red-500' : 'border-gray-400 focus:border-gray-900'
                 }`}
                 placeholder="+14155552671"
                 autoComplete="tel"
@@ -369,8 +369,8 @@ export default function SignupPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                  validationErrors.password ? 'border-red-400 focus:border-red-500' : 'border-primary-400 focus:border-primary-500'
+                className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                  validationErrors.password ? 'border-red-400 focus:border-red-500' : 'border-gray-400 focus:border-gray-900'
                 }`}
                 placeholder="••••••••"
                 autoComplete="new-password"
@@ -424,10 +424,10 @@ export default function SignupPage() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                   validationErrors.confirmPassword || (formData.confirmPassword && formData.password !== formData.confirmPassword)
                     ? 'border-red-400 focus:border-red-500' 
-                    : 'border-primary-400 focus:border-primary-500'
+                    : 'border-gray-400 focus:border-gray-900'
                 }`}
                 placeholder="••••••••"
                 autoComplete="new-password"
@@ -459,11 +459,11 @@ export default function SignupPage() {
               )}
             </div>
 
-            <div className="rounded-lg border border-primary-200 bg-primary-50/80 p-4 text-sm text-gray-700">
+            <div className="rounded-lg border border-gray-200 bg-primary-50/80 p-4 text-sm text-gray-700">
               <p>
                 We’ll email you a verification code. <strong>No account is created yet.</strong> On the next
                 screen you’ll read and accept the{' '}
-                <Link to="/web/terms" className="text-primary-600 font-medium underline hover:text-primary-700">
+                <Link to="/web/terms" className="text-primary-600 font-medium underline hover:text-black">
                   Terms of Service
                 </Link>{' '}
                 to finish signing up.
@@ -489,7 +489,7 @@ export default function SignupPage() {
               disabled={!isFormValid || isLoading}
               className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
                 isFormValid && !isLoading
-                  ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
@@ -517,7 +517,7 @@ export default function SignupPage() {
               Already have an account?{' '}
               <Link 
                 to={ROUTES.LOGIN} 
-                className="text-primary-500 hover:text-primary-600 font-semibold transition-colors"
+                className="text-primary-500 hover:text-gray-900 font-semibold transition-colors"
               >
                 Sign in
               </Link>
@@ -528,7 +528,7 @@ export default function SignupPage() {
               Need help?{' '}
               <a 
                 href="mailto:campuscuthelp@gmail.com"
-                className="text-primary-500 hover:text-primary-600 transition-colors inline-flex items-center gap-1"
+                className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
                 Contact Support

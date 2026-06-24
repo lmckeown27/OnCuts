@@ -322,7 +322,7 @@ export default function MobileBarberPage() {
                             e.stopPropagation();
                             handleSwipeRequest(request.id, 'accept');
                           }}
-                          className="flex-1 py-3 bg-primary-400 text-white font-semibold rounded-lg hover:bg-primary-500 active:scale-95 transition-all"
+                          className="flex-1 py-3 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 active:scale-95 transition-all"
                         >
                           Accept
                         </button>
@@ -555,7 +555,7 @@ export default function MobileBarberPage() {
               </button>
               <button
                 onClick={() => handleAcceptRequest(showRequestDetail.id)}
-                className="flex-1 py-4 bg-primary-400 text-white font-semibold rounded-xl hover:bg-primary-500 active:scale-98 transition-all shadow-lg"
+                className="flex-1 py-4 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-98 transition-all shadow-lg"
               >
                 Accept Booking
               </button>

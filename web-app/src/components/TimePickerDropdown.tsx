@@ -99,7 +99,7 @@ export default function TimePickerDropdown({
             transition-all duration-150
             ${disabled
               ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-              : 'border-gray-300 bg-white text-gray-900 hover:border-primary-400 focus:border-transparent focus:ring-2 focus:ring-primary-400'
+              : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus:border-gray-900 focus:ring-2 focus:ring-gray-400'
             }
           `}
           aria-label={label || 'Select time'}

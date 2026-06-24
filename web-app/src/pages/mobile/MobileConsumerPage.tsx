@@ -261,7 +261,7 @@ export default function MobileConsumerPage() {
         </p>
         <button
           onClick={() => navigate('/')}
-          className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
+          className="px-6 py-3 bg-brand-500 text-white rounded-lg font-semibold"
         >
           Change University
         </button>
@@ -370,7 +370,7 @@ export default function MobileConsumerPage() {
               <p className="text-gray-600 text-center mb-4">Sign in to manage your profile</p>
               <button
                 onClick={() => navigate('/web')}
-                className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
+                className="px-6 py-3 bg-brand-500 text-white rounded-lg font-semibold"
               >
                 Sign In
               </button>
@@ -420,7 +420,7 @@ export default function MobileConsumerPage() {
               
               {/* Price Badge */}
               {currentBarber.pricing && currentBarber.pricing.length > 0 && (
-                <div className="absolute bottom-4 left-4 bg-primary-400 text-white px-4 py-2 rounded-full font-bold shadow-lg">
+                <div className="absolute bottom-4 left-4 bg-gray-900 text-white px-4 py-2 rounded-full font-bold shadow-lg">
                   From ${Math.min(...currentBarber.pricing.map(p => p.price))}
                 </div>
               )}
@@ -499,7 +499,7 @@ export default function MobileConsumerPage() {
             
             <button
               onClick={handleLike}
-              className="w-20 h-20 bg-primary-400 hover:bg-primary-500 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl"
+              className="w-20 h-20 bg-brand-500 hover:bg-brand-600 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl"
             >
               <Heart className="w-10 h-10 text-white" />
             </button>
@@ -603,7 +603,7 @@ export default function MobileConsumerPage() {
                 setShowBookingSheet(false);
                 navigate(`/app/consumer/book/${currentBarber.id}`);
               }}
-              className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
+              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
             >
               Book Appointment
             </button>
@@ -646,7 +646,7 @@ export default function MobileConsumerPage() {
                   {['Haircut', 'Fade', 'Beard Trim', 'Full Service', 'Color'].map((service) => (
                     <button
                       key={service}
-                      className="px-4 py-2 border-2 border-primary-400 text-primary-600 rounded-lg font-medium hover:bg-primary-50 active:scale-95 transition-all"
+                      className="px-4 py-2 border-2 border-gray-400 text-primary-600 rounded-lg font-medium hover:bg-gray-50 active:scale-95 transition-all"
                     >
                       {service}
                     </button>
@@ -672,7 +672,7 @@ export default function MobileConsumerPage() {
 
               <button
                 onClick={() => setShowFilters(false)}
-                className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg mt-6"
+                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg mt-6"
               >
                 Apply Filters
               </button>

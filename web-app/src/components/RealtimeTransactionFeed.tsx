@@ -204,7 +204,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
               onClick={() => setCurrentPage(page)}
               className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                 currentPage === page
-                  ? 'bg-primary-500 text-white'
+                  ? 'bg-gray-900 text-white'
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
@@ -390,7 +390,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                       <p className="text-gray-500">Customer</p>
                       <Link
                         to={`/admin/user/${tx.customerId}`}
-                        className="font-medium text-primary-600 hover:underline"
+                        className="font-medium text-gray-900 hover:underline"
                       >
                         {tx.customerName}
                       </Link>
@@ -399,7 +399,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                       <p className="text-gray-500">Barber</p>
                       <Link
                         to={`/admin/user/${tx.barberId}`}
-                        className="font-medium text-primary-600 hover:underline"
+                        className="font-medium text-gray-900 hover:underline"
                       >
                         {tx.barberName}
                       </Link>

@@ -345,7 +345,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Your name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
           maxLength={50}
         />
       </Card>
@@ -358,7 +358,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           onChange={(e) => setBio(e.target.value)}
           placeholder="Tell students about yourself, your style, and what makes you unique..."
           rows={5}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
           maxLength={500}
         />
         <p className="text-xs text-gray-500 mt-2">{bio.length}/500 characters</p>
@@ -376,7 +376,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
               onClick={() => toggleSpecialty(specialty)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 specialties.includes(specialty)
-                  ? 'bg-primary-500 text-white'
+                  ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -397,7 +397,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
             value={instagramHandle}
             onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
             placeholder="yourusername"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
             maxLength={30}
           />
         </div>
@@ -413,7 +413,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
               type="checkbox"
               checked={isHidden}
               onChange={(e) => setIsHidden(e.target.checked)}
-              className="mt-1 w-5 h-5 accent-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              className="mt-1 w-5 h-5 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
             />
             <div>
               <span className="font-medium text-gray-900">Hide my profile from consumers</span>
@@ -422,7 +422,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           </label>
           
           {isHidden && (
-            <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg">
+            <div className="p-3 bg-primary-50 border border-gray-200 rounded-lg">
               <p className="text-sm font-medium text-primary-800">Warning: Profile Hidden</p>
               <p className="text-sm text-primary-700 mt-1">
                 It will be virtually impossible for consumers to book a service with you while your profile is hidden. 

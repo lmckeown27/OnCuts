@@ -255,7 +255,7 @@ export default function BarberWithdrawal({ barberId, stripeAccountId }: BarberWi
                   type="number"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                   placeholder="0.00"
                   min="0"
                   max={balance.available}

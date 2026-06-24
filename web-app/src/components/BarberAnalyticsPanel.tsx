@@ -415,7 +415,7 @@ export default function BarberAnalyticsPanel({
 
             {isLoadingMetrics ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin w-5 h-5 border-2 border-primary-200 border-t-primary-500 rounded-full" />
+                <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
               </div>
             ) : metrics.length > 0 ? (
               <div
@@ -534,7 +534,7 @@ export default function BarberAnalyticsPanel({
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg border-2 bg-primary-50 border-primary-300 sm:col-span-2">
+                <div className="p-3 rounded-lg border-2 bg-primary-50 border-gray-300 sm:col-span-2">
                   <p className="text-xs font-medium text-gray-700 mb-2">Take-home Summary</p>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -545,7 +545,7 @@ export default function BarberAnalyticsPanel({
                       <span className="text-gray-600">− Platform fee (15%)</span>
                       <span className="text-red-600 font-medium">-{formatCurrencyFromCents(performance.totalPlatformFees)}</span>
                     </div>
-                    <div className="flex justify-between border-t-2 pt-2 border-primary-400">
+                    <div className="flex justify-between border-t-2 pt-2 border-gray-400">
                       <span className="font-bold text-gray-900">= Estimated take-home</span>
                       <span className="font-bold text-lg text-primary-600">
                         {formatCurrencyFromCents(performance.totalBarberEarnings)}
@@ -611,7 +611,7 @@ export default function BarberAnalyticsPanel({
 
               {isLoadingClients ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin w-5 h-5 border-2 border-primary-200 border-t-primary-500 rounded-full" />
+                  <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
                 </div>
               ) : clientsError ? (
                 <p className="text-sm text-red-600 text-center py-8">{clientsError}</p>
@@ -707,7 +707,7 @@ export default function BarberAnalyticsPanel({
 
               {isLoadingClientBookings ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin w-5 h-5 border-2 border-primary-200 border-t-primary-500 rounded-full" />
+                  <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
                 </div>
               ) : clientBookings.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-8">No bookings found for this client.</p>
@@ -721,7 +721,7 @@ export default function BarberAnalyticsPanel({
                             {booking.status}
                           </span>
                           {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-900 text-white">
                               {booking.payment_method === 'card' ? 'Card' : 'Cash'}
                             </span>
                           )}

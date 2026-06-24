@@ -389,7 +389,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Enter customer name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 />
               </div>
 
@@ -406,8 +406,8 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                       onClick={() => setSelectedService(service.id)}
                       className={`p-3 text-left rounded-lg border-2 transition-all ${
                         selectedService === service.id
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-primary-300'
+                          ? 'border-gray-900 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <p className="font-medium text-gray-900 text-sm">{service.name}</p>
@@ -435,7 +435,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                       placeholder="0.00"
                       min="0"
                       step="0.01"
-                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-2xl font-bold"
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 text-2xl font-bold"
                     />
                   </div>
                 </div>

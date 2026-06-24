@@ -406,7 +406,7 @@ export default function BookingDetailsModal({
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="e.g., Schedule conflict, emergency..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900 resize-none"
                   rows={3}
                 />
               </div>
@@ -449,7 +449,7 @@ export default function BookingDetailsModal({
               {/* Date Picker - shows calendar with barber's availability */}
               {isLoadingBarber ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
                   <span className="ml-2 text-gray-500 text-sm">Loading availability...</span>
                 </div>
               ) : (
@@ -487,7 +487,7 @@ export default function BookingDetailsModal({
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
                   placeholder="e.g., Smith Hall, Room 204"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 />
               </div>
 
@@ -514,7 +514,7 @@ export default function BookingDetailsModal({
                 <button
                   onClick={handleSaveChanges}
                   disabled={isSaving}
-                  className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSaving ? (
                     <>
@@ -716,7 +716,7 @@ export default function BookingDetailsModal({
                       </span>
                     </div>
                     {booking.tipAmountCents > 0 && (
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary-200">
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
                         <span className="text-sm text-gray-600">Includes tip</span>
                         <span className="font-semibold text-primary-600">
                           +{formatPrice(booking.tipAmountCents)}
@@ -756,7 +756,7 @@ export default function BookingDetailsModal({
                             navigate('/web/barber/messages');
                           }
                         }}
-                        className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                       >
                         <MessageSquare className="w-4 h-4" />
                         Message
@@ -798,7 +798,7 @@ export default function BookingDetailsModal({
                   </p>
                   <button
                     onClick={() => setIsUndoingComplete(true)}
-                    className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
+                    className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
                   >
                     Undo Complete
                   </button>
@@ -808,7 +808,7 @@ export default function BookingDetailsModal({
               {/* Undo Complete Confirmation */}
               {isUndoingComplete && (
                 <div className="pt-4 border-t border-gray-100 space-y-4 pb-4 sm:pb-0">
-                  <div className="p-4 bg-primary-50 rounded-xl border border-primary-200">
+                  <div className="p-4 bg-primary-50 rounded-xl border border-gray-200">
                     <h3 className="font-semibold text-gray-800">Undo completion?</h3>
                     <p className="text-sm text-gray-600">
                       This will revert the booking to accepted status.
@@ -825,7 +825,7 @@ export default function BookingDetailsModal({
                     <button
                       onClick={handleUndoComplete}
                       disabled={isSaving}
-                      className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
                       {isSaving ? (
                         <>

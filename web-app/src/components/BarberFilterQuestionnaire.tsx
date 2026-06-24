@@ -228,7 +228,7 @@ export default function BarberFilterQuestionnaire({
       {/* Barbers Available Count - Sticky */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3">
         <div className="flex items-center justify-center">
-          <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 border border-primary-200 rounded-full">
+          <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 border border-gray-200 rounded-full">
             <span className="text-sm sm:text-base font-medium text-primary-700">
               Barbers Available:
             </span>
@@ -254,7 +254,7 @@ export default function BarberFilterQuestionnaire({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Find Your Barber</h2>
                 <p className="text-white/80 text-sm">Step {currentStep} of 3</p>
@@ -294,8 +294,8 @@ export default function BarberFilterQuestionnaire({
                         onClick={() => handleServiceSelect(service)}
                         className={`px-4 py-4 rounded-xl font-semibold text-base transition-all ${
                           serviceType === service
-                            ? 'bg-primary-400 text-white shadow-lg'
-                            : 'bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg'
+                            ? 'bg-gray-900 text-white shadow-lg'
+                            : 'bg-white text-gray-700 border-2 border-gray-400 hover:bg-gray-900 hover:text-white hover:shadow-lg'
                         }`}
                       >
                         {service}
@@ -324,7 +324,7 @@ export default function BarberFilterQuestionnaire({
                         value={date || ''}
                         onChange={(e) => setDate(e.target.value)}
                         min={today}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-400 focus:border-transparent text-lg"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 focus:border-gray-900 text-lg"
                       />
                     </div>
                     <div>

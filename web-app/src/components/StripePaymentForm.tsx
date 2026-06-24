@@ -254,7 +254,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
     return (
       <Card className="p-6">
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full mb-4"></div>
+          <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full mb-4"></div>
           <p className="text-gray-600">Preparing payment...</p>
         </div>
       </Card>
@@ -286,7 +286,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
         appearance: {
           theme: 'stripe',
           variables: {
-            colorPrimary: '#059669',
+            colorPrimary: '#708d81',
             fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
           },
         },

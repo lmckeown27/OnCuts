@@ -91,7 +91,7 @@ export default function BarberDashboardPage() {
             onClick={() => setTimeframe('week')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               timeframe === 'week'
-                ? 'bg-primary-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -101,7 +101,7 @@ export default function BarberDashboardPage() {
             onClick={() => setTimeframe('month')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               timeframe === 'month'
-                ? 'bg-primary-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -151,7 +151,7 @@ export default function BarberDashboardPage() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
+        <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-primary-500 text-sm font-medium">Growth</p>

@@ -83,7 +83,7 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85dvh] sm:max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-5 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-5 py-4 flex items-center justify-between shrink-0">
           <div>
             <h2 id="blocked-providers-title" className="text-lg font-bold text-white">
               Blocked providers

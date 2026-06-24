@@ -659,7 +659,7 @@ export default function ConsumerBookingStatusPage() {
     return (
       <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading your booking...</p>
         </div>
       </div>
@@ -675,7 +675,7 @@ export default function ConsumerBookingStatusPage() {
             <img src={CampusCutLogo} alt="CampusCuts" className="h-8" />
             <button
               onClick={handleBackToDiscover}
-              className="text-primary-600 font-semibold hover:text-primary-700"
+              className="text-primary-600 font-semibold hover:text-black"
             >
               Find Barbers
             </button>
@@ -695,7 +695,7 @@ export default function ConsumerBookingStatusPage() {
               </div>
 
               {/* Original Time Slot */}
-              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 text-center">
+              <div className="bg-primary-50 border border-gray-200 rounded-xl p-4 text-center">
                 <h4 className="font-semibold text-primary-800 mb-1">Your Original Time Slot</h4>
                 <p className="text-primary-700">
                   {new Date(cancelledBookingDetails.scheduledTime).toLocaleDateString('en-US', {
@@ -723,7 +723,7 @@ export default function ConsumerBookingStatusPage() {
 
                 {loadingAlternativeBarbers ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                   </div>
                 ) : alternativeBarbers.length > 0 ? (
                   <div className="space-y-3">
@@ -766,7 +766,7 @@ export default function ConsumerBookingStatusPage() {
                                 }
                               });
                             }}
-                            className="flex-shrink-0 py-2 px-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors text-xs"
+                            className="flex-shrink-0 py-2 px-3 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-lg transition-colors text-xs"
                           >
                             Schedule
                           </button>
@@ -799,7 +799,7 @@ export default function ConsumerBookingStatusPage() {
                     setAlternativeBarbers([]);
                     handleBackToDiscover();
                   }}
-                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+                  className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
                 >
                   Browse All Barbers
                 </button>
@@ -813,7 +813,7 @@ export default function ConsumerBookingStatusPage() {
           <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
           <button
             onClick={handleBackToDiscover}
-            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+            className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
           >
             Find a Barber
           </button>
@@ -1045,7 +1045,7 @@ export default function ConsumerBookingStatusPage() {
           if (!isPaymentRequired) return null;
           
           return (
-            <div className="bg-white rounded-2xl shadow-sm border-2 border-primary-400 p-6 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-400 p-6 mb-6">
               <div className="flex flex-col items-center text-center">
                 <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
                 <p className="text-gray-600 text-sm mb-4">
@@ -1057,7 +1057,7 @@ export default function ConsumerBookingStatusPage() {
                 
                 <button
                   onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
-                  className="px-12 py-4 bg-primary-500 hover:bg-primary-600 text-white text-lg font-bold rounded-xl transition-colors"
+                  className="px-12 py-4 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
                   Pay ${(booking.priceUsdCents / 100).toFixed(2)}
                 </button>
@@ -1097,7 +1097,7 @@ export default function ConsumerBookingStatusPage() {
               <div className="flex gap-3 w-full max-w-md">
                 <button
                   onClick={handleAcknowledgeEdits}
-                  className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                  className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
                 >
                   OK with Changes
                 </button>
@@ -1203,7 +1203,7 @@ export default function ConsumerBookingStatusPage() {
           {isAccepted && (
             <button
               onClick={handleMessageBarber}
-              className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-5 h-5" />
               Message {booking.barberName}
@@ -1265,7 +1265,7 @@ export default function ConsumerBookingStatusPage() {
               {/* Date Picker - shows calendar with barber's availability */}
               {isLoadingBarber ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
                   <span className="ml-2 text-gray-500 text-sm">Loading availability...</span>
                 </div>
               ) : (
@@ -1301,7 +1301,7 @@ export default function ConsumerBookingStatusPage() {
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
                   placeholder="e.g., Smith Hall, Room 204"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                 />
               </div>
               
@@ -1312,7 +1312,7 @@ export default function ConsumerBookingStatusPage() {
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Any special requests or notes for your barber..."
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
               </div>
             </div>
@@ -1328,7 +1328,7 @@ export default function ConsumerBookingStatusPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
@@ -1361,7 +1361,7 @@ export default function ConsumerBookingStatusPage() {
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Let the barber know why you're cancelling..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900 resize-none"
               />
             </div>
             
@@ -1405,7 +1405,7 @@ export default function ConsumerBookingStatusPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">
@@ -1610,7 +1610,7 @@ export default function ConsumerBookingStatusPage() {
                   setDeclinedModalData(null);
                   navigate(`${platformPrefix}/consumer`);
                 }}
-                className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                className="w-full px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
                 Find Another Barber
               </button>

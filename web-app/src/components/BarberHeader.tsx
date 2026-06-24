@@ -56,7 +56,7 @@ export default function BarberHeader({
             {/* Switch to Consumer */}
             <button
               onClick={() => navigate(`${platformPrefix}/consumer`)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Switch to Consumer
             </button>
@@ -84,7 +84,7 @@ export default function BarberHeader({
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-white font-semibold">
                   B
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />

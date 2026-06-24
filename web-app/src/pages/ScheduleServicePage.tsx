@@ -283,7 +283,7 @@ export default function ScheduleServicePage() {
                         setServiceType(e.target.value);
                         if (e.target.value) setErrors(prev => ({ ...prev, serviceType: undefined }));
                       }}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
                         errors.serviceType ? 'border-red-500' : 'border-gray-300'
                       }`}
                       required
@@ -373,7 +373,7 @@ export default function ScheduleServicePage() {
                         if (e.target.value.trim()) setErrors(prev => ({ ...prev, location: undefined }));
                       }}
                       placeholder="e.g., Smith Hall, Room 204"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
                         errors.location ? 'border-red-500' : 'border-gray-300'
                       }`}
                       required
@@ -395,7 +395,7 @@ export default function ScheduleServicePage() {
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                       placeholder="Any special requests or details for the barber..."
                     />
                   </div>

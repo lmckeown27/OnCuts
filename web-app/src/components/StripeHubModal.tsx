@@ -135,7 +135,7 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
           <div>
             <h2 className="text-2xl font-bold">Stripe</h2>
             <p className="text-white/80 text-sm">Payments, payouts, and bank account</p>
@@ -152,7 +152,7 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
           {isLoading ? (
             <div className="text-center py-16">
-              <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4" />
+              <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4" />
               <p className="text-gray-500">Loading Stripe status…</p>
             </div>
           ) : (
@@ -222,7 +222,7 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
                     type="button"
                     onClick={() => void (fullyConnected ? openStripeDashboard() : refreshStripeOnboarding())}
                     disabled={busy !== null}
-                    className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-2 disabled:opacity-60"
+                    className="w-full text-sm text-primary-600 hover:text-black font-medium py-2 disabled:opacity-60"
                   >
                     {busy === 'dashboard' || busy === 'refresh'
                       ? 'Redirecting…'

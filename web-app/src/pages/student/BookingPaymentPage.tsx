@@ -272,7 +272,7 @@ export default function BookingPaymentPage() {
     return (
       <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
-          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirming Booking...</h2>
           <p className="text-gray-600">Setting up your appointment.</p>
         </Card>
@@ -398,7 +398,7 @@ export default function BookingPaymentPage() {
         </Card>
 
         {/* Email Notification Info */}
-        <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-start gap-3">
+        <div className="mb-6 p-4 bg-primary-50 border border-gray-200 rounded-lg flex items-start gap-3">
           <div className="flex-shrink-0 w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
             <Mail className="w-5 h-5 text-primary-600" />
           </div>

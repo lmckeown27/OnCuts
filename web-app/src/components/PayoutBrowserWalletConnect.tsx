@@ -89,7 +89,7 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
           type="button"
           disabled={disabled}
           onClick={() => setOpen(true)}
-          className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50"
         >
           Connect wallet
         </button>
@@ -161,7 +161,7 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
                         type="button"
                         disabled={disabled || !!connectingName}
                         onClick={() => handlePickWallet(w)}
-                        className="flex h-14 w-full flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-2 transition hover:border-primary-300 hover:bg-primary-50/50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-14 w-full flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-2 transition hover:border-gray-300 hover:bg-gray-50/50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
                         title={w.name}
                       >
                         {typeof w.icon === 'string' ? (

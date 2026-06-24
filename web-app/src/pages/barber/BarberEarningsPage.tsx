@@ -36,7 +36,7 @@ export default function BarberEarningsPage() {
           Back
         </Button>
 
-        <Card className="mb-8 border-primary-200 bg-primary-50/50">
+        <Card className="mb-8 border-gray-200 bg-primary-50/50">
           <div className="flex items-start gap-3">
             <Landmark className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
             <div>
@@ -129,11 +129,11 @@ export default function BarberEarningsPage() {
           </div>
         </Card>
 
-        <Card className="mt-8 bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200">
+        <Card className="mt-8 bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-3">How payments work</h3>
           <div className="space-y-3 text-sm text-gray-700">
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 1
               </span>
               <div>
@@ -142,7 +142,7 @@ export default function BarberEarningsPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 2
               </span>
               <div>
@@ -154,7 +154,7 @@ export default function BarberEarningsPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 3
               </span>
               <div>

@@ -165,7 +165,7 @@ export default function PlaceSearchInput({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
+          className={`w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-400 ${
             showSearchIcon ? 'pl-10' : 'pl-3'
           } ${loading ? 'pr-10' : 'pr-3'}`}
           autoComplete="off"
@@ -190,7 +190,7 @@ export default function PlaceSearchInput({
               <button
                 type="button"
                 onClick={() => handleSelect(place)}
-                className="w-full text-left px-3 py-2.5 hover:bg-primary-50 flex items-start gap-2 border-b border-gray-100 last:border-0"
+                className="w-full text-left px-3 py-2.5 hover:bg-gray-50 flex items-start gap-2 border-b border-gray-100 last:border-0"
               >
                 <MapPin className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-800">{place.label}</span>

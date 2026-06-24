@@ -272,7 +272,7 @@ export default function BarberDetailPage() {
                     onClick={() => setTipAmount(amount)}
                     className={`px-3 py-1 rounded-lg text-sm font-medium ${
                       tipAmount === amount
-                        ? 'bg-primary-600 text-white'
+                        ? 'bg-brand-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >

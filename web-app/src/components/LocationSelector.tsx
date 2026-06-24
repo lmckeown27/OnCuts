@@ -146,7 +146,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
           onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
           placeholder="Type your location..."
-          className="w-full h-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white text-gray-700 font-medium"
+          className="w-full h-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 hover:border-gray-300 transition-all bg-white text-gray-700 font-medium"
           autoComplete="off"
         />
       </div>
@@ -164,7 +164,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                   key={location.id}
                   type="button"
                   onClick={() => handleSelectSuggestion(location)}
-                  className="w-full text-left px-4 py-3 hover:bg-primary-50 transition-colors border-b border-gray-100 last:border-b-0"
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
