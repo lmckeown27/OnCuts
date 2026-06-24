@@ -1390,21 +1390,26 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
-      <div className="w-full max-w-md flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <PlaceSearchInput
-            value={serviceLocationLabel || ''}
-            onChange={() => {}}
-            onSelectPlace={handleInlinePlaceSelect}
-            disabled={locationSaving}
-            showLabel={false}
-            showSearchIcon={false}
-            placeholder="Search campus, neighborhood, or address…"
-          />
+      <div className="w-full max-w-md">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <PlaceSearchInput
+              value={serviceLocationLabel || ''}
+              onChange={() => {}}
+              onSelectPlace={handleInlinePlaceSelect}
+              disabled={locationSaving}
+              showLabel={false}
+              showSearchIcon={false}
+              placeholder="Set public location so clients can best find you"
+            />
+          </div>
+          {hasSavedServiceLocation && !locationSaving && (
+            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
+          )}
         </div>
-        {hasSavedServiceLocation && !locationSaving && (
-          <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
-        )}
+        <p className="text-xs text-gray-500 mt-1.5">
+          Hint: set your location as broadly as possible for safety.
+        </p>
       </div>
     </div>
   );
