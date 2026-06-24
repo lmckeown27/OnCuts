@@ -1,4 +1,6 @@
 import type { Campus, CollegeTown } from '../types';
+import campusService from '../services/campus.service';
+import { parseCoordinate } from './coordinates';
 
 export const COLLEGE_TOWN_STORAGE_KEY = 'campuscut_selected_college_town';
 export const LEGACY_UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -36,11 +38,11 @@ export function buildCollegeTownsFromCampuses(campuses: Campus[]): CollegeTown[]
     const city = sorted[0].city.trim();
     const state = sorted[0].state.trim().toUpperCase();
     const latitudes = sorted
-      .map((campus) => campus.latitude)
-      .filter((value): value is number => value != null && Number.isFinite(value));
+      .map((campus) => parseCoordinate(campus.latitude))
+      .filter((value): value is number => value != null);
     const longitudes = sorted
-      .map((campus) => campus.longitude)
-      .filter((value): value is number => value != null && Number.isFinite(value));
+      .map((campus) => parseCoordinate(campus.longitude))
+      .filter((value): value is number => value != null);
 
     towns.push({
       id: slugifyCityState(city, state),
@@ -66,8 +68,8 @@ export function collegeTownFromCampus(campus: Campus): CollegeTown {
     shortName: campus.city,
     city: campus.city,
     state: campus.state,
-    latitude: campus.latitude ?? null,
-    longitude: campus.longitude ?? null,
+    latitude: parseCoordinate(campus.latitude),
+    longitude: parseCoordinate(campus.longitude),
     campusCount: 1,
     campusIds: [campus.id],
     primaryCampusId: campus.id,
@@ -120,14 +122,8 @@ export function normalizeStoredCollegeTown(value: unknown): CollegeTown | null {
     shortName,
     city,
     state,
-    latitude:
-      typeof record.latitude === 'number' && Number.isFinite(record.latitude)
-        ? record.latitude
-        : null,
-    longitude:
-      typeof record.longitude === 'number' && Number.isFinite(record.longitude)
-        ? record.longitude
-        : null,
+    latitude: parseCoordinate(record.latitude),
+    longitude: parseCoordinate(record.longitude),
     campusCount:
       typeof record.campusCount === 'number' && record.campusCount > 0
         ? record.campusCount
@@ -153,6 +149,61 @@ export function readStoredCollegeTown(): CollegeTown | null {
     localStorage.removeItem(LEGACY_UNIVERSITY_STORAGE_KEY);
   }
   return migrated;
+}
+
+/** Fill missing town coordinates from the latest campus list (city/state match). */
+export function enrichCollegeTownWithCampuses(
+  town: CollegeTown,
+  campuses: Campus[],
+): CollegeTown {
+  if (town.latitude != null && town.longitude != null) {
+    return town;
+  }
+
+  const fresh = buildCollegeTownsFromCampuses(campuses).find(
+    (candidate) =>
+      candidate.city.toLowerCase() === town.city.toLowerCase() &&
+      candidate.state.toUpperCase() === town.state.toUpperCase(),
+  );
+
+  if (!fresh || fresh.latitude == null || fresh.longitude == null) {
+    return town;
+  }
+
+  const enriched: CollegeTown = {
+    ...town,
+    latitude: fresh.latitude,
+    longitude: fresh.longitude,
+    campusCount: fresh.campusCount,
+    campusIds: fresh.campusIds,
+    primaryCampusId: town.primaryCampusId || fresh.primaryCampusId,
+  };
+
+  return enriched;
+}
+
+/** Read stored town and backfill coordinates from the campuses API when needed. */
+export async function loadHydratedCollegeTown(): Promise<CollegeTown | null> {
+  const stored = readStoredCollegeTown();
+  if (!stored) return null;
+
+  if (stored.latitude != null && stored.longitude != null) {
+    return stored;
+  }
+
+  try {
+    const campuses = await campusService.getCampuses();
+    const hydrated = enrichCollegeTownWithCampuses(stored, campuses);
+    if (
+      hydrated.latitude !== stored.latitude ||
+      hydrated.longitude !== stored.longitude
+    ) {
+      writeStoredCollegeTown(hydrated);
+    }
+    return hydrated;
+  } catch {
+    return stored;
+  }
 }
 
 export function writeStoredCollegeTown(town: CollegeTown | null): void {

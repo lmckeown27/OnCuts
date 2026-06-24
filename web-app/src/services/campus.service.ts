@@ -1,5 +1,6 @@
 import api from './api.service';
 import type { Campus, PaginatedResponse, Barber } from '../types';
+import { parseCoordinate } from '../utils/coordinates';
 
 /**
  * Known acronyms/short names for universities
@@ -146,8 +147,12 @@ function deriveShortName(slug: string | undefined): string | undefined {
  * Transform campus data to include derived shortName
  */
 function transformCampus(campus: Campus): Campus {
+  const latitude = parseCoordinate(campus.latitude);
+  const longitude = parseCoordinate(campus.longitude);
   return {
     ...campus,
+    ...(latitude != null ? { latitude } : {}),
+    ...(longitude != null ? { longitude } : {}),
     shortName: deriveShortName(campus.slug),
   };
 }

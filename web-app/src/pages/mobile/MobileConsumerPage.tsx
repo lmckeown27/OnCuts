@@ -50,7 +50,7 @@ import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
 import type { CollegeTown } from '../../types';
 import {
-  readStoredCollegeTown,
+  loadHydratedCollegeTown,
 } from '../../utils/collegeTowns';
 
 export default function MobileConsumerPage() {
@@ -80,12 +80,22 @@ export default function MobileConsumerPage() {
 
   // Load saved college town on mount — redirect to find-barber if not set
   useEffect(() => {
-    const savedTown = readStoredCollegeTown();
-    if (savedTown) {
-      setSelectedCollegeTown(savedTown);
-    } else {
-      navigate('/');
-    }
+    let cancelled = false;
+
+    (async () => {
+      const savedTown = await loadHydratedCollegeTown();
+      if (cancelled) return;
+
+      if (savedTown) {
+        setSelectedCollegeTown(savedTown);
+      } else {
+        navigate('/');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   useEffect(() => {

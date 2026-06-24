@@ -16,7 +16,7 @@ import { barberApplicationService } from '../services/barber-application.service
 import type { Barber } from '../types';
 import type { CollegeTown } from '../types';
 import {
-  readStoredCollegeTown,
+  loadHydratedCollegeTown,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
@@ -1374,31 +1374,39 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
   // Load saved college town and filters on mount
   useEffect(() => {
-    const savedTown = readStoredCollegeTown();
-    if (!savedTown) {
-      navigate('/');
-      return;
-    }
+    let cancelled = false;
 
-    if (location.state?.fromCollegeTownSelection) {
-      setBrowseConstrainByDistance(true);
-      setConstrainByDistanceState(true);
-    }
+    (async () => {
+      const savedTown = await loadHydratedCollegeTown();
+      if (cancelled) return;
 
-    setSelectedCollegeTown(savedTown);
-
-    // Load filters
-    const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
-    if (savedFilters) {
-      try {
-        const parsed = JSON.parse(savedFilters);
-        setFilterCriteria(parsed);
-        // Clear filters from storage after loading (one-time use)
-        localStorage.removeItem(FILTER_STORAGE_KEY);
-      } catch (e) {
-        localStorage.removeItem(FILTER_STORAGE_KEY);
+      if (!savedTown) {
+        navigate('/');
+        return;
       }
-    }
+
+      if (location.state?.fromCollegeTownSelection) {
+        setBrowseConstrainByDistance(true);
+        setConstrainByDistanceState(true);
+      }
+
+      setSelectedCollegeTown(savedTown);
+
+      const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (savedFilters) {
+        try {
+          const parsed = JSON.parse(savedFilters);
+          setFilterCriteria(parsed);
+          localStorage.removeItem(FILTER_STORAGE_KEY);
+        } catch (e) {
+          localStorage.removeItem(FILTER_STORAGE_KEY);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate, location.state]);
 
   // Load barbers when college town or browse radius preferences change
