@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -1375,6 +1375,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     }
   };
 
+  const hasSavedServiceLocation = Boolean(serviceLocationLabel?.trim());
+
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md">
@@ -1385,8 +1387,23 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           disabled={locationSaving}
           label="Public service location"
           placeholder="Search campus, neighborhood, or address…"
-          helperText="Where customers find you for booking. Meetup details are agreed in chat."
         />
+        {locationSaving ? (
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Saving…
+          </p>
+        ) : hasSavedServiceLocation ? (
+          <p className="flex items-center gap-1.5 text-xs text-green-700 mt-1.5">
+            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+            Service location saved
+          </p>
+        ) : (
+          <p className="flex items-center gap-1.5 text-xs text-amber-700 mt-1.5">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            No service location saved yet
+          </p>
+        )}
         {onEditServiceLocation && (
           <button
             type="button"
@@ -2078,6 +2095,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           className="touch-pan-y p-4 pb-0"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
+          {serviceLocationField}
+
           {/* Jump to Today/This Week/This Month button - shown when offset is non-zero */}
           {((scheduleView === 'daily' && dayOffset !== 0) || 
             (scheduleView === 'weekly' && weekOffset !== 0) || 
@@ -2416,7 +2435,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
-                  {serviceLocationField}
                   {/* Google Calendar Integration Button */}
                   <div className="flex justify-center mb-3">
                     {googleCalendarConnected === null ? (
@@ -3563,7 +3581,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
-                        {serviceLocationField}
                         {/* Google Calendar Integration Button */}
                         <div className="flex justify-center mb-3">
                           {googleCalendarConnected === null ? (
