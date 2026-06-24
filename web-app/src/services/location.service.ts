@@ -43,7 +43,13 @@ class LocationService {
     latitude?: number;
     longitude?: number;
     service_radius_km?: number;
-  }): Promise<{ service_latitude: number; service_longitude: number; service_radius_km: number }> {
+    service_location_label?: string;
+  }): Promise<{
+    service_latitude: number;
+    service_longitude: number;
+    service_radius_km: number;
+    service_location_label?: string;
+  }> {
     const response = await api.put<{ success: boolean; data: any }>('/barbers/service-location', data);
     return response.data;
   }

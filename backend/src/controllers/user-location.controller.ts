@@ -79,18 +79,6 @@ export const updateUserLocation = async (
 
     logger.info(`User ${userId} location updated: permission=${permission}, lat=${latitude}, lng=${longitude}`);
 
-    // Keep barber service pin aligned with device GPS (same as iOS provider discovery)
-    if (permission === 'granted') {
-      await pool.query(
-        `UPDATE barbers
-         SET service_latitude = $1,
-             service_longitude = $2,
-             "updatedAt" = NOW()
-         WHERE "userId" = $3`,
-        [latitude, longitude, userId]
-      );
-    }
-
     res.json({
       success: true,
       message: 'Location updated successfully',
@@ -162,7 +150,7 @@ export const updateBarberServiceLocation = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { latitude, longitude, service_radius_km } = req.body;
+    const { latitude, longitude, service_radius_km, service_location_label } = req.body;
 
     // Validate coordinates if provided
     if (latitude !== undefined && longitude !== undefined) {
@@ -184,6 +172,23 @@ export const updateBarberServiceLocation = async (
       }
     }
 
+    // Validate display label
+    let label: string | null | undefined = service_location_label;
+    if (label !== undefined) {
+      if (label !== null && typeof label !== 'string') {
+        throw new ApiError(400, 'service_location_label must be a string');
+      }
+      if (typeof label === 'string') {
+        label = label.trim();
+        if (label.length === 0) {
+          throw new ApiError(400, 'service_location_label cannot be empty');
+        }
+        if (label.length > 500) {
+          throw new ApiError(400, 'service_location_label is too long');
+        }
+      }
+    }
+
     // Check if user has a barber profile
     const barberCheck = await pool.query(
       'SELECT id FROM barbers WHERE "userId" = $1',
@@ -202,10 +207,11 @@ export const updateBarberServiceLocation = async (
        SET service_latitude = COALESCE($1, service_latitude),
            service_longitude = COALESCE($2, service_longitude),
            service_radius_km = COALESCE($3, service_radius_km),
+           service_location_label = COALESCE($4, service_location_label),
            "updatedAt" = NOW()
-       WHERE id = $4
-       RETURNING id, service_latitude, service_longitude, service_radius_km`,
-      [latitude, longitude, service_radius_km, barberId]
+       WHERE id = $5
+       RETURNING id, service_latitude, service_longitude, service_radius_km, service_location_label`,
+      [latitude, longitude, service_radius_km, label, barberId]
     );
 
     logger.info(`Barber ${barberId} service location updated`);
@@ -217,6 +223,7 @@ export const updateBarberServiceLocation = async (
         service_latitude: result.rows[0].service_latitude,
         service_longitude: result.rows[0].service_longitude,
         service_radius_km: result.rows[0].service_radius_km,
+        service_location_label: result.rows[0].service_location_label,
       },
     });
   } catch (error) {

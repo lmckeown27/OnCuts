@@ -24,6 +24,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 import { bookingStatusBlocksScheduleSql } from '../services/barber-availability.service';
+import { updateBarberServiceLocation } from '../controllers/user-location.controller';
 
 const router: Router = express.Router();
 
@@ -51,6 +52,13 @@ router.get(
  * @access  Private (Barbers only)
  */
 router.get('/me', authenticate, getMyBarberProfile);
+
+/**
+ * @route   PUT /api/barbers/service-location
+ * @desc    Set barber service area (explicit opt-in; not continuous device tracking)
+ * @access  Private (Barbers)
+ */
+router.put('/service-location', authenticate, updateBarberServiceLocation);
 
 /**
  * @route   GET /api/barbers/user/:userId

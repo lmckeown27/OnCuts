@@ -36,7 +36,7 @@ import campusService from '../services/campus.service';
 import barberService, { TimeBlock } from '../services/barber.service';
 import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
-import { useViewport, useBodyScrollLock, useGeolocation, useDynamicViewportHeight } from '../hooks';
+import { useViewport, useBodyScrollLock, useDynamicViewportHeight } from '../hooks';
 import toast from 'react-hot-toast';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
@@ -76,17 +76,6 @@ export default function BarberPage() {
   
   // Handle dynamic viewport height for mobile browser bar changes
   useDynamicViewportHeight();
-  
-  // Auto-update barber's device location for consumer discovery (iOS-aligned)
-  const {
-    latitude: barberLatitude,
-    longitude: barberLongitude,
-    permissionStatus: barberLocationPermission,
-    loading: barberGeoLoading,
-    error: barberGeoError,
-    refreshLocation: refreshBarberLocation,
-    requestLocation: requestBarberLocation,
-  } = useGeolocation();
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
@@ -990,13 +979,6 @@ export default function BarberPage() {
         <BarberLocationsModal
           isVisible={isLocationsVisible}
           onClose={closeLocations}
-          latitude={barberLatitude}
-          longitude={barberLongitude}
-          permissionStatus={barberLocationPermission}
-          geoLoading={barberGeoLoading}
-          geoError={barberGeoError}
-          onRefreshLocation={refreshBarberLocation}
-          onRequestLocation={requestBarberLocation}
         />
       )}
 

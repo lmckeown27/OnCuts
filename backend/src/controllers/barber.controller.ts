@@ -58,6 +58,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b.service_latitude,
         b.service_longitude,
         b.service_radius_km,
+        b.service_location_label,
         u.email,
         u.first_name,
         u.last_name,
@@ -361,7 +362,11 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle,
-        u."campusId" as campus_id
+        u."campusId" as campus_id,
+        b.service_latitude,
+        b.service_longitude,
+        b.service_radius_km,
+        b.service_location_label
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
