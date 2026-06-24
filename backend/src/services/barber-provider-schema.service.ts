@@ -1,10 +1,11 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { serviceProviderWriteRelation } from './service-provider-persistence.service';
 
 let providerTypeColumnCached: boolean | null = null;
 let missingColumnWarned = false;
 
-/** Whether migration 036 `barbers.provider_type` exists. */
+/** Whether migration 036 provider_type exists on the persistence table/view. */
 export async function barberProviderTypeColumnExists(): Promise<boolean> {
   if (providerTypeColumnCached !== null) return providerTypeColumnCached;
 
@@ -12,7 +13,7 @@ export async function barberProviderTypeColumnExists(): Promise<boolean> {
     `SELECT 1
      FROM information_schema.columns
      WHERE table_schema = 'public'
-       AND table_name = 'barbers'
+       AND table_name IN ('service_providers', 'barbers')
        AND column_name = 'provider_type'
      LIMIT 1`
   );
@@ -25,7 +26,7 @@ export async function warnIfBarberProviderTypeMissing(): Promise<void> {
   if (!exists && !missingColumnWarned) {
     missingColumnWarned = true;
     logger.warn(
-      'barbers.provider_type missing — run migration 036_barber_provider_type.sql'
+      'service_providers.provider_type missing — run migration 036_barber_provider_type.sql'
     );
   }
 }
@@ -53,9 +54,11 @@ export async function barberProviderTypeInsertFragments(
     return { columns: '', values: '', onConflict: '' };
   }
 
+  const writeRelation = await serviceProviderWriteRelation();
+
   return {
     columns: ', provider_type',
     values: valuePlaceholder ? `, ${valuePlaceholder}` : ", 'barber'",
-    onConflict: ', provider_type = COALESCE(barbers.provider_type, EXCLUDED.provider_type)',
+    onConflict: `, provider_type = COALESCE(${writeRelation}.provider_type, EXCLUDED.provider_type)`,
   };
 }

@@ -354,6 +354,7 @@ app.get('/health', async (req: Request, res: Response) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/barbers', barberRoutes);
 app.use('/api/v1/providers', providerRoutes);
+app.use('/api/v1/service-providers', providerRoutes);
 app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
 app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
@@ -374,6 +375,7 @@ app.use('/api/auth/google-calendar', googleCalendarRoutes);  // Legacy route
 app.use('/api/auth', authRoutes);
 app.use('/api/barbers', barberRoutes);
 app.use('/api/providers', providerRoutes);
+app.use('/api/service-providers', providerRoutes);
 app.use('/api/barber', barberConnectRoutes);
 app.use('/api/bookings', bookingPaymentRoutes);
 app.use('/api/payments', paymentRoutes);
@@ -519,6 +521,24 @@ httpServer.listen(PORT, async () => {
     } catch (serviceSchemaErr: unknown) {
       logger.warn('Service duration bounds schema init failed', {
         error: serviceSchemaErr instanceof Error ? serviceSchemaErr.message : String(serviceSchemaErr),
+      });
+    }
+    try {
+      const { warnIfBarberProviderTypeMissing } = await import('./services/barber-provider-schema.service');
+      await warnIfBarberProviderTypeMissing();
+    } catch (providerTypeErr: unknown) {
+      logger.warn('Provider type schema check failed', {
+        error: providerTypeErr instanceof Error ? providerTypeErr.message : String(providerTypeErr),
+      });
+    }
+    try {
+      const { warnIfServiceProvidersMigrationPending } = await import(
+        './services/service-provider-persistence.service'
+      );
+      await warnIfServiceProvidersMigrationPending();
+    } catch (persistenceErr: unknown) {
+      logger.warn('Service provider persistence schema check failed', {
+        error: persistenceErr instanceof Error ? persistenceErr.message : String(persistenceErr),
       });
     }
   } catch (error: any) {

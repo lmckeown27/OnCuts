@@ -17,6 +17,7 @@ const asProvider = transformServiceProviderJsonResponse;
 /**
  * Service provider discovery & profile routes.
  * Reuses barber persistence and handlers; responses use the Intera ServiceProvider shape.
+ * Also mounted at /service-providers (Phase 5 canonical path).
  */
 router.get(
   '/',
