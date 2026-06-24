@@ -59,7 +59,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect}
+        b.service_radius_km${labelSelect},
         u.email,
         u.first_name,
         u.last_name,
