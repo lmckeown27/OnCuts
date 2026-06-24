@@ -8,6 +8,10 @@ interface PlaceSearchInputProps {
   onSelectPlace: (place: GeocodePlace) => void;
   placeholder?: string;
   disabled?: boolean;
+  label?: string;
+  showLabel?: boolean;
+  helperText?: string;
+  className?: string;
 }
 
 export default function PlaceSearchInput({
@@ -16,6 +20,10 @@ export default function PlaceSearchInput({
   onSelectPlace,
   placeholder = 'Search campus, neighborhood, or address…',
   disabled = false,
+  label = 'Public location',
+  showLabel = true,
+  helperText,
+  className = '',
 }: PlaceSearchInputProps) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<GeocodePlace[]>([]);
@@ -71,10 +79,12 @@ export default function PlaceSearchInput({
   };
 
   return (
-    <div ref={containerRef} className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Public location
-      </label>
+    <div ref={containerRef} className={`relative ${className}`}>
+      {showLabel && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+        </label>
+      )}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
@@ -93,6 +103,10 @@ export default function PlaceSearchInput({
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
         )}
       </div>
+
+      {helperText && (
+        <p className="text-xs text-gray-500 mt-1.5">{helperText}</p>
+      )}
 
       {open && results.length > 0 && (
         <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">

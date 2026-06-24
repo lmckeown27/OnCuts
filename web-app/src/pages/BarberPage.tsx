@@ -20,6 +20,10 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import { AdminDashboard } from '../components/AdminDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
+import PlaceSearchInput from '../components/PlaceSearchInput';
+import locationService from '../services/location.service';
+import { radiusKmFromPreset } from '../constants/serviceAreaPresets';
+import type { GeocodePlace } from '../services/geocode.service';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
 import StripeHubModal from '../components/StripeHubModal';
@@ -771,6 +775,9 @@ export default function BarberPage() {
           onEditAvailability={openAvailability}
           onEditServiceLocation={openLocations}
           serviceLocationLabel={barberProfile?.serviceLocationLabel}
+          onServiceLocationUpdated={(label) =>
+            setBarberProfile((prev) => (prev ? { ...prev, serviceLocationLabel: label } : prev))
+          }
           onUnblockTime={async (blockId) => {
             if (!barberProfile?.id) return;
             try {
@@ -1284,6 +1291,7 @@ interface DashboardViewProps {
   onEditAvailability?: () => void; // Open weekly availability modal
   onEditServiceLocation?: () => void; // Open service location modal
   serviceLocationLabel?: string;
+  onServiceLocationUpdated?: (label: string) => void;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
   // Google Calendar integration
   googleCalendarConnected?: boolean | null;
@@ -1323,7 +1331,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1347,33 +1355,48 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
+  const [locationSaving, setLocationSaving] = useState(false);
 
-  const serviceLocationButton = (
-    <div className="flex justify-center mb-3 px-1">
-      <button
-        type="button"
-        onClick={() => onEditServiceLocation?.()}
-        className={`w-full max-w-md px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border flex items-center gap-2 ${
-          serviceLocationLabel
-            ? 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300 shadow-sm'
-            : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
-        }`}
-      >
-        <MapPin className={`w-4 h-4 flex-shrink-0 ${serviceLocationLabel ? 'text-primary-500' : 'text-amber-600'}`} />
-        <span className="flex-1 text-left min-w-0">
-          {serviceLocationLabel ? (
-            <>
-              <span className="block truncate font-semibold">{serviceLocationLabel}</span>
-              <span className="block text-xs text-gray-500 font-normal">Public service area · tap to update</span>
-            </>
-          ) : (
-            <>
-              <span className="block font-semibold">Set your public service location</span>
-              <span className="block text-xs font-normal opacity-80">Help customers find you for booking</span>
-            </>
-          )}
-        </span>
-      </button>
+  const handleInlinePlaceSelect = async (place: GeocodePlace) => {
+    try {
+      setLocationSaving(true);
+      await locationService.updateBarberServiceLocation({
+        latitude: place.latitude,
+        longitude: place.longitude,
+        service_radius_km: radiusKmFromPreset('campus'),
+        service_location_label: place.label,
+      });
+      onServiceLocationUpdated?.(place.label);
+      toast.success('Service location saved');
+    } catch {
+      toast.error('Failed to save service location');
+    } finally {
+      setLocationSaving(false);
+    }
+  };
+
+  const serviceLocationField = (
+    <div className="flex justify-center mb-3 px-1 w-full">
+      <div className="w-full max-w-md">
+        <PlaceSearchInput
+          value={serviceLocationLabel || ''}
+          onChange={() => {}}
+          onSelectPlace={handleInlinePlaceSelect}
+          disabled={locationSaving}
+          label="Public service location"
+          placeholder="Search campus, neighborhood, or address…"
+          helperText="Where customers find you for booking. Meetup details are agreed in chat."
+        />
+        {onEditServiceLocation && (
+          <button
+            type="button"
+            onClick={() => onEditServiceLocation()}
+            className="mt-1.5 text-xs text-primary-600 hover:text-primary-700 hover:underline"
+          >
+            Adjust area size or pin on map
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -2393,7 +2416,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
-                  {serviceLocationButton}
+                  {serviceLocationField}
                   {/* Google Calendar Integration Button */}
                   <div className="flex justify-center mb-3">
                     {googleCalendarConnected === null ? (
@@ -3540,7 +3563,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
-                        {serviceLocationButton}
+                        {serviceLocationField}
                         {/* Google Calendar Integration Button */}
                         <div className="flex justify-center mb-3">
                           {googleCalendarConnected === null ? (
