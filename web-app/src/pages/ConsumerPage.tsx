@@ -33,7 +33,7 @@ import {
   BROWSE_MAX_DISTANCE_MILES,
   BROWSE_MIN_DISTANCE_MILES,
   formatBarberDistanceFromUser,
-  getBarberDistanceMilesFromCampus,
+  getBarberDistanceMilesFromTown,
   getBrowseConstrainByDistance,
   getBrowseMaxDistanceMiles,
   milesToKmForBrowse,
@@ -1401,7 +1401,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     }
   }, [navigate, location.state]);
 
-  // Load barbers when campus or browse radius preferences change
+  // Load barbers when college town or browse radius preferences change
   useEffect(() => {
     if (selectedCollegeTown) {
       loadBarbers();
@@ -1596,7 +1596,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     });
   };
 
-  // Redirect handled in useEffect if no university
+  // Redirect handled in useEffect if no college town
 
   if (loading || !selectedCollegeTown) {
     return <Loading />;
@@ -1634,7 +1634,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </button>
         </div>
         
-        {/* Browse radius — centered on selected campus */}
+        {/* Browse radius — centered on selected college town */}
         <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="text-sm font-medium text-gray-700">Limit barbers by distance from town</span>
@@ -1666,7 +1666,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               </div>
               {(latitude == null || longitude == null) && (
                 <p className="text-xs text-amber-700">
-                  This campus has no map coordinates — distance filtering may be unavailable.
+                  This college town has no map coordinates — distance filtering may be unavailable.
                 </p>
               )}
             </div>
@@ -1721,7 +1721,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
-          {/* No barbers message with try different university */}
+          {/* No barbers empty state */}
           <div className="mb-10">
             <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers available yet</p>
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
@@ -1767,7 +1767,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       }`}>
         {(filteredBarbers || []).map((barber) => {
           const distanceLabel = formatBarberDistanceFromUser(
-            getBarberDistanceMilesFromCampus(barber, latitude, longitude)
+            getBarberDistanceMilesFromTown(barber, latitude, longitude)
           );
           // Calculate price display - show range if multiple different prices
           const prices = barber.pricing?.map(p => p.price) || [];

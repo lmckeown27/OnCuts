@@ -46,7 +46,7 @@ class BarberService {
   }
 
   /**
-   * Get barbers near a point (e.g. consumer-selected campus centroid).
+   * Get barbers near a college-town reference point.
    * Pass constrainListByDistance to filter by each barber's public service pin.
    */
   async getBarbersByLocation(
@@ -54,14 +54,12 @@ class BarberService {
     longitude: number,
     filters: Omit<BarberFilters, 'lat' | 'lng'> = {},
     maxDistanceKm: number = 8,
-    campusId?: string
   ): Promise<BarberListResponse> {
     return await api.get<BarberListResponse>('/barbers', this.normalizeBarberFilters({
       ...filters,
       lat: latitude,
       lng: longitude,
       maxDistance: maxDistanceKm,
-      ...(campusId ? { campusId } : {}),
     }));
   }
 

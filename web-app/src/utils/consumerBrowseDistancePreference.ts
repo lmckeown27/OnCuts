@@ -58,11 +58,11 @@ type BarberDistanceSource = {
   service_longitude?: number | null;
 };
 
-/** Distance from campus search center to barber's public service pin (miles). */
-export function getBarberDistanceMilesFromCampus(
+/** Distance from college-town search center to barber's public service pin (miles). */
+export function getBarberDistanceMilesFromTown(
   barber: BarberDistanceSource,
-  campusLatitude: number | null | undefined,
-  campusLongitude: number | null | undefined,
+  townLatitude: number | null | undefined,
+  townLongitude: number | null | undefined,
 ): number | null {
   if (barber.distance_miles != null && Number.isFinite(barber.distance_miles)) {
     return barber.distance_miles;
@@ -71,8 +71,8 @@ export function getBarberDistanceMilesFromCampus(
     return kmToMiles(barber.distance_km);
   }
   if (
-    campusLatitude == null ||
-    campusLongitude == null ||
+    townLatitude == null ||
+    townLongitude == null ||
     barber.service_latitude == null ||
     barber.service_longitude == null
   ) {
@@ -80,9 +80,9 @@ export function getBarberDistanceMilesFromCampus(
   }
 
   const earthRadiusKm = 6371;
-  const dLat = ((barber.service_latitude - campusLatitude) * Math.PI) / 180;
-  const dLng = ((barber.service_longitude - campusLongitude) * Math.PI) / 180;
-  const lat1 = (campusLatitude * Math.PI) / 180;
+  const dLat = ((barber.service_latitude - townLatitude) * Math.PI) / 180;
+  const dLng = ((barber.service_longitude - townLongitude) * Math.PI) / 180;
+  const lat1 = (townLatitude * Math.PI) / 180;
   const lat2 = (barber.service_latitude * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -93,7 +93,7 @@ export function getBarberDistanceMilesFromCampus(
 
 export function formatBarberDistanceFromUser(miles: number | null | undefined): string | null {
   if (miles == null || !Number.isFinite(miles) || miles < 0) return null;
-  if (miles < 0.5) return 'On campus';
+  if (miles < 0.5) return 'Very close';
   if (miles < 10) return `${miles.toFixed(1)} mi away`;
   return `${Math.round(miles)} mi away`;
 }

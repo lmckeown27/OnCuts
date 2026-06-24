@@ -32,8 +32,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     const hasUserLocation = userLat !== null && userLng !== null && 
                             !isNaN(userLat) && !isNaN(userLng);
     
-    // Maximum distance filter in km (default: 8km / ~5 miles - reasonable for university area)
-    // This prevents students from accidentally booking barbers too far away
+    // Maximum distance filter in km (default: 8km / ~5 miles)
     const rawMax =
       maxDistance !== undefined && maxDistance !== null && String(maxDistance).trim() !== ''
         ? parseFloat(String(maxDistance))
@@ -81,23 +80,16 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     const params: any[] = [];
     let paramIndex = 1;
 
-    // Add distance calculation if user location is provided
+    // Add distance from search point to each barber's public service pin
     if (hasUserLocation) {
-      const barberLatExpr = constrainByDistance
-        ? 'b.service_latitude'
-        : 'COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude)';
-      const barberLngExpr = constrainByDistance
-        ? 'b.service_longitude'
-        : 'COALESCE(b.service_longitude, u.longitude, bcampus.longitude, ucampus.longitude)';
-
       query += `,
         (6371 * acos(
           LEAST(1.0, GREATEST(-1.0,
             cos(radians($${paramIndex})) * 
-            cos(radians(${barberLatExpr})) * 
-            cos(radians(${barberLngExpr}) - radians($${paramIndex + 1})) + 
+            cos(radians(b.service_latitude)) * 
+            cos(radians(b.service_longitude) - radians($${paramIndex + 1})) + 
             sin(radians($${paramIndex})) * 
-            sin(radians(${barberLatExpr}))
+            sin(radians(b.service_latitude))
           ))
         )) as distance_km
       `;
@@ -117,8 +109,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      LEFT JOIN campuses bcampus ON bcampus.id = b."campusId"
-      LEFT JOIN campuses ucampus ON ucampus.id = u."campusId"
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND (u."isBanned" IS NOT TRUE)'}
     `;
 
@@ -200,13 +190,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     const result = await pool.query(query, params);
     
-    // Filter by max distance when geo is provided (consumer radius browse or legacy geo-only list).
-    // campusId still disables distance filtering unless constrainListByDistance is set.
+    // Filter by max distance when consumer browse explicitly constrains by distance.
     let filteredRows = result.rows;
     let showingClosestFallback = false;
     
-    // Apply distance filter when geo is provided and either no campus is selected
-    // or the client explicitly constrains by distance (consumer browse radius).
     const shouldApplyDistanceFilter = hasUserLocation && constrainByDistance;
 
     if (shouldApplyDistanceFilter) {

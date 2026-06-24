@@ -44,7 +44,7 @@ import {
   getBrowseConstrainByDistance,
   milesToKmForBrowse,
   formatBarberDistanceFromUser,
-  getBarberDistanceMilesFromCampus,
+  getBarberDistanceMilesFromTown,
 } from '../../utils/consumerBrowseDistancePreference';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
@@ -78,7 +78,7 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Load saved university on mount - redirect to find-barber if not set
+  // Load saved college town on mount — redirect to find-barber if not set
   useEffect(() => {
     const savedTown = readStoredCollegeTown();
     if (savedTown) {
@@ -99,7 +99,7 @@ export default function MobileConsumerPage() {
     loadUnreadCount();
   }, []);
 
-  // Load barbers — campus is the search center; barbers are matched by public service location
+  // Load barbers — college town is the search center; barbers are matched by public service location
   const loadBarbers = async () => {
     if (!selectedCollegeTown) return;
     
@@ -135,7 +135,7 @@ export default function MobileConsumerPage() {
   };
 
   const getDistanceString = (barber: Barber): string => {
-    const miles = getBarberDistanceMilesFromCampus(
+    const miles = getBarberDistanceMilesFromTown(
       barber,
       selectedCollegeTown?.latitude,
       selectedCollegeTown?.longitude
