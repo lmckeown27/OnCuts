@@ -366,6 +366,8 @@ export default function BarberPage() {
             ? {
                 ...prev,
                 serviceLocationLabel: profile.service_location_label,
+                serviceLatitude: profile.service_latitude ?? null,
+                serviceLongitude: profile.service_longitude ?? null,
               }
             : prev
         );
@@ -413,6 +415,8 @@ export default function BarberPage() {
     campusId?: string;
     campusTimezone?: string;
     serviceLocationLabel?: string;
+    serviceLatitude?: number | null;
+    serviceLongitude?: number | null;
   } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -487,6 +491,8 @@ export default function BarberPage() {
             campusId: response.campus_id || '',
             campusTimezone: response.campus_timezone || 'America/Los_Angeles',
             serviceLocationLabel: response.service_location_label,
+            serviceLatitude: response.service_latitude ?? null,
+            serviceLongitude: response.service_longitude ?? null,
           });
         }
       } catch (error) {
@@ -780,8 +786,19 @@ export default function BarberPage() {
           onEditAvailability={openAvailability}
           onEditServiceLocation={openLocations}
           serviceLocationLabel={barberProfile?.serviceLocationLabel}
-          onServiceLocationUpdated={(label) =>
-            setBarberProfile((prev) => (prev ? { ...prev, serviceLocationLabel: label } : prev))
+          serviceLatitude={barberProfile?.serviceLatitude}
+          serviceLongitude={barberProfile?.serviceLongitude}
+          onServiceLocationUpdated={(update) =>
+            setBarberProfile((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    serviceLocationLabel: update.label,
+                    serviceLatitude: update.latitude,
+                    serviceLongitude: update.longitude,
+                  }
+                : prev
+            )
           }
           onUnblockTime={async (blockId) => {
             if (!barberProfile?.id) return;
@@ -1302,7 +1319,13 @@ interface DashboardViewProps {
   onEditAvailability?: () => void; // Open weekly availability modal
   onEditServiceLocation?: () => void; // Open service location modal
   serviceLocationLabel?: string;
-  onServiceLocationUpdated?: (label: string) => void;
+  serviceLatitude?: number | null;
+  serviceLongitude?: number | null;
+  onServiceLocationUpdated?: (update: {
+    label: string;
+    latitude: number;
+    longitude: number;
+  }) => void;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
   // Google Calendar integration
   googleCalendarConnected?: boolean | null;
@@ -1342,7 +1365,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1367,6 +1390,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
   const [locationSaving, setLocationSaving] = useState(false);
+  const [locationDraft, setLocationDraft] = useState(serviceLocationLabel || '');
+
+  useEffect(() => {
+    setLocationDraft(serviceLocationLabel || '');
+  }, [serviceLocationLabel]);
 
   const handleInlinePlaceSelect = async (place: GeocodePlace) => {
     try {
@@ -1377,7 +1405,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         service_radius_km: radiusKmFromPreset('campus'),
         service_location_label: place.label,
       });
-      onServiceLocationUpdated?.(place.label);
+      setLocationDraft(place.label);
+      onServiceLocationUpdated?.({
+        label: place.label,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      });
       toast.success('Service location saved');
     } catch {
       toast.error('Failed to save service location');
@@ -1386,7 +1419,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     }
   };
 
-  const hasSavedServiceLocation = Boolean(serviceLocationLabel?.trim());
+  const hasSavedServiceLocation = Boolean(
+    serviceLocationLabel?.trim() &&
+    serviceLatitude != null &&
+    serviceLongitude != null &&
+    locationDraft.trim() === serviceLocationLabel.trim()
+  );
 
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
@@ -1394,8 +1432,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <PlaceSearchInput
-              value={serviceLocationLabel || ''}
-              onChange={() => {}}
+              value={locationDraft}
+              onChange={setLocationDraft}
               onSelectPlace={handleInlinePlaceSelect}
               disabled={locationSaving}
               showLabel={false}
