@@ -54,11 +54,16 @@ class ProviderService {
     return params;
   }
 
-  private mapListResponse(raw: ProviderListPayload): BarberListResponse {
+  private toListResponse(data: Barber[], raw?: ProviderListPayload): BarberListResponse {
     return {
-      data: (raw.data ?? []).map(mapServiceProviderToBarber),
-      pagination: raw.pagination,
-      meta: raw.meta,
+      data,
+      pagination: raw?.pagination ?? {
+        page: 1,
+        limit: data.length,
+        total: data.length,
+        total_pages: 1,
+      },
+      meta: raw?.meta,
     };
   }
 
@@ -77,14 +82,17 @@ class ProviderService {
   async getProviders(filters: ProviderFilters = {}): Promise<BarberListResponse> {
     return this.withBarberListFallback(
       async () => {
-        const raw = await api.get<ProviderListPayload>('/providers', this.normalizeFilters(filters));
+        const raw = await api.get<ProviderListPayload | ServiceProvider[]>(
+          '/providers',
+          this.normalizeFilters(filters),
+        );
         if (Array.isArray(raw)) {
-          return { data: raw.map(mapServiceProviderToBarber) };
+          return this.toListResponse(raw.map(mapServiceProviderToBarber));
         }
         if (Array.isArray(raw?.data)) {
-          return this.mapListResponse(raw);
+          return this.toListResponse(raw.data.map(mapServiceProviderToBarber), raw);
         }
-        return { data: [] };
+        return this.toListResponse([]);
       },
       () => barberService.getBarbers(filters),
     );
@@ -98,7 +106,7 @@ class ProviderService {
   ): Promise<BarberListResponse> {
     return this.withBarberListFallback(
       async () => {
-        const raw = await api.get<ProviderListPayload>(
+        const raw = await api.get<ProviderListPayload | ServiceProvider[]>(
           '/providers',
           this.normalizeFilters({
             ...filters,
@@ -108,12 +116,12 @@ class ProviderService {
           }),
         );
         if (Array.isArray(raw)) {
-          return { data: raw.map(mapServiceProviderToBarber) };
+          return this.toListResponse(raw.map(mapServiceProviderToBarber));
         }
         if (Array.isArray(raw?.data)) {
-          return this.mapListResponse(raw);
+          return this.toListResponse(raw.data.map(mapServiceProviderToBarber), raw);
         }
-        return { data: [] };
+        return this.toListResponse([]);
       },
       () => barberService.getBarbersByLocation(latitude, longitude, filters, maxDistanceKm),
     );

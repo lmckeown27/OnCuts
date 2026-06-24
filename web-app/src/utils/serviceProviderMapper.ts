@@ -1,11 +1,17 @@
 import type { ServiceProvider, ServiceProviderReview } from '../types/service-provider';
 import type { Barber, Review, Service, ServiceLocation } from '../types';
 
-function mapReviews(customerReviews: ServiceProviderReview[] | null): Review[] | undefined {
+function mapReviews(
+  customerReviews: ServiceProviderReview[] | null,
+  barberId: string,
+): Review[] | undefined {
   if (!customerReviews?.length) return undefined;
 
   return customerReviews.map((review) => ({
     id: review.id ?? '',
+    booking_id: '',
+    barber_id: barberId,
+    student_id: '',
     rating: review.rating,
     review_text: review.comment ?? undefined,
     created_at: review.createdAt ?? '',
@@ -78,7 +84,7 @@ export function mapServiceProviderToBarber(provider: ServiceProvider): Barber {
     distance_miles: provider.distanceMilesFromUser ?? undefined,
     campus_id: provider.campusId ?? undefined,
     service_locations: mapServiceLocations(provider.locations),
-    reviews: mapReviews(provider.customerReviews),
+    reviews: mapReviews(provider.customerReviews, provider.id),
     provider_type: provider.providerType,
   };
 }
