@@ -39,3 +39,12 @@ export function presetFromRadiusKm(km: number): ServiceAreaPresetId {
 export function radiusKmFromPreset(id: ServiceAreaPresetId): number {
   return SERVICE_AREA_PRESETS.find((p) => p.id === id)?.km ?? 5;
 }
+
+/** Leaflet zoom level that frames the service radius circle reasonably well. */
+export function mapZoomForRadiusKm(radiusKm: number): number {
+  if (radiusKm <= 0.5) return 15;
+  if (radiusKm <= 2) return 14;
+  if (radiusKm <= 5) return 13;
+  if (radiusKm <= 15) return 11;
+  return 10;
+}

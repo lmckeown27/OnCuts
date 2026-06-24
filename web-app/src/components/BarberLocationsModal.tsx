@@ -42,6 +42,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const [hasSavedLocation, setHasSavedLocation] = useState(false);
   const [campusId, setCampusId] = useState<string | null>(null);
+  const [mapFocusVersion, setMapFocusVersion] = useState(0);
   const reverseGeocodeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const serviceRadiusKm = radiusKmFromPreset(areaPreset);
@@ -50,6 +51,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
     setPlaceLabel(place.label);
     setLatitude(place.latitude);
     setLongitude(place.longitude);
+    setMapFocusVersion((v) => v + 1);
   }, []);
 
   const reverseGeocodePin = useCallback(async (lat: number, lng: number) => {
@@ -97,6 +99,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
       if (profile?.service_radius_km != null) {
         setAreaPreset(presetFromRadiusKm(profile.service_radius_km));
       }
+      setMapFocusVersion((v) => v + 1);
     } catch {
       toast.error('Failed to load service location');
     } finally {
@@ -125,6 +128,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         const { latitude: lat, longitude: lng } = position.coords;
         setLatitude(lat);
         setLongitude(lng);
+        setMapFocusVersion((v) => v + 1);
         setDetectingDevice(false);
         try {
           const place = await geocodeService.reverseGeocode(lat, lng);
@@ -296,6 +300,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                   longitude={longitude}
                   radiusKm={serviceRadiusKm}
                   onPinMove={handlePinMove}
+                  focusVersion={mapFocusVersion}
                 />
               )}
 

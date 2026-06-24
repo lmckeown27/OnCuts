@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
 import { Search, Loader2, MapPin } from 'lucide-react';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 
@@ -78,6 +78,35 @@ export default function PlaceSearchInput({
     setResults([]);
   };
 
+  const submitQuery = async () => {
+    const text = query.trim();
+    if (text.length < 2 || disabled || loading) return;
+
+    if (results.length > 0) {
+      handleSelect(results[0]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const places = await geocodeService.searchPlaces(text);
+      if (places.length > 0) {
+        handleSelect(places[0]);
+      }
+    } catch {
+      // Parent can show toast if needed
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void submitQuery();
+    }
+  };
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {showLabel && (
@@ -91,6 +120,7 @@ export default function PlaceSearchInput({
           type="text"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => {
             if (results.length > 0) setOpen(true);
           }}

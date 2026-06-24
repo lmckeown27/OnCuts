@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { mapZoomForRadiusKm } from '../constants/serviceAreaPresets';
 
 // Vite-friendly default marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -19,6 +20,8 @@ interface ServiceAreaMapProps {
   radiusKm: number;
   onPinMove: (latitude: number, longitude: number) => void;
   className?: string;
+  /** Increment to force the map to fly to the current coordinates. */
+  focusVersion?: number;
 }
 
 const DEFAULT_CENTER: L.LatLngExpression = [39.8283, -98.5795];
@@ -30,12 +33,14 @@ export default function ServiceAreaMap({
   radiusKm,
   onPinMove,
   className = '',
+  focusVersion = 0,
 }: ServiceAreaMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
   const onPinMoveRef = useRef(onPinMove);
+  const lastFlyRef = useRef<string>('');
 
   useEffect(() => {
     onPinMoveRef.current = onPinMove;
@@ -112,8 +117,14 @@ export default function ServiceAreaMap({
       circleRef.current.setRadius(radiusMeters);
     }
 
-    map.setView(latLng, Math.max(map.getZoom(), 13), { animate: true });
-  }, [latitude, longitude, radiusKm]);
+    const flyKey = `${latitude},${longitude},${radiusKm},${focusVersion}`;
+    if (lastFlyRef.current !== flyKey) {
+      lastFlyRef.current = flyKey;
+      const targetZoom = mapZoomForRadiusKm(radiusKm);
+      map.invalidateSize();
+      map.flyTo(latLng, targetZoom, { duration: 0.75 });
+    }
+  }, [latitude, longitude, radiusKm, focusVersion]);
 
   return (
     <div className={className}>
