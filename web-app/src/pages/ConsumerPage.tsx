@@ -1512,7 +1512,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await barberService.getBarbers({ lat: latitude, lng: longitude });
+          response = await barberService.getBarbers();
         }
       } else {
         response = await barberService.getBarbers();
@@ -1774,9 +1774,11 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
         {(filteredBarbers || []).map((barber) => {
-          const distanceLabel = formatBarberDistanceFromUser(
-            getBarberDistanceMilesFromTown(barber, latitude, longitude)
-          );
+          const distanceLabel = constrainByDistance
+            ? formatBarberDistanceFromUser(
+                getBarberDistanceMilesFromTown(barber, latitude, longitude)
+              )
+            : null;
           // Calculate price display - show range if multiple different prices
           const prices = barber.pricing?.map(p => p.price) || [];
           const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;

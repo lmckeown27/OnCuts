@@ -129,7 +129,7 @@ export default function MobileConsumerPage() {
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await barberService.getBarbers({ lat: latitude, lng: longitude });
+          response = await barberService.getBarbers();
         }
       } else {
         response = await barberService.getBarbers();
@@ -144,13 +144,14 @@ export default function MobileConsumerPage() {
     }
   };
 
-  const getDistanceString = (barber: Barber): string => {
+  const getDistanceString = (barber: Barber): string | null => {
+    if (!getBrowseConstrainByDistance()) return null;
     const miles = getBarberDistanceMilesFromTown(
       barber,
       selectedCollegeTown?.latitude,
       selectedCollegeTown?.longitude
     );
-    return formatBarberDistanceFromUser(miles) ?? 'Distance unknown';
+    return formatBarberDistanceFromUser(miles);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -456,10 +457,12 @@ export default function MobileConsumerPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{getDistanceString(currentBarber)}</span>
-                </div>
+                {getDistanceString(currentBarber) && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">{getDistanceString(currentBarber)}</span>
+                  </div>
+                )}
                 
                 {currentBarber.bio && (
                   <p className="text-sm text-gray-600 line-clamp-2">{currentBarber.bio}</p>
@@ -595,7 +598,9 @@ export default function MobileConsumerPage() {
                 <h3 className="text-xl font-bold text-gray-900">
                   {currentBarber.user?.first_name || 'Barber'} {currentBarber.user?.last_name?.[0] || ''}.
                 </h3>
-                <p className="text-gray-500">{getDistanceString(currentBarber)}</p>
+                {getDistanceString(currentBarber) && (
+                  <p className="text-gray-500">{getDistanceString(currentBarber)}</p>
+                )}
               </div>
             </div>
 
