@@ -36,6 +36,7 @@ import {
   setBrowseConstrainByDistance,
   setBrowseMaxDistanceMiles,
 } from '../utils/consumerBrowseDistancePreference';
+import BrowseRadiusSlider from '../components/BrowseRadiusSlider';
 
 // Storage keys
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -1358,6 +1359,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [maxDistanceMiles, setMaxDistanceMilesState] = useState(getBrowseMaxDistanceMiles);
   const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
+  const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1519,11 +1521,22 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     }
   };
 
-  const handleMaxDistanceChange = (miles: number) => {
+  const handleMaxDistancePreview = (miles: number) => {
+    setRadiusPreviewMiles(Math.round(miles));
+  };
+
+  const handleMaxDistanceCommitted = (miles: number) => {
     const rounded = Math.round(miles);
+    setRadiusPreviewMiles(null);
     setMaxDistanceMilesState(rounded);
     setBrowseMaxDistanceMiles(rounded);
   };
+
+  const handleMaxDistanceChange = (miles: number) => {
+    handleMaxDistanceCommitted(miles);
+  };
+
+  const displayDistanceMiles = radiusPreviewMiles ?? maxDistanceMiles;
 
   const handleConstrainByDistanceChange = (enabled: boolean) => {
     setConstrainByDistanceState(enabled);
@@ -1632,19 +1645,17 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           {constrainByDistance && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-900">{Math.round(maxDistanceMiles)} mi away</span>
+                <span className="font-medium text-gray-900">{Math.round(displayDistanceMiles)} mi away</span>
                 <span className="text-xs text-gray-500">
                   from {selectedUniversity?.shortName || selectedUniversity?.name}
                 </span>
               </div>
-              <input
-                type="range"
+              <BrowseRadiusSlider
                 min={BROWSE_MIN_DISTANCE_MILES}
                 max={BROWSE_MAX_DISTANCE_MILES}
-                step={1}
                 value={maxDistanceMiles}
-                onChange={(e) => handleMaxDistanceChange(Number(e.target.value))}
-                className="w-full accent-primary-500"
+                onChange={handleMaxDistancePreview}
+                onChangeCommitted={handleMaxDistanceCommitted}
               />
               <div className="flex justify-between text-xs text-gray-400">
                 <span>{BROWSE_MIN_DISTANCE_MILES} mi</span>
