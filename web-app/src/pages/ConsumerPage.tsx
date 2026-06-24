@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX } from 'lucide-react';
+import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -1337,6 +1337,21 @@ export default function ConsumerPage() {
   );
 }
 
+function getBarberSearchableText(barber: Barber): string {
+  return [
+    barber.name,
+    barber.display_name,
+    barber.first_name,
+    barber.last_name,
+    barber.user?.first_name,
+    barber.user?.last_name,
+    barber.instagram_handle,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
 function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBecomeBarberClick: () => void }) {
   const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -1361,6 +1376,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
+  const [barberSearchQuery, setBarberSearchQuery] = useState('');
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1418,7 +1434,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
   useEffect(() => {
     applyFilters();
-  }, [barbers, filterCriteria, latitude, longitude, user?.id]);
+  }, [barbers, filterCriteria, latitude, longitude, user?.id, barberSearchQuery]);
 
   // Lock body scroll when barber modal is open (fixes mobile viewport issues)
   useEffect(() => {
@@ -1585,6 +1601,15 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       filtered = filtered.filter(() => true);
     }
 
+    const searchTerm = barberSearchQuery.trim().toLowerCase();
+    if (searchTerm) {
+      const normalizedTerm = searchTerm.startsWith('@') ? searchTerm.slice(1) : searchTerm;
+      filtered = filtered.filter((barber) => {
+        const haystack = getBarberSearchableText(barber);
+        return haystack.includes(normalizedTerm) || haystack.includes(searchTerm);
+      });
+    }
+
     // Preserve backend order (sorted by 5-star review count)
 
     setFilteredBarbers(filtered);
@@ -1681,8 +1706,35 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           )}
         </div>
 
+        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <label htmlFor="barber-search" className="block text-sm font-medium text-gray-700 mb-2">
+            Search barber
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              id="barber-search"
+              type="search"
+              value={barberSearchQuery}
+              onChange={(e) => setBarberSearchQuery(e.target.value)}
+              placeholder="Name or Instagram handle"
+              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none"
+            />
+            {barberSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setBarberSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Clear barber search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Results count */}
-        {filteredBarbers && filteredBarbers.length > 0 && (
+        {(filteredBarbers?.length > 0 || barberSearchQuery.trim()) && (
           <p className="text-center text-xs text-gray-500 mt-2">
             {filteredBarbers.length} barber{filteredBarbers.length !== 1 ? 's' : ''} found
           </p>
@@ -1758,6 +1810,25 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         </Card>
       )}
 
+      {/* No Results - Search */}
+      {barberSearchQuery.trim() &&
+        filteredBarbers.length === 0 &&
+        barbers.length > 0 &&
+        !loading && (
+        <Card className="text-center py-8 sm:py-12 mt-8">
+          <p className="text-gray-600 text-base sm:text-lg mb-2">
+            No barbers match &ldquo;{barberSearchQuery.trim()}&rdquo;
+          </p>
+          <button
+            type="button"
+            onClick={() => setBarberSearchQuery('')}
+            className="text-primary-600 hover:text-black underline text-sm"
+          >
+            Clear search
+          </button>
+        </Card>
+      )}
+
       {/* No Results - Filter Based */}
       {(!filteredBarbers || filteredBarbers.length === 0) && filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
@@ -1768,6 +1839,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
 
       {/* Barbers Grid - Responsive: 1 col portrait mobile, 2 col landscape/tablet, 3-5 col desktop */}
+      {filteredBarbers.length > 0 && (
       <div className={`grid gap-3 sm:gap-4 mt-8 sm:mt-10 ${
         isMobilePortrait 
           ? 'grid-cols-1' 
@@ -1887,6 +1959,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           );
         })}
       </div>
+      )}
 
 
       {/* Barber Profile Modal */}
