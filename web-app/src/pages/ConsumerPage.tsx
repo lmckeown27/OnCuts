@@ -1664,6 +1664,33 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </button>
         </div>
         
+        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <label htmlFor="barber-search" className="block text-sm font-medium text-gray-700 mb-2">
+            Search barber
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              id="barber-search"
+              type="search"
+              value={barberSearchQuery}
+              onChange={(e) => setBarberSearchQuery(e.target.value)}
+              placeholder="Barber name"
+              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none"
+            />
+            {barberSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setBarberSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Clear barber search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Browse radius — centered on selected college town */}
         <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
           <label className="flex items-center justify-between gap-3 cursor-pointer">
@@ -1701,33 +1728,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               )}
             </div>
           )}
-        </div>
-
-        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <label htmlFor="barber-search" className="block text-sm font-medium text-gray-700 mb-2">
-            Search barber
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              id="barber-search"
-              type="search"
-              value={barberSearchQuery}
-              onChange={(e) => setBarberSearchQuery(e.target.value)}
-              placeholder="Barber name"
-              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none"
-            />
-            {barberSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setBarberSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                aria-label="Clear barber search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Results count */}
