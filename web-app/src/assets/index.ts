@@ -12,8 +12,8 @@ export { default as Logo2 } from './logos/Logo2.webp';
 export { default as Logo3 } from './logos/Logo3.webp';
 export { default as Logo4 } from './logos/Logo4.webp';
 
-// Primary logo (Chair Logo - Main Brand Logo)
-export { default as CampusCutLogo } from './logos/Main_Chair.webp';
+// Primary logo (matches landing page / legal pages)
+export { default as CampusCutLogo } from './logos/Webpage_Logo copy.png';
 
 // Additional WebP logos for different contexts
 export { default as FooterChair } from './logos/Footer_Chair.webp';
