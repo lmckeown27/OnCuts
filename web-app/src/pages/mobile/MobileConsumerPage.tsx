@@ -39,7 +39,12 @@ import {
   LogOut,
   UserX
 } from 'lucide-react';
-import { calculateDistance, kmToMiles } from '../../hooks';
+import {
+  getBrowseMaxDistanceMiles,
+  getBrowseConstrainByDistance,
+  milesToKmForBrowse,
+  formatBarberDistanceFromUser,
+} from '../../utils/consumerBrowseDistancePreference';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
 import type { University } from '../../components/UniversitySelector';
@@ -101,94 +106,41 @@ export default function MobileConsumerPage() {
     loadUnreadCount();
   }, []);
 
-  // Load barbers from API - filtered by university location
+  // Load barbers — campus is the search center; barbers are matched by public service location
   const loadBarbers = async () => {
     if (!selectedUniversity) return;
     
     try {
       setIsLoading(true);
-      const response = await barberService.getBarbers({
-        lat: selectedUniversity.latitude,
-        lng: selectedUniversity.longitude,
-      });
-      
-      // Handle paginated response - ensure we have an array
-      const barberList = Array.isArray(response) ? response : (response?.data || []);
-      
-      // If no barbers returned, set empty array and exit early
-      if (!barberList || barberList.length === 0) {
-        setBarbers([]);
-        return;
-      }
-      
-      // Sort by distance from university
-      // First try to find barbers within 5 miles, if none found show closest barbers
-      const universityLat = selectedUniversity.latitude;
-      const universityLng = selectedUniversity.longitude;
-      
-      const barbersWithDistance = barberList
-        .map((barber: Barber) => {
-          // Use service location, fall back to user location from backend, or null
-          const barberLat = barber.service_latitude || barber.user_latitude;
-          const barberLng = barber.service_longitude || barber.user_longitude;
-          
-          const distanceKm = barberLat && barberLng
-            ? calculateDistance(universityLat, universityLng, barberLat, barberLng)
-            : null; // null = no location data
-          const distanceMiles = distanceKm !== null ? kmToMiles(distanceKm) : null;
-          return { ...barber, _distance: distanceKm, _distanceMiles: distanceMiles };
-        })
-        .sort((a: Barber & { _distance: number | null }, b: Barber & { _distance: number | null }) => {
-          // Barbers with location come first, sorted by distance
-          // Barbers without location come last
-          if (a._distance === null && b._distance === null) return 0;
-          if (a._distance === null) return 1;
-          if (b._distance === null) return -1;
-          return a._distance - b._distance;
-        });
-      
-      // Filter to barbers within 5 miles (8km)
-      const nearbyBarbers = barbersWithDistance.filter((b: Barber & { _distance: number | null }) => {
-        if (b._distance === null) return true;
-        return b._distance < 8; // ~5 miles
-      });
-      
-      // If no barbers within 5 miles, show closest barbers anyway
-      if (nearbyBarbers.length === 0 && barbersWithDistance.length > 0) {
-        // Show all barbers sorted by distance (closest first)
-        setBarbers(barbersWithDistance);
+      const constrainByDistance = getBrowseConstrainByDistance();
+      const maxDistanceMiles = getBrowseMaxDistanceMiles();
+      const { latitude, longitude } = selectedUniversity;
+
+      let response;
+      if (constrainByDistance && latitude != null && longitude != null) {
+        response = await barberService.getBarbersByLocation(
+          latitude,
+          longitude,
+          { constrainListByDistance: true },
+          milesToKmForBrowse(maxDistanceMiles)
+        );
       } else {
-        setBarbers(nearbyBarbers);
+        response = await barberService.getBarbers();
       }
+
+      setBarbers(response?.data || []);
     } catch (error) {
       console.error('Failed to load barbers:', error);
+      setBarbers([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Get distance string for a barber (from selected university)
-  const getDistanceString = (barber: Barber & { _distanceMiles?: number | null }): string => {
-    // Use pre-calculated distance if available
-    if (barber._distanceMiles !== undefined && barber._distanceMiles !== null) {
-      if (barber._distanceMiles < 0.5) return 'On campus';
-      return `${barber._distanceMiles.toFixed(1)} mi away`;
-    }
-    
-    // Fallback: calculate distance
-    const barberLat = barber.service_latitude || barber.user_latitude;
-    const barberLng = barber.service_longitude || barber.user_longitude;
-    
-    if (selectedUniversity && barberLat && barberLng) {
-      const distKm = calculateDistance(
-        selectedUniversity.latitude, 
-        selectedUniversity.longitude, 
-        barberLat, 
-        barberLng
-      );
-      const distMiles = kmToMiles(distKm);
-      if (distMiles < 0.5) return 'On campus';
-      return `${distMiles.toFixed(1)} mi away`;
+  const getDistanceString = (barber: Barber): string => {
+    if (barber.distance_km != null) {
+      const miles = barber.distance_km * 0.621371;
+      return formatBarberDistanceFromUser(miles) ?? 'Distance unknown';
     }
     return 'Distance unknown';
   };

@@ -3,44 +3,66 @@ import type { Barber, PaginatedResponse, Review, PortfolioImage } from '../types
 
 interface BarberFilters {
   campus_id?: string;
+  campusId?: string;
   min_price?: number;
   max_price?: number;
   min_rating?: number;
   specialties?: string[];
   page?: number;
   limit?: number;
-  // Location-based filtering
   lat?: number;
   lng?: number;
-  maxDistance?: number; // Maximum distance in km (default: 8km / ~5 miles)
-  // Admin option to include hidden barbers
+  maxDistance?: number;
+  constrainListByDistance?: boolean;
   includeHidden?: boolean;
 }
 
+export interface BarberListMeta {
+  sorted_by?: string;
+  user_location_provided?: boolean;
+  max_distance_km?: number | null;
+  max_distance_miles?: number | null;
+  total_before_distance_filter?: number;
+  showing_closest_fallback?: boolean;
+  constrain_list_by_distance?: boolean;
+}
+
+export interface BarberListResponse extends PaginatedResponse<Barber> {
+  meta?: BarberListMeta;
+}
+
 class BarberService {
-  async getBarbers(filters: BarberFilters = {}): Promise<PaginatedResponse<Barber>> {
-    return await api.get<PaginatedResponse<Barber>>('/barbers', filters);
+  private normalizeBarberFilters(filters: BarberFilters = {}): Record<string, unknown> {
+    const params: Record<string, unknown> = { ...filters };
+    if (params.campus_id && !params.campusId) {
+      params.campusId = params.campus_id;
+      delete params.campus_id;
+    }
+    return params;
+  }
+
+  async getBarbers(filters: BarberFilters = {}): Promise<BarberListResponse> {
+    return await api.get<BarberListResponse>('/barbers', this.normalizeBarberFilters(filters));
   }
 
   /**
-   * Get barbers sorted by distance from user's location
-   * When campusId is provided, shows ALL barbers for that campus (regardless of distance)
-   * Distance is still calculated for display purposes
+   * Get barbers near a point (e.g. consumer-selected campus centroid).
+   * Pass constrainListByDistance to filter by each barber's public service pin.
    */
   async getBarbersByLocation(
-    latitude: number, 
-    longitude: number, 
+    latitude: number,
+    longitude: number,
     filters: Omit<BarberFilters, 'lat' | 'lng'> = {},
-    maxDistanceKm: number = 8, // Default: 8km (~5 miles) - only applies when no campusId
-    campusId?: string // When provided, shows all barbers for this campus
-  ): Promise<PaginatedResponse<Barber>> {
-    return await api.get<PaginatedResponse<Barber>>('/barbers', {
+    maxDistanceKm: number = 8,
+    campusId?: string
+  ): Promise<BarberListResponse> {
+    return await api.get<BarberListResponse>('/barbers', this.normalizeBarberFilters({
       ...filters,
       lat: latitude,
       lng: longitude,
       maxDistance: maxDistanceKm,
-      campusId, // Pass campusId to disable distance filtering
-    });
+      ...(campusId ? { campusId } : {}),
+    }));
   }
 
   async getBarberById(id: string): Promise<Barber> {

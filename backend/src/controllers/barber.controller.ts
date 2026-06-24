@@ -23,7 +23,7 @@ import { barberServiceLocationLabelSelectSql } from '../services/barber-location
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance } = req.query;
     const labelSelect = await barberServiceLocationLabelSelectSql();
     
     // Parse user location for distance-based sorting
@@ -40,6 +40,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         : NaN;
     const maxDistanceKm =
       Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 8;
+
+    const constrainByDistance =
+      constrainListByDistance === 'true' || constrainListByDistance === '1';
 
     // Build dynamic query for barbers from PostgreSQL
     // Column names match Prisma schema: avgRating, totalReviews, totalBookings, isActive
@@ -80,16 +83,21 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     // Add distance calculation if user location is provided
     if (hasUserLocation) {
-      // Haversine formula for distance in km
-      // Priority: service pin → user device → barber row campus centroid → user row campus centroid
+      const barberLatExpr = constrainByDistance
+        ? 'b.service_latitude'
+        : 'COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude)';
+      const barberLngExpr = constrainByDistance
+        ? 'b.service_longitude'
+        : 'COALESCE(b.service_longitude, u.longitude, bcampus.longitude, ucampus.longitude)';
+
       query += `,
         (6371 * acos(
           LEAST(1.0, GREATEST(-1.0,
             cos(radians($${paramIndex})) * 
-            cos(radians(COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude))) * 
-            cos(radians(COALESCE(b.service_longitude, u.longitude, bcampus.longitude, ucampus.longitude)) - radians($${paramIndex + 1})) + 
+            cos(radians(${barberLatExpr})) * 
+            cos(radians(${barberLngExpr}) - radians($${paramIndex + 1})) + 
             sin(radians($${paramIndex})) * 
-            sin(radians(COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude)))
+            sin(radians(${barberLatExpr}))
           ))
         )) as distance_km
       `;
@@ -114,7 +122,11 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND (u."isBanned" IS NOT TRUE)'}
     `;
 
-    // Handle campusId - can be UUID or slug
+    if (constrainByDistance && hasUserLocation) {
+      query += ` AND b.service_latitude IS NOT NULL AND b.service_longitude IS NOT NULL`;
+    }
+
+    // Handle campusId - can be UUID or slug (admin/legacy; consumer radius browse omits this)
     let resolvedCampusId = campusId as string | undefined;
     if (campusId) {
       // Check if it's a UUID (simple regex check)
@@ -179,35 +191,43 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
       }
     } else {
-      query += ` ORDER BY five_star_review_count DESC NULLS LAST, b."avgRating" DESC NULLS LAST, b."createdAt" ASC`;
+      if (hasUserLocation && constrainByDistance) {
+        query += ` ORDER BY distance_km ASC NULLS LAST, five_star_review_count DESC NULLS LAST, b."avgRating" DESC NULLS LAST, b."createdAt" ASC`;
+      } else {
+        query += ` ORDER BY five_star_review_count DESC NULLS LAST, b."avgRating" DESC NULLS LAST, b."createdAt" ASC`;
+      }
     }
 
     const result = await pool.query(query, params);
     
-    // Filter by max distance if user location is provided
-    // BUT: If campusId is provided, show ALL barbers for that campus (they may be temporarily away)
-    // Default 8km (~5 miles) is reasonable for university students when no campus is specified
+    // Filter by max distance when geo is provided (consumer radius browse or legacy geo-only list).
+    // campusId still disables distance filtering unless constrainListByDistance is set.
     let filteredRows = result.rows;
     let showingClosestFallback = false;
     
-    // Only apply distance filtering if NO campusId is specified (or if it wasn't resolved)
-    // When a campus is selected, show all barbers assigned to that campus regardless of location
-    if (hasUserLocation && !resolvedCampusId) {
+    // Apply distance filter when geo is provided and either no campus is selected
+    // or the client explicitly constrains by distance (consumer browse radius).
+    const shouldApplyDistanceFilter = hasUserLocation && (!resolvedCampusId || constrainByDistance);
+
+    if (shouldApplyDistanceFilter) {
       const nearbyRows = result.rows.filter(row => {
-        // Include barbers without location data (they might be new)
-        if (row.distance_km === null || row.distance_km === undefined) return true;
+        if (row.distance_km === null || row.distance_km === undefined) {
+          return false;
+        }
         return row.distance_km <= maxDistanceKm;
       });
-      
-      // If no barbers within radius, show all barbers sorted by distance (closest first)
-      if (nearbyRows.length === 0 && result.rows.length > 0) {
-        filteredRows = result.rows; // All barbers, already sorted by distance
+
+      if (
+        nearbyRows.length === 0 &&
+        result.rows.length > 0 &&
+        !constrainByDistance
+      ) {
+        filteredRows = result.rows;
         showingClosestFallback = true;
       } else {
         filteredRows = nearbyRows;
       }
     }
-    // When campusId IS provided: show all barbers for that campus, sorted by distance
     
     // Get services/pricing for each barber
     const barbers = await Promise.all(filteredRows.map(async (barber) => {
@@ -322,10 +342,11 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
           ? (hasUserLocation ? 'distance' : 'rating')
           : 'five_star_reviews',
         user_location_provided: hasUserLocation,
-        max_distance_km: hasUserLocation && !showingClosestFallback ? maxDistanceKm : null,
-        max_distance_miles: hasUserLocation && !showingClosestFallback ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
-        total_before_distance_filter: hasUserLocation ? result.rows.length : filteredBarbers.length,
-        showing_closest_fallback: showingClosestFallback, // true if no barbers within radius, showing closest instead
+        max_distance_km: shouldApplyDistanceFilter && !showingClosestFallback ? maxDistanceKm : null,
+        max_distance_miles: shouldApplyDistanceFilter && !showingClosestFallback ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
+        total_before_distance_filter: shouldApplyDistanceFilter ? result.rows.length : filteredBarbers.length,
+        showing_closest_fallback: showingClosestFallback,
+        constrain_list_by_distance: constrainByDistance,
       },
     });
   } catch (error) {

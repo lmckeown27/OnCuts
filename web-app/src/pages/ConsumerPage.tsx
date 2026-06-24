@@ -9,7 +9,7 @@ import Loading from '../components/Loading';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
-import barberService from '../services/barber.service';
+import barberService, { type BarberListMeta } from '../services/barber.service';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import { barberApplicationService } from '../services/barber-application.service';
@@ -26,6 +26,16 @@ import PullToRefresh from '../components/PullToRefresh';
 import BlockedProvidersModal from '../components/BlockedProvidersModal';
 import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
+import {
+  BROWSE_MAX_DISTANCE_MILES,
+  BROWSE_MIN_DISTANCE_MILES,
+  formatBarberDistanceFromUser,
+  getBrowseConstrainByDistance,
+  getBrowseMaxDistanceMiles,
+  milesToKmForBrowse,
+  setBrowseConstrainByDistance,
+  setBrowseMaxDistanceMiles,
+} from '../utils/consumerBrowseDistancePreference';
 
 // Storage keys
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -1345,6 +1355,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [loadingBarberDetails, setLoadingBarberDetails] = useState(false);
   const [reviewsExpanded, setReviewsExpanded] = useState(false);
   const reviewsSectionRef = useRef<HTMLDivElement>(null);
+  const [maxDistanceMiles, setMaxDistanceMilesState] = useState(getBrowseMaxDistanceMiles);
+  const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
+  const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1387,12 +1400,12 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     }
   }, [navigate]);
 
-  // Load barbers when university is selected
+  // Load barbers when campus or browse radius preferences change
   useEffect(() => {
     if (selectedUniversity) {
       loadBarbers();
     }
-  }, [selectedUniversity]);
+  }, [selectedUniversity, maxDistanceMiles, constrainByDistance]);
 
   useEffect(() => {
     applyFilters();
@@ -1478,35 +1491,43 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const loadBarbers = async () => {
     try {
       setLoading(true);
-      
-      // Pass user location AND campusId to backend
-      // When campusId is provided, ALL barbers for that campus are shown (regardless of distance)
+
       let response;
-      if (latitude && longitude) {
-        // Pass selectedUniversity.id to show all barbers assigned to that campus
+
+      if (constrainByDistance && latitude != null && longitude != null) {
         response = await barberService.getBarbersByLocation(
-          latitude, 
-          longitude, 
-          {}, // filters
-          8, // maxDistanceKm (only used when no campusId)
-          selectedUniversity?.id // campusId - shows all barbers for this campus
+          latitude,
+          longitude,
+          { constrainListByDistance: true },
+          milesToKmForBrowse(maxDistanceMiles)
         );
       } else {
-        response = await barberService.getBarbers({ campus_id: selectedUniversity?.id });
+        response = await barberService.getBarbers();
       }
-      
+
       const barbersData = response.data || [];
-      
+      setBarbersMeta(response.meta ?? null);
       setBarbers(barbersData);
       setFilteredBarbers(barbersData);
-      
-      setLoading(false);
     } catch (error) {
       console.error('Failed to load barbers:', error);
+      setBarbersMeta(null);
       setBarbers([]);
       setFilteredBarbers([]);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleMaxDistanceChange = (miles: number) => {
+    const rounded = Math.round(miles);
+    setMaxDistanceMilesState(rounded);
+    setBrowseMaxDistanceMiles(rounded);
+  };
+
+  const handleConstrainByDistanceChange = (enabled: boolean) => {
+    setConstrainByDistanceState(enabled);
+    setBrowseConstrainByDistance(enabled);
   };
 
   const applyFilters = () => {
@@ -1571,7 +1592,11 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       <div className="mb-4 sm:mb-6">
         {/* University and Filter Info */}
         <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
-          <span>Barbers at {selectedUniversity?.shortName || selectedUniversity?.name}</span>
+          <span>
+            {constrainByDistance
+              ? `Barbers near ${selectedUniversity?.shortName || selectedUniversity?.name}`
+              : 'All barbers'}
+          </span>
           {filterCriteria.serviceType && (
             <>
               <span className="text-gray-400">•</span>
@@ -1593,6 +1618,47 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </button>
         </div>
         
+        {/* Browse radius — centered on selected campus */}
+        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <span className="text-sm font-medium text-gray-700">Limit barbers by distance from campus</span>
+            <input
+              type="checkbox"
+              checked={constrainByDistance}
+              onChange={(e) => handleConstrainByDistanceChange(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+          </label>
+          {constrainByDistance && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-gray-900">{Math.round(maxDistanceMiles)} mi away</span>
+                <span className="text-xs text-gray-500">
+                  from {selectedUniversity?.shortName || selectedUniversity?.name}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={BROWSE_MIN_DISTANCE_MILES}
+                max={BROWSE_MAX_DISTANCE_MILES}
+                step={1}
+                value={maxDistanceMiles}
+                onChange={(e) => handleMaxDistanceChange(Number(e.target.value))}
+                className="w-full accent-primary-500"
+              />
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>{BROWSE_MIN_DISTANCE_MILES} mi</span>
+                <span>{BROWSE_MAX_DISTANCE_MILES} mi</span>
+              </div>
+              {(latitude == null || longitude == null) && (
+                <p className="text-xs text-amber-700">
+                  This campus has no map coordinates — distance filtering may be unavailable.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Results count */}
         {filteredBarbers && filteredBarbers.length > 0 && (
           <p className="text-center text-xs text-gray-500 mt-2">
@@ -1608,22 +1674,50 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         </p>
       )}
 
+      {/* No Results - Radius */}
+      {constrainByDistance &&
+        (!filteredBarbers || filteredBarbers.length === 0) &&
+        barbers.length === 0 &&
+        selectedUniversity &&
+        !filterCriteria.serviceType &&
+        !loading && (
+        <Card className="text-center py-8 sm:py-12">
+          <p className="text-gray-600 text-base sm:text-lg mb-2">
+            No barbers within {Math.round(maxDistanceMiles)} mi of {selectedUniversity.shortName || selectedUniversity.name}
+          </p>
+          <p className="text-xs sm:text-sm text-gray-500 mb-4">
+            {barbersMeta?.total_before_distance_filter
+              ? `${barbersMeta.total_before_distance_filter} barber${barbersMeta.total_before_distance_filter !== 1 ? 's' : ''} with a public location are outside your radius.`
+              : 'Try increasing your search radius or turn off distance limiting to see all barbers.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => handleMaxDistanceChange(Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10))}
+            className="text-primary-600 hover:text-primary-700 underline"
+          >
+            Expand to {Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10)} mi
+          </button>
+        </Card>
+      )}
+
       {/* No Results - University Based */}
-      {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
+      {!constrainByDistance &&
+        (!filteredBarbers || filteredBarbers.length === 0) &&
+        selectedUniversity &&
+        !filterCriteria.serviceType &&
+        !loading && (
         <Card className="text-center py-8 sm:py-12">
           {/* No barbers message with try different university */}
           <div className="mb-10">
-            <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers at {selectedUniversity.shortName || selectedUniversity.name}</p>
+            <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers available yet</p>
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
-              There are no barbers registered at this campus yet.
-              <br />
               Check back soon as more barbers join the platform!
             </p>
             <button 
               onClick={() => navigate('/')}
               className="text-primary-600 hover:text-primary-700 underline"
             >
-              Try a different university
+              Change search area
             </button>
           </div>
           
@@ -1658,6 +1752,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
         {(filteredBarbers || []).map((barber) => {
+          const distanceLabel = formatBarberDistanceFromUser(barber.distance_miles);
           // Calculate price display - show range if multiple different prices
           const prices = barber.pricing?.map(p => p.price) || [];
           const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
@@ -1699,13 +1794,12 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                       </span>
                     )}
                   </div>
-                  {/* Distance display commented out
-                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
+                  {distanceLabel && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0" />
+                      <span className="text-sm text-primary-600 font-medium">{distanceLabel}</span>
                     </div>
                   )}
-                */}
                   {barber.instagram_handle && (
                     <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
                       <Instagram className="w-4 h-4 flex-shrink-0" />
@@ -1754,16 +1848,14 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                     </div>
                   </div>
                 )}
-                {/* Distance Overlay - Bottom Right - Commented out
-                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                {distanceLabel && (
                   <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tl-lg rounded-br-lg">
                     <div className="flex items-center gap-1 text-white">
                       <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="font-bold text-sm sm:text-base">{barber.distance_miles} mi</span>
+                      <span className="font-bold text-xs sm:text-sm">{distanceLabel}</span>
                     </div>
                   </div>
                 )}
-                */}
               </div>
             </Card>
           );
