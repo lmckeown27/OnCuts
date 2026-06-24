@@ -1867,10 +1867,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                   </div>
                 )}
                 {distanceLabel && (
-                  <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tl-lg rounded-br-lg">
-                    <div className="flex items-center gap-1 text-white">
-                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="font-bold text-xs sm:text-sm">{distanceLabel}</span>
+                  <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-1.5 py-1 rounded-tl-md rounded-br-lg">
+                    <div className="flex items-center gap-0.5 text-white">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="font-semibold text-[10px] leading-none">{distanceLabel}</span>
                     </div>
                   </div>
                 )}
