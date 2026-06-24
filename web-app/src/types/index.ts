@@ -38,6 +38,21 @@ export interface Campus {
   longitude?: number;
 }
 
+/** Consumer browse area — a city with one or more college campuses. */
+export interface CollegeTown {
+  id: string;
+  name: string;
+  shortName: string;
+  city: string;
+  state: string;
+  latitude: number | null;
+  longitude: number | null;
+  campusCount: number;
+  campusIds: string[];
+  /** Representative campus for signup / legacy flows */
+  primaryCampusId: string;
+}
+
 // Time interval for availability (Calendly-style)
 export interface TimeInterval {
   id: string;

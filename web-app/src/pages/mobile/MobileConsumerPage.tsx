@@ -48,10 +48,10 @@ import {
 } from '../../utils/consumerBrowseDistancePreference';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
-import type { University } from '../../components/UniversitySelector';
-
-// Storage key for selected university
-const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+import type { CollegeTown } from '../../types';
+import {
+  readStoredCollegeTown,
+} from '../../utils/collegeTowns';
 
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function MobileConsumerPage() {
   // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
+  const [selectedCollegeTown, setSelectedCollegeTown] = useState<CollegeTown | null>(null);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -80,27 +80,19 @@ export default function MobileConsumerPage() {
 
   // Load saved university on mount - redirect to find-barber if not set
   useEffect(() => {
-    const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSelectedUniversity(parsed);
-      } catch (e) {
-        localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-        navigate('/');
-      }
+    const savedTown = readStoredCollegeTown();
+    if (savedTown) {
+      setSelectedCollegeTown(savedTown);
     } else {
-      // No university selected - redirect to find-barber
       navigate('/');
     }
   }, [navigate]);
 
-  // Load barbers when university is selected
   useEffect(() => {
-    if (selectedUniversity) {
+    if (selectedCollegeTown) {
       loadBarbers();
     }
-  }, [selectedUniversity]);
+  }, [selectedCollegeTown]);
 
   // Load unread message count on mount
   useEffect(() => {
@@ -109,13 +101,13 @@ export default function MobileConsumerPage() {
 
   // Load barbers — campus is the search center; barbers are matched by public service location
   const loadBarbers = async () => {
-    if (!selectedUniversity) return;
+    if (!selectedCollegeTown) return;
     
     try {
       setIsLoading(true);
       const constrainByDistance = getBrowseConstrainByDistance();
       const maxDistanceMiles = getBrowseMaxDistanceMiles();
-      const { latitude, longitude } = selectedUniversity;
+      const { latitude, longitude } = selectedCollegeTown;
 
       let response;
       if (latitude != null && longitude != null) {
@@ -145,8 +137,8 @@ export default function MobileConsumerPage() {
   const getDistanceString = (barber: Barber): string => {
     const miles = getBarberDistanceMilesFromCampus(
       barber,
-      selectedUniversity?.latitude,
-      selectedUniversity?.longitude
+      selectedCollegeTown?.latitude,
+      selectedCollegeTown?.longitude
     );
     return formatBarberDistanceFromUser(miles) ?? 'Distance unknown';
   };
@@ -237,12 +229,12 @@ export default function MobileConsumerPage() {
   };
 
   // Show loading state while auth is loading, redirecting, or fetching
-  if (isAuthLoading || !selectedUniversity || isLoading) {
+  if (isAuthLoading || !selectedCollegeTown || isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
-        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-gray-800 animate-spin mb-4" />
         <p className="text-gray-600 text-center">
-          {isAuthLoading ? 'Loading...' : `Finding barbers near ${selectedUniversity?.shortName || selectedUniversity?.name || 'campus'}...`}
+          {isAuthLoading ? 'Loading...' : `Finding barbers near ${selectedCollegeTown?.shortName || 'your area'}...`}
         </p>
       </div>
     );
@@ -254,16 +246,16 @@ export default function MobileConsumerPage() {
         <GraduationCap className="w-16 h-16 text-gray-300 mb-4" />
         <h2 className="text-xl font-bold text-gray-900 mb-2">No Barbers Found</h2>
         <p className="text-gray-600 text-center mb-4">
-          We couldn't find any barbers near {selectedUniversity?.shortName || selectedUniversity?.name || 'your campus'}.
+          We couldn&apos;t find any barbers near {selectedCollegeTown.shortName}.
         </p>
         <p className="text-sm text-gray-500 text-center mb-6">
-          Check back later or try a different university.
+          Check back later or try a different college town.
         </p>
         <button
           onClick={() => navigate('/')}
           className="px-6 py-3 bg-brand-500 text-white rounded-lg font-semibold"
         >
-          Change University
+          Change Town
         </button>
       </div>
     );
@@ -294,7 +286,7 @@ export default function MobileConsumerPage() {
               <img src="/src/assets/logos/Logo1.png" alt="CampusCuts" className="h-8" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
-                <p className="text-xs text-gray-500 leading-tight">{selectedUniversity?.shortName || selectedUniversity?.name}</p>
+                <p className="text-xs text-gray-500 leading-tight">{selectedCollegeTown.shortName}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

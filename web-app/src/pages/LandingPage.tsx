@@ -14,10 +14,9 @@ import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
 import Marquee from '../components/Marquee';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
-import type { University } from '../components/UniversitySelector';
+import type { CollegeTown } from '../types';
+import { writeStoredCollegeTown } from '../utils/collegeTowns';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
-
-const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -30,23 +29,20 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
   
-  // University selector state for hero section
-  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
-  
-  // Handle university selection - save to localStorage and navigate to consumer page
-  const handleUniversitySelect = useCallback((university: University | null) => {
-    setSelectedUniversity(university);
-    if (university) {
-      localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+  const [selectedCollegeTown, setSelectedCollegeTown] = useState<CollegeTown | null>(null);
+
+  const handleCollegeTownSelect = useCallback((town: CollegeTown | null) => {
+    setSelectedCollegeTown(town);
+    if (town) {
+      writeStoredCollegeTown(town);
     }
   }, []);
-  
-  // Navigate to consumer page when university is selected
+
   const goToConsumerPage = useCallback(() => {
-    if (selectedUniversity) {
+    if (selectedCollegeTown) {
       navigate('/web/consumer');
     }
-  }, [selectedUniversity, navigate]);
+  }, [selectedCollegeTown, navigate]);
   
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
@@ -166,22 +162,21 @@ export default function LandingPage() {
               Don&apos;t have an iOS Device?
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600">
-              Search below to browse and book campus barbers on the web
+              Search below to browse and book barbers near your college town on the web
             </p>
           </div>
           
-          {/* University Selector */}
-        <div className="w-full max-w-xl mb-8">
+          <div className="w-full max-w-xl mb-8">
           <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
               <UniversitySelector
-                value={selectedUniversity}
-                onChange={handleUniversitySelect}
-                placeholder="Search for your university..."
+                value={selectedCollegeTown}
+                onChange={handleCollegeTownSelect}
+                placeholder="Search for your college town..."
               />
             </div>
-            {selectedUniversity && (
+            {selectedCollegeTown && (
             <p className="mt-4 text-sm text-gray-600 text-center">
-                Searching barbers at {selectedUniversity.shortName || selectedUniversity.name}
+                Searching barbers near {selectedCollegeTown.shortName}
               </p>
             )}
           </div>
@@ -189,9 +184,9 @@ export default function LandingPage() {
           {/* CTA Button */}
             <button
               onClick={goToConsumerPage}
-              disabled={!selectedUniversity}
+              disabled={!selectedCollegeTown}
               className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
-                selectedUniversity 
+                selectedCollegeTown 
                   ? 'bg-brand-500 hover:bg-brand-600 text-white cursor-pointer' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
@@ -281,7 +276,7 @@ export default function LandingPage() {
                           <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             CampusCuts
                           </a>{' '}
-                          on iPhone, or select your university here and tap &quot;Find Barber&quot; on the web.
+                          on iPhone, or select your college town here and tap &quot;Find Barber&quot; on the web.
                         </li>
                         <li>Browse barbers at your school and view their portfolio.</li>
                         <li>Pick a service, date, time, and location, then submit your request.</li>

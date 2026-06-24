@@ -14,7 +14,10 @@ import notificationService, { Notification } from '../services/notification.serv
 import api from '../services/api.service';
 import { barberApplicationService } from '../services/barber-application.service';
 import type { Barber } from '../types';
-import type { University } from '../components/UniversitySelector';
+import type { CollegeTown } from '../types';
+import {
+  readStoredCollegeTown,
+} from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
@@ -38,9 +41,6 @@ import {
   setBrowseMaxDistanceMiles,
 } from '../utils/consumerBrowseDistancePreference';
 import BrowseRadiusSlider from '../components/BrowseRadiusSlider';
-
-// Storage keys
-const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {
@@ -1343,7 +1343,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
-  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
+  const [selectedCollegeTown, setSelectedCollegeTown] = useState<CollegeTown | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
     date: null,
@@ -1368,23 +1368,16 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // University coordinates (used instead of geolocation)
-  const latitude = selectedUniversity?.latitude ?? null;
-  const longitude = selectedUniversity?.longitude ?? null;
+  // College town coordinates (search center for browse radius)
+  const latitude = selectedCollegeTown?.latitude ?? null;
+  const longitude = selectedCollegeTown?.longitude ?? null;
 
-  // Load saved university and filters on mount
+  // Load saved college town and filters on mount
   useEffect(() => {
-    // Load university
-    const savedUni = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
-    if (savedUni) {
-      try {
-        const parsed = JSON.parse(savedUni);
-        setSelectedUniversity(parsed);
-      } catch (e) {
-        localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-      }
+    const savedTown = readStoredCollegeTown();
+    if (savedTown) {
+      setSelectedCollegeTown(savedTown);
     } else {
-      // No university selected - redirect to landing page
       navigate('/');
       return;
     }
@@ -1405,10 +1398,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
   // Load barbers when campus or browse radius preferences change
   useEffect(() => {
-    if (selectedUniversity) {
+    if (selectedCollegeTown) {
       loadBarbers();
     }
-  }, [selectedUniversity, maxDistanceMiles, constrainByDistance]);
+  }, [selectedCollegeTown, maxDistanceMiles, constrainByDistance]);
 
   useEffect(() => {
     applyFilters();
@@ -1600,7 +1593,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
   // Redirect handled in useEffect if no university
 
-  if (loading || !selectedUniversity) {
+  if (loading || !selectedCollegeTown) {
     return <Loading />;
   }
 
@@ -1608,11 +1601,11 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     <>
       {/* Filter Header */}
       <div className="mb-4 sm:mb-6">
-        {/* University and Filter Info */}
+        {/* College town and filter info */}
         <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
           <span>
             {constrainByDistance
-              ? `Barbers near ${selectedUniversity?.shortName || selectedUniversity?.name}`
+              ? `Barbers near ${selectedCollegeTown.shortName}`
               : 'All barbers'}
           </span>
           {filterCriteria.serviceType && (
@@ -1639,7 +1632,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         {/* Browse radius — centered on selected campus */}
         <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
           <label className="flex items-center justify-between gap-3 cursor-pointer">
-            <span className="text-sm font-medium text-gray-700">Limit barbers by distance from campus</span>
+            <span className="text-sm font-medium text-gray-700">Limit barbers by distance from town</span>
             <input
               type="checkbox"
               checked={constrainByDistance}
@@ -1652,7 +1645,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-gray-900">{Math.round(displayDistanceMiles)} mi away</span>
                 <span className="text-xs text-gray-500">
-                  from {selectedUniversity?.shortName || selectedUniversity?.name}
+                  from {selectedCollegeTown.shortName}
                 </span>
               </div>
               <BrowseRadiusSlider
@@ -1694,12 +1687,12 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       {constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
         barbers.length === 0 &&
-        selectedUniversity &&
+        selectedCollegeTown &&
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
           <p className="text-gray-600 text-base sm:text-lg mb-2">
-            No barbers within {Math.round(maxDistanceMiles)} mi of {selectedUniversity.shortName || selectedUniversity.name}
+            No barbers within {Math.round(maxDistanceMiles)} mi of {selectedCollegeTown.shortName}
           </p>
           <p className="text-xs sm:text-sm text-gray-500 mb-4">
             {barbersMeta?.total_before_distance_filter
@@ -1716,10 +1709,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         </Card>
       )}
 
-      {/* No Results - University Based */}
+      {/* No Results - Browse */}
       {!constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
-        selectedUniversity &&
+        selectedCollegeTown &&
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
@@ -1740,7 +1733,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           {/* Become a barber CTA - separated with vertical space */}
           <div className="flex flex-col items-center gap-4 pt-8 border-t border-gray-200">
             <p className="text-base sm:text-lg text-gray-600 font-medium">
-              Want to be a barber at {selectedUniversity.shortName || selectedUniversity.name}?
+              Want to be a barber in {selectedCollegeTown.shortName}?
             </p>
             <button
               onClick={onBecomeBarberClick}

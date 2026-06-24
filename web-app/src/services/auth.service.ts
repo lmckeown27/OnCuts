@@ -1,6 +1,7 @@
 import api from './api.service';
 import type { User } from '../types';
 import { STORAGE_KEYS } from '../config/constants';
+import { readStoredCollegeTown } from '../utils/collegeTowns';
 
 interface LoginCredentials {
   email: string;
@@ -99,20 +100,13 @@ class AuthService {
    * Does NOT authenticate the user - they must verify email first
    */
   async signup(data: SignupData): Promise<RegistrationPendingResponse> {
-    // Get user's selected university from localStorage (set in FindBarberPage)
-    const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+    // Get user's selected college town from localStorage (set on landing page)
     let campusId = data.campusId;
-    
-    // If no campusId provided, try to get from localStorage (user's selected university)
+
     if (!campusId) {
-      const savedUniversity = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
-      if (savedUniversity) {
-        try {
-          const university = JSON.parse(savedUniversity);
-          campusId = university.id;
-        } catch {
-          // Ignore parse errors
-        }
+      const savedTown = readStoredCollegeTown();
+      if (savedTown?.primaryCampusId) {
+        campusId = savedTown.primaryCampusId;
       }
     }
     
