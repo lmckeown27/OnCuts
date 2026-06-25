@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
@@ -32,7 +32,6 @@ import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
 import {
   BROWSE_MAX_DISTANCE_MILES,
-  BROWSE_MIN_DISTANCE_MILES,
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
   getBrowseConstrainByDistance,
@@ -50,7 +49,7 @@ import {
   browseCategoryApiParam,
   type BrowseProviderCategory,
 } from '../config/providerCategories';
-import BrowseRadiusSlider from '../components/BrowseRadiusSlider';
+import BrowseUtilityPill from '../components/BrowseUtilityPill';
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {
@@ -1592,6 +1591,29 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseProviderCategory) ??
     BROWSE_PROVIDER_CATEGORIES[0];
 
+  const browseLabel = constrainByDistance
+    ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown?.shortName ?? ''}`
+    : selectedBrowseCategory.id === 'all'
+      ? 'All providers'
+      : `All ${selectedBrowseCategory.label.toLowerCase()} providers`;
+
+  const searchSuggestions = useMemo(() => {
+    const term = barberSearchQuery.trim().toLowerCase();
+    if (!term) return [];
+    return barbers
+      .filter((barber) => getBarberNameSearchText(barber).includes(term))
+      .slice(0, 6)
+      .map((barber) => ({
+        id: barber.id,
+        label:
+          barber.name ||
+          barber.display_name ||
+          `${barber.first_name || ''} ${barber.last_name || ''}`.trim() ||
+          'Provider',
+        subtitle: barber.specialties?.[0],
+      }));
+  }, [barbers, barberSearchQuery]);
+
   const applyFilters = () => {
     let filtered = [...barbers];
 
@@ -1657,136 +1679,29 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
   return (
     <>
-      {/* Filter Header */}
-      <div className="mb-4 sm:mb-6">
-        {/* College town and filter info */}
-        <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
-          <span>
-            {constrainByDistance
-              ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown.shortName}`
-              : selectedBrowseCategory.id === 'all'
-                ? 'All providers'
-                : `All ${selectedBrowseCategory.label.toLowerCase()} providers`}
-          </span>
-          {filterCriteria.serviceType && (
-            <>
-              <span className="text-gray-400">•</span>
-              <span className="text-primary-600 font-medium">{filterCriteria.serviceType}</span>
-              <button 
-                onClick={clearFilters}
-                className="text-gray-400 hover:text-gray-600 underline"
-              >
-                Clear
-              </button>
-            </>
-          )}
-          <span className="text-gray-400">•</span>
-          <button 
-            onClick={() => navigate('/')}
-            className="text-primary-600 hover:text-black underline"
-          >
-            Change
-          </button>
-        </div>
-        
-        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <label htmlFor="barber-search" className="block text-sm font-medium text-gray-700 mb-2">
-            Search barber
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              id="barber-search"
-              type="search"
-              value={barberSearchQuery}
-              onChange={(e) => setBarberSearchQuery(e.target.value)}
-              placeholder="Barber name"
-              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none"
-            />
-            {barberSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setBarberSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                aria-label="Clear barber search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <p className="text-sm font-medium text-gray-700 mb-2">Provider type</p>
-          <div className="flex flex-wrap gap-2">
-            {BROWSE_PROVIDER_CATEGORIES.map((option) => {
-              const isSelected = browseProviderCategory === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleBrowseCategoryChange(option.id)}
-                  aria-pressed={isSelected}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    isSelected
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-xs text-gray-500">{selectedBrowseCategory.description}</p>
-        </div>
-
-        {/* Browse radius — centered on selected college town */}
-        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
-          <label className="flex items-center justify-between gap-3 cursor-pointer">
-            <span className="text-sm font-medium text-gray-700">Limit barbers by distance from town</span>
-            <input
-              type="checkbox"
-              checked={constrainByDistance}
-              onChange={(e) => handleConstrainByDistanceChange(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-400"
-            />
-          </label>
-          {constrainByDistance && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-900">{Math.round(displayDistanceMiles)} mi away</span>
-                <span className="text-xs text-gray-500">
-                  from {selectedCollegeTown.shortName}
-                </span>
-              </div>
-              <BrowseRadiusSlider
-                min={BROWSE_MIN_DISTANCE_MILES}
-                max={BROWSE_MAX_DISTANCE_MILES}
-                value={maxDistanceMiles}
-                onChange={handleMaxDistancePreview}
-                onChangeCommitted={handleMaxDistanceCommitted}
-              />
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>{BROWSE_MIN_DISTANCE_MILES} mi</span>
-                <span>{BROWSE_MAX_DISTANCE_MILES} mi</span>
-              </div>
-              {(latitude == null || longitude == null) && (
-                <p className="text-xs text-amber-700">
-                  This college town has no map coordinates — distance filtering may be unavailable.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Results count */}
-        {(filteredBarbers?.length > 0 || barberSearchQuery.trim()) && (
-          <p className="text-center text-xs text-gray-500 mt-2">
-            {filteredBarbers.length} provider{filteredBarbers.length !== 1 ? 's' : ''} found
-          </p>
-        )}
-      </div>
+      <BrowseUtilityPill
+        browseLabel={browseLabel}
+        townShortName={selectedCollegeTown.shortName}
+        onChangeTown={() => navigate('/')}
+        searchQuery={barberSearchQuery}
+        onSearchQueryChange={setBarberSearchQuery}
+        searchSuggestions={searchSuggestions}
+        onSearchSuggestionSelect={(id) => {
+          const barber = barbers.find((entry) => entry.id === id);
+          if (barber) void handleBarberSelect(barber);
+        }}
+        browseCategory={browseProviderCategory}
+        onBrowseCategoryChange={handleBrowseCategoryChange}
+        constrainByDistance={constrainByDistance}
+        onConstrainByDistanceChange={handleConstrainByDistanceChange}
+        maxDistanceMiles={maxDistanceMiles}
+        displayDistanceMiles={displayDistanceMiles}
+        onMaxDistancePreview={handleMaxDistancePreview}
+        onMaxDistanceCommitted={handleMaxDistanceCommitted}
+        resultsCount={filteredBarbers.length}
+        showResultsCount={filteredBarbers.length > 0 || barberSearchQuery.trim().length > 0}
+        missingTownCoords={latitude == null || longitude == null}
+      />
 
       {/* Price disclaimer */}
       {filteredBarbers && filteredBarbers.length > 0 && (
