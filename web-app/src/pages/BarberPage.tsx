@@ -2346,17 +2346,15 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             <button
               type="button"
               onClick={() => onEditAvailability?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
-              <Settings className="w-4 h-4" />
               Edit Schedule
             </button>
             <button
               type="button"
               onClick={() => onOpenBlockTime?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
               Block Time
             </button>
           </div>
