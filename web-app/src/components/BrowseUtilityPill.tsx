@@ -195,12 +195,12 @@ export default function BrowseUtilityPill({
             role="region"
             aria-label="Provider type filter"
           >
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-sm font-semibold text-gray-900">Provider type</p>
+            <div className="relative flex items-center justify-center min-h-8 mb-2 px-10">
+              <p className="text-sm font-semibold text-gray-900 text-center">Provider type</p>
               <button
                 type="button"
                 onClick={closeAllModes}
-                className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
+                className="absolute right-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
                 aria-label="Done filtering by provider type"
               >
                 <Check className="w-4 h-4" />
