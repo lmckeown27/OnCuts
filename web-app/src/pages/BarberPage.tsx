@@ -2346,14 +2346,14 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             <button
               type="button"
               onClick={() => onEditAvailability?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
             >
               Edit Schedule
             </button>
             <button
               type="button"
               onClick={() => onOpenBlockTime?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
             >
               Block Time
             </button>
