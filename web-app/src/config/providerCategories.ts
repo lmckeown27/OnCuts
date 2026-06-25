@@ -25,16 +25,6 @@ export const BROWSE_PROVIDER_CATEGORIES: BrowseProviderCategoryOption[] = [
     label: 'Beauty',
     description: 'Makeup, nails, lashes, and more',
   },
-  {
-    id: 'Wellness',
-    label: 'Wellness',
-    description: 'Massage and wellness services',
-  },
-  {
-    id: 'Fitness',
-    label: 'Fitness',
-    description: 'Trainers and fitness coaches',
-  },
 ];
 
 export function browseCategoryApiParam(
