@@ -142,49 +142,49 @@ export default function BrowseUtilityPill({
       <div className="max-w-lg mx-auto space-y-2">
         {mode === 'radius' ? (
           <div
-            className="rounded-full border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3 space-y-2"
+            className="rounded-3xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3 space-y-2"
             role="region"
             aria-label="Adjust search radius"
           >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-gray-900">
+            <div className="relative flex items-center justify-center min-h-8 px-16">
+              <button
+                type="button"
+                onClick={() => {
+                  onConstrainByDistanceChange(false);
+                  closeAllModes();
+                }}
+                className="absolute left-0 text-xs font-medium text-gray-500 hover:text-gray-800 underline"
+              >
+                No limit
+              </button>
+              <p className="text-sm font-semibold text-gray-900 text-center">
                 {Math.round(displayDistanceMiles)} miles away
               </p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onConstrainByDistanceChange(false);
-                    closeAllModes();
-                  }}
-                  className="text-xs font-medium text-gray-500 hover:text-gray-800 underline"
-                >
-                  No limit
-                </button>
-                <button
-                  type="button"
-                  onClick={commitRadius}
-                  className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
-                  aria-label="Close radius adjustment"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <button
+                type="button"
+                onClick={commitRadius}
+                className="absolute right-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
+                aria-label="Close radius adjustment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 text-center -mt-1">from {townShortName}</p>
+            <div className="px-1">
+              <BrowseRadiusSlider
+                min={BROWSE_MIN_DISTANCE_MILES}
+                max={BROWSE_MAX_DISTANCE_MILES}
+                value={maxDistanceMiles}
+                onChange={onMaxDistancePreview}
+                onChangeCommitted={onMaxDistanceCommitted}
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>{BROWSE_MIN_DISTANCE_MILES} mi</span>
+                <span>{BROWSE_MAX_DISTANCE_MILES} mi</span>
               </div>
             </div>
-            <p className="text-xs text-gray-500">from {townShortName}</p>
-            <BrowseRadiusSlider
-              min={BROWSE_MIN_DISTANCE_MILES}
-              max={BROWSE_MAX_DISTANCE_MILES}
-              value={maxDistanceMiles}
-              onChange={onMaxDistancePreview}
-              onChangeCommitted={onMaxDistanceCommitted}
-            />
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>{BROWSE_MIN_DISTANCE_MILES} mi</span>
-              <span>{BROWSE_MAX_DISTANCE_MILES} mi</span>
-            </div>
             {missingTownCoords && (
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-amber-700 text-center">
                 This college town has no map coordinates — distance filtering may be unavailable.
               </p>
             )}
