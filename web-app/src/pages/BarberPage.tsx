@@ -28,6 +28,7 @@ import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
 import StripeHubModal from '../components/StripeHubModal';
 import BlockTimeModal from '../components/BlockTimeModal';
+import ProviderWeeklyScheduleGrid from '../components/ProviderWeeklyScheduleGrid';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -1301,10 +1302,6 @@ export default function BarberPage() {
   );
 }
 
-type ScheduleZoomView = 'month' | 'week' | 'day' | 'minute';
-
-const SCHEDULE_ZOOM_VIEWS: ScheduleZoomView[] = ['month', 'week', 'day', 'minute'];
-
 interface DashboardViewProps {
   navigate: any;
   barberId: string;
@@ -1381,14 +1378,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     return campusToday;
   };
 
-  const [scheduleView, setScheduleView] = useState<ScheduleZoomView>('day');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
-  const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
-  const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
+  const [weeklyTimeBlocks, setWeeklyTimeBlocks] = useState<TimeBlock[]>([]);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationDraft, setLocationDraft] = useState(serviceLocationLabel || '');
 
@@ -1457,7 +1451,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [googleCalendarBusyTimes, setGoogleCalendarBusyTimes] = useState<Array<{ start: Date; end: Date }>>([]); // Google Calendar busy times
   const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0); // Trigger refresh when availability changes
   const modalRef = useRef<HTMLDivElement>(null);
-  const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
   // Inline booking details state (shown within DayModal instead of separate popup)
   const [selectedBookingInline, setSelectedBookingInline] = useState<ConfirmedBooking | null>(null);
@@ -1506,86 +1499,58 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const getScheduleSummaryText = (): string => {
     const today = getTodayInCampusTimezone();
-    let count = 0;
-    let dateLabel = '';
-
-    if (scheduleView === 'day' || scheduleView === 'minute') {
-      const displayDate = new Date(today);
-      displayDate.setDate(displayDate.getDate() + dayOffset);
-      const nextDay = new Date(displayDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      count = visibleConfirmedBookings.filter(b => {
-        const bookingDate = new Date(b.scheduledTime);
-        return bookingDate >= displayDate && bookingDate < nextDay;
-      }).length;
-      dateLabel = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    } else if (scheduleView === 'week') {
-      const todayDay = today.getDay();
-      const startOfWeek = new Date(today);
-      const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-      startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
-      count = visibleConfirmedBookings.filter(b => {
-        const bookingDate = new Date(b.scheduledTime);
-        return bookingDate >= startOfWeek && bookingDate < endOfWeek;
-      }).length;
-      const endDisplay = new Date(startOfWeek);
-      endDisplay.setDate(startOfWeek.getDate() + 6);
-      const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' });
-      const endMonth = endDisplay.toLocaleDateString('en-US', { month: 'short' });
-      dateLabel =
-        startMonth === endMonth
-          ? `${startMonth} ${startOfWeek.getDate()}–${endDisplay.getDate()}`
-          : `${startMonth} ${startOfWeek.getDate()} – ${endMonth} ${endDisplay.getDate()}`;
-    } else {
-      const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-      count = visibleConfirmedBookings.filter(b => {
-        const bookingDate = new Date(b.scheduledTime);
-        return bookingDate.getMonth() === displayDate.getMonth() && bookingDate.getFullYear() === displayDate.getFullYear();
-      }).length;
-      dateLabel = displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    }
+    const todayDay = today.getDay();
+    const startOfWeek = new Date(today);
+    const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+    startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    const count = visibleConfirmedBookings.filter(b => {
+      const bookingDate = new Date(b.scheduledTime);
+      return bookingDate >= startOfWeek && bookingDate < endOfWeek;
+    }).length;
+    const endDisplay = new Date(startOfWeek);
+    endDisplay.setDate(startOfWeek.getDate() + 6);
+    const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' });
+    const endMonth = endDisplay.toLocaleDateString('en-US', { month: 'short' });
+    const dateLabel =
+      startMonth === endMonth
+        ? `${startMonth} ${startOfWeek.getDate()}–${endDisplay.getDate()}`
+        : `${startMonth} ${startOfWeek.getDate()} – ${endMonth} ${endDisplay.getDate()}`;
 
     return `${count} appointment${count !== 1 ? 's' : ''} · ${dateLabel}`;
-  };
-
-  const focusDay = (date: Date) => {
-    const today = getTodayInCampusTimezone();
-    const target = new Date(date);
-    target.setHours(0, 0, 0, 0);
-    const diffDays = Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-    setDayOffset(diffDays);
-    setScheduleView('day');
   };
 
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
 
-  // Fetch time blocks for calendar display
+  // Fetch time blocks for the displayed week
   useEffect(() => {
-    const fetchMonthlyTimeBlocks = async () => {
+    const fetchWeeklyTimeBlocks = async () => {
       if (!barberProfileId) return;
       try {
-        // Calculate start and end dates for current displayed month
-        const today = new Date();
-        const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-        const firstDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
-        const lastDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
-        
-        const startDate = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
-        const endDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth.getDate()).padStart(2, '0')}`;
-        
+        const today = getTodayInCampusTimezone();
+        const todayDay = today.getDay();
+        const startOfWeek = new Date(today);
+        const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+        startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        const startDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+        const endDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
+
         const blocks = await barberService.getTimeBlocks(barberProfileId, startDate, endDate);
-        setMonthlyTimeBlocks(blocks);
+        setWeeklyTimeBlocks(blocks);
       } catch (error) {
-        console.error('Failed to fetch monthly time blocks:', error);
-        setMonthlyTimeBlocks([]);
+        console.error('Failed to fetch weekly time blocks:', error);
+        setWeeklyTimeBlocks([]);
       }
     };
-    fetchMonthlyTimeBlocks();
-  }, [barberProfileId, monthOffset]);
+    fetchWeeklyTimeBlocks();
+  }, [barberProfileId, weekOffset]);
 
   // Fetch Google Calendar busy times when connected
   useEffect(() => {
@@ -1620,7 +1585,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     };
     
     fetchGoogleCalendarBusyTimes();
-  }, [googleCalendarConnected, dayOffset, weekOffset, monthOffset]);
+  }, [googleCalendarConnected, weekOffset]);
 
   // Fetch barber's weekly availability schedule
   useEffect(() => {
@@ -1807,7 +1772,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       console.log('🚫 Received time-block-update event:', data);
       
       if (data.action === 'created' && data.timeBlock) {
-        setMonthlyTimeBlocks(prev => [...prev, {
+        setWeeklyTimeBlocks(prev => [...prev, {
           id: data.timeBlock!.id,
           blockDate: data.timeBlock!.blockDate,
           startTime: data.timeBlock!.startTime,
@@ -1816,7 +1781,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         }]);
         toast.success('Time blocked successfully');
       } else if (data.action === 'deleted' && data.blockId) {
-        setMonthlyTimeBlocks(prev => prev.filter(block => block.id !== data.blockId));
+        setWeeklyTimeBlocks(prev => prev.filter(block => block.id !== data.blockId));
         toast.success('Time block removed');
       }
     };
@@ -1840,93 +1805,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       socketService.offTimeBlockUpdate(handleTimeBlockUpdate);
       socketService.offAvailabilityUpdate(handleAvailabilityUpdate);
     };
-  }, []);
-
-  // Touch/swipe state for switching views
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const lastWheelTime = useRef<number>(0);
-
-  const views = SCHEDULE_ZOOM_VIEWS;
-  
-  const switchToNextView = () => {
-    const currentIndex = views.indexOf(scheduleView);
-    if (currentIndex < views.length - 1) {
-      setScheduleView(views[currentIndex + 1]);
-    }
-  };
-
-  const switchToPrevView = () => {
-    const currentIndex = views.indexOf(scheduleView);
-    if (currentIndex > 0) {
-      setScheduleView(views[currentIndex - 1]);
-    }
-  };
-
-  // Touch handlers for mobile swipe
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaX = touchEndX - touchStartX.current;
-    const deltaY = touchEndY - touchStartY.current;
-    
-    // Only trigger if horizontal swipe is dominant and significant (>50px)
-    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-      if (deltaX < 0) {
-        // Swipe left -> next view
-        switchToNextView();
-      } else {
-        // Swipe right -> previous view
-        switchToPrevView();
-      }
-    }
-    
-    touchStartX.current = null;
-    touchStartY.current = null;
-  };
-
-  // Use native wheel event listener to properly prevent browser back/forward navigation
-  useEffect(() => {
-    const container = scheduleContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      // Only respond to horizontal scroll (deltaX) which is 2-finger swipe on trackpad
-      if (Math.abs(e.deltaX) > 30 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        // Prevent browser back/forward navigation
-        e.preventDefault();
-        
-        // Debounce to prevent rapid switching
-        const now = Date.now();
-        if (now - lastWheelTime.current < 300) return;
-        
-        lastWheelTime.current = now;
-        if (e.deltaX > 0) {
-          // Scroll right -> next view
-          setScheduleView(prev => {
-            const idx = views.indexOf(prev);
-            return idx < views.length - 1 ? views[idx + 1] : prev;
-          });
-        } else {
-          // Scroll left -> previous view
-          setScheduleView(prev => {
-            const idx = views.indexOf(prev);
-            return idx > 0 ? views[idx - 1] : prev;
-          });
-        }
-      }
-    };
-
-    // Add with passive: false to allow preventDefault
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
   }, []);
 
   // Day modal open/close handlers with animation
@@ -2176,20 +2054,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
   };
 
-  const handleDayClick = (date: Date) => {
-    focusDay(date);
-  };
-
   return (
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
-        <div
-          ref={scheduleContainerRef}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          className="touch-pan-y p-4 pb-0"
-        >
+        <div className="touch-pan-y p-4 pb-0">
         <div className="flex flex-col items-center gap-3 mb-4">
           {serviceLocationField}
 
@@ -2218,129 +2087,46 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             {getScheduleSummaryText()}
           </p>
 
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-md">
-            {([
-              { id: 'month' as const, label: 'Month' },
-              { id: 'week' as const, label: 'Week' },
-              { id: 'day' as const, label: 'Day' },
-              { id: 'minute' as const, label: 'Minute' },
-            ]).map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setScheduleView(id)}
-                className={`px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
-                  scheduleView === id
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {((scheduleView === 'day' || scheduleView === 'minute') && dayOffset !== 0) ||
-          (scheduleView === 'week' && weekOffset !== 0) ||
-          (scheduleView === 'month' && monthOffset !== 0) ? (
+          {weekOffset !== 0 ? (
             <button
-              onClick={() => {
-                if (scheduleView === 'day' || scheduleView === 'minute') setDayOffset(0);
-                else if (scheduleView === 'week') setWeekOffset(0);
-                else setMonthOffset(0);
-              }}
+              onClick={() => setWeekOffset(0)}
               className="px-3 py-1.5 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
             >
-              {scheduleView === 'day' || scheduleView === 'minute'
-                ? 'Today'
-                : scheduleView === 'week'
-                  ? 'This Week'
-                  : 'This Month'}
+              This Week
             </button>
           ) : null}
 
-          {(scheduleView === 'day' || scheduleView === 'minute') && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDayOffset(prev => prev - 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
-                {dayOffset === 0 ? 'Today - ' : dayOffset === 1 ? 'Tomorrow - ' : dayOffset === -1 ? 'Yesterday - ' : ''}
-                {(() => {
-                  const today = getTodayInCampusTimezone();
-                  const displayDate = new Date(today);
-                  displayDate.setDate(displayDate.getDate() + dayOffset);
-                  return displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-                })()}
-              </h3>
-              <button
-                onClick={() => setDayOffset(prev => prev + 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          )}
-
-          {scheduleView === 'week' && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setWeekOffset(prev => prev - 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
-                {(() => {
-                  const today = getTodayInCampusTimezone();
-                  const todayDay = today.getDay();
-                  const startOfWeek = new Date(today);
-                  const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-                  startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
-                  const endOfWeek = new Date(startOfWeek);
-                  endOfWeek.setDate(startOfWeek.getDate() + 6);
-                  const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
-                  const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
-                  const year = endOfWeek.getFullYear();
-                  return startMonth === endMonth
-                    ? `${startMonth} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}, ${year}`
-                    : `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}, ${year}`;
-                })()}
-              </h3>
-              <button
-                onClick={() => setWeekOffset(prev => prev + 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          )}
-
-          {scheduleView === 'month' && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMonthOffset(prev => prev - 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">
-                {(() => {
-                  const today = getTodayInCampusTimezone();
-                  const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-                  return displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                })()}
-              </h3>
-              <button
-                onClick={() => setMonthOffset(prev => prev + 1)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setWeekOffset(prev => prev - 1)}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
+              {(() => {
+                const today = getTodayInCampusTimezone();
+                const todayDay = today.getDay();
+                const startOfWeek = new Date(today);
+                const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+                startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                const year = endOfWeek.getFullYear();
+                return startMonth === endMonth
+                  ? `${startMonth} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}, ${year}`
+                  : `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}, ${year}`;
+              })()}
+            </h3>
+            <button
+              onClick={() => setWeekOffset(prev => prev + 1)}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
 
           <div className="flex flex-wrap justify-center gap-2 w-full max-w-md">
             <button
@@ -2360,699 +2146,24 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           </div>
         </div>
 
-        {(scheduleView === 'day' || scheduleView === 'minute') && (() => {
-          const isMinuteView = scheduleView === 'minute';
-          const slotIntervalMinutes = isMinuteView ? 15 : 60;
-          // Filter bookings for the selected day (using dayOffset) - using campus timezone
-          const today = getTodayInCampusTimezone();
-          const displayDate = new Date(today);
-          displayDate.setDate(displayDate.getDate() + dayOffset);
-          const nextDay = new Date(displayDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          
-          const dailyAppointments = visibleConfirmedBookings
-            .filter(booking => {
-              const bookingDate = new Date(booking.scheduledTime);
-              return bookingDate >= displayDate && bookingDate < nextDay;
-            })
-            .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
-
-          const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
-          const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: campusTimezone });
-          const dayLabel = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : dayOffset === -1 ? 'Yesterday' : '';
-          const dateFormatted = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-          // Get availability for this day
-          const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-          const dayOfWeek = displayDate.getDay();
-          const dayKey = dayNames[dayOfWeek];
-          const daySchedule = weeklySchedule?.[dayKey];
-          
-          // Get time blocks for this day
-          const dateStr = `${displayDate.getFullYear()}-${String(displayDate.getMonth() + 1).padStart(2, '0')}-${String(displayDate.getDate()).padStart(2, '0')}`;
-          const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
-          
-          // Get intervals (support both new and legacy format)
-          let intervals: { start: string; end: string }[] = [];
-          if (daySchedule?.enabled) {
-            if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
-              intervals = daySchedule.intervals.map((i: any) => ({ start: i.start, end: i.end }));
-            } else if (daySchedule.start && daySchedule.end) {
-              intervals = [{ start: daySchedule.start, end: daySchedule.end }];
-            }
-          }
-          
-          // Format time for display (12-hour)
-          const formatTime12 = (time: string) => {
-            const [hours, minutes] = time.split(':').map(Number);
-            const period = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-            return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
-          };
-
-          const timeToMinutes = (time: string) => {
-            const [h, m] = time.split(':').map(Number);
-            return h * 60 + m;
-          };
-          
-          // Generate timeline slots from intervals
-          const generateTimelineSlots = (slotIntervals: { start: string; end: string }[], intervalMinutes: number) => {
-            const slots: { start: string; end: string }[] = [];
-            slotIntervals.forEach(interval => {
-              let cursor = timeToMinutes(interval.start);
-              const endMin = timeToMinutes(interval.end);
-              while (cursor + intervalMinutes <= endMin) {
-                const slotEnd = cursor + intervalMinutes;
-                slots.push({
-                  start: `${String(Math.floor(cursor / 60)).padStart(2, '0')}:${String(cursor % 60).padStart(2, '0')}`,
-                  end: `${String(Math.floor(slotEnd / 60)).padStart(2, '0')}:${String(slotEnd % 60).padStart(2, '0')}`,
-                });
-                cursor += intervalMinutes;
-              }
-            });
-            return slots;
-          };
-
-          const generateHourlySlots = (slotIntervals: { start: string; end: string }[]) => {
-            const slots: { start: string; end: string }[] = [];
-            slotIntervals.forEach(interval => {
-              const [startHour] = interval.start.split(':').map(Number);
-              const [endHour] = interval.end.split(':').map(Number);
-              for (let hour = startHour; hour < endHour; hour++) {
-                slots.push({
-                  start: `${String(hour).padStart(2, '0')}:00`,
-                  end: `${String(hour + 1).padStart(2, '0')}:00`,
-                });
-              }
-            });
-            return slots;
-          };
-
-          const timelineSlots = isMinuteView
-            ? generateTimelineSlots(intervals, slotIntervalMinutes)
-            : generateHourlySlots(intervals);
-          
-          // Helper to check if slot is blocked (manual block)
-          const getBlockForSlot = (slot: { start: string; end: string }) => {
-            const slotStart = timeToMinutes(slot.start);
-            const slotEnd = timeToMinutes(slot.end);
-            return dayBlocks.find(block => {
-              const blockStart = timeToMinutes(block.startTime);
-              const blockEnd = timeToMinutes(block.endTime);
-              return slotStart < blockEnd && slotEnd > blockStart;
-            });
-          };
-          
-          // Helper to check if slot is blocked by Google Calendar
-          const getGoogleCalendarBlockForSlot = (slot: { start: string; end: string }) => {
-            const slotStart = timeToMinutes(slot.start);
-            const slotEnd = timeToMinutes(slot.end);
-            
-            // Convert slot times to full Date for the displayed day
-            const slotStartDate = new Date(displayDate);
-            slotStartDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
-            const slotEndDate = new Date(displayDate);
-            slotEndDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
-            
-            return googleCalendarBusyTimes.find(busy => {
-              // Check if this busy time overlaps with the slot on this day
-              const busyStart = busy.start;
-              const busyEnd = busy.end;
-              
-              // Check if busy time is on the same day and overlaps
-              return (
-                busyStart < slotEndDate && busyEnd > slotStartDate
-              );
-            });
-          };
-          
-          // Helper to get appointment for slot
-          const getAppointmentForSlot = (slot: { start: string; end: string }) => {
-            const slotStart = timeToMinutes(slot.start);
-            const slotEnd = timeToMinutes(slot.end);
-            return dailyAppointments.find(apt => {
-              const aptTime = new Date(apt.scheduledTime);
-              const aptMinutes = aptTime.getHours() * 60 + aptTime.getMinutes();
-              return aptMinutes >= slotStart && aptMinutes < slotEnd;
-            });
-          };
-          
-          const availableCount = timelineSlots.filter(slot => !getBlockForSlot(slot) && !getGoogleCalendarBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
-          const bookedCount = timelineSlots.filter(slot => getAppointmentForSlot(slot)).length;
-          const blockedCount = timelineSlots.filter(slot => (getBlockForSlot(slot) || getGoogleCalendarBlockForSlot(slot)) && !getAppointmentForSlot(slot)).length;
-
-          return (
-            <div className="max-w-2xl mx-auto">
-              {isLoadingBookings || isLoadingWeeklySchedule ? (
-                <div className="text-center py-8 sm:py-12">
-                  <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4"></div>
-                  <p className="text-gray-500">{isLoadingWeeklySchedule ? 'Loading availability...' : 'Loading appointments...'}</p>
-                </div>
-              ) : !daySchedule?.enabled || intervals.length === 0 ? (
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                  <p className="text-sm text-gray-500 mb-3">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
-                  <button
-                    onClick={() => onEditAvailability?.()}
-                    className="text-sm px-3 py-1.5 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg transition-colors inline-flex items-center gap-1.5"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Add Availability
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div className={`${isMinuteView ? 'space-y-1 max-h-[28rem] overflow-y-auto pr-1' : 'space-y-2'}`}>
-                    {timelineSlots.map((slot, idx) => {
-                      const block = getBlockForSlot(slot);
-                      const appointment = getAppointmentForSlot(slot);
-                      
-                      // Appointment takes priority
-                      if (appointment) {
-                        const isCompleted = appointment.status === 'COMPLETED' || appointment.status === 'PAID';
-                        return (
-                          <div 
-                            key={idx}
-                            onClick={() => onViewDetails(appointment)}
-                            className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                              isCompleted 
-                                ? 'bg-green-50 border-green-200 hover:border-green-400' 
-                                : 'bg-blue-50 border-blue-200 hover:border-blue-400'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {formatTime12(slot.start)} - {formatTime12(slot.end)}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  {appointment.consumer.firstName} {appointment.consumer.lastName}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                  <p className="text-xs text-gray-500 font-semibold">
-                                    {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                  </p>
-                                <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-                      
-                      // Blocked slot - with unblock option (manual block)
-                      if (block) {
-                        return (
-                          <div 
-                            key={idx}
-                            className="px-3 py-2 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-red-500" />
-                              <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
-                            </div>
-                            <button
-                              onClick={() => onUnblockTime?.(block.id)}
-                              className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded transition-colors border border-red-300"
-                            >
-                              Unblock
-                            </button>
-                          </div>
-                        );
-                      }
-                      
-                      // Google Calendar blocked slot - not unblockable from CampusCuts
-                      const googleBlock = getGoogleCalendarBlockForSlot(slot);
-                      if (googleBlock) {
-                        return (
-                          <div 
-                            key={idx}
-                            className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-200 flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                              </svg>
-                              <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
-                            </div>
-                            <span className="text-xs text-blue-500">Google Calendar</span>
-                          </div>
-                        );
-                      }
-                      
-                      // Available slot - clickable to block
-                      return (
-                        <div 
-                          key={idx}
-                          onClick={() => onBlockTime?.(dateStr, slot.start, slot.end)}
-                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-gray-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-gray-300 transition-colors"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-primary-400"></div>
-                          {formatTime12(slot.start)} - {formatTime12(slot.end)}
-                          <span className="text-xs text-primary-500 ml-auto sm:hidden">Tap to block</span>
-                          <span className="text-xs text-primary-500 ml-auto hidden sm:inline">Click to block</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-gray-100 space-y-2.5">
-                    <p className="text-xs text-gray-600 text-center">
-                      {availableCount} open · {bookedCount} booked · {blockedCount} blocked
-                      {isMinuteView ? ' · 15-minute slots' : ' · hourly slots'}
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary-400" /> Open — tap to block</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400" /> Booked</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /> Blocked</span>
-                    </div>
-                    <div className="flex justify-center">
-                      {googleCalendarConnected === null ? (
-                        <span className="text-xs text-gray-400">Checking Google Calendar…</span>
-                      ) : googleCalendarConnected ? (
-                        <button
-                          type="button"
-                          onClick={() => onDisconnectGoogleCalendar?.()}
-                          className="text-xs text-primary-600 hover:text-black hover:underline"
-                        >
-                          Google Calendar connected — disconnect
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onConnectGoogleCalendar?.()}
-                          disabled={googleCalendarLoading}
-                          className="text-xs text-primary-600 hover:text-black hover:underline disabled:opacity-50"
-                        >
-                          {googleCalendarLoading ? 'Connecting Google Calendar…' : 'Connect Google Calendar'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {scheduleView === 'week' && (() => {
-          // Get the week based on weekOffset - using campus timezone
-          const today = getTodayInCampusTimezone();
-          const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-          
-          // Calculate start of current week (Monday)
-          const startOfWeek = new Date(today);
-          const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-          startOfWeek.setDate(today.getDate() - daysFromMonday);
-          // Apply week offset
-          startOfWeek.setDate(startOfWeek.getDate() + (weekOffset * 7));
-          startOfWeek.setHours(0, 0, 0, 0);
-          
-          // Build week days array dynamically (handles month boundaries automatically)
-          const weekDays = [];
-          for (let i = 0; i < 7; i++) {
-            const date = new Date(startOfWeek);
-            date.setDate(startOfWeek.getDate() + i);
-            weekDays.push({
-              name: date.toLocaleDateString('en-US', { weekday: 'long' }),
-              shortName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-              date: date.getDate(),
-              month: date.toLocaleDateString('en-US', { month: 'short' }),
-              fullDate: date,
-            });
-          }
-          
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(startOfWeek.getDate() + 7);
-          
-          // Group bookings by date
-          const weekAppointmentsByDate: { [dateKey: string]: ConfirmedBooking[] } = {};
-          visibleConfirmedBookings.forEach(booking => {
-            const bookingDate = new Date(booking.scheduledTime);
-            if (bookingDate >= startOfWeek && bookingDate < endOfWeek) {
-              const dateKey = bookingDate.toDateString();
-              if (!weekAppointmentsByDate[dateKey]) {
-                weekAppointmentsByDate[dateKey] = [];
-              }
-              weekAppointmentsByDate[dateKey].push(booking);
-            }
-          });
-
-          const totalWeekAppointments = Object.values(weekAppointmentsByDate).reduce((sum, arr) => sum + arr.length, 0);
-          
-          // Format week range - show month on both ends if they differ
-          const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
-          const endDate = new Date(endOfWeek.getTime() - 1);
-          const endMonth = endDate.toLocaleDateString('en-US', { month: 'long' });
-          const weekRangeText = startMonth === endMonth 
-            ? `${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`
-            : `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-
-          return (
-            <div>
-              {/* Mobile: List view */}
-              <div className="sm:hidden space-y-2">
-                {weekDays.map(day => {
-                  const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
-                  const isToday = day.fullDate.toDateString() === today.toDateString();
-                  // Get time blocks for this day
-                  const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
-                  const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
-                  const hasTimeBlocks = dayTimeBlocks.length > 0;
-                  // Count Google Calendar busy times for this day
-                  const dayStart = new Date(day.fullDate);
-                  dayStart.setHours(0, 0, 0, 0);
-                  const dayEnd = new Date(day.fullDate);
-                  dayEnd.setHours(23, 59, 59, 999);
-                  const dayGoogleBlocks = googleCalendarBusyTimes.filter(bt => 
-                    bt.start < dayEnd && bt.end > dayStart
-                  );
-                  const hasGoogleBlocks = dayGoogleBlocks.length > 0;
-
-                  return (
-                    <div
-                      key={day.fullDate.toISOString()}
-                      onClick={() => handleDayClick(day.fullDate)}
-                      className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
-                        isToday
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'bg-gray-50 border-gray-200'
-                      } cursor-pointer`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <div className={`text-3xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
-                          {/* Show month if different from first day of week */}
-                          {day.month !== weekDays[0].month && (
-                            <div className={`text-xs ${isToday ? 'text-white/70' : 'text-gray-500'}`}>{day.month}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
-                          {(() => {
-                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
-                            const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
-                            
-                            if (dayBookings.length === 0 && !hasTimeBlocks && !hasGoogleBlocks) {
-                              return (
-                                <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
-                                  No appointments
-                                </div>
-                              );
-                            }
-                            
-                            return (
-                              <div className="flex flex-col gap-0.5">
-                                {completedCount > 0 && (
-                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-green-700 font-bold'}`}>
-                                    {completedCount} completed
-                                  </div>
-                                )}
-                                {pendingCount > 0 && (
-                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-amber-600 font-bold'}`}>
-                                    {pendingCount} booked
-                                  </div>
-                                )}
-                                {hasTimeBlocks && (
-                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
-                                    {dayTimeBlocks.length} blocked
-                                  </div>
-                                )}
-                                {hasGoogleBlocks && (
-                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-blue-600 font-bold'}`}>
-                                    {dayGoogleBlocks.length} calendar
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                      <ChevronDown className={`w-6 h-6 -rotate-90 ${isToday ? 'text-white/70' : 'text-gray-400'}`} />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Desktop: Grid view */}
-              <div className="hidden sm:grid grid-cols-7 gap-4">
-                {/* Week day headers */}
-                {weekDays.map(day => (
-                  <div key={day.fullDate.toISOString() + '-header'} className="text-center font-bold text-gray-600 text-base py-2">
-                    {day.shortName}
-                  </div>
-                ))}
-                {/* Week day cards */}
-                {weekDays.map(day => {
-                  const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
-                  const isToday = day.fullDate.toDateString() === today.toDateString();
-                  // Get time blocks for this day
-                  const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
-                  const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
-                  const hasTimeBlocks = dayTimeBlocks.length > 0;
-                  // Count Google Calendar busy times for this day
-                  const dayStartDesktop = new Date(day.fullDate);
-                  dayStartDesktop.setHours(0, 0, 0, 0);
-                  const dayEndDesktop = new Date(day.fullDate);
-                  dayEndDesktop.setHours(23, 59, 59, 999);
-                  const dayGoogleBlocksDesktop = googleCalendarBusyTimes.filter(bt => 
-                    bt.start < dayEndDesktop && bt.end > dayStartDesktop
-                  );
-                  const hasGoogleBlocksDesktop = dayGoogleBlocksDesktop.length > 0;
-
-                  return (
-                    <div
-                      key={day.fullDate.toISOString()}
-                      onClick={() => handleDayClick(day.fullDate)}
-                      className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
-                        isToday
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                      } cursor-pointer transition-colors`}
-                    >
-                      <div className="text-center mb-4">
-                        <div className="text-3xl font-bold mb-1">{day.date}</div>
-                        <div className={`text-sm ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
-                          {/* Show month if different from first day of week */}
-                          {day.month !== weekDays[0].month ? `${day.month} - ${day.name}` : day.name}
-                        </div>
-                      </div>
-                      <div className="text-sm space-y-1.5 flex-1 overflow-hidden">
-                        {(() => {
-                          const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
-                          const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
-                          
-                          if (dayBookings.length === 0 && !hasTimeBlocks && !hasGoogleBlocksDesktop) {
-                            return (
-                              <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
-                            );
-                          }
-                          
-                          return (
-                            <div className="flex flex-col gap-0.5">
-                              {completedCount > 0 && (
-                                <div className={`${isToday ? 'text-white/80' : 'text-green-700 font-bold'}`}>
-                                  {completedCount} completed
-                                </div>
-                              )}
-                              {pendingCount > 0 && (
-                                <div className={`${isToday ? 'text-white/80' : 'text-amber-600 font-bold'}`}>
-                                  {pendingCount} booked
-                                </div>
-                              )}
-                              {hasTimeBlocks && (
-                                <div className={`${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
-                                  {dayTimeBlocks.length} blocked
-                                </div>
-                              )}
-                              {hasGoogleBlocksDesktop && (
-                                <div className={`${isToday ? 'text-white/70' : 'text-blue-600 font-bold'}`}>
-                                  {dayGoogleBlocksDesktop.length} calendar
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Monthly View */}
-        {scheduleView === 'month' && (() => {
-          // Use campus timezone to determine current month
-          const today = getTodayInCampusTimezone();
-          // Calculate the displayed month based on offset
-          const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-          const displayMonth = displayDate.getMonth();
-          const displayYear = displayDate.getFullYear();
-          
-          // Get first day of month and number of days
-          const firstDayOfMonth = new Date(displayYear, displayMonth, 1);
-          const lastDayOfMonth = new Date(displayYear, displayMonth + 1, 0);
-          const daysInMonth = lastDayOfMonth.getDate();
-          const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
-          
-          const monthName = displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-          
-          // Group bookings by day of month
-          const monthAppointmentsByDay: { [day: number]: ConfirmedBooking[] } = {};
-          visibleConfirmedBookings.forEach(booking => {
-            const bookingDate = new Date(booking.scheduledTime);
-            if (bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear) {
-              const day = bookingDate.getDate();
-              if (!monthAppointmentsByDay[day]) {
-                monthAppointmentsByDay[day] = [];
-              }
-              monthAppointmentsByDay[day].push(booking);
-            }
-          });
-          
-          const totalMonthAppointments = Object.values(monthAppointmentsByDay).reduce((sum, arr) => sum + arr.length, 0);
-          
-          // Group time blocks by day of month
-          const monthTimeBlocksByDay: { [day: number]: TimeBlock[] } = {};
-          monthlyTimeBlocks.forEach(block => {
-            // block.blockDate is in YYYY-MM-DD format
-            const [blockYear, blockMonth, blockDay] = block.blockDate.split('-').map(Number);
-            if (blockMonth - 1 === displayMonth && blockYear === displayYear) {
-              if (!monthTimeBlocksByDay[blockDay]) {
-                monthTimeBlocksByDay[blockDay] = [];
-              }
-              monthTimeBlocksByDay[blockDay].push(block);
-            }
-          });
-          
-          // Create array with empty slots for padding
-          const calendarDays: (number | null)[] = [];
-          for (let i = 0; i < startDayOfWeek; i++) {
-            calendarDays.push(null); // Padding for days before first of month
-          }
-          for (let i = 1; i <= daysInMonth; i++) {
-            calendarDays.push(i);
-          }
-          
-          return (
-          <div>
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
-              {/* Calendar header */}
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, i) => (
-                  <div key={i} className="text-center font-bold text-gray-600 text-sm sm:text-base py-2 sm:py-3">
-                    <span className="sm:hidden">{dayLabel}</span>
-                    <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
-                </div>
-              ))}
-              {/* Calendar days */}
-                {calendarDays.map((day, index) => {
-                  if (day === null) {
-                    return <div key={`empty-${index}`} className="aspect-square" />;
-                  }
-                  
-                  const dayBookings = monthAppointmentsByDay[day] || [];
-                  const dayTimeBlocks = monthTimeBlocksByDay[day] || [];
-                  const hasAppointments = dayBookings.length > 0;
-                  const hasTimeBlocks = dayTimeBlocks.length > 0;
-                  // Check if this day is "today" in campus timezone (must match day, month, and year)
-                  const isToday = day === today.getDate() && displayMonth === today.getMonth() && displayYear === today.getFullYear();
-                  
-                  return (
-                    <div
-                      key={day}
-                      onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
-                      className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
-                        isToday 
-                          ? 'bg-gray-900 text-white border-gray-900' 
-                          : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                      } cursor-pointer active:scale-95 transition-all`}
-                    >
-                      <div className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1">{day}</div>
-                      {/* Mobile: Show +X bookings count with color coding */}
-                      <div className="sm:hidden flex flex-col items-center gap-0">
-                        {(() => {
-                          const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
-                          const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
-                          return (
-                            <>
-                              {completedCount > 0 && (
-                                <div className={`text-xs font-bold ${isToday ? 'text-white' : 'text-green-600'}`}>
-                                  +{completedCount}
-                                </div>
-                              )}
-                              {pendingCount > 0 && (
-                                <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
-                                  +{pendingCount}
-                                </div>
-                              )}
-                              {hasTimeBlocks && (
-                                <div className={`text-xs font-bold ${isToday ? 'text-white/70' : 'text-red-500'}`}>
-                                  {dayTimeBlocks.length}🚫
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                      {/* Desktop: Show names with color-coded counts */}
-                      <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
-                        {dayBookings.length === 0 && !hasTimeBlocks ? (
-                          <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
-                        ) : (
-                          (() => {
-                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
-                            const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
-                            return (
-                              <div className="flex flex-col gap-0.5">
-                                {completedCount > 0 && (
-                                  <div className={`text-xs font-bold ${isToday ? 'text-white' : 'text-green-600'}`}>
-                                    {completedCount} done
-                                  </div>
-                                )}
-                                {pendingCount > 0 && (
-                                  <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
-                                    {pendingCount} booked
-                                  </div>
-                                )}
-                                {hasTimeBlocks && (
-                                  <div className={`text-xs font-bold ${isToday ? 'text-white/70' : 'text-red-500'}`}>
-                                    {dayTimeBlocks.length} blocked
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-              })()}
-
-        {(scheduleView === 'month' || scheduleView === 'week') && (
-          <p className="text-xs text-gray-500 text-center mt-3 px-4">
-            Tap a day to open the day timeline.
-          </p>
-        )}
-
-        {/* View indicator dots at bottom for swipe hint - mobile only */}
-        <div className="flex justify-center gap-2 mt-4 sm:hidden">
-          {views.map((view) => (
-            <div
-              key={view}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                scheduleView === view ? 'bg-primary-400' : 'bg-gray-300'
-              }`}
-            />
-          ))}
-            </div>
-          </div>
+        <ProviderWeeklyScheduleGrid
+          weekOffset={weekOffset}
+          getToday={getTodayInCampusTimezone}
+          campusTimezone={campusTimezone}
+          weeklySchedule={weeklySchedule}
+          timeBlocks={weeklyTimeBlocks}
+          bookings={visibleConfirmedBookings}
+          googleCalendarBusyTimes={googleCalendarBusyTimes}
+          isLoading={isLoadingBookings || isLoadingWeeklySchedule}
+          onBlockTime={onBlockTime}
+          onUnblockTime={onUnblockTime}
+          onViewBooking={onViewDetails}
+          googleCalendarConnected={googleCalendarConnected}
+          googleCalendarLoading={googleCalendarLoading}
+          onConnectGoogleCalendar={onConnectGoogleCalendar}
+          onDisconnectGoogleCalendar={onDisconnectGoogleCalendar}
+        />
+        </div>
       </Card>
 
       {/* Day Detail Modal */}
@@ -3610,7 +2721,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     const hourlySlots = generateHourlySlots(intervals);
                     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-                    const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+                    const dayBlocks = weeklyTimeBlocks.filter(block => block.blockDate === dateStr);
                     const dayAppointments = getAppointmentsForDate(selectedDate);
                     
                     // Helper to convert time to minutes
