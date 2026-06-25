@@ -3,6 +3,8 @@ import type { TimeBlock } from '../services/barber.service';
 
 const SLOT_MINUTES = 5;
 const ROW_HEIGHT_PX = 10;
+const VISIBLE_HOURS = 5;
+const VISIBLE_GRID_HEIGHT_PX = (VISIBLE_HOURS * 60 / SLOT_MINUTES) * ROW_HEIGHT_PX;
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
 type DayKey = (typeof DAY_NAMES)[number];
@@ -329,7 +331,8 @@ export default function ProviderWeeklyScheduleGrid({
           {/* Scrollable time grid */}
           <div
             ref={scrollRef}
-            className="overflow-y-auto max-h-[min(60vh,32rem)] border border-gray-200 rounded-lg bg-white"
+            className="overflow-y-auto border border-gray-200 rounded-lg bg-white"
+            style={{ maxHeight: VISIBLE_GRID_HEIGHT_PX }}
           >
             <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] gap-px relative" style={{ minHeight: totalHeight }}>
               {/* Time labels */}
