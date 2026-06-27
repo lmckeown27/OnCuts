@@ -4,10 +4,10 @@ import toast from 'react-hot-toast';
 import { Mail, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import authService from '../../services/auth.service';
-import { CampusCutLogo } from '../../assets';
+import { AvilaPlatformsLogo } from '../../assets';
 
-const verifyGateStorageKey = (emailLower: string) => `campuscut_verify_gate_ok:${emailLower}`;
-const verifyTermsLegacyKey = (emailLower: string) => `campuscut_verify_terms_ok:${emailLower}`;
+const verifyGateStorageKey = (emailLower: string) => `avilaplatforms_verify_gate_ok:${emailLower}`;
+const verifyTermsLegacyKey = (emailLower: string) => `avilaplatforms_verify_terms_ok:${emailLower}`;
 
 function clearVerifyGateLocal(emailLower: string): void {
   localStorage.removeItem(verifyGateStorageKey(emailLower));
@@ -217,7 +217,7 @@ export default function VerifyEmailPage() {
     try {
       await confirmVerificationCode(email, verificationCode);
       await completeRegistration(email);
-      toast.success('Welcome to CampusCuts!');
+      toast.success('Welcome to AvilaPlatforms!');
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
@@ -280,8 +280,8 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={CampusCutLogo} 
-              alt="CampusCuts Logo" 
+              src={AvilaPlatformsLogo} 
+              alt="AvilaPlatforms Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
@@ -515,7 +515,7 @@ export default function VerifyEmailPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:campuscuthelp@gmail.com"
+                href="mailto:avilaplatformshelp@gmail.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />

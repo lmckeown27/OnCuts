@@ -552,7 +552,7 @@ export default function BarberAnalyticsPanel({
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 italic pt-1">
-                      Payouts settle through your Stripe Connect account—not a CampusCuts balance.
+                      Payouts settle through your Stripe Connect account—not a AvilaPlatforms balance.
                     </p>
                   </div>
                 </div>

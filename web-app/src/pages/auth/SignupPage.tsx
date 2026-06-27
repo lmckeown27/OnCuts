@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
-import { CampusCutLogo } from '../../assets';
+import { AvilaPlatformsLogo } from '../../assets';
 import { isValidE164Phone } from '../../utils/phoneE164';
 
 interface SignupForm {
@@ -36,10 +36,10 @@ export default function SignupPage() {
 
   /** Prefill phone after phone OTP verified with no account yet (e.g. from AuthPage). */
   useEffect(() => {
-    const pending = sessionStorage.getItem('campuscut_pending_signup_phone');
+    const pending = sessionStorage.getItem('avilaplatforms_pending_signup_phone');
     if (pending?.trim()) {
       setFormData((prev) => ({ ...prev, phoneNumber: pending.trim() }));
-      sessionStorage.removeItem('campuscut_pending_signup_phone');
+      sessionStorage.removeItem('avilaplatforms_pending_signup_phone');
     }
   }, []);
   
@@ -221,15 +221,15 @@ export default function SignupPage() {
         <div className="flex flex-col items-center justify-center mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={CampusCutLogo} 
-              alt="CampusCuts Logo" 
+              src={AvilaPlatformsLogo} 
+              alt="AvilaPlatforms Logo" 
               className="h-16 w-auto mb-4"
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
             Create Account
           </h1>
-          <p className="text-gray-300">Join CampusCuts today</p>
+          <p className="text-gray-300">Join AvilaPlatforms today</p>
         </div>
 
         {/* Form Card */}
@@ -527,7 +527,7 @@ export default function SignupPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:campuscuthelp@gmail.com"
+                href="mailto:avilaplatformshelp@gmail.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
@@ -551,7 +551,7 @@ export default function SignupPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to CampusCuts
+            ← Back to AvilaPlatforms
           </Link>
         </div>
       </div>

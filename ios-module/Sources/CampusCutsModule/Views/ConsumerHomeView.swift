@@ -15,6 +15,7 @@ import AppKit
 
 internal struct ConsumerHomeView: View {
     @StateObject var viewModel: ConsumerViewModel
+    var liveDataSafetyMode: Bool = false
     @State private var selectedTab: Tab = .browse
     
     enum Tab: String, CaseIterable {
@@ -25,6 +26,9 @@ internal struct ConsumerHomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                if liveDataSafetyMode {
+                    CampusCutsLiveDataModeBanner()
+                }
                 // Tab Picker
                 tabPicker
                 
@@ -254,7 +258,7 @@ internal struct ConsumerBookingCard: View {
             // Header
             HStack {
                 // Barber Image
-                AsyncImage(url: URL(string: booking.barberProfileImage ?? "")) { image in
+                AsyncImage(url: CampusCutsS3ImageURL.url(forStoredPath: booking.barberProfileImage)) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -267,7 +271,7 @@ internal struct ConsumerBookingCard: View {
                 .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(booking.barberBusinessName ?? booking.barberName ?? "Barber")
+                    Text(booking.barberBusinessName ?? booking.barberName ?? "Provider")
                         .font(.headline)
                     Text(booking.serviceName ?? "Haircut")
                         .font(.subheadline)

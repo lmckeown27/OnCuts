@@ -23,7 +23,7 @@ public protocol UserSessionProtocol {
     /// User's display name
     var userName: String { get }
     
-    /// User's role in the system (CONSUMER, BARBER, ADMIN)
+    /// User's role in the system (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN)
     var userRole: String { get }
     
     /// Refresh token for obtaining new access tokens (optional)
@@ -32,7 +32,7 @@ public protocol UserSessionProtocol {
     /// Callback to refresh the access token when expired
     func refreshAccessToken() async throws -> String
     
-    /// Callback to notify Shell that user wants to logout
+    /// Callback to notify Shell that user wants to logout (default: no-op).
     func requestLogout()
 }
 
@@ -44,5 +44,7 @@ public extension UserSessionProtocol {
         // Default: return current token (Shell should override)
         return accessToken
     }
+
+    func requestLogout() {}
 }
 

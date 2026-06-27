@@ -24,8 +24,8 @@ export default function GDPRPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="CampusCuts" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
+            <img src={webpageLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">AvilaPlatforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -43,7 +43,7 @@ export default function GDPRPage() {
           <p className="text-gray-500 mb-4">Last Updated: {lastUpdated}</p>
           <p className="text-gray-600 mb-8">
             For users in the European Union (EU) and European Economic Area (EEA). This page outlines your rights under
-            the General Data Protection Regulation (GDPR) when using CampusCuts, including our website, CampusCuts iOS
+            the General Data Protection Regulation (GDPR) when using AvilaPlatforms, including our website, AvilaPlatforms iOS
             app, and InteraProvider iOS app.
           </p>
 
@@ -51,7 +51,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                CampusCuts is committed to complying with GDPR for users located in the EU and EEA. This page explains
+                AvilaPlatforms is committed to complying with GDPR for users located in the EU and EEA. This page explains
                 how we process your personal data and your rights. For a full description of the data we collect and
                 how we use it, see our{' '}
                 <Link to="/privacy" className="text-primary-600 hover:text-black underline">
@@ -64,8 +64,8 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Data Controller</h2>
               <p>
-                CampusCuts is the data controller responsible for your personal data. For data protection inquiries,
-                contact us at campuscuthelp@gmail.com.
+                AvilaPlatforms is the data controller responsible for your personal data. For data protection inquiries,
+                contact us at avilaplatformshelp@gmail.com.
               </p>
             </section>
 
@@ -124,7 +124,7 @@ export default function GDPRPage() {
               </ul>
               <p className="mt-3">
                 We require appropriate data processing agreements with sub-processors and limit their use of data to
-                providing services to CampusCuts.
+                providing services to AvilaPlatforms.
               </p>
             </section>
 
@@ -169,7 +169,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">7. How to Exercise Your Rights</h2>
               <p>To exercise any GDPR rights, contact us at:</p>
-              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-2">Email: avilaplatformshelp@gmail.com</p>
               <p className="mt-2">
                 Include &quot;GDPR Request&quot; in the subject line and provide enough information to verify your
                 identity. We will respond within 30 days.
@@ -224,7 +224,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">12. Contact Information</h2>
               <p>For GDPR-related questions or to exercise your rights:</p>
-              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-2">Email: avilaplatformshelp@gmail.com</p>
               <p className="mt-1">Subject line: GDPR Request - [Your Request Type]</p>
             </section>
           </div>

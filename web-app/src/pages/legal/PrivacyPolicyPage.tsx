@@ -24,8 +24,8 @@ export default function PrivacyPolicyPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="CampusCuts" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
+            <img src={webpageLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">AvilaPlatforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -46,8 +46,8 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                CampusCuts is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
-                disclose, and safeguard your information when you use our website, the CampusCuts iOS app for consumers,
+                AvilaPlatforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
+                disclose, and safeguard your information when you use our website, the AvilaPlatforms iOS app for consumers,
                 the InteraProvider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
@@ -196,7 +196,7 @@ export default function PrivacyPolicyPage() {
                 <Link to="/gdpr" className="text-primary-600 hover:text-black underline">
                   GDPR page
                 </Link>{' '}
-                for additional rights. To exercise any rights, contact us at campuscuthelp@gmail.com.
+                for additional rights. To exercise any rights, contact us at avilaplatformshelp@gmail.com.
               </p>
             </section>
 
@@ -225,17 +225,17 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">11. Google API Services</h2>
               <p>
-                CampusCuts offers optional Google Calendar integration for barbers. When you connect your Google
+                AvilaPlatforms offers optional Google Calendar integration for barbers. When you connect your Google
                 Calendar:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>We read busy/free times to prevent double-booking</li>
-                <li>We may create calendar events for CampusCuts appointments with your permission</li>
+                <li>We may create calendar events for AvilaPlatforms appointments with your permission</li>
                 <li>We store a secure OAuth refresh token to maintain the connection</li>
                 <li>You can disconnect Google Calendar at any time from InteraProvider or your barber dashboard</li>
               </ul>
               <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                <strong>Limited Use Disclosure:</strong> CampusCuts&apos;s use and transfer of information received from
+                <strong>Limited Use Disclosure:</strong> AvilaPlatforms&apos;s use and transfer of information received from
                 Google APIs will adhere to the{' '}
                 <a
                   href="https://developers.google.com/terms/api-services-user-data-policy"
@@ -270,7 +270,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">14. Contact Us</h2>
               <p>If you have any questions about this Privacy Policy, please contact us at:</p>
-              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-2">Email: avilaplatformshelp@gmail.com</p>
             </section>
           </div>
         </div>

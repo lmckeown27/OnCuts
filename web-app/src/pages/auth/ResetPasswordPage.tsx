@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import authService from '../../services/auth.service';
-import { CampusCutLogo } from '../../assets';
+import { AvilaPlatformsLogo } from '../../assets';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -109,8 +109,8 @@ export default function ResetPasswordPage() {
         <div className="flex flex-col items-center justify-center mb-6">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={CampusCutLogo} 
-              alt="CampusCuts Logo" 
+              src={AvilaPlatformsLogo} 
+              alt="AvilaPlatforms Logo" 
               className="h-20 w-auto mb-4"
             />
           </Link>

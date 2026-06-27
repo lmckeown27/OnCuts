@@ -3,56 +3,63 @@
 //  CampusCutsModule
 //
 //  Public entry point for the Shell app to instantiate this module.
-//  The Shell calls this factory to "spawn" the CampusCuts feature.
 //
 
 import SwiftUI
 
 /// Factory class for building the CampusCuts module views
-/// This is the ONLY public entry point the Shell needs to use
 public struct CampusCutsModuleBuilder {
-    
-    /// Build the main CampusCuts home view
-    /// - Parameter session: The user session conforming to UserSessionProtocol
-    /// - Returns: The root view for the CampusCuts module
+
     @MainActor
-    public static func build(with session: UserSessionProtocol) -> some View {
-        let apiService = CampusCutsAPIService(session: session)
+    public static func build(with session: UserSessionProtocol, client: CampusCutsClient) -> some View {
+        let apiService = CampusCutsAPIService(session: session, environment: client.environment)
         let viewModel = CampusCutsHomeViewModel(session: session, apiService: apiService)
-        return CampusCutsHomeView(viewModel: viewModel)
+        return CampusCutsHomeView(viewModel: viewModel, liveDataSafetyMode: client.isProduction)
     }
-    
-    /// Build the barber dashboard view (for users with BARBER role)
-    /// - Parameter session: The user session conforming to UserSessionProtocol
-    /// - Returns: The barber dashboard view
+
     @MainActor
-    public static func buildBarberDashboard(with session: UserSessionProtocol) -> some View {
-        let apiService = CampusCutsAPIService(session: session)
-        let viewModel = BarberDashboardViewModel(session: session, apiService: apiService)
-        return BarberDashboardView(viewModel: viewModel)
+    public static func buildBarberDashboard(with session: UserSessionProtocol, client: CampusCutsClient) -> some View {
+        let apiService = CampusCutsAPIService(session: session, environment: client.environment)
+        let viewModel = BarberDashboardViewModel(session: session, apiService: apiService, liveDataSafetyMode: client.isProduction)
+        return BarberDashboardView(viewModel: viewModel, liveDataSafetyMode: client.isProduction)
     }
-    
-    /// Build the consumer booking view
-    /// - Parameter session: The user session conforming to UserSessionProtocol
-    /// - Returns: The consumer booking view
+
     @MainActor
-    public static func buildConsumerView(with session: UserSessionProtocol) -> some View {
-        let apiService = CampusCutsAPIService(session: session)
-        let viewModel = ConsumerViewModel(session: session, apiService: apiService)
-        return ConsumerHomeView(viewModel: viewModel)
+    public static func buildConsumerView(with session: UserSessionProtocol, client: CampusCutsClient) -> some View {
+        let apiService = CampusCutsAPIService(session: session, environment: client.environment)
+        let viewModel = ConsumerViewModel(session: session, apiService: apiService, liveDataSafetyMode: client.isProduction)
+        return ConsumerHomeView(viewModel: viewModel, liveDataSafetyMode: client.isProduction)
     }
-    
-    /// Get the appropriate view based on user role
-    /// - Parameter session: The user session conforming to UserSessionProtocol
-    /// - Returns: Role-appropriate view (Consumer or Barber dashboard)
+
     @MainActor
-    public static func buildRoleBasedView(with session: UserSessionProtocol) -> some View {
+    public static func buildRoleBasedView(with session: UserSessionProtocol, client: CampusCutsClient) -> some View {
         switch session.userRole {
-        case "BARBER", "ADMIN", "CAMPUS_MANAGER":
-            return AnyView(buildBarberDashboard(with: session))
+        case "BARBER", "CAMPUS_MANAGER", "ADMIN":
+            return AnyView(buildBarberDashboard(with: session, client: client))
         default:
-            return AnyView(buildConsumerView(with: session))
+            return AnyView(buildConsumerView(with: session, client: client))
         }
     }
-}
 
+    // MARK: - Legacy convenience (no production safety / default client)
+
+    @MainActor
+    public static func build(with session: UserSessionProtocol) -> some View {
+        build(with: session, client: CampusCutsClient(session: session))
+    }
+
+    @MainActor
+    public static func buildBarberDashboard(with session: UserSessionProtocol) -> some View {
+        buildBarberDashboard(with: session, client: CampusCutsClient(session: session))
+    }
+
+    @MainActor
+    public static func buildConsumerView(with session: UserSessionProtocol) -> some View {
+        buildConsumerView(with: session, client: CampusCutsClient(session: session))
+    }
+
+    @MainActor
+    public static func buildRoleBasedView(with session: UserSessionProtocol) -> some View {
+        buildRoleBasedView(with: session, client: CampusCutsClient(session: session))
+    }
+}

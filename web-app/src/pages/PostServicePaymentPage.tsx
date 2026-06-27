@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
 import { findService } from '../config/services';
@@ -839,7 +839,7 @@ export default function PostServicePaymentPage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={CampusCutLogo} alt="CampusCuts" className="h-8" />
+            <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-8" />
             <div className="w-9" /> {/* Spacer */}
           </div>
         </div>
@@ -974,7 +974,7 @@ export default function PostServicePaymentPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <img src={CampusCutLogo} alt="CampusCuts" className="h-8" />
+          <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-8" />
           <div className="w-9" /> {/* Spacer */}
         </div>
       </div>
@@ -986,7 +986,7 @@ export default function PostServicePaymentPage() {
               <Check className="w-10 h-10 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">All Done!</h2>
-            <p className="text-gray-600">Thank you for using CampusCuts.</p>
+            <p className="text-gray-600">Thank you for using AvilaPlatforms.</p>
           </div>
         ) : step === 'review' ? (
           <div className="bg-white rounded-2xl shadow-lg p-6">

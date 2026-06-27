@@ -25,8 +25,8 @@ export default function TermsOfServicePage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="CampusCuts" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
+            <img src={webpageLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">AvilaPlatforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -47,9 +47,9 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                Welcome to CampusCuts (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
-                (&quot;Terms&quot;) govern your access to and use of the CampusCuts platform, including our website,
-                the CampusCuts iOS app for consumers, the InteraProvider iOS app for barbers, and all related services
+                Welcome to AvilaPlatforms (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
+                (&quot;Terms&quot;) govern your access to and use of the AvilaPlatforms platform, including our website,
+                the AvilaPlatforms iOS app for consumers, the InteraProvider iOS app for barbers, and all related services
                 (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
@@ -61,7 +61,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Description of Service</h2>
               <p>
-                CampusCuts is a marketplace platform that connects consumers seeking grooming services
+                AvilaPlatforms is a marketplace platform that connects consumers seeking grooming services
                 (&quot;Consumers&quot;) with independent barbers (&quot;Barbers&quot;) at college and university
                 campuses. We facilitate:
               </p>
@@ -74,11 +74,11 @@ export default function TermsOfServicePage() {
                 <li>Barber application review and platform administration</li>
               </ul>
               <p className="mt-3">
-                <strong>Important:</strong> CampusCuts is a platform that connects users. We are not a grooming service
-                provider. Barbers are independent contractors, not employees of CampusCuts.
+                <strong>Important:</strong> AvilaPlatforms is a platform that connects users. We are not a grooming service
+                provider. Barbers are independent contractors, not employees of AvilaPlatforms.
               </p>
               <p className="mt-3">
-                Consumers may use the CampusCuts iOS app or our website. Barbers manage bookings, availability,
+                Consumers may use the AvilaPlatforms iOS app or our website. Barbers manage bookings, availability,
                 messaging, and payouts through the InteraProvider iOS app and/or the barber web dashboard, where
                 available.
               </p>
@@ -128,7 +128,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-xl font-bold text-gray-900 mb-3">5. Barber Terms</h2>
               <p>As a Barber using the Service, you agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>Submit an application and receive approval from CampusCuts administrators before offering services</li>
+                <li>Submit an application and receive approval from AvilaPlatforms administrators before offering services</li>
                 <li>Maintain accurate and up-to-date profile information, including services and pricing</li>
                 <li>Respond to booking requests in a timely manner</li>
                 <li>Honor confirmed bookings and arrive on time</li>
@@ -157,12 +157,12 @@ export default function TermsOfServicePage() {
               <p className="font-semibold mt-4 mb-2">6.2 When Consumers Pay</p>
               <p>
                 Consumers pay after a haircut is complete. Once the Barber marks the booking as complete, the Consumer
-                receives a payment prompt in the CampusCuts app or on the web.
+                receives a payment prompt in the AvilaPlatforms app or on the web.
               </p>
 
               <p className="font-semibold mt-4 mb-2">6.3 Platform Fee and Barber Payouts</p>
               <p>
-                CampusCuts charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85%
+                AvilaPlatforms charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85%
                 of the service amount. Tips, when added, are passed to the Barber in full. Payout timing may vary based
                 on Stripe and banking policies.
               </p>
@@ -178,7 +178,7 @@ export default function TermsOfServicePage() {
               <p className="mt-3">
                 Refund eligibility depends on the timing of the cancellation, the reason for cancellation, whether the
                 service was partially or fully rendered, and applicable payment processor rules. Disputes between
-                Consumers and Barbers should first be resolved directly. CampusCuts may assist in mediation but is not
+                Consumers and Barbers should first be resolved directly. AvilaPlatforms may assist in mediation but is not
                 obligated to issue refunds.
               </p>
             </section>
@@ -222,12 +222,12 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">10. Intellectual Property</h2>
               <p>
-                The Service and its original content, features, and functionality are owned by CampusCuts and are
+                The Service and its original content, features, and functionality are owned by AvilaPlatforms and are
                 protected by international copyright, trademark, patent, trade secret, and other intellectual property
                 laws.
               </p>
               <p className="mt-3">
-                By posting User Content, you grant CampusCuts a non-exclusive, worldwide, royalty-free license to use,
+                By posting User Content, you grant AvilaPlatforms a non-exclusive, worldwide, royalty-free license to use,
                 display, and distribute such content in connection with operating and promoting the Service.
               </p>
             </section>
@@ -248,7 +248,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">12. Limitation of Liability</h2>
               <p>
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, CAMPUSCUTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, AVILAPLATFORMS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
                 SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED
                 DIRECTLY OR INDIRECTLY.
               </p>
@@ -261,7 +261,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">13. Indemnification</h2>
               <p>
-                You agree to indemnify, defend, and hold harmless CampusCuts and its officers, directors, employees,
+                You agree to indemnify, defend, and hold harmless AvilaPlatforms and its officers, directors, employees,
                 and agents from any claims, damages, losses, liabilities, and expenses (including attorneys&apos; fees)
                 arising from your use of the Service or violation of these Terms.
               </p>
@@ -301,7 +301,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">17. Contact Us</h2>
               <p>If you have any questions about these Terms, please contact us at:</p>
-              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-2">Email: avilaplatformshelp@gmail.com</p>
             </section>
           </div>
         </div>

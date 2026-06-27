@@ -3,7 +3,7 @@ import { User, MessageCircle, Calendar, LogOut, Home } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import { ROUTES } from '../config/constants';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -25,7 +25,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to={isBarber ? ROUTES.BARBER_DASHBOARD : ROUTES.STUDENT_DISCOVERY} className="flex items-center gap-3">
-            <img src={CampusCutLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
           </Link>
 
           {/* Navigation Links */}

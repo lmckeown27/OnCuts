@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import DatePicker from '../components/DatePicker';
@@ -672,7 +672,7 @@ export default function ConsumerBookingStatusPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <img src={CampusCutLogo} alt="CampusCuts" className="h-8" />
+            <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-8" />
             <button
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-black"
@@ -870,7 +870,7 @@ export default function ConsumerBookingStatusPage() {
               </span>
             )}
           </button>
-          <img src={CampusCutLogo} alt="CampusCuts" className="h-10" />
+          <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -1595,8 +1595,8 @@ export default function ConsumerBookingStatusPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
                 <p className="text-sm text-amber-800">
                   Think a mistake was made? Contact us at{' '}
-                  <a href="mailto:campuscuthelp@gmail.com" className="font-medium underline">
-                    campuscuthelp@gmail.com
+                  <a href="mailto:avilaplatformshelp@gmail.com" className="font-medium underline">
+                    avilaplatformshelp@gmail.com
                   </a>
                 </p>
               </div>

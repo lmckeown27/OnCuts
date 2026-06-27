@@ -23,6 +23,7 @@ internal class BarberDashboardViewModel: ObservableObject {
     
     private let session: UserSessionProtocol
     private let apiService: CampusCutsAPIService
+    private let liveDataSafetyMode: Bool
     
     // MARK: - Types
     
@@ -50,9 +51,10 @@ internal class BarberDashboardViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(session: UserSessionProtocol, apiService: CampusCutsAPIService) {
+    init(session: UserSessionProtocol, apiService: CampusCutsAPIService, liveDataSafetyMode: Bool = false) {
         self.session = session
         self.apiService = apiService
+        self.liveDataSafetyMode = liveDataSafetyMode
     }
     
     // MARK: - Public Methods
@@ -79,6 +81,10 @@ internal class BarberDashboardViewModel: ObservableObject {
     }
     
     func acceptBooking(_ booking: Booking) async {
+        if liveDataSafetyMode {
+            errorMessage = "Live Data Mode is on — booking actions are disabled."
+            return
+        }
         do {
             _ = try await apiService.updateBookingStatus(bookingId: booking.id, status: "ACCEPTED")
             await loadBookings()
@@ -88,6 +94,10 @@ internal class BarberDashboardViewModel: ObservableObject {
     }
     
     func rejectBooking(_ booking: Booking) async {
+        if liveDataSafetyMode {
+            errorMessage = "Live Data Mode is on — booking actions are disabled."
+            return
+        }
         do {
             _ = try await apiService.updateBookingStatus(bookingId: booking.id, status: "REJECTED")
             await loadBookings()
@@ -97,6 +107,10 @@ internal class BarberDashboardViewModel: ObservableObject {
     }
     
     func completeBooking(_ booking: Booking) async {
+        if liveDataSafetyMode {
+            errorMessage = "Live Data Mode is on — booking actions are disabled."
+            return
+        }
         do {
             _ = try await apiService.updateBookingStatus(bookingId: booking.id, status: "COMPLETED")
             await loadBookings()

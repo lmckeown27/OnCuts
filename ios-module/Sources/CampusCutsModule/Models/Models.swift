@@ -10,12 +10,12 @@ import Foundation
 // MARK: - Barber Models
 
 internal struct Barber: Codable, Identifiable {
-    let id: Int
-    let userId: Int
+    let id: String
+    let userId: String
     let businessName: String
     let bio: String?
     let profileImageUrl: String?
-    let campusId: Int
+    let campusId: String?
     let campusName: String?
     let rating: Double?
     let reviewCount: Int?
@@ -24,18 +24,19 @@ internal struct Barber: Codable, Identifiable {
 }
 
 internal struct BarberProfile: Codable {
-    let id: Int
-    let userId: Int
+    let id: String
+    let userId: String
     let businessName: String
     let bio: String?
     let profileImageUrl: String?
-    let campusId: Int
+    let campusId: String?
     let campusName: String?
     let rating: Double?
     let reviewCount: Int?
     let services: [BarberService]?
     let availability: [DayAvailability]?
     let portfolioImages: [String]?
+    let reviews: [Review]?
 }
 
 internal struct BarberAvailability: Codable {
@@ -62,8 +63,8 @@ internal struct DayAvailability: Codable {
 // MARK: - Service Models
 
 internal struct BarberService: Codable, Identifiable {
-    let id: Int
-    let barberId: Int
+    let id: String
+    let barberId: String
     let name: String
     let description: String?
     let price: Double
@@ -74,15 +75,15 @@ internal struct BarberService: Codable, Identifiable {
 // MARK: - Booking Models
 
 internal struct Booking: Codable, Identifiable {
-    let id: Int
-    let consumerId: Int
+    let id: String
+    let consumerId: String
     let consumerName: String?
     let consumerEmail: String?
-    let barberId: Int
+    let barberId: String
     let barberName: String?
     let barberBusinessName: String?
     let barberProfileImage: String?
-    let serviceId: Int
+    let serviceId: String?
     let serviceName: String?
     let servicePrice: Double?
     let bookingDate: String
@@ -109,8 +110,9 @@ internal enum BookingStatus: String, Codable {
 }
 
 internal struct CreateBookingRequest: Codable {
-    let barberId: Int
-    let serviceId: Int
+    let barberId: String
+    let serviceId: String?
+    let serviceName: String?
     let bookingDate: String
     let startTime: String
     let notes: String?
@@ -120,9 +122,9 @@ internal struct CreateBookingRequest: Codable {
 // MARK: - Message Models
 
 internal struct Message: Codable, Identifiable {
-    let id: Int
-    let bookingId: Int
-    let senderId: Int
+    let id: String
+    let bookingId: String
+    let senderId: String
     let senderName: String?
     let senderRole: String
     let content: String
@@ -133,7 +135,7 @@ internal struct Message: Codable, Identifiable {
 // MARK: - Campus Models
 
 internal struct Campus: Codable, Identifiable {
-    let id: Int
+    let id: String
     let name: String
     let city: String?
     let state: String?
@@ -144,10 +146,10 @@ internal struct Campus: Codable, Identifiable {
 // MARK: - Review Models
 
 internal struct Review: Codable, Identifiable {
-    let id: Int
-    let bookingId: Int
-    let barberId: Int
-    let consumerId: Int
+    let id: String
+    let bookingId: String
+    let barberId: String
+    let consumerId: String
     let consumerName: String?
     let rating: Int
     let comment: String?
@@ -170,4 +172,3 @@ internal struct PaginatedResponse<T: Codable>: Codable {
     let pageSize: Int
     let totalPages: Int
 }
-

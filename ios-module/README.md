@@ -111,7 +111,7 @@ NavigationLink(destination: CampusCutsModuleBuilder.build(with: session)) {
 
 | Access Level | Components |
 |--------------|------------|
-| **Public** | `CampusCutsModuleBuilder`, `UserSessionProtocol`, `InteraPhoneAuth` (SMS OTP before session) |
+| **Public** | `CampusCutsModuleBuilder`, `UserSessionProtocol` |
 | **Internal** | Views, ViewModels, APIService, Models |
 
 The Shell app only needs to interact with the Builder and Protocol. All internal implementation is hidden.
@@ -120,37 +120,7 @@ The Shell app only needs to interact with the Builder and Protocol. All internal
 
 The module connects to the CampusCuts backend API at `https://api.campuscut.com/api/v1`. It uses the injected `accessToken` for all authenticated requests.
 
-### Intera: phone (SMS OTP) sign-in
-
-Shell apps can authenticate users **before** building module views, using SMS codes (no JWT required for the first step):
-
-1. **`InteraPhoneAuth`** — public helper that calls `POST /auth/request-otp` and `POST /auth/verify-otp` (no `Authorization` header). The API also accepts aliases **`POST /auth/signup/send-phone-code`** and **`POST /auth/signup/verify-phone-code`** with the same bodies (for clients that use sign-up–specific paths).
-2. After **`verify-otp`**, if the backend finds a user with that `phone_e164`, the response includes **`accessToken`**, **`refreshToken`**, and **`user`** — wire these into your `UserSessionProtocol` (same as email login or `POST /auth/google`).
-3. If **`accountExists` is false**, the code was valid but there is no account yet: continue with **`POST /auth/register`** (email + password + optional same E.164 phone), then email verification as in the web app.
-
-```swift
-import CampusCutsModule
-
-let phoneAuth = InteraPhoneAuth(baseURL: InteraPhoneAuth.defaultProductionBaseURL)
-
-try await phoneAuth.requestOTP(phoneNumber: "+14155552671")
-let outcome = try await phoneAuth.verifyOTP(phoneNumber: "+14155552671", code: "123456")
-
-switch outcome {
-case .signedIn(let accessToken, let refreshToken, let user):
-    // Store tokens; set session.userId = user.id, session.userEmail = user.email, etc.
-    break
-case .verifiedPendingAccount(let phoneNumber):
-    // Navigate to email signup; pass phoneNumber on register when the user completes the form
-    break
-}
-```
-
-Requires Redis and AWS Pinpoint SMS on the server (`REDIS_URL`, Notify configuration). See `backend/src/services/intera/SmsProvider.ts` and `.env.example` on the server.
-
-**Web / iOS Safari:** The CampusCuts web app auth screen (`/web` → Sign In) includes an **Email | Phone** toggle: phone sign-in uses the same `request-otp` / `verify-otp` endpoints. If SMS returns “temporarily unavailable,” Redis or Pinpoint is not configured on the API host—not that the feature is disabled in the client.
-
-### Supported Endpoints (authenticated module)
+### Supported Endpoints
 
 - `/barbers` - List barbers
 - `/barbers/{id}/availability` - Get availability

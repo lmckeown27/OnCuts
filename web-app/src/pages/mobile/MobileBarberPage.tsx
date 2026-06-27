@@ -185,7 +185,7 @@ export default function MobileBarberPage() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 safe-area-inset-top">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/src/assets/logos/Logo1.png" alt="CampusCuts" className="h-8" />
+            <img src="/src/assets/logos/Logo1.png" alt="AvilaPlatforms" className="h-8" />
             <div>
               <p className="text-xs text-gray-500">California Polytechnic State University</p>
             </div>

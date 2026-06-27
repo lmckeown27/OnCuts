@@ -158,9 +158,9 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
           ) : (
             <>
               <p className="text-sm text-gray-600 leading-relaxed">
-                CampusCuts uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
+                AvilaPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account. Stripe handles identity verification, card processing, payout schedules, balances, and tax
-                forms—not a CampusCuts balance.
+                forms—not a AvilaPlatforms balance.
               </p>
 
               {connectStatusUnknown && (

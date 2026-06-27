@@ -35,7 +35,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
 import barberService, { TimeBlock } from '../services/barber.service';
@@ -46,7 +46,7 @@ import toast from 'react-hot-toast';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
 const BARBER_HIDDEN_PAID_BOOKINGS_KEY = (barberId: string) =>
-  `campuscuts_barber_hidden_paid_bookings_${barberId}`;
+  `avilaplatforms_barber_hidden_paid_bookings_${barberId}`;
 
 function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
   if (typeof window === 'undefined') return [];
@@ -64,7 +64,7 @@ function saveBarberHiddenPaidBookingIds(barberId: string, ids: string[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId), JSON.stringify(ids));
   window.dispatchEvent(
-    new CustomEvent('campuscuts-barber-hidden-paid-bookings', { detail: { barberId } })
+    new CustomEvent('avilaplatforms-barber-hidden-paid-bookings', { detail: { barberId } })
   );
 }
 
@@ -565,7 +565,7 @@ export default function BarberPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCuts" className="h-10 sm:h-12 w-auto" />
+              <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Booking Requests + Profile */}
@@ -1480,10 +1480,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     };
     const onCustom: EventListener = () => sync();
     window.addEventListener('storage', onStorage);
-    window.addEventListener('campuscuts-barber-hidden-paid-bookings', onCustom);
+    window.addEventListener('avilaplatforms-barber-hidden-paid-bookings', onCustom);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('campuscuts-barber-hidden-paid-bookings', onCustom);
+      window.removeEventListener('avilaplatforms-barber-hidden-paid-bookings', onCustom);
     };
   }, [barberId]);
 
@@ -2876,7 +2876,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Google Calendar blocked slot - not unblockable from CampusCuts
+                            // Google Calendar blocked slot - not unblockable from AvilaPlatforms
                             const googleBlockModal = getGoogleCalendarBlockForSlotModal(slot);
                             if (googleBlockModal) {
                               return (

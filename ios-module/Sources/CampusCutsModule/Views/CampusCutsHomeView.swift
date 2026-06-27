@@ -15,7 +15,8 @@ import AppKit
 
 internal struct CampusCutsHomeView: View {
     @StateObject var viewModel: CampusCutsHomeViewModel
-    
+    var liveDataSafetyMode: Bool = false
+
     var body: some View {
         NavigationStack {
             Group {
@@ -71,11 +72,11 @@ internal struct CampusCutsHomeView: View {
     }
     
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
+        VStack(spacing: 20) {
+            Text("We couldn’t load right now")
+                .font(.headline)
             Text(error)
+                .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
             Button("Try Again") {
@@ -90,6 +91,9 @@ internal struct CampusCutsHomeView: View {
     
     private var mainContent: some View {
         VStack(spacing: 0) {
+            if liveDataSafetyMode {
+                CampusCutsLiveDataModeBanner()
+            }
             // Campus Picker
             if !viewModel.campuses.isEmpty {
                 campusPicker
@@ -189,11 +193,11 @@ internal struct CampusCutsHomeView: View {
 
 internal struct BarberCardView: View {
     let barber: Barber
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Profile Image
-            AsyncImage(url: URL(string: barber.profileImageUrl ?? "")) { image in
+            AsyncImage(url: CampusCutsS3ImageURL.url(forStoredPath: barber.profileImageUrl)) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)

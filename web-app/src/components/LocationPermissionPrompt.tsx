@@ -87,7 +87,7 @@ export default function LocationPermissionPrompt({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 text-center mb-4">
-            CampusCuts needs your location to show you the <strong>closest barbers</strong> on your campus.
+            AvilaPlatforms needs your location to show you the <strong>closest barbers</strong> on your campus.
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -109,7 +109,7 @@ export default function LocationPermissionPrompt({
           </div>
 
           <p className="text-xs text-gray-500 text-center mb-6">
-            Your location is only used while using CampusCuts and is never shared with third parties.
+            Your location is only used while using AvilaPlatforms and is never shared with third parties.
           </p>
 
           {/* Buttons */}

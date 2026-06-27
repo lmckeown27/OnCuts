@@ -15,10 +15,14 @@ import AppKit
 
 internal struct BarberDashboardView: View {
     @StateObject var viewModel: BarberDashboardViewModel
-    
+    var liveDataSafetyMode: Bool = false
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                if liveDataSafetyMode {
+                    CampusCutsLiveDataModeBanner()
+                }
                 // Tab Picker
                 tabPicker
                 

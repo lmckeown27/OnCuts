@@ -1,9 +1,9 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import campusCutsAppLogo from '../assets/logos/iOS_CampusCuts_Logo.png';
+import avilaPlatformsAppLogo from '../assets/logos/iOS_AvilaPlatforms_Logo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
-  consumer: 'https://apps.apple.com/us/app/campuscuts/id6763953203',
+  consumer: 'https://apps.apple.com/us/app/avilaplatforms/id6763953203',
   interaProvider: 'https://apps.apple.com/us/app/interaprovider/id6770430152',
 } as const;
 
@@ -119,13 +119,13 @@ export default function IosAppPromoSection() {
   return (
     <section
       className="border-y border-white/60 bg-gradient-to-br from-primary-50 via-white to-pink-50 px-4 py-10 sm:py-12"
-      aria-label="Download the CampusCuts iOS apps"
+      aria-label="Download the AvilaPlatforms iOS apps"
       id="ios-apps"
     >
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center sm:mb-10">
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-            CampusCuts on iOS
+            AvilaPlatforms on iOS
           </h2>
         </div>
 
@@ -133,11 +133,11 @@ export default function IosAppPromoSection() {
           <AppColumn
             heading="For Customers"
             card={{
-              title: 'CampusCuts',
-              appLogo: campusCutsAppLogo,
-              appLogoAlt: 'CampusCuts app icon',
+              title: 'AvilaPlatforms',
+              appLogo: avilaPlatformsAppLogo,
+              appLogoAlt: 'AvilaPlatforms app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
-              storeLabel: 'Download CampusCuts on the App Store',
+              storeLabel: 'Download AvilaPlatforms on the App Store',
             }}
           />
           <AppColumn

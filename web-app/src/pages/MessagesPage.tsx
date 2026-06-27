@@ -48,7 +48,7 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 import type { Conversation, Message } from '../types';
 import toast from 'react-hot-toast';
 
@@ -252,7 +252,7 @@ export default function MessagesPage() {
     startConversation?: boolean; 
     otherUserId?: string; 
     bookingId?: string;
-    // Booking context for CampusCuts
+    // Booking context for AvilaPlatforms
     serviceName?: string;
     servicePrice?: number;
     scheduledAt?: string;
@@ -746,7 +746,7 @@ export default function MessagesPage() {
           const response = await messageService.createConversation({
             other_user_id: startConversationData.otherUserId,
             booking_id: startConversationData.bookingId,
-            // Pass booking context for CampusCuts service-centric messaging
+            // Pass booking context for AvilaPlatforms service-centric messaging
             service_name: startConversationData.serviceName,
             service_price: startConversationData.servicePrice,
             scheduled_time: startConversationData.scheduledAt,
@@ -1676,7 +1676,7 @@ export default function MessagesPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCuts" className="h-10 sm:h-12 w-auto" />
+              <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Messages, Booking Requests (if barber) + Profile */}

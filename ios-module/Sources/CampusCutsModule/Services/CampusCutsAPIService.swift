@@ -3,7 +3,6 @@
 //  CampusCutsModule
 //
 //  Internal networking layer for CampusCuts API calls.
-//  Uses the access token injected from the Shell's UserSession.
 //
 
 import Foundation
@@ -13,56 +12,57 @@ internal class CampusCutsAPIService {
     private let session: UserSessionProtocol
     private let baseURL: URL
     private let jsonDecoder: JSONDecoder
-    
-    /// Initialize with user session for authentication
-    /// - Parameter session: The user session containing access tokens
-    init(session: UserSessionProtocol) {
+    private let authInterceptor: AuthInterceptor
+
+    init(session: UserSessionProtocol, environment: CampusCutsEnvironment) {
         self.session = session
-        self.baseURL = URL(string: "https://api.campuscut.com/api/v1")!
-        
-        self.jsonDecoder = JSONDecoder()
-        self.jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
-        self.jsonDecoder.dateDecodingStrategy = .iso8601
+        self.baseURL = environment.apiBaseURL
+        self.authInterceptor = AuthInterceptor(session: session)
+        self.jsonDecoder = CampusCutsAPIDecoding.makeDecoder()
     }
-    
+
     // MARK: - Generic Request Method
-    
+
     private func request<T: Decodable>(
         endpoint: String,
         method: String = "GET",
-        body: Data? = nil
+        body: Data? = nil,
+        isRetryAfterRefresh: Bool = false
     ) async throws -> T {
-        guard var urlComponents = URLComponents(url: baseURL.appendingPathComponent(endpoint), resolvingAgainstBaseURL: true) else {
-            throw CampusCutsAPIError.invalidURL
-        }
-        
-        guard let url = urlComponents.url else {
-            throw CampusCutsAPIError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if let body = body {
-            request.httpBody = body
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
+        let url = baseURL.appendingPathComponent(endpoint)
+        var urlRequest = authInterceptor.apply(to: url, method: method, body: body)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw CampusCutsAPIError.invalidResponse
         }
-        
+
         switch httpResponse.statusCode {
-        case 200...299:
-            return try jsonDecoder.decode(T.self, from: data)
+        case 200 ... 299:
+            return try CampusCutsAPIDecoding.decodePayload(T.self, from: data, decoder: jsonDecoder)
         case 401:
-            // Token expired - try to refresh
+            guard !isRetryAfterRefresh else {
+                throw CampusCutsAPIError.unauthorized
+            }
             _ = try await session.refreshAccessToken()
-            // Retry the request with new token
-            return try await self.request(endpoint: endpoint, method: method, body: body)
+            urlRequest = authInterceptor.apply(to: url, method: method, body: body)
+            let (retryData, retryResponse) = try await URLSession.shared.data(for: urlRequest)
+            guard let retryHTTP = retryResponse as? HTTPURLResponse else {
+                throw CampusCutsAPIError.invalidResponse
+            }
+            switch retryHTTP.statusCode {
+            case 200 ... 299:
+                return try CampusCutsAPIDecoding.decodePayload(T.self, from: retryData, decoder: jsonDecoder)
+            case 401:
+                throw CampusCutsAPIError.unauthorized
+            case 403:
+                throw CampusCutsAPIError.forbidden
+            case 404:
+                throw CampusCutsAPIError.notFound
+            default:
+                throw CampusCutsAPIError.serverError(statusCode: retryHTTP.statusCode)
+            }
         case 403:
             throw CampusCutsAPIError.forbidden
         case 404:
@@ -71,99 +71,100 @@ internal class CampusCutsAPIService {
             throw CampusCutsAPIError.serverError(statusCode: httpResponse.statusCode)
         }
     }
-    
+
     // MARK: - Barber Endpoints
-    
-    /// Fetch list of barbers for a campus
-    func fetchBarbers(campusId: Int? = nil) async throws -> [Barber] {
+
+    func fetchBarbers(campusId: String? = nil) async throws -> [Barber] {
         var endpoint = "barbers"
-        if let campusId = campusId {
-            endpoint += "?campus_id=\(campusId)"
+        if let campusId = campusId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty {
+            let encoded = campusId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? campusId
+            endpoint += "?campusId=\(encoded)"
         }
-        return try await request(endpoint: endpoint)
+        let rows: [BarberListRowDTO] = try await request(endpoint: endpoint)
+        return rows.map { $0.asBarber() }
     }
-    
-    /// Fetch barber availability for a specific date
-    func fetchBarberAvailability(barberId: Int, date: String) async throws -> BarberAvailability {
-        return try await request(endpoint: "barbers/\(barberId)/availability?date=\(date)")
+
+    func fetchBarberAvailability(barberId: String, date: String) async throws -> [AvailabilitySlotDTO] {
+        let encoded = barberId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? barberId
+        let endpoint = "barbers/\(encoded)/availability?date=\(date)"
+        let payload: AvailabilityDayDTO = try await request(endpoint: endpoint)
+        return payload.slots ?? []
     }
-    
-    /// Fetch barber profile
-    func fetchBarberProfile(barberId: Int) async throws -> BarberProfile {
-        return try await request(endpoint: "barbers/\(barberId)")
+
+    func fetchBarberProfile(barberId: String) async throws -> BarberProfile {
+        let encoded = barberId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? barberId
+        let dto: BarberDetailDTO = try await request(endpoint: "barbers/\(encoded)")
+        return dto.asProfile(fallbackBarberId: barberId)
     }
-    
+
     // MARK: - Booking Endpoints
-    
-    /// Fetch user's bookings
+
     func fetchBookings(status: String? = nil) async throws -> [Booking] {
         var endpoint = "bookings"
-        if let status = status {
-            endpoint += "?status=\(status)"
+        if let status = status?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty {
+            let encoded = status.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? status
+            endpoint += "?status=\(encoded)"
         }
         return try await request(endpoint: endpoint)
     }
-    
-    /// Create a new booking
+
     func createBooking(_ bookingRequest: CreateBookingRequest) async throws -> Booking {
         let body = try JSONEncoder().encode(bookingRequest)
         return try await request(endpoint: "bookings", method: "POST", body: body)
     }
-    
-    /// Update booking status
-    func updateBookingStatus(bookingId: Int, status: String) async throws -> Booking {
+
+    func updateBookingStatus(bookingId: String, status: String) async throws -> Booking {
         let payload = UpdateBookingStatusRequest(status: status)
         let body = try JSONEncoder().encode(payload)
-        return try await request(endpoint: "bookings/\(bookingId)/status", method: "PATCH", body: body)
+        let encoded = bookingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? bookingId
+        return try await request(endpoint: "bookings/\(encoded)/status", method: "PATCH", body: body)
     }
-    
-    /// Cancel a booking
-    func cancelBooking(bookingId: Int, reason: String?) async throws -> Booking {
+
+    func cancelBooking(bookingId: String, reason: String?) async throws -> Booking {
         let payload = CancelBookingRequest(status: "CANCELLED", cancellationReason: reason)
         let body = try JSONEncoder().encode(payload)
-        return try await request(endpoint: "bookings/\(bookingId)/cancel", method: "POST", body: body)
+        let encoded = bookingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? bookingId
+        return try await request(endpoint: "bookings/\(encoded)/cancel", method: "POST", body: body)
     }
-    
+
     // MARK: - Messages Endpoints
-    
-    /// Fetch messages for a booking
-    func fetchMessages(bookingId: Int) async throws -> [Message] {
-        return try await request(endpoint: "messages/booking/\(bookingId)")
+
+    func fetchMessages(bookingId: String) async throws -> [Message] {
+        let encoded = bookingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? bookingId
+        return try await request(endpoint: "messages/booking/\(encoded)")
     }
-    
-    /// Send a message
-    func sendMessage(bookingId: Int, content: String) async throws -> Message {
+
+    func sendMessage(bookingId: String, content: String) async throws -> Message {
         let payload = SendMessageRequest(bookingId: bookingId, content: content)
         let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "messages", method: "POST", body: body)
     }
-    
+
     // MARK: - Campus Endpoints
-    
-    /// Fetch list of campuses
+
+    /// Uses path `campus` relative to `apiBaseURL` (e.g. `/api/v1/campus`).
     func fetchCampuses() async throws -> [Campus] {
-        return try await request(endpoint: "campuses")
+        return try await request(endpoint: "campus")
     }
-    
+
     // MARK: - Services Endpoints
-    
-    /// Fetch services for a barber
-    func fetchBarberServices(barberId: Int) async throws -> [BarberService] {
-        return try await request(endpoint: "barbers/\(barberId)/services")
+
+    func fetchBarberServices(barberId: String) async throws -> [BarberService] {
+        let profile = try await fetchBarberProfile(barberId: barberId)
+        return profile.services ?? []
     }
-    
+
     // MARK: - Review Endpoints
-    
-    /// Submit a review
-    func submitReview(bookingId: Int, rating: Int, comment: String?) async throws -> Review {
+
+    func submitReview(bookingId: String, rating: Int, comment: String?) async throws -> Review {
         let payload = SubmitReviewRequest(bookingId: bookingId, rating: rating, comment: comment)
         let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "reviews", method: "POST", body: body)
     }
-    
-    /// Fetch reviews for a barber
-    func fetchBarberReviews(barberId: Int) async throws -> [Review] {
-        return try await request(endpoint: "barbers/\(barberId)/reviews")
+
+    func fetchBarberReviews(barberId: String) async throws -> [Review] {
+        let profile = try await fetchBarberProfile(barberId: barberId)
+        return profile.reviews ?? []
     }
 }
 
@@ -172,22 +173,28 @@ internal class CampusCutsAPIService {
 internal enum CampusCutsAPIError: Error, LocalizedError {
     case invalidURL
     case invalidResponse
+    case unauthorized
     case forbidden
     case notFound
-    case serverError(statusCode: Int)
+    case serverError(statusCode: Int, message: String? = nil)
     case decodingError(Error)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid URL"
         case .invalidResponse:
             return "Invalid server response"
+        case .unauthorized:
+            return "Session expired or unauthorized"
         case .forbidden:
             return "You don't have permission to access this resource"
         case .notFound:
             return "Resource not found"
-        case .serverError(let statusCode):
+        case .serverError(let statusCode, let message):
+            if let message, !message.isEmpty {
+                return statusCode > 0 ? "Server error (code: \(statusCode)): \(message)" : message
+            }
             return "Server error (code: \(statusCode))"
         case .decodingError(let error):
             return "Failed to decode response: \(error.localizedDescription)"
@@ -197,39 +204,35 @@ internal enum CampusCutsAPIError: Error, LocalizedError {
 
 // MARK: - API Request Payloads
 
-/// Request payload for updating booking status
 internal struct UpdateBookingStatusRequest: Encodable {
     let status: String
 }
 
-/// Request payload for cancelling a booking
 internal struct CancelBookingRequest: Encodable {
     let status: String
     let cancellationReason: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case status
         case cancellationReason = "cancellation_reason"
     }
 }
 
-/// Request payload for sending a message
 internal struct SendMessageRequest: Encodable {
-    let bookingId: Int
+    let bookingId: String
     let content: String
-    
+
     enum CodingKeys: String, CodingKey {
         case bookingId = "booking_id"
         case content
     }
 }
 
-/// Request payload for submitting a review
 internal struct SubmitReviewRequest: Encodable {
-    let bookingId: Int
+    let bookingId: String
     let rating: Int
     let comment: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case bookingId = "booking_id"
         case rating
@@ -237,3 +240,9 @@ internal struct SubmitReviewRequest: Encodable {
     }
 }
 
+private extension String {
+    var nilIfEmpty: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}

@@ -26,7 +26,7 @@ struct LoginView: View {
                             .font(.system(size: 80))
                             .foregroundColor(.white)
                         
-                        Text("CampusCuts")
+                        Text("AvilaPlatforms")
                             .font(.system(size: 42, weight: .bold))
                             .foregroundColor(.white)
                         

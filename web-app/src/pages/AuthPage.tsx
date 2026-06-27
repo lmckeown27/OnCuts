@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
-import { CampusCutLogo } from '../assets';
+import { AvilaPlatformsLogo } from '../assets';
 import { useViewport } from '../hooks/useViewport';
 import { isValidE164Phone, normalizeE164Phone } from '../utils/phoneE164';
 
@@ -189,7 +189,7 @@ export default function AuthPage() {
         signupData.password === signupData.confirmPassword;
 
   useEffect(() => {
-    const pending = sessionStorage.getItem('campuscut_pending_signup_phone');
+    const pending = sessionStorage.getItem('avilaplatforms_pending_signup_phone');
     if (pending?.trim()) {
       const p = pending.trim();
       setSignupData((prev) => ({ ...prev, phoneNumber: p }));
@@ -197,7 +197,7 @@ export default function AuthPage() {
       setSignupPhoneVerified(true);
       setSignupPhoneCodeSent(false);
       setSignupPhoneOtp('');
-      sessionStorage.removeItem('campuscut_pending_signup_phone');
+      sessionStorage.removeItem('avilaplatforms_pending_signup_phone');
       setMode('signup');
     }
   }, []);
@@ -318,7 +318,7 @@ export default function AuthPage() {
     try {
       const result = await loginWithPhone(p, phoneOtp.trim());
       if (result.kind === 'no_account') {
-        sessionStorage.setItem('campuscut_pending_signup_phone', result.phoneNumber);
+        sessionStorage.setItem('avilaplatforms_pending_signup_phone', result.phoneNumber);
         setSignupData((prev) => ({ ...prev, phoneNumber: result.phoneNumber }));
         setSignupChannel('phone');
         setSignupPhoneVerified(true);
@@ -525,8 +525,8 @@ export default function AuthPage() {
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={CampusCutLogo} 
-              alt="CampusCuts Logo" 
+              src={AvilaPlatformsLogo} 
+              alt="AvilaPlatforms Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
@@ -534,7 +534,7 @@ export default function AuthPage() {
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </h1>
           <p className="text-sm sm:text-base text-gray-300">
-            {mode === 'login' ? 'Access your CampusCuts account' : 'Join CampusCuts today'}
+            {mode === 'login' ? 'Access your AvilaPlatforms account' : 'Join AvilaPlatforms today'}
           </p>
         </div>
 
@@ -1380,7 +1380,7 @@ export default function AuthPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:campuscuthelp@gmail.com"
+                href="mailto:avilaplatformshelp@gmail.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
@@ -1404,7 +1404,7 @@ export default function AuthPage() {
             className="text-gray-400 hover:text-white text-sm transition-colors inline-flex items-center gap-2"
           >
             <ArrowLeft size={16} />
-            Back to CampusCuts
+            Back to AvilaPlatforms
           </Link>
         </div>
       </div>

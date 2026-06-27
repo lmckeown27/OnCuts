@@ -220,9 +220,9 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
       await userService.deleteAccount(userId, deletePassword);
       
       // Clear all auth storage
-      localStorage.removeItem('campuscuts_access_token');
-      localStorage.removeItem('campuscuts_refresh_token');
-      localStorage.removeItem('campuscuts_user');
+      localStorage.removeItem('avilaplatforms_access_token');
+      localStorage.removeItem('avilaplatforms_refresh_token');
+      localStorage.removeItem('avilaplatforms_user');
       
       toast.success('Account deleted successfully');
       

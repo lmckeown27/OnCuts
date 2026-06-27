@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
-import { CampusCutLogo } from '@assets';
+import { AvilaPlatformsLogo } from '@assets';
 import { SPECIALTY_OPTIONS, resolveServiceDurationMinutes, DEFAULT_SERVICE_DURATION_MINUTES } from '../config/services';
 
 export default function ScheduleServicePage() {
@@ -209,7 +209,7 @@ export default function ScheduleServicePage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={CampusCutLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-900">Schedule Service</h1>
           </div>
         </div>

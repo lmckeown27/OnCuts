@@ -28,6 +28,7 @@ internal class ConsumerViewModel: ObservableObject {
     
     private let session: UserSessionProtocol
     private let apiService: CampusCutsAPIService
+    private let liveDataSafetyMode: Bool
     
     // MARK: - Types
     
@@ -59,9 +60,10 @@ internal class ConsumerViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(session: UserSessionProtocol, apiService: CampusCutsAPIService) {
+    init(session: UserSessionProtocol, apiService: CampusCutsAPIService, liveDataSafetyMode: Bool = false) {
         self.session = session
         self.apiService = apiService
+        self.liveDataSafetyMode = liveDataSafetyMode
     }
     
     // MARK: - Public Methods
@@ -97,7 +99,7 @@ internal class ConsumerViewModel: ObservableObject {
         
         do {
             // Load barber's services
-            let services = try await apiService.fetchBarberServices(barberId: barber.id)
+            _ = try await apiService.fetchBarberServices(barberId: barber.id)
             // Services would be stored in the barber detail view
         } catch {
             errorMessage = error.localizedDescription
@@ -111,8 +113,16 @@ internal class ConsumerViewModel: ObservableObject {
         let dateString = formatDate(date)
         
         do {
-            let availability = try await apiService.fetchBarberAvailability(barberId: barber.id, date: dateString)
-            availableSlots = availability.availableSlots.filter { $0.isAvailable == true }
+            let slots = try await apiService.fetchBarberAvailability(barberId: barber.id, date: dateString)
+            availableSlots = slots.compactMap { slot in
+                let start = slot.normalizedStartTime
+                guard !start.isEmpty else { return nil }
+                return TimeSlot(
+                    startTime: start,
+                    endTime: slot.normalizedEndTime,
+                    isAvailable: slot.isAvailableSlot
+                )
+            }
         } catch {
             errorMessage = error.localizedDescription
             availableSlots = []
@@ -122,6 +132,10 @@ internal class ConsumerViewModel: ObservableObject {
     }
     
     func createBooking(notes: String?, paymentMethod: String) async -> Bool {
+        if liveDataSafetyMode {
+            errorMessage = "Live Data Mode is on — booking is disabled to avoid real charges. Use Stripe test mode from a non-production build."
+            return false
+        }
         guard let barber = selectedBarber,
               let service = selectedService,
               let slot = selectedSlot else {
@@ -134,6 +148,7 @@ internal class ConsumerViewModel: ObservableObject {
         let request = CreateBookingRequest(
             barberId: barber.id,
             serviceId: service.id,
+            serviceName: service.name,
             bookingDate: formatDate(selectedDate),
             startTime: slot.startTime,
             notes: notes,
@@ -160,6 +175,10 @@ internal class ConsumerViewModel: ObservableObject {
     }
     
     func cancelBooking(_ booking: Booking, reason: String?) async {
+        if liveDataSafetyMode {
+            errorMessage = "Live Data Mode is on — changes to live bookings are disabled."
+            return
+        }
         do {
             _ = try await apiService.cancelBooking(bookingId: booking.id, reason: reason)
             await loadMyBookings()
