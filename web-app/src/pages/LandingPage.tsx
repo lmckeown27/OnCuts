@@ -12,7 +12,6 @@ import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
-import Marquee from '../components/Marquee';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { CollegeTown } from '../types';
 import { writeStoredCollegeTown } from '../utils/collegeTowns';
@@ -153,8 +152,6 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      <Marquee />
 
       <IosAppPromoSection />
 
