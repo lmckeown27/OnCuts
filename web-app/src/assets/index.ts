@@ -14,6 +14,7 @@ export { default as Logo4 } from './logos/Logo4.webp';
 
 // Primary logo (matches landing page / legal pages)
 export { default as CampusCutLogo } from './logos/Webpage_Logo copy.png';
+export { default as AvilaPlatformsLogo } from './logos/AvilaPlatformsLogo.png';
 
 // Additional WebP logos for different contexts
 export { default as FooterChair } from './logos/Footer_Chair.webp';
