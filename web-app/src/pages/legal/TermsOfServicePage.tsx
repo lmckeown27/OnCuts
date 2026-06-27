@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
               <p>
                 Welcome to AvilaPlatforms (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
                 (&quot;Terms&quot;) govern your access to and use of the AvilaPlatforms platform, including our website,
-                the AvilaPlatforms iOS app for consumers, the InteraProvider iOS app for barbers, and all related services
+                the AvilaPlatforms iOS app for consumers, the Avila - Provider iOS app for barbers, and all related services
                 (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
@@ -79,7 +79,7 @@ export default function TermsOfServicePage() {
               </p>
               <p className="mt-3">
                 Consumers may use the AvilaPlatforms iOS app or our website. Barbers manage bookings, availability,
-                messaging, and payouts through the InteraProvider iOS app and/or the barber web dashboard, where
+                messaging, and payouts through the Avila - Provider iOS app and/or the barber web dashboard, where
                 available.
               </p>
             </section>

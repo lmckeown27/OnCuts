@@ -44,7 +44,7 @@ export default function GDPRPage() {
           <p className="text-gray-600 mb-8">
             For users in the European Union (EU) and European Economic Area (EEA). This page outlines your rights under
             the General Data Protection Regulation (GDPR) when using AvilaPlatforms, including our website, AvilaPlatforms iOS
-            app, and InteraProvider iOS app.
+            app, and Avila - Provider iOS app.
           </p>
 
           <div className="space-y-8 text-gray-700 leading-relaxed">

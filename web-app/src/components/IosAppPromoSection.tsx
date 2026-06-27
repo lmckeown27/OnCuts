@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import avilaPlatformsAppLogo from '../assets/logos/iOS_AvilaPlatforms_Logo.png';
+import avilaPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
@@ -143,11 +143,11 @@ export default function IosAppPromoSection() {
           <AppColumn
             heading="For Barbers"
             card={{
-              title: 'InteraProvider',
+              title: 'Avila - Provider',
               appLogo: interaProviderAppLogo,
-              appLogoAlt: 'InteraProvider app icon',
+              appLogoAlt: 'Avila - Provider app icon',
               storeHref: IOS_APP_STORE_LINKS.interaProvider,
-              storeLabel: 'Download InteraProvider on the App Store',
+              storeLabel: 'Download Avila - Provider on the App Store',
             }}
           />
         </div>

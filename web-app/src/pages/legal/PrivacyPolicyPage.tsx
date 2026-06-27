@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
               <p>
                 AvilaPlatforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
                 disclose, and safeguard your information when you use our website, the AvilaPlatforms iOS app for consumers,
-                the InteraProvider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
+                the Avila - Provider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
                 Please read this Privacy Policy carefully. By using the Service, you agree to the collection and use of
@@ -232,7 +232,7 @@ export default function PrivacyPolicyPage() {
                 <li>We read busy/free times to prevent double-booking</li>
                 <li>We may create calendar events for AvilaPlatforms appointments with your permission</li>
                 <li>We store a secure OAuth refresh token to maintain the connection</li>
-                <li>You can disconnect Google Calendar at any time from InteraProvider or your barber dashboard</li>
+                <li>You can disconnect Google Calendar at any time from Avila - Provider or your barber dashboard</li>
               </ul>
               <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
                 <strong>Limited Use Disclosure:</strong> AvilaPlatforms&apos;s use and transfer of information received from

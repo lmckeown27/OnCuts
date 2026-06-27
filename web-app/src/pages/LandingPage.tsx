@@ -387,7 +387,7 @@ export default function LandingPage() {
                         <li>
                           Once approved, download{' '}
                           <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
-                            InteraProvider
+                            Avila - Provider
                           </a>{' '}
                           from the App Store.
                         </li>
@@ -428,7 +428,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Mark the booking complete in InteraProvider or your barber dashboard after the haircut.</li>
+                        <li>Mark the booking complete in Avila - Provider or your barber dashboard after the haircut.</li>
                         <li>The customer pays through AvilaPlatforms.</li>
                         <li>Funds deposit directly to your connected Stripe account.</li>
                       </ol>
@@ -447,7 +447,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Set your weekly hours in InteraProvider or your barber dashboard.</li>
+                        <li>Set your weekly hours in Avila - Provider or your barber dashboard.</li>
                         <li>Block specific dates or times when needed.</li>
                         <li>Optionally connect Google Calendar to auto-block busy times.</li>
                       </ol>
@@ -465,7 +465,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Google Calendar sync blocks busy times so customers cannot double-book you. We only see when you are busy, not event details. Disconnect anytime in InteraProvider or your dashboard.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Google Calendar sync blocks busy times so customers cannot double-book you. We only see when you are busy, not event details. Disconnect anytime in Avila - Provider or your dashboard.</p>
                     </div>
                   </div>
                 </div>
