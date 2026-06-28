@@ -345,7 +345,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         >
           <h3 className="text-xl font-bold text-gray-900 mb-3">Application Submitted!</h3>
           <p className="text-gray-600 mb-6">
-            Your application has been submitted. The AvilaPlatforms team will be in touch with you shortly.
+            Your application has been submitted. The PismoPlatforms team will be in touch with you shortly.
           </p>
           <button
             onClick={handleCloseSuccessPopup}
@@ -420,7 +420,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             
             <h3 className="text-xl font-bold text-gray-900 mb-3">Barber Access Removed</h3>
             <p className="text-gray-600 mb-6">
-              Your barber privileges have been removed by the AvilaPlatforms team. You no longer have access to the barber dashboard or booking features.
+              Your barber privileges have been removed by the PismoPlatforms team. You no longer have access to the barber dashboard or booking features.
             </p>
 
             {/* Info box */}
@@ -471,12 +471,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     const statusMessages: Record<string, { title: string; description: string; color: string }> = {
       pending: {
         title: 'Application Under Review',
-        description: 'Your application has been submitted and is currently being reviewed by the AvilaPlatforms team. They will get back to you once they\'ve reviewed your application.',
+        description: 'Your application has been submitted and is currently being reviewed by the PismoPlatforms team. They will get back to you once they\'ve reviewed your application.',
         color: 'amber'
       },
       under_review: {
         title: 'Application Under Review',
-        description: 'Your application is actively being reviewed by the AvilaPlatforms team. They will reach out to you soon with next steps.',
+        description: 'Your application is actively being reviewed by the PismoPlatforms team. They will reach out to you soon with next steps.',
         color: 'blue'
       },
       interview_scheduled: {
@@ -616,7 +616,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         {/* Header */}
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
-            <h2 className="text-xl font-bold text-white">Become a AvilaPlatforms Barber</h2>
+            <h2 className="text-xl font-bold text-white">Become a PismoPlatforms Barber</h2>
             <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
             <p className="text-primary-100/90 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
           </div>
@@ -694,7 +694,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   Phone Number *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  The AvilaPlatforms team may reach out to you via text or call.
+                  The PismoPlatforms team may reach out to you via text or call.
                 </p>
                 <input
                   type="tel"
@@ -815,7 +815,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">Barber license verification</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      The AvilaPlatforms team may verify your license before approving your application. Provide accurate
+                      The PismoPlatforms team may verify your license before approving your application. Provide accurate
                       information; misrepresentation can result in rejection.
                     </p>
                   </div>
@@ -862,7 +862,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
                 {form.licenseDeclared === 'no' && (
                   <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
-                    You may still apply, but the AvilaPlatforms team may require a license before you can accept bookings.
+                    You may still apply, but the PismoPlatforms team may require a license before you can accept bookings.
                   </p>
                 )}
               </div>
@@ -882,7 +882,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     autoComplete="off"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Enter the number exactly as it appears on your license. The AvilaPlatforms team may request a photo
+                    Enter the number exactly as it appears on your license. The PismoPlatforms team may request a photo
                     for verification.
                   </p>
                 </div>
@@ -897,7 +897,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
                 <span className="text-sm text-gray-700">
                   I certify that the license information I provided is accurate to the best of my knowledge, and I
-                  understand that AvilaPlatforms may verify it before I am approved to provide
+                  understand that PismoPlatforms may verify it before I am approved to provide
                   services.
                 </span>
               </label>
@@ -911,7 +911,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   Which campus do you want to cut at? *
                 </label>
                 <p className="text-xs text-gray-600 mb-3">
-                  Your application will be sent to the AvilaPlatforms team at this location.
+                  Your application will be sent to the PismoPlatforms team at this location.
                 </p>
                 {loadingCampuses ? (
                   <div className="flex items-center gap-2 text-gray-500">
@@ -1001,12 +1001,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Why do you want to be a AvilaPlatforms barber? *
+                  Why do you want to be a PismoPlatforms barber? *
                 </label>
                 <textarea
                   value={form.whyBeBarber}
                   onChange={(e) => setForm({ ...form, whyBeBarber: e.target.value })}
-                  placeholder="Tell us about your passion for barbering and why you'd be a great fit for AvilaPlatforms..."
+                  placeholder="Tell us about your passion for barbering and why you'd be a great fit for PismoPlatforms..."
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
@@ -1122,7 +1122,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
 
                 <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Why AvilaPlatforms?</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Why PismoPlatforms?</p>
                   <p className="text-gray-700 text-sm">{form.whyBeBarber}</p>
                 </div>
 

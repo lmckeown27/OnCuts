@@ -158,9 +158,9 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
           ) : (
             <>
               <p className="text-sm text-gray-600 leading-relaxed">
-                AvilaPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
+                PismoPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account. Stripe handles identity verification, card processing, payout schedules, balances, and tax
-                forms—not a AvilaPlatforms balance.
+                forms—not a PismoPlatforms balance.
               </p>
 
               {connectStatusUnknown && (

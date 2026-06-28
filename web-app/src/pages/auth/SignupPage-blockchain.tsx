@@ -69,7 +69,7 @@ export default function SignupPageBlockchain() {
       {
         onSuccess: (response) => {
           if (response.success) {
-            toast.success('Account created! Welcome to AvilaPlatforms!');
+            toast.success('Account created! Welcome to PismoPlatforms!');
             // Navigation happens automatically in the hook
           } else {
             toast.error(response.message || 'Failed to create account');
@@ -88,7 +88,7 @@ export default function SignupPageBlockchain() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">Join AvilaPlatforms</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Join PismoPlatforms</h1>
           <p className="mt-2 text-sm text-gray-600">
             Get haircuts from talented students on your campus
           </p>

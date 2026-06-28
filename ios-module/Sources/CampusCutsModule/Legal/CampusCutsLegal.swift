@@ -8,7 +8,7 @@ public enum CampusCutsLegal {
 
     public static var termsOfServiceSummary: String {
         """
-        By using this app, you agree to AvilaPlatforms’ Terms of Service and community expectations for booking, messaging, and payments.
+        By using this app, you agree to PismoPlatforms’ Terms of Service and community expectations for booking, messaging, and payments.
 
         The full in-app Terms of Service are shown when you create an account. For questions, contact avilaplatformshelp@gmail.com.
 

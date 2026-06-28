@@ -24,8 +24,8 @@ export default function PrivacyPolicyPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">AvilaPlatforms</span>
+            <img src={webpageLogo} alt="PismoPlatforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">PismoPlatforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -46,9 +46,9 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                AvilaPlatforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
-                disclose, and safeguard your information when you use our website, the AvilaPlatforms iOS app for consumers,
-                the Avila - Provider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
+                PismoPlatforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
+                disclose, and safeguard your information when you use our website, the PismoPlatforms iOS app for consumers,
+                the Pismo - Provider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
                 Please read this Privacy Policy carefully. By using the Service, you agree to the collection and use of
@@ -225,17 +225,17 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">11. Google API Services</h2>
               <p>
-                AvilaPlatforms offers optional Google Calendar integration for barbers. When you connect your Google
+                PismoPlatforms offers optional Google Calendar integration for barbers. When you connect your Google
                 Calendar:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>We read busy/free times to prevent double-booking</li>
-                <li>We may create calendar events for AvilaPlatforms appointments with your permission</li>
+                <li>We may create calendar events for PismoPlatforms appointments with your permission</li>
                 <li>We store a secure OAuth refresh token to maintain the connection</li>
-                <li>You can disconnect Google Calendar at any time from Avila - Provider or your barber dashboard</li>
+                <li>You can disconnect Google Calendar at any time from Pismo - Provider or your barber dashboard</li>
               </ul>
               <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                <strong>Limited Use Disclosure:</strong> AvilaPlatforms&apos;s use and transfer of information received from
+                <strong>Limited Use Disclosure:</strong> PismoPlatforms&apos;s use and transfer of information received from
                 Google APIs will adhere to the{' '}
                 <a
                   href="https://developers.google.com/terms/api-services-user-data-policy"

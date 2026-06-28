@@ -119,13 +119,13 @@ export default function IosAppPromoSection() {
   return (
     <section
       className="border-y border-white/60 bg-gradient-to-br from-primary-50 via-white to-pink-50 px-4 py-10 sm:py-12"
-      aria-label="Download the AvilaPlatforms iOS apps"
+      aria-label="Download the PismoPlatforms iOS apps"
       id="ios-apps"
     >
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center sm:mb-10">
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-            AvilaPlatforms on iOS
+            PismoPlatforms on iOS
           </h2>
         </div>
 
@@ -133,21 +133,21 @@ export default function IosAppPromoSection() {
           <AppColumn
             heading="For Customers"
             card={{
-              title: 'AvilaPlatforms',
+              title: 'PismoPlatforms',
               appLogo: avilaPlatformsAppLogo,
-              appLogoAlt: 'AvilaPlatforms app icon',
+              appLogoAlt: 'PismoPlatforms app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
-              storeLabel: 'Download AvilaPlatforms on the App Store',
+              storeLabel: 'Download PismoPlatforms on the App Store',
             }}
           />
           <AppColumn
             heading="For Barbers"
             card={{
-              title: 'Avila - Provider',
+              title: 'Pismo - Provider',
               appLogo: interaProviderAppLogo,
-              appLogoAlt: 'Avila - Provider app icon',
+              appLogoAlt: 'Pismo - Provider app icon',
               storeHref: IOS_APP_STORE_LINKS.interaProvider,
-              storeLabel: 'Download Avila - Provider on the App Store',
+              storeLabel: 'Download Pismo - Provider on the App Store',
             }}
           />
         </div>

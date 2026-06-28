@@ -209,7 +209,7 @@ export default function ScheduleServicePage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={AvilaPlatformsLogo} alt="AvilaPlatforms" className="h-10 w-auto" />
+            <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-900">Schedule Service</h1>
           </div>
         </div>

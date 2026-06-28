@@ -305,13 +305,13 @@ export default function MobileConsumerPage() {
           </div>
         ) : activeTab === 'profile' ? (
           <div className="flex items-center gap-2">
-            <img src="/src/assets/logos/Logo1.png" alt="AvilaPlatforms" className="h-8" />
+            <img src="/src/assets/logos/Logo1.png" alt="PismoPlatforms" className="h-8" />
             <h1 className="text-lg font-bold text-gray-900 leading-tight">Profile</h1>
           </div>
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <img src="/src/assets/logos/Logo1.png" alt="AvilaPlatforms" className="h-8" />
+              <img src="/src/assets/logos/Logo1.png" alt="PismoPlatforms" className="h-8" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
                 <p className="text-xs text-gray-500 leading-tight">{selectedCollegeTown.shortName}</p>

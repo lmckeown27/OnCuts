@@ -124,7 +124,7 @@ export default function CampusSelectPage() {
             disabled={!selectedCampus}
             size="lg"
           >
-            Continue to AvilaPlatforms
+            Continue to PismoPlatforms
           </Button>
         </div>
       </div>
