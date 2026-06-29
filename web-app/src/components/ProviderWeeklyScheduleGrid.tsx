@@ -230,7 +230,7 @@ export default function ProviderWeeklyScheduleGrid({
         });
 
         if (appointment) {
-          return { status: 'booked' as SlotStatus, appointment };
+          return { status: 'booked' as SlotStatus, appointmentId: appointment.id };
         }
 
         if (block) {
@@ -255,19 +255,29 @@ export default function ProviderWeeklyScheduleGrid({
   }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings, googleCalendarBusyTimes]);
 
   const stats = useMemo(() => {
-    if (!slotGrid) return { open: 0, booked: 0, blocked: 0 };
+    if (!slotGrid) return { open: 0, bookingCount: 0, blocked: 0 };
     let open = 0;
-    let booked = 0;
     let blocked = 0;
     slotGrid.forEach(row => {
       row.forEach(cell => {
         if (cell.status === 'open') open += 1;
-        else if (cell.status === 'booked') booked += 1;
         else if (cell.status === 'blocked' || cell.status === 'google') blocked += 1;
       });
     });
-    return { open, booked, blocked };
-  }, [slotGrid]);
+    return { open, bookingCount: weekBookings.length, blocked };
+  }, [slotGrid, weekBookings.length]);
+
+  const getDayBookings = (dayDate: Date) =>
+    weekBookings.filter(apt => new Date(apt.scheduledTime).toDateString() === dayDate.toDateString());
+
+  const getBookingLayout = (booking: ScheduleBooking) => {
+    const aptStart = new Date(booking.scheduledTime);
+    const aptStartMin = aptStart.getHours() * 60 + aptStart.getMinutes();
+    const duration = booking.durationMinutes ?? 60;
+    const top = ((aptStartMin - gridStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
+    const height = (duration / SLOT_MINUTES) * ROW_HEIGHT_PX;
+    return { top, height: Math.max(height, ROW_HEIGHT_PX) };
+  };
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -375,19 +385,8 @@ export default function ProviderWeeklyScheduleGrid({
                       );
                     }
 
-                    if (cell.status === 'booked' && cell.appointment) {
-                      return (
-                        <button
-                          key={`${day.dateStr}-${slotStartMin}`}
-                          type="button"
-                          title={`${cell.appointment.consumer.firstName} ${cell.appointment.consumer.lastName}`}
-                          onClick={() => onViewBooking?.(cell.appointment!)}
-                          className={`absolute inset-x-0 bg-blue-200 hover:bg-blue-300 border-blue-300/50 transition-colors ${
-                            showHourLine ? 'border-t border-blue-300/60' : ''
-                          }`}
-                          style={{ top, height: ROW_HEIGHT_PX }}
-                        />
-                      );
+                    if (cell.status === 'booked') {
+                      return null;
                     }
 
                     if (cell.status === 'blocked' && cell.block) {
@@ -431,6 +430,34 @@ export default function ProviderWeeklyScheduleGrid({
                       />
                     );
                   })}
+
+                  {getDayBookings(day.date).map(booking => {
+                    const aptStart = new Date(booking.scheduledTime);
+                    const aptStartMin = aptStart.getHours() * 60 + aptStart.getMinutes();
+                    const duration = booking.durationMinutes ?? 60;
+                    const { top, height } = getBookingLayout(booking);
+                    const consumerName = `${booking.consumer.firstName} ${booking.consumer.lastName}`.trim();
+                    const startTime = formatTime12(minutesToTime(aptStartMin));
+                    const endTime = formatTime12(minutesToTime(aptStartMin + duration));
+
+                    return (
+                      <button
+                        key={booking.id}
+                        type="button"
+                        title={`${consumerName} · ${startTime} – ${endTime}`}
+                        aria-label={`View booking: ${consumerName}, ${startTime} to ${endTime}`}
+                        onClick={() => onViewBooking?.(booking)}
+                        className="absolute inset-x-0.5 z-10 flex items-start overflow-hidden rounded-sm border border-blue-400/60 bg-blue-200 text-left shadow-sm transition-colors hover:bg-blue-300 hover:border-blue-500/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                        style={{ top, height }}
+                      >
+                        {height >= 20 && (
+                          <span className="truncate px-1 py-0.5 text-[10px] font-semibold leading-tight text-blue-900">
+                            {consumerName}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -440,14 +467,14 @@ export default function ProviderWeeklyScheduleGrid({
 
       <div className="mt-4 pt-3 border-t border-gray-100 space-y-2.5">
         <p className="text-xs text-gray-600 text-center">
-          {stats.open} open · {stats.booked} booked · {stats.blocked} blocked · 5-minute slots
+          {stats.open} open · {stats.bookingCount} booked · {stats.blocked} blocked · 5-minute slots
         </p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm bg-primary-200" /> Open — tap to block
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-2 rounded-sm bg-blue-200" /> Booked
+            <span className="w-3 h-2 rounded-sm bg-blue-200" /> Booked — tap for details
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm bg-red-200" /> Blocked
