@@ -108,6 +108,42 @@ export function buildWeekDays(startOfWeek: Date) {
 
 type SlotStatus = 'unavailable' | 'open' | 'booked' | 'blocked' | 'google';
 
+interface GoogleBusySegment {
+  start: Date;
+  end: Date;
+  key: string;
+}
+
+const getMinutesFromDate = (date: Date) => date.getHours() * 60 + date.getMinutes();
+
+const getTimeRangeLayout = (startMin: number, endMin: number, gridStartMin: number) => {
+  const top = ((startMin - gridStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
+  const height = ((endMin - startMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
+  return { top, height: Math.max(height, ROW_HEIGHT_PX) };
+};
+
+const getDayGoogleBusySegments = (
+  dayDate: Date,
+  busyTimes: Array<{ start: Date; end: Date }>
+): GoogleBusySegment[] => {
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayDate);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  return busyTimes
+    .filter(busy => busy.start < dayEnd && busy.end > dayStart)
+    .map(busy => {
+      const start = busy.start < dayStart ? dayStart : busy.start;
+      const end = busy.end > dayEnd ? dayEnd : busy.end;
+      return {
+        start,
+        end,
+        key: `${start.toISOString()}-${end.toISOString()}`,
+      };
+    });
+};
+
 function GoogleCalendarIcon() {
   return (
     <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -254,29 +290,33 @@ export default function ProviderWeeklyScheduleGrid({
     });
   }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings, googleCalendarBusyTimes]);
 
+  /* Stats footer hidden — slot counts and color legend commented out per product request.
   const stats = useMemo(() => {
-    if (!slotGrid) return { open: 0, bookingCount: 0, blocked: 0 };
+    if (!slotGrid) return { open: 0, bookingCount: 0, manualBlocked: 0, googleBusyCount: 0 };
     let open = 0;
-    let blocked = 0;
+    let manualBlocked = 0;
     slotGrid.forEach(row => {
       row.forEach(cell => {
         if (cell.status === 'open') open += 1;
-        else if (cell.status === 'blocked' || cell.status === 'google') blocked += 1;
+        else if (cell.status === 'blocked') manualBlocked += 1;
       });
     });
-    return { open, bookingCount: weekBookings.length, blocked };
-  }, [slotGrid, weekBookings.length]);
+    const googleBusyCount = weekDays.reduce(
+      (count, day) => count + getDayGoogleBusySegments(day.date, googleCalendarBusyTimes).length,
+      0
+    );
+    return { open, bookingCount: weekBookings.length, manualBlocked, googleBusyCount };
+  }, [slotGrid, weekBookings.length, weekDays, googleCalendarBusyTimes]);
+  */
 
   const getDayBookings = (dayDate: Date) =>
     weekBookings.filter(apt => new Date(apt.scheduledTime).toDateString() === dayDate.toDateString());
 
   const getBookingLayout = (booking: ScheduleBooking) => {
     const aptStart = new Date(booking.scheduledTime);
-    const aptStartMin = aptStart.getHours() * 60 + aptStart.getMinutes();
+    const aptStartMin = getMinutesFromDate(aptStart);
     const duration = booking.durationMinutes ?? 60;
-    const top = ((aptStartMin - gridStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
-    const height = (duration / SLOT_MINUTES) * ROW_HEIGHT_PX;
-    return { top, height: Math.max(height, ROW_HEIGHT_PX) };
+    return getTimeRangeLayout(aptStartMin, aptStartMin + duration, gridStartMin);
   };
 
   useEffect(() => {
@@ -405,16 +445,7 @@ export default function ProviderWeeklyScheduleGrid({
                     }
 
                     if (cell.status === 'google') {
-                      return (
-                        <div
-                          key={`${day.dateStr}-${slotStartMin}`}
-                          className={`absolute inset-x-0 bg-blue-100 border-blue-200/60 ${
-                            showHourLine ? 'border-t border-blue-200' : ''
-                          }`}
-                          style={{ top, height: ROW_HEIGHT_PX }}
-                          title="Google Calendar"
-                        />
-                      );
+                      return null;
                     }
 
                     return (
@@ -431,9 +462,37 @@ export default function ProviderWeeklyScheduleGrid({
                     );
                   })}
 
+                  {getDayGoogleBusySegments(day.date, googleCalendarBusyTimes).map(segment => {
+                    const startMin = getMinutesFromDate(segment.start);
+                    const endMin = getMinutesFromDate(segment.end);
+                    const { top, height } = getTimeRangeLayout(startMin, endMin, gridStartMin);
+                    const startTime = formatTime12(minutesToTime(startMin));
+                    const endTime = formatTime12(minutesToTime(endMin));
+
+                    return (
+                      <button
+                        key={segment.key}
+                        type="button"
+                        title={`Google Calendar · ${startTime} – ${endTime}`}
+                        aria-label={`Google Calendar busy time, ${startTime} to ${endTime}`}
+                        className="absolute inset-x-0.5 z-[9] flex items-start gap-0.5 overflow-hidden rounded-sm border border-[#4285F4]/45 bg-[#E8F0FE] px-0.5 text-left shadow-sm transition-colors hover:border-[#4285F4]/70 hover:bg-[#D2E3FC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] focus-visible:ring-offset-1"
+                        style={{ top, height }}
+                      >
+                        {height >= 16 && (
+                          <>
+                            <GoogleCalendarIcon />
+                            <span className="truncate py-0.5 text-[10px] font-semibold leading-tight text-[#1A4480]">
+                              Google Calendar
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
+
                   {getDayBookings(day.date).map(booking => {
                     const aptStart = new Date(booking.scheduledTime);
-                    const aptStartMin = aptStart.getHours() * 60 + aptStart.getMinutes();
+                    const aptStartMin = getMinutesFromDate(aptStart);
                     const duration = booking.durationMinutes ?? 60;
                     const { top, height } = getBookingLayout(booking);
                     const consumerName = `${booking.consumer.firstName} ${booking.consumer.lastName}`.trim();
@@ -447,11 +506,11 @@ export default function ProviderWeeklyScheduleGrid({
                         title={`${consumerName} · ${startTime} – ${endTime}`}
                         aria-label={`View booking: ${consumerName}, ${startTime} to ${endTime}`}
                         onClick={() => onViewBooking?.(booking)}
-                        className="absolute inset-x-0.5 z-10 flex items-start overflow-hidden rounded-sm border border-blue-400/60 bg-blue-200 text-left shadow-sm transition-colors hover:bg-blue-300 hover:border-blue-500/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                        className="absolute inset-x-0.5 z-10 flex items-start overflow-hidden rounded-sm border border-[#5C6B2E]/60 bg-[#B8C97A] text-left shadow-sm transition-colors hover:border-[#4A5624]/70 hover:bg-[#A8B96A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5C6B2E] focus-visible:ring-offset-1"
                         style={{ top, height }}
                       >
                         {height >= 20 && (
-                          <span className="truncate px-1 py-0.5 text-[10px] font-semibold leading-tight text-blue-900">
+                          <span className="truncate px-1 py-0.5 text-[10px] font-semibold leading-tight text-[#2F3A14]">
                             {consumerName}
                           </span>
                         )}
@@ -466,23 +525,28 @@ export default function ProviderWeeklyScheduleGrid({
       </div>
 
       <div className="mt-4 pt-3 border-t border-gray-100 space-y-2.5">
+        {/* Stats summary and legend hidden per product request.
         <p className="text-xs text-gray-600 text-center">
-          {stats.open} open · {stats.bookingCount} booked · {stats.blocked} blocked · 5-minute slots
+          {stats.open} open · {stats.bookingCount} booked · {stats.manualBlocked} blocked · {stats.googleBusyCount} calendar · 5-minute slots
         </p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm bg-primary-200" /> Open — tap to block
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-2 rounded-sm bg-blue-200" /> Booked — tap for details
+            <span className="w-3 h-2 rounded-sm bg-[#B8C97A] border border-[#5C6B2E]/40" /> Booked — tap for details
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm bg-red-200" /> Blocked
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <GoogleCalendarIcon /> Calendar
+            <span className="inline-flex h-2 w-3 items-center justify-center rounded-sm border border-[#4285F4]/40 bg-[#E8F0FE]">
+              <GoogleCalendarIcon />
+            </span>{' '}
+            Google Calendar
           </span>
         </div>
+        */}
         <div className="flex justify-center">
           {googleCalendarConnected === null ? (
             <span className="text-xs text-gray-400">Checking Google Calendar…</span>
