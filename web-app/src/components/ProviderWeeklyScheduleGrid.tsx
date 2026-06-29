@@ -144,6 +144,42 @@ const getDayGoogleBusySegments = (
     });
 };
 
+const COMPLETED_BOOKING_STATUSES = new Set(['COMPLETED', 'PAID']);
+
+const formatBookingStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    PAID: 'Paid',
+    IN_PROGRESS: 'In progress',
+    COMPLETED: 'Completed',
+    DISPUTED: 'Disputed',
+    CANCELLED: 'Cancelled',
+    REFUNDED: 'Refunded',
+  };
+  return labels[status] ?? status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+};
+
+const isCompletedBookingStatus = (status: string) => COMPLETED_BOOKING_STATUSES.has(status);
+
+const getBookingBlockStyles = (status: string) => {
+  if (isCompletedBookingStatus(status)) {
+    return {
+      button:
+        'border-green-300/70 bg-green-100 hover:border-green-400/80 hover:bg-green-200 focus-visible:ring-green-500',
+      nameText: 'text-green-900',
+      statusText: 'text-green-700',
+    };
+  }
+
+  return {
+    button:
+      'border-[#5C6B2E]/60 bg-[#B8C97A] hover:border-[#4A5624]/70 hover:bg-[#A8B96A] focus-visible:ring-[#5C6B2E]',
+    nameText: 'text-[#2F3A14]',
+    statusText: 'text-[#3D4A1F]/80',
+  };
+};
+
 function GoogleCalendarIcon() {
   return (
     <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -496,6 +532,8 @@ export default function ProviderWeeklyScheduleGrid({
                     const duration = booking.durationMinutes ?? 60;
                     const { top, height } = getBookingLayout(booking);
                     const consumerName = `${booking.consumer.firstName} ${booking.consumer.lastName}`.trim();
+                    const statusLabel = formatBookingStatusLabel(booking.status);
+                    const blockStyles = getBookingBlockStyles(booking.status);
                     const startTime = formatTime12(minutesToTime(aptStartMin));
                     const endTime = formatTime12(minutesToTime(aptStartMin + duration));
 
@@ -503,17 +541,28 @@ export default function ProviderWeeklyScheduleGrid({
                       <button
                         key={booking.id}
                         type="button"
-                        title={`${consumerName} · ${startTime} – ${endTime}`}
-                        aria-label={`View booking: ${consumerName}, ${startTime} to ${endTime}`}
+                        title={`${consumerName} · ${statusLabel} · ${startTime} – ${endTime}`}
+                        aria-label={`View booking: ${consumerName}, ${statusLabel}, ${startTime} to ${endTime}`}
                         onClick={() => onViewBooking?.(booking)}
-                        className="absolute inset-x-0.5 z-10 flex items-start overflow-hidden rounded-sm border border-[#5C6B2E]/60 bg-[#B8C97A] text-left shadow-sm transition-colors hover:border-[#4A5624]/70 hover:bg-[#A8B96A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5C6B2E] focus-visible:ring-offset-1"
+                        className={`absolute inset-x-0.5 z-10 flex items-start overflow-hidden rounded-sm border text-left shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${blockStyles.button}`}
                         style={{ top, height }}
                       >
-                        {height >= 20 && (
-                          <span className="truncate px-1 py-0.5 text-[10px] font-semibold leading-tight text-[#2F3A14]">
-                            {consumerName}
+                        {height >= 28 ? (
+                          <span className="flex min-w-0 flex-col px-1 py-0.5 leading-tight">
+                            <span className={`truncate text-[10px] font-semibold ${blockStyles.nameText}`}>
+                              {consumerName}
+                            </span>
+                            <span className={`truncate text-[9px] font-medium ${blockStyles.statusText}`}>
+                              {statusLabel}
+                            </span>
                           </span>
-                        )}
+                        ) : height >= 20 ? (
+                          <span
+                            className={`truncate px-1 py-0.5 text-[10px] font-semibold leading-tight ${blockStyles.nameText}`}
+                          >
+                            {consumerName} · {statusLabel}
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
