@@ -58,6 +58,8 @@ import adminRoutes from './routes/admin.routes';
 import webhookRoutes from './routes/webhook.routes';
 import bookingPaymentRoutes from './routes/booking-payment.routes';
 import barberConnectRoutes from './routes/barber-connect.routes';
+import { createStripeLoginLink } from './controllers/barber-connect.controller';
+import { authenticate, requireRole } from './middleware/auth';
 
 // Live Transaction Feed Routes
 import liveFeedRoutes from './routes/live-feed.routes';
@@ -361,6 +363,14 @@ app.use('/api/v1/barbers', barberRoutes);
 app.use('/api/v1/providers', providerRoutes);
 app.use('/api/v1/service-providers', providerRoutes);
 app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
+
+const stripeConnectLoginLinkRoute = [
+  authenticate,
+  requireRole('barber', 'admin'),
+  createStripeLoginLink,
+] as const;
+app.post('/api/v1/create-stripe-login-link', ...stripeConnectLoginLinkRoute);
+app.post('/api/create-stripe-login-link', ...stripeConnectLoginLinkRoute);
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
 app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
 app.use('/api/v1/stripe', publicStripeRoutes); // Public publishable key bootstrap for native clients

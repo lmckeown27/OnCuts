@@ -8,10 +8,12 @@ import express from 'express';
 import { authenticate, requireRole } from '../middleware/auth';
 import {
   createConnectAccount,
+  createStripeLoginLink,
   getConnectStatus,
   refreshOnboardingLink,
   handleOnboardingReturn,
   getDashboardLink,
+  resetConnectAccount,
 } from '../controllers/barber-connect.controller';
 import { getBarberPayoutStatus, getBarberPayoutSummary, getBarberMetrics, getBarberPerformance, getBarberClients, getBarberClientBookings } from '../controllers/barber-payout.controller';
 
@@ -40,6 +42,18 @@ router.get('/payout/clients/:consumerId/bookings', authenticate, requireRole('ba
  * POST /api/barber/connect/create
  */
 router.post('/connect/create', authenticate, requireRole('barber', 'admin'), createConnectAccount);
+
+/**
+ * Reset Connect and re-onboard on the current platform Stripe account (after bank/platform migration)
+ * POST /api/barber/connect/reset
+ */
+router.post('/connect/reset', authenticate, requireRole('barber', 'admin'), resetConnectAccount);
+
+/**
+ * Create Stripe Express dashboard login link
+ * POST /api/barber/connect/login-link
+ */
+router.post('/connect/login-link', authenticate, requireRole('barber', 'admin'), createStripeLoginLink);
 
 /**
  * Get Connect account status

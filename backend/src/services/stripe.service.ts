@@ -1,5 +1,11 @@
 import Stripe from 'stripe';
-import { getDefaultStripeClient, getOptionalStatementDescriptor, getStripeClientForLivemode } from '../config/stripe';
+import {
+  formatStripeSecretKeyForSafeLog,
+  getDefaultStripeClient,
+  getDefaultStripeSecretKey,
+  getOptionalStatementDescriptor,
+  getStripeClientForLivemode,
+} from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -335,6 +341,32 @@ class StripeService {
     } catch (error) {
       logger.error('Failed to create payout:', error);
       throw new ApiError(500, 'Instant payout failed');
+    }
+  }
+
+  /**
+   * Ensure a Connect account exists for the server's default Stripe secret key (test/live).
+   * PaymentIntent destination charges fail with opaque "No such destination" if the DB holds a stale acct_*.
+   */
+  async validateConnectDestination(accountId: string): Promise<void> {
+    try {
+      await this.withConnectAccountStripeRetry(accountId, 'validate Connect destination', async (stripe) => {
+        await stripe.accounts.retrieve(accountId);
+      });
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      const msg = stripeErrorMessage(error);
+      const stripeKey = formatStripeSecretKeyForSafeLog(getDefaultStripeSecretKey());
+      logger.error('Stripe Connect destination invalid', { accountId, stripeKey, error: msg });
+      if (/no such destination|resource_missing|does not exist/i.test(msg)) {
+        throw new ApiError(
+          400,
+          `Barber payout account is not valid for server Stripe key (${stripeKey}). ` +
+            'The saved Connect account ID is missing or was created under a different Stripe mode/account. ' +
+            'Clear users.stripe_account_id for this barber and complete Stripe Connect onboarding again with test keys (sk_test/pk_test) or live keys (sk_live/pk_live) matching the server.'
+        );
+      }
+      throw error;
     }
   }
 

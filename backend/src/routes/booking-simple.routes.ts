@@ -19,11 +19,14 @@ import {
   BarberPricingEntry,
 } from '../utils/service-duration.utils';
 import {
+  formatStripeSecretKeyForSafeLog,
   getDefaultStripeClient,
+  getDefaultStripeSecretKey,
   getOptionalStatementDescriptor,
   getStripeClientConfigPayload,
   logIfPublishableKeyCannotRetrievePaymentIntent,
 } from '../config/stripe';
+import stripeService from '../services/stripe.service';
 import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
@@ -1861,13 +1864,16 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     // If barber has Stripe Connect account, use destination charges for automatic split
     // Platform takes 15% of SERVICE only (not tips), barber receives 85% of service + 100% of tips
     if (barberStripeAccountId) {
+      await stripeService.validateConnectDestination(barberStripeAccountId);
       paymentIntentConfig.application_fee_amount = platformFeeCents;
       paymentIntentConfig.transfer_data = {
         destination: barberStripeAccountId,
       };
       const barberEarnings = totalAmountCents - platformFeeCents;
       const tipInfo = tipAmountCents > 0 ? ` (includes $${tipAmountCents / 100} tip - barber keeps 100%)` : '';
-      logger.info(`Payment split: $${platformFeeCents / 100} platform fee (15% of $${serviceAmountCents / 100} service), $${barberEarnings / 100} to barber${tipInfo} (${barberStripeAccountId})`);
+      logger.info(`Payment split: $${platformFeeCents / 100} platform fee (15% of $${serviceAmountCents / 100} service), $${barberEarnings / 100} to barber${tipInfo} (${barberStripeAccountId})`, {
+        stripeKey: formatStripeSecretKeyForSafeLog(getDefaultStripeSecretKey()),
+      });
     } else {
       logger.warn(`Barber ${booking.barber_user_id} has no Stripe Connect account - payment goes to platform. Manual payout required.`);
     }

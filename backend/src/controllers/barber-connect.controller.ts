@@ -12,6 +12,65 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
 
+const connectRefreshUrl = () =>
+  `${process.env.FRONTEND_URL}/web/barber/connect/refresh`;
+const connectReturnUrl = () =>
+  `${process.env.FRONTEND_URL}/web/barber/connect/return`;
+
+async function getBarberUserRecord(userId: string) {
+  const userResult = await pool.query(
+    `SELECT stripe_account_id, email, first_name, last_name FROM users WHERE id = $1`,
+    [userId]
+  );
+  if (userResult.rows.length === 0) {
+    throw new ApiError(404, 'User not found');
+  }
+  return userResult.rows[0] as {
+    stripe_account_id: string | null;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+}
+
+function isStaleConnectAccountError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  return error.statusCode === 400 && /not valid for server Stripe key/i.test(error.message);
+}
+
+async function clearBarberConnectAccount(userId: string): Promise<void> {
+  await pool.query(
+    `UPDATE users
+     SET stripe_account_id = NULL,
+         stripe_payouts_enabled = false,
+         stripe_charges_enabled = false
+     WHERE id = $1`,
+    [userId]
+  );
+}
+
+async function createFreshConnectAccountForUser(userId: string, user: {
+  email: string;
+  first_name: string;
+  last_name: string;
+}) {
+  const accountId = await stripeService.createConnectedAccount({
+    email: user.email,
+    firstName: user.first_name,
+    lastName: user.last_name,
+  });
+
+  await pool.query(`UPDATE users SET stripe_account_id = $1 WHERE id = $2`, [accountId, userId]);
+
+  const onboardingUrl = await stripeService.createAccountLink(
+    accountId,
+    connectRefreshUrl(),
+    connectReturnUrl()
+  );
+
+  return { accountId, onboardingUrl };
+}
+
 /**
  * Create Stripe Connect account for barber
  * POST /api/barber/connect/create
@@ -31,57 +90,40 @@ export const createConnectAccount = async (
       user_id: userId,
     });
 
-    // 1. Check if barber already has Connect account
-    const userResult = await pool.query(
-      `SELECT stripe_account_id, email, first_name, last_name FROM users WHERE id = $1`,
-      [userId]
-    );
-
-    if (userResult.rows.length === 0) {
-      throw new ApiError(404, 'User not found');
-    }
-
-    const user = userResult.rows[0];
+    const user = await getBarberUserRecord(userId);
 
     if (user.stripe_account_id) {
-      // Already has account, just return onboarding link
-      const accountLink = await stripeService.createAccountLink(
-        user.stripe_account_id,
-        `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
-        `${process.env.FRONTEND_URL}/web/barber/connect/return`
-      );
+      try {
+        await stripeService.validateConnectDestination(user.stripe_account_id);
+        const accountLink = await stripeService.createAccountLink(
+          user.stripe_account_id,
+          connectRefreshUrl(),
+          connectReturnUrl()
+        );
 
-      return res.status(200).json({
-        success: true,
-        message: 'Connect account already exists',
-        data: {
-          account_id: user.stripe_account_id,
-          onboarding_url: accountLink,
-        },
-      });
+        return res.status(200).json({
+          success: true,
+          message: 'Connect account already exists',
+          data: {
+            account_id: user.stripe_account_id,
+            onboarding_url: accountLink,
+          },
+        });
+      } catch (error) {
+        if (!isStaleConnectAccountError(error)) {
+          throw error;
+        }
+        logger.warn('Replacing stale Stripe Connect account for barber', {
+          user_id: userId,
+          stale_account_id: user.stripe_account_id,
+        });
+        await clearBarberConnectAccount(userId);
+      }
     }
 
-    // 2. Create new Stripe Connect account
-    const accountId = await stripeService.createConnectedAccount({
-      email: user.email,
-      firstName: user.first_name,
-      lastName: user.last_name,
-    });
+    const { accountId, onboardingUrl } = await createFreshConnectAccountForUser(userId, user);
 
-    // 3. Save account ID to database
-    await pool.query(
-      `UPDATE users SET stripe_account_id = $1 WHERE id = $2`,
-      [accountId, userId]
-    );
-
-    // 4. Create account link for onboarding
-    const accountLink = await stripeService.createAccountLink(
-      accountId,
-      `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
-      `${process.env.FRONTEND_URL}/web/barber/connect/return`
-    );
-
-    // 5. Audit log
+    // Audit log
     logger.info('Stripe Connect account created', {
       user_id: userId,
       action: 'STRIPE_CONNECT_ACCOUNT_CREATED',
@@ -98,7 +140,46 @@ export const createConnectAccount = async (
       message: 'Connect account created successfully',
       data: {
         account_id: accountId,
-        onboarding_url: accountLink,
+        onboarding_url: onboardingUrl,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset Connect account and start onboarding on the current platform Stripe account.
+ * POST /api/barber/connect/reset
+ *
+ * Use after the platform moves to a new Stripe account / bank — old acct_* IDs are invalid.
+ */
+export const resetConnectAccount = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const user = await getBarberUserRecord(userId);
+    const previousAccountId = user.stripe_account_id;
+
+    await clearBarberConnectAccount(userId);
+    const { accountId, onboardingUrl } = await createFreshConnectAccountForUser(userId, user);
+
+    logger.info('Stripe Connect account reset for platform migration', {
+      user_id: userId,
+      previous_account_id: previousAccountId,
+      new_account_id: accountId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Connect account reset — complete onboarding for the new platform payout account',
+      data: {
+        previous_account_id: previousAccountId,
+        account_id: accountId,
+        onboarding_url: onboardingUrl,
       },
     });
   } catch (error) {
@@ -143,21 +224,40 @@ export const getConnectStatus = async (
     }
 
     // Get account status from Stripe
-    const status = await stripeService.getAccountStatus(stripeAccountId);
+    let status;
+    let needsReconnect = false;
+    try {
+      await stripeService.validateConnectDestination(stripeAccountId);
+      status = await stripeService.getAccountStatus(stripeAccountId);
+    } catch (error) {
+      if (isStaleConnectAccountError(error)) {
+        needsReconnect = true;
+        status = {
+          detailsSubmitted: false,
+          chargesEnabled: false,
+          payoutsEnabled: false,
+        };
+      } else {
+        throw error;
+      }
+    }
 
-    // Sync database with current Stripe status
-    await pool.query(
-      `UPDATE users 
-       SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
-       WHERE id = $3`,
-      [status.payoutsEnabled, status.chargesEnabled, userId]
-    );
+    if (!needsReconnect) {
+      // Sync database with current Stripe status
+      await pool.query(
+        `UPDATE users 
+         SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
+         WHERE id = $3`,
+        [status.payoutsEnabled, status.chargesEnabled, userId]
+      );
+    }
 
     res.status(200).json({
       success: true,
       data: {
         has_account: true,
         account_id: stripeAccountId,
+        needs_reconnect: needsReconnect,
         ...status,
       },
     });
@@ -190,11 +290,13 @@ export const refreshOnboardingLink = async (
       throw new ApiError(400, 'No Connect account found. Create one first.');
     }
 
+    await stripeService.validateConnectDestination(stripeAccountId);
+
     // Create new account link
     const accountLink = await stripeService.createAccountLink(
       stripeAccountId,
-      `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
-      `${process.env.FRONTEND_URL}/web/barber/connect/return`
+      connectRefreshUrl(),
+      connectReturnUrl()
     );
 
     res.status(200).json({
@@ -268,6 +370,7 @@ export const handleOnboardingReturn = async (
 /**
  * Get Stripe Express dashboard login link
  * GET /api/barber/connect/dashboard
+ * POST /api/create-stripe-login-link (alias — see index.ts)
  */
 export const getDashboardLink = async (
   req: AuthRequest,
@@ -276,26 +379,73 @@ export const getDashboardLink = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    // Role check is handled by requireRole middleware in routes
+    const user = await getBarberUserRecord(userId);
 
-    const userResult = await pool.query(
-      `SELECT stripe_account_id FROM users WHERE id = $1`,
-      [userId]
-    );
-
-    const stripeAccountId = userResult.rows[0]?.stripe_account_id;
-
-    if (!stripeAccountId) {
+    if (!user.stripe_account_id) {
       throw new ApiError(400, 'No Connect account found. Complete onboarding first.');
     }
 
-    // Create login link for Stripe Express dashboard
-    const loginLink = await stripeService.createExpressLoginLink(stripeAccountId);
+    await stripeService.validateConnectDestination(user.stripe_account_id);
+    const loginLink = await stripeService.createExpressLoginLink(user.stripe_account_id);
 
     res.status(200).json({
       success: true,
       data: {
         dashboard_url: loginLink,
+        url: loginLink,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create Stripe Express dashboard login link (mobile-friendly POST).
+ * POST /api/create-stripe-login-link
+ *
+ * Uses the authenticated barber's saved Connect account. Optional `connectedAccountId`
+ * in the body must match that saved ID — arbitrary account IDs are rejected.
+ */
+export const createStripeLoginLink = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const connectedAccountId =
+      typeof req.body?.connectedAccountId === 'string'
+        ? req.body.connectedAccountId.trim()
+        : '';
+
+    const user = await getBarberUserRecord(userId);
+    const stripeAccountId = user.stripe_account_id;
+
+    if (!stripeAccountId) {
+      throw new ApiError(
+        400,
+        'No Connect account found. Call POST /api/v1/barber/connect/create or POST /api/v1/barber/connect/reset to onboard on the current platform Stripe account.'
+      );
+    }
+
+    if (connectedAccountId && connectedAccountId !== stripeAccountId) {
+      throw new ApiError(
+        403,
+        'connectedAccountId does not match your saved Connect account. Use POST /api/v1/barber/connect/reset after a platform Stripe migration.'
+      );
+    }
+
+    await stripeService.validateConnectDestination(stripeAccountId);
+    const url = await stripeService.createExpressLoginLink(stripeAccountId);
+
+    res.status(200).json({
+      success: true,
+      url,
+      data: {
+        url,
+        dashboard_url: url,
+        account_id: stripeAccountId,
       },
     });
   } catch (error) {
