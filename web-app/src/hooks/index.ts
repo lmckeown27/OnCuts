@@ -12,5 +12,6 @@ export { useBodyScrollLock } from './useBodyScrollLock';
 export { useGeolocation, calculateDistance, kmToMiles } from './useGeolocation';
 export type { GeolocationState, UseGeolocationReturn } from './useGeolocation';
 
-export { useDynamicViewportHeight } from './useDynamicViewportHeight';
+export { useStripeOnboardingGate } from './useStripeOnboardingGate';
 
+export { useDynamicViewportHeight } from './useDynamicViewportHeight';

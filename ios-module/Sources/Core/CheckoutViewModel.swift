@@ -34,7 +34,9 @@ private enum CreatePaymentIntentAPI {
         let ephemeralKey: String?
         let ephemeralKeySecret: String?
         let livemode: Bool?
-        /// First 20 chars of server `STRIPE_PUBLISHABLE_KEY`; compared to the app key so wrong-dashboard keys fail before PaymentSheet.
+        /// Server `STRIPE_PUBLISHABLE_KEY*` — preferred over bundled plist when present.
+        let publishableKey: String?
+        /// First 20 chars of server publishable key; compared to the app key so wrong-dashboard keys fail before PaymentSheet.
         let stripePublishableKeyPrefix: String?
 
         enum CodingKeys: String, CodingKey {
@@ -45,6 +47,7 @@ private enum CreatePaymentIntentAPI {
             case ephemeralKey
             case ephemeralKeySecret
             case livemode
+            case publishableKey
             case stripePublishableKeyPrefix
         }
 
@@ -57,6 +60,7 @@ private enum CreatePaymentIntentAPI {
             ephemeralKey = try c.decodeIfPresent(String.self, forKey: .ephemeralKey)
             ephemeralKeySecret = try c.decodeIfPresent(String.self, forKey: .ephemeralKeySecret)
             livemode = try c.decodeIfPresent(Bool.self, forKey: .livemode)
+            publishableKey = try c.decodeIfPresent(String.self, forKey: .publishableKey)
             stripePublishableKeyPrefix = try c.decodeIfPresent(String.self, forKey: .stripePublishableKeyPrefix)
         }
     }
@@ -111,6 +115,10 @@ private enum CreatePaymentIntentAPI {
         let cust = d.customerId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         let piFromJson = d.paymentIntentId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         let pi = piFromJson ?? paymentIntentIdFromClientSecret(secret)
+        let serverPk = d.publishableKey?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        if let serverPk, serverPk.hasPrefix("pk_") {
+            StripeService.setPublishableKey(serverPk)
+        }
         let pk = resolvedPublishableKeyTrimmed()
         if let lm = d.livemode {
             if lm {
@@ -155,6 +163,7 @@ private enum CreatePaymentIntentAPI {
             customerEphemeralKeySecret: ek?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             customerId: cust,
             paymentIntentId: pi,
+            publishableKey: serverPk,
             paymentIntentLivemode: d.livemode
         )
     }
@@ -256,7 +265,8 @@ public final class CheckoutViewModel: ObservableObject {
             bearerToken: bearerToken,
             apiBaseURLTrimmed: apiBaseURLTrimmed
         )
-        let pk = resolvedPublishableKeyTrimmed()
+        let pk = config.publishableKey?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+            ?? resolvedPublishableKeyTrimmed()
         guard pk.hasPrefix("pk_"), !pk.contains("$(") else {
             throw NSError(
                 domain: "CheckoutViewModel",

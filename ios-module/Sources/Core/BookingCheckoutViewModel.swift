@@ -62,11 +62,6 @@ public final class BookingCheckoutViewModel: ObservableObject {
     public func loadPaymentSession() async {
         guard !hasCompletedPayment else { return }
         if phase == .ready, paymentSheet != nil { return }
-        guard Bundle.StripeConfig.isPublishableKeyConfigured else {
-            phase = .failed("Missing or invalid Stripe publishable key in Info.plist.")
-            return
-        }
-        StripeService.setPublishableKey(Bundle.StripeConfig.publishableKey)
         phase = .loading
         paymentSheet = nil
         let result = await stripeManager.createPaymentIntent(
@@ -78,10 +73,20 @@ public final class BookingCheckoutViewModel: ObservableObject {
         )
         switch result {
         case .success(let config):
+            let trimmedServerPk = config.publishableKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let pk = !trimmedServerPk.isEmpty ? trimmedServerPk : Bundle.StripeConfig.publishableKey
+            guard pk.hasPrefix("pk_"), !pk.contains("$(") else {
+                phase = .failed("Missing or invalid Stripe publishable key from server or Info.plist.")
+                return
+            }
+            StripeService.setPublishableKey(pk)
             var sheetConfiguration = PaymentSheet.Configuration()
             sheetConfiguration.merchantDisplayName = merchantDisplayName
             sheetConfiguration.returnURL = stripeReturnURL
             sheetConfiguration.allowsDelayedPaymentMethods = false
+            let sheetAPIClient = STPAPIClient(publishableKey: pk)
+            sheetAPIClient.stripeAccount = nil
+            sheetConfiguration.apiClient = sheetAPIClient
             if let cust = config.customerId,
                let ek = config.customerEphemeralKeySecret, !ek.isEmpty
             {

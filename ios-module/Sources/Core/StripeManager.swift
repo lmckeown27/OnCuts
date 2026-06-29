@@ -63,11 +63,13 @@ public final class StripeManager: @unchecked Sendable {
             let cus = (payload.customerId ?? payload.customer)?
                 .trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             let piid = payload.paymentIntentId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+            let serverPk = payload.publishableKey?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             let config = PaymentConfig(
                 paymentIntentClientSecret: pi,
                 customerEphemeralKeySecret: ek,
                 customerId: cus,
                 paymentIntentId: piid ?? paymentIntentIdFromClientSecret(pi),
+                publishableKey: serverPk,
                 paymentIntentLivemode: nil
             )
             return .success(config)
@@ -116,6 +118,7 @@ private struct CreateIntentEnvelope: Decodable {
         let customer: String?
         let customerId: String?
         let paymentIntentId: String?
+        let publishableKey: String?
     }
 
     var payload: Payload {

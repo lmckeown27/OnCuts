@@ -15,6 +15,7 @@ import { applyAppNetworkModeDefaults } from './config/app-network';
 import {
   logStripeDefaultSecretKeyFingerprintAtBoot,
   warnStripePublishableKeyMisconfiguredOnBoot,
+  warnStripePublishableSecretKeyMismatchOnBoot,
 } from './config/stripe';
 applyAppNetworkModeDefaults();
 
@@ -507,6 +508,7 @@ httpServer.listen(PORT, async () => {
   logger.info(`💳 Payment Provider: Stripe (off-chain)`);
   logStripeDefaultSecretKeyFingerprintAtBoot();
   warnStripePublishableKeyMisconfiguredOnBoot();
+  warnStripePublishableSecretKeyMismatchOnBoot();
   logger.info(`💬 Socket.IO ready for real-time messaging`);
 
   // Initialize PostgreSQL cache connection

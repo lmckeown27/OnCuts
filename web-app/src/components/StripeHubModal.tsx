@@ -9,13 +9,19 @@ import {
   fetchBarberConnectStatus,
   createBarberConnectOnboarding,
   refreshBarberConnectOnboarding,
+  resetBarberConnect,
   fetchBarberStripeDashboardUrl,
   type BarberConnectStatus,
 } from '../services/barber-connect.service';
+import { isBarberStripeFullyConnected } from '../utils/stripe-connect-status';
 
 interface StripeHubModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** When true, hide Close and ignore backdrop clicks until Stripe Connect is fully complete. */
+  blocking?: boolean;
+  /** Called after status refresh when all checklist items are complete. */
+  onFullyConnected?: () => void;
 }
 
 function StatusRow({ label, done }: { label: string; done: boolean }) {
@@ -29,7 +35,12 @@ function StatusRow({ label, done }: { label: string; done: boolean }) {
   );
 }
 
-export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps) {
+export default function StripeHubModal({
+  isOpen,
+  onClose,
+  blocking = false,
+  onFullyConnected,
+}: StripeHubModalProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [connectStatusUnknown, setConnectStatusUnknown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,11 +54,16 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
       setConnectStatusUnknown(false);
       const status = await fetchBarberConnectStatus();
       setConnectStatus(status);
+      if (isBarberStripeFullyConnected(status)) {
+        onFullyConnected?.();
+      }
+      return status;
     } catch (e) {
       console.error(e);
       setConnectStatus(null);
       setConnectStatusUnknown(true);
       toast.error('Could not load Stripe status');
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +102,16 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
   const startStripeOnboarding = async () => {
     try {
       setBusy('onboarding');
-      const { onboarding_url: onboardingUrl } = await createBarberConnectOnboarding();
+      const needsReconnect = Boolean(connectStatus?.needs_reconnect);
+      const { onboarding_url: onboardingUrl } = needsReconnect
+        ? await resetBarberConnect()
+        : await createBarberConnectOnboarding();
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
+      toast.success(
+        needsReconnect
+          ? 'Stripe account reset — finish setup in the new tab, then return here.'
+          : 'Continue setup in Stripe, then return here.'
+      );
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -118,18 +142,24 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
   if (!isVisible && !isOpen) return null;
 
   const hasAccount = Boolean(connectStatus?.has_account);
+  const needsReconnect = Boolean(connectStatus?.needs_reconnect);
   const detailsSubmitted = Boolean(connectStatus?.detailsSubmitted);
   const chargesEnabled = Boolean(connectStatus?.chargesEnabled);
   const payoutsEnabled = Boolean(connectStatus?.payoutsEnabled);
-  const fullyConnected = hasAccount && payoutsEnabled;
-  const needsSetup = !hasAccount || !payoutsEnabled || !detailsSubmitted;
+  const fullyConnected = isBarberStripeFullyConnected(connectStatus);
+  const needsSetup = !fullyConnected;
+  const canDismiss = !blocking || fullyConnected;
+
+  const handleBackdropClick = () => {
+    if (canDismiss) onClose();
+  };
 
   return (
     <div
-      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
-        isAnimating ? 'bg-black/50' : 'bg-black/0'
-      }`}
-      onClick={onClose}
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center p-2 sm:p-4 transition-all duration-150 ease-out ${
+        blocking ? 'z-[100]' : 'z-50'
+      } ${isAnimating ? 'bg-black/50' : 'bg-black/0'}`}
+      onClick={handleBackdropClick}
     >
       <div
         className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
@@ -140,15 +170,21 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
         <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
           <div>
             <h2 className="text-2xl font-bold">Stripe</h2>
-            <p className="text-white/80 text-sm">Payments, payouts, and bank account</p>
+            <p className="text-white/80 text-sm">
+              {blocking && !fullyConnected
+                ? 'Complete setup to use your provider dashboard'
+                : 'Payments, payouts, and bank account'}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-          >
-            Close
-          </button>
+          {canDismiss && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            >
+              Close
+            </button>
+          )}
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
@@ -171,9 +207,23 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
                 </p>
               )}
 
+              {needsReconnect && (
+                <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+                  Your saved payout account is from a previous Stripe setup (test mode or an old platform
+                  account). Use <strong>Connect with Stripe</strong> below to link the current live payout account.
+                </p>
+              )}
+
+              {blocking && !fullyConnected && (
+                <p className="text-xs text-gray-700 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
+                  Bookings, schedule, messages, and other provider tools stay disabled until all checklist items
+                  show <strong>Complete</strong>. Finish onboarding in Stripe, then return to this tab.
+                </p>
+              )}
+
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
-                <StatusRow label="Stripe account linked" done={hasAccount} />
+                <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} />
                 <StatusRow label="Identity & business details" done={detailsSubmitted} />
                 <StatusRow label="Accept card payments" done={chargesEnabled} />
                 <StatusRow label="Bank account & payouts" done={payoutsEnabled} />
@@ -202,9 +252,11 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
                   >
                     {busy === 'onboarding'
                       ? 'Redirecting to Stripe…'
-                      : hasAccount
-                        ? 'Complete setup in Stripe'
-                        : 'Connect with Stripe'}
+                      : needsReconnect
+                        ? 'Connect with Stripe'
+                        : hasAccount
+                          ? 'Complete setup in Stripe'
+                          : 'Connect with Stripe'}
                   </Button>
                 ) : (
                   <Button
@@ -219,7 +271,7 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
                   </Button>
                 )}
 
-                {hasAccount && (
+                {hasAccount && !needsReconnect && (
                   <button
                     type="button"
                     onClick={() => void (fullyConnected ? openStripeDashboard() : refreshStripeOnboarding())}

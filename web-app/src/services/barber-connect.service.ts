@@ -3,9 +3,18 @@ import api from './api.service';
 export interface BarberConnectStatus {
   has_account: boolean;
   account_id?: string;
+  needs_reconnect?: boolean;
   detailsSubmitted?: boolean;
   chargesEnabled?: boolean;
   payoutsEnabled?: boolean;
+}
+
+export async function resetBarberConnect(): Promise<{
+  account_id: string;
+  onboarding_url: string;
+  previous_account_id?: string;
+}> {
+  return api.post('/barber/connect/reset', {});
 }
 
 export async function fetchBarberConnectStatus(): Promise<BarberConnectStatus> {

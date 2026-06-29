@@ -42,6 +42,7 @@ import barberService, { TimeBlock } from '../services/barber.service';
 import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useDynamicViewportHeight } from '../hooks';
+import { useStripeOnboardingGate } from '../hooks/useStripeOnboardingGate';
 import toast from 'react-hot-toast';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
@@ -134,6 +135,17 @@ export default function BarberPage() {
   const [isNotificationsVisible, setIsNotificationsVisible] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'bookings' | 'payments' | 'reviews' | 'cancellations' | 'messages'>('all');
+
+  const { user, isLoading: isAuthLoading } = useAuthStore();
+  const barberId = user?.id || '';
+  const isAuthorizedForBarberPage =
+    user?.user_type === 'barber' ||
+    user?.user_type === 'admin' ||
+    user?.has_barber_profile;
+
+  const stripeGate = useStripeOnboardingGate({
+    enabled: !isAuthLoading && isAuthorizedForBarberPage && Boolean(barberId),
+  });
   
   // Lock body scroll when any modal is open
   const isAnyModalOpen =
@@ -148,7 +160,8 @@ export default function BarberPage() {
     showNotifications ||
     showBookingDetailsModal ||
     showPayoutSettings ||
-    showStripeHub;
+    showStripeHub ||
+    stripeGate.isBlocking;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -353,9 +366,6 @@ export default function BarberPage() {
   const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
   
   // Get barber data from auth - in production this would come from API
-  const { user, isLoading: isAuthLoading } = useAuthStore();
-  const barberId = user?.id || '';
-
   const openLocations = () => openModal(setShowLocations, setIsLocationsVisible);
   const refreshBarberServiceLocation = useCallback(async () => {
     if (!barberId) return;
@@ -384,11 +394,6 @@ export default function BarberPage() {
   
   // Role-based access control: Only barbers and admins can access this page
   // Consumers/students should be redirected to the consumer page
-  const isAuthorizedForBarberPage = 
-    user?.user_type === 'barber' || 
-    user?.user_type === 'admin' ||
-    user?.has_barber_profile;
-  
   useEffect(() => {
     // Don't redirect while auth is still loading - wait for fresh user data from /me endpoint
     if (isAuthLoading) return;
@@ -403,6 +408,32 @@ export default function BarberPage() {
       navigate(`${platformPrefix}/consumer`);
     }
   }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);
+
+  useEffect(() => {
+    if (!stripeGate.isBlocking) return;
+    setShowProfileDropdown(false);
+    setShowProfileEditor(false);
+    setIsProfileEditorVisible(false);
+    setShowServiceSpecialties(false);
+    setIsServiceSpecialtiesVisible(false);
+    setShowAdminDashboard(false);
+    setIsAdminDashboardVisible(false);
+    setShowBarberChats(false);
+    setIsBarberChatsVisible(false);
+    setShowBookings(false);
+    setIsBookingsVisible(false);
+    setShowLocations(false);
+    setIsLocationsVisible(false);
+    setShowAvailability(false);
+    setIsAvailabilityVisible(false);
+    setShowServiceDetails(false);
+    setShowNotifications(false);
+    setIsNotificationsVisible(false);
+    setShowBookingDetailsModal(false);
+    setShowPayoutSettings(false);
+    setShowBlockTimeModal(false);
+    setShowStripeHub(true);
+  }, [stripeGate.isBlocking]);
 
   // State for booking details modal
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
@@ -534,7 +565,9 @@ export default function BarberPage() {
   }, []);
 
   return (
-    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>
+    <>
+    <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -997,8 +1030,6 @@ export default function BarberPage() {
         onClose={() => setShowPayoutSettings(false)}
       />
 
-      <StripeHubModal isOpen={showStripeHub} onClose={() => setShowStripeHub(false)} />
-
       {/* Block Time Modal - One-time date-specific availability blocks */}
       {barberProfile?.id && (
         <BlockTimeModal
@@ -1299,6 +1330,20 @@ export default function BarberPage() {
         </div>
       )}
     </PullToRefresh>
+    </div>
+
+    <StripeHubModal
+      isOpen={stripeGate.isBlocking || showStripeHub}
+      blocking={stripeGate.isBlocking}
+      onClose={() => {
+        if (!stripeGate.isBlocking) setShowStripeHub(false);
+      }}
+      onFullyConnected={() => {
+        void stripeGate.refresh();
+        setShowStripeHub(false);
+      }}
+    />
+    </>
   );
 }
 

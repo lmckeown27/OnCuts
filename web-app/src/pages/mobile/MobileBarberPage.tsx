@@ -17,8 +17,10 @@ import toast from 'react-hot-toast';
 import MobilePhotoUpload from '../../components/MobilePhotoUpload';
 import BarberProfileEditor from '../../components/BarberProfileEditor';
 import BlockTimeModal from '../../components/BlockTimeModal';
+import StripeHubModal from '../../components/StripeHubModal';
 import userService from '../../services/user.service';
 import api from '../../services/api.service';
+import { useStripeOnboardingGate } from '../../hooks/useStripeOnboardingGate';
 import {
   Calendar,
   Clock,
@@ -84,6 +86,17 @@ export default function MobileBarberPage() {
     user?.user_type === 'barber' || 
     user?.user_type === 'admin' ||
     user?.has_barber_profile;
+
+  const stripeGate = useStripeOnboardingGate({
+    enabled: !isAuthLoading && isAuthorizedForBarberPage && Boolean(user?.id),
+  });
+
+  useEffect(() => {
+    if (!stripeGate.isBlocking) return;
+    setShowFullEditor(false);
+    setShowBlockTimeModal(false);
+    setShowRequestDetail(null);
+  }, [stripeGate.isBlocking]);
   
   useEffect(() => {
     // Don't redirect while auth is still loading - wait for fresh user data
@@ -180,7 +193,8 @@ export default function MobileBarberPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <>
+    <div className={`fixed inset-0 bg-gray-50 flex flex-col ${stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : ''}`}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 safe-area-inset-top">
         <div className="flex items-center justify-between">
@@ -573,6 +587,16 @@ export default function MobileBarberPage() {
         />
       )}
     </div>
+
+    <StripeHubModal
+      isOpen={stripeGate.isBlocking}
+      blocking={stripeGate.isBlocking}
+      onClose={() => {}}
+      onFullyConnected={() => {
+        void stripeGate.refresh();
+      }}
+    />
+    </>
   );
 }
 

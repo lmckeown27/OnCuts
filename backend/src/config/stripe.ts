@@ -303,6 +303,118 @@ export function getDefaultStripeSecretKey(): string {
 }
 
 let defaultClient: Stripe | null = null;
+let lastResolvedPublishableKeyEnv: string | null = null;
+
+/** Which env var supplied the active publishable key (for logs). */
+export function getResolvedPublishableKeyEnvName(): string | null {
+  return lastResolvedPublishableKeyEnv;
+}
+
+type PublishableKeyCandidate = { envName: string; value: string };
+
+function collectPublishableKeyCandidates(envNames: string[]): PublishableKeyCandidate[] {
+  return envNames
+    .map((envName) => ({ envName, value: trimStripeCredentialEnv(envName) }))
+    .filter((c): c is PublishableKeyCandidate => !!c.value);
+}
+
+/**
+ * Publishable key aligned with {@link getDefaultStripeSecretKey} so native apps and
+ * tooling can initialize Stripe.js / PaymentSheet with the same live|test mode as the PI.
+ *
+ * When STRIPE_MODE=test (or the secret is sk_test), test-specific env vars are preferred
+ * over generic STRIPE_PUBLISHABLE_KEY so an old pk_test left in .env does not win.
+ */
+export function getStripePublishableKeyForDefaultClient(): string | undefined {
+  const sk = getDefaultStripeSecretKey();
+  const stripeMode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
+  const wantLive = sk.startsWith('sk_live');
+  const wantTest = sk.startsWith('sk_test');
+
+  const testEnvOrder = [
+    'STRIPE_PUBLISHABLE_KEY_TEST',
+    'STRIPE_TEST_PUBLISHABLE_KEY',
+    'STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_PUBLIC_KEY',
+  ];
+  const liveEnvOrder = [
+    'STRIPE_PUBLISHABLE_KEY_LIVE',
+    'STRIPE_LIVE_PUBLISHABLE_KEY',
+    'STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_PUBLIC_KEY',
+  ];
+  const neutralEnvOrder = [
+    'STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_PUBLIC_KEY',
+    'STRIPE_PUBLISHABLE_KEY_LIVE',
+    'STRIPE_LIVE_PUBLISHABLE_KEY',
+    'STRIPE_PUBLISHABLE_KEY_TEST',
+    'STRIPE_TEST_PUBLISHABLE_KEY',
+  ];
+
+  let envOrder: string[];
+  if (stripeMode === 'test' || wantTest) envOrder = testEnvOrder;
+  else if (stripeMode === 'live' || wantLive) envOrder = liveEnvOrder;
+  else envOrder = neutralEnvOrder;
+
+  const requiredPrefix = wantLive ? 'pk_live' : wantTest ? 'pk_test' : 'pk_';
+  const candidates = collectPublishableKeyCandidates(envOrder).filter((c) =>
+    requiredPrefix === 'pk_' ? c.value.startsWith('pk_') : c.value.startsWith(requiredPrefix)
+  );
+
+  if (candidates.length === 0) {
+    lastResolvedPublishableKeyEnv = null;
+    const anyPk = collectPublishableKeyCandidates(neutralEnvOrder).find((c) => c.value.startsWith('pk_'));
+    const liveTestMismatch =
+      !!anyPk &&
+      !!sk &&
+      sk.startsWith('sk_') &&
+      ((wantLive && anyPk.value.startsWith('pk_test')) || (wantTest && anyPk.value.startsWith('pk_live')));
+
+    if (liveTestMismatch) {
+      logger.warn(
+        '[stripe] STRIPE_PUBLISHABLE_KEY* mode does not match STRIPE_SECRET_KEY (live vs test). Replace with pk_live_… when using sk_live_… (or both test). Not returning a publishable key to clients until fixed.'
+      );
+    }
+    return undefined;
+  }
+
+  const suffixMatch = candidates.find((c) => stripePublishableKeyMatchesSecretKey(c.value, sk));
+  if (suffixMatch) {
+    lastResolvedPublishableKeyEnv = suffixMatch.envName;
+    return suffixMatch.value;
+  }
+
+  // Never return a pk_ whose account suffix differs from the active sk_ — Stripe rejects retrieve (401) and PaymentSheet 404s.
+  if (sk.startsWith('sk_') && candidates.length > 0) {
+    lastResolvedPublishableKeyEnv = null;
+    logger.error(
+      '[stripe] Publishable key env vars are set but none match the active secret key Stripe account. pk_ and sk_ from the same Dashboard row share the same suffix after pk_test_/sk_test_. Set STRIPE_TEST_PUBLISHABLE_KEY to match STRIPE_TEST_SECRET_KEY (or remove stale STRIPE_PUBLISHABLE_KEY), then pm2 restart all.',
+      {
+        candidateEnvVars: candidates.map((c) => c.envName),
+        secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8) ?? '(n/a)',
+        publishableKeySuffixTails: candidates.map((c) => ({
+          env: c.envName,
+          tail: stripeStandardKeyAccountSuffix(c.value)?.slice(-8) ?? '(n/a)',
+        })),
+      }
+    );
+    return undefined;
+  }
+
+  if (candidates.length > 1) {
+    logger.warn(
+      '[stripe] Multiple publishable keys configured; none share the same account suffix as the active secret key — using the first by priority. Remove stale STRIPE_PUBLISHABLE_KEY or set STRIPE_TEST_PUBLISHABLE_KEY to the pk_test row that matches STRIPE_TEST_SECRET_KEY.',
+      {
+        candidateEnvVars: candidates.map((c) => c.envName),
+        secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8) ?? '(n/a)',
+      }
+    );
+  }
+
+  lastResolvedPublishableKeyEnv = candidates[0]?.envName ?? null;
+  return candidates[0]?.value;
+}
 
 /**
  * Default Stripe SDK client for API calls (checkout, Connect, etc.).
@@ -327,48 +439,7 @@ export function getDefaultStripeClient(): Stripe {
  */
 export function resetDefaultStripeClientCache(): void {
   defaultClient = null;
-}
-
-/**
- * Publishable key aligned with {@link getDefaultStripeSecretKey} so native apps and
- * tooling can initialize Stripe.js / PaymentSheet with the same live|test mode as the PI.
- */
-export function getStripePublishableKeyForDefaultClient(): string | undefined {
-  const sk = getDefaultStripeSecretKey();
-  const wantLive = sk.startsWith('sk_live');
-  const wantTest = sk.startsWith('sk_test');
-
-  const ordered = [
-    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY'),
-    trimStripeCredentialEnv('STRIPE_PUBLIC_KEY'), // some deployments mis-name; must still be pk_* from Stripe Dashboard
-    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY_LIVE'),
-    trimStripeCredentialEnv('STRIPE_LIVE_PUBLISHABLE_KEY'),
-    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY_TEST'),
-    trimStripeCredentialEnv('STRIPE_TEST_PUBLISHABLE_KEY'),
-  ];
-
-  for (const pk of ordered) {
-    if (!pk) continue;
-    if (wantLive && pk.startsWith('pk_live')) return pk;
-    if (wantTest && pk.startsWith('pk_test')) return pk;
-  }
-
-  const fallback = ordered.find((pk) => !!pk && pk.startsWith('pk_'));
-  const liveTestMismatch =
-    !!fallback &&
-    !!sk &&
-    sk.startsWith('sk_') &&
-    fallback.startsWith('pk_') &&
-    ((wantLive && fallback.startsWith('pk_test')) || (wantTest && fallback.startsWith('pk_live')));
-
-  if (liveTestMismatch) {
-    logger.warn(
-      '[stripe] STRIPE_PUBLISHABLE_KEY* mode does not match STRIPE_SECRET_KEY (live vs test). Replace with pk_live_… when using sk_live_… (or both test). Not returning a publishable key to clients until fixed.'
-    );
-    return undefined;
-  }
-
-  return fallback;
+  lastResolvedPublishableKeyEnv = null;
 }
 
 /** Safe prefix for clients to compare against their bundled key without exposing full `pk_`. */
@@ -452,13 +523,19 @@ export async function logIfPublishableKeyCannotRetrievePaymentIntent(
 
     if (!res.ok) {
       const body = (await res.text().catch(() => '')).slice(0, 300);
+      const sb = stripeStandardKeyAccountSuffix(sk);
+      const pb = stripeStandardKeyAccountSuffix(pkTrim);
       logger.warn('[stripe] PaymentIntent retrieval probe failed', {
         paymentIntentId,
         status: res.status,
         body,
+        publishableKeyEnv: getResolvedPublishableKeyEnvName(),
+        standardKeySuffixesMatch: suffixMatch,
+        secretKeyAccountMarker: sb ? `…${sb.slice(-8)}` : '(n/a)',
+        publishableKeyAccountMarker: pb ? `…${pb.slice(-8)}` : '(n/a)',
         hint:
           res.status === 401
-            ? 'STRIPE_PUBLISHABLE_KEY / STRIPE_TEST_PUBLISHABLE_KEY is invalid — re-copy pk_test_… from Stripe Dashboard with no trailing characters (e.g. stray > from HTML), then pm2 restart all'
+            ? 'Publishable key is rejected by Stripe (invalid or from an old Dashboard account). Use pk_test from the same Developers → API keys row as STRIPE_TEST_SECRET_KEY; remove or update stale STRIPE_PUBLISHABLE_KEY, then pm2 restart all'
             : undefined,
       });
     }
@@ -481,6 +558,24 @@ export function warnStripePublishableKeyMisconfiguredOnBoot(): void {
   );
 }
 
+/** Warn when pk_ and sk_ suffixes differ — PaymentSheet will fail even if both are pk_test/sk_test. */
+export function warnStripePublishableSecretKeyMismatchOnBoot(): void {
+  if (!isAnyStripeSecretKeyConfigured()) return;
+  const sk = getDefaultStripeSecretKey();
+  const pk = getStripePublishableKeyForDefaultClient();
+  if (!sk || !pk) return;
+  if (stripePublishableKeyMatchesSecretKey(pk, sk)) return;
+
+  logger.error(
+    '[stripe] Publishable key does not match the active secret key Stripe account. pk_ and sk_ from the same Dashboard row share the same suffix after pk_test_/sk_test_. Fix STRIPE_TEST_PUBLISHABLE_KEY (or remove stale STRIPE_PUBLISHABLE_KEY), then pm2 restart all.',
+    {
+      publishableKeyEnv: getResolvedPublishableKeyEnvName(),
+      secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8),
+      publishableKeySuffixTail: stripeStandardKeyAccountSuffix(pk)?.slice(-8),
+    }
+  );
+}
+
 /** One-line proof of which secret key the process uses for PaymentIntents (safe to log). */
 export function logStripeDefaultSecretKeyFingerprintAtBoot(): void {
   if (!isAnyStripeSecretKeyConfigured()) return;
@@ -490,6 +585,8 @@ export function logStripeDefaultSecretKeyFingerprintAtBoot(): void {
   logger.info('[stripe] Default API secret for this process', {
     keyFingerprint: formatStripeSecretKeyForSafeLog(sk),
     publishableKeyPrefix: stripePublishableKeyPrefix(pk),
+    publishableKeyEnv: getResolvedPublishableKeyEnvName(),
+    publishableKeyMatchesSecret: pk ? stripePublishableKeyMatchesSecretKey(pk, sk) : null,
     STRIPE_MODE: trimEnv('STRIPE_MODE') || 'auto',
     APP_NETWORK_MODE: resolveAppNetworkModeFromEnv() ?? '(unset)',
   });

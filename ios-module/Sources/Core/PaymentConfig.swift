@@ -6,6 +6,8 @@ public struct PaymentConfig: Sendable, Equatable {
     public let customerEphemeralKeySecret: String?
     public let customerId: String?
     public let paymentIntentId: String?
+    /// From `POST …/create-payment-intent` when the server includes it; prefer over bundled plist key.
+    public let publishableKey: String?
     /// From `POST …/create-payment-intent` when the server includes it; use to match `pk_live_` vs `pk_test_`.
     public let paymentIntentLivemode: Bool?
 
@@ -14,12 +16,14 @@ public struct PaymentConfig: Sendable, Equatable {
         customerEphemeralKeySecret: String? = nil,
         customerId: String? = nil,
         paymentIntentId: String? = nil,
+        publishableKey: String? = nil,
         paymentIntentLivemode: Bool? = nil
     ) {
         self.paymentIntentClientSecret = paymentIntentClientSecret
         self.customerEphemeralKeySecret = customerEphemeralKeySecret
         self.customerId = customerId
         self.paymentIntentId = paymentIntentId
+        self.publishableKey = publishableKey
         self.paymentIntentLivemode = paymentIntentLivemode
     }
 }
