@@ -10,6 +10,23 @@ function trimEnv(name: string): string | undefined {
   return v || undefined;
 }
 
+/** Strip quotes and trailing junk (e.g. `>` from HTML copy-paste) from Stripe key env vars. */
+function trimStripeCredentialEnv(name: string): string | undefined {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  let v = raw.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  const cleaned = v.replace(/[^a-zA-Z0-9_]+$/, '');
+  if (cleaned !== v) {
+    logger.warn(
+      `[stripe] Sanitized ${name}: removed trailing invalid characters from the env value (common when copying keys from HTML/docs)`
+    );
+  }
+  return cleaned || undefined;
+}
+
 /**
  * Text shown on the customer's **card/bank statement** for charges (5–22 characters, Stripe rules).
  * Also influences some Stripe-generated copy when set on the PaymentIntent. For **receipt email**
@@ -38,12 +55,12 @@ export function getOptionalStatementDescriptor(): string | undefined {
 
 /** Live secret: STRIPE_SECRET_KEY_LIVE or STRIPE_LIVE_SECRET_KEY */
 function liveStripeSecretFromEnv(): string | undefined {
-  return trimEnv('STRIPE_SECRET_KEY_LIVE') || trimEnv('STRIPE_LIVE_SECRET_KEY');
+  return trimStripeCredentialEnv('STRIPE_SECRET_KEY_LIVE') || trimStripeCredentialEnv('STRIPE_LIVE_SECRET_KEY');
 }
 
 /** Test secret: STRIPE_SECRET_KEY_TEST or STRIPE_TEST_SECRET_KEY */
 function testStripeSecretFromEnv(): string | undefined {
-  return trimEnv('STRIPE_SECRET_KEY_TEST') || trimEnv('STRIPE_TEST_SECRET_KEY');
+  return trimStripeCredentialEnv('STRIPE_SECRET_KEY_TEST') || trimStripeCredentialEnv('STRIPE_TEST_SECRET_KEY');
 }
 
 /** Live webhook signing secret */
@@ -59,7 +76,7 @@ function testStripeWebhookFromEnv(): string | undefined {
 /** True if any secret-key env var is set (generic or split live/test). */
 export function isAnyStripeSecretKeyConfigured(): boolean {
   return Boolean(
-    trimEnv('STRIPE_SECRET_KEY') || liveStripeSecretFromEnv() || testStripeSecretFromEnv()
+    trimStripeCredentialEnv('STRIPE_SECRET_KEY') || liveStripeSecretFromEnv() || testStripeSecretFromEnv()
   );
 }
 
@@ -134,7 +151,7 @@ export function getStripeClient(secretKey: string): Stripe {
  */
 export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
   const mode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
-  const generic = trimEnv('STRIPE_SECRET_KEY');
+  const generic = trimStripeCredentialEnv('STRIPE_SECRET_KEY');
   const liveKey = liveStripeSecretFromEnv();
   const testKey = testStripeSecretFromEnv();
 
@@ -228,7 +245,7 @@ export function getDefaultStripeSecretKey(): string {
   const stripeModeEnv = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
   let mode = stripeModeEnv;
   const stripeFromNet = stripeAutoModeFromAppNetwork();
-  const generic = trimEnv('STRIPE_SECRET_KEY');
+  const generic = trimStripeCredentialEnv('STRIPE_SECRET_KEY');
   const liveKey = liveStripeSecretFromEnv();
   const testKey = testStripeSecretFromEnv();
 
@@ -322,12 +339,12 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
   const wantTest = sk.startsWith('sk_test');
 
   const ordered = [
-    trimEnv('STRIPE_PUBLISHABLE_KEY'),
-    trimEnv('STRIPE_PUBLIC_KEY'), // some deployments mis-name; must still be pk_* from Stripe Dashboard
-    trimEnv('STRIPE_PUBLISHABLE_KEY_LIVE'),
-    trimEnv('STRIPE_LIVE_PUBLISHABLE_KEY'),
-    trimEnv('STRIPE_PUBLISHABLE_KEY_TEST'),
-    trimEnv('STRIPE_TEST_PUBLISHABLE_KEY'),
+    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY'),
+    trimStripeCredentialEnv('STRIPE_PUBLIC_KEY'), // some deployments mis-name; must still be pk_* from Stripe Dashboard
+    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY_LIVE'),
+    trimStripeCredentialEnv('STRIPE_LIVE_PUBLISHABLE_KEY'),
+    trimStripeCredentialEnv('STRIPE_PUBLISHABLE_KEY_TEST'),
+    trimStripeCredentialEnv('STRIPE_TEST_PUBLISHABLE_KEY'),
   ];
 
   for (const pk of ordered) {
@@ -439,6 +456,10 @@ export async function logIfPublishableKeyCannotRetrievePaymentIntent(
         paymentIntentId,
         status: res.status,
         body,
+        hint:
+          res.status === 401
+            ? 'STRIPE_PUBLISHABLE_KEY / STRIPE_TEST_PUBLISHABLE_KEY is invalid — re-copy pk_test_… from Stripe Dashboard with no trailing characters (e.g. stray > from HTML), then pm2 restart all'
+            : undefined,
       });
     }
   } catch (e: unknown) {
@@ -465,8 +486,10 @@ export function logStripeDefaultSecretKeyFingerprintAtBoot(): void {
   if (!isAnyStripeSecretKeyConfigured()) return;
   const sk = getDefaultStripeSecretKey();
   if (!sk) return;
+  const pk = getStripePublishableKeyForDefaultClient();
   logger.info('[stripe] Default API secret for this process', {
     keyFingerprint: formatStripeSecretKeyForSafeLog(sk),
+    publishableKeyPrefix: stripePublishableKeyPrefix(pk),
     STRIPE_MODE: trimEnv('STRIPE_MODE') || 'auto',
     APP_NETWORK_MODE: resolveAppNetworkModeFromEnv() ?? '(unset)',
   });
