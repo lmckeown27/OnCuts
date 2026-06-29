@@ -48,7 +48,7 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
-import { AvilaPlatformsLogo } from '@assets';
+import { PismoPlatformsLogo } from '@assets';
 import type { Conversation, Message } from '../types';
 import toast from 'react-hot-toast';
 
@@ -1676,7 +1676,7 @@ export default function MessagesPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
+              <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Messages, Booking Requests (if barber) + Profile */}

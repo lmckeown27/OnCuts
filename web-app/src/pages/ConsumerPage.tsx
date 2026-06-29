@@ -20,7 +20,7 @@ import {
   loadHydratedCollegeTown,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
-import { AvilaPlatformsLogo } from '@assets';
+import { PismoPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight } from '../hooks';
@@ -635,7 +635,7 @@ export default function ConsumerPage() {
               onClick={() => navigate('/')}
               className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
             >
-              <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
+              <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
             </button>
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}

@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import avilaPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
+import pismoPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
@@ -134,7 +134,7 @@ export default function IosAppPromoSection() {
             heading="For Customers"
             card={{
               title: 'PismoPlatforms',
-              appLogo: avilaPlatformsAppLogo,
+              appLogo: pismoPlatformsAppLogo,
               appLogoAlt: 'PismoPlatforms app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
               storeLabel: 'Download PismoPlatforms on the App Store',

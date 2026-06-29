@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
-import { AvilaPlatformsLogo } from '@assets';
+import { PismoPlatformsLogo } from '@assets';
 import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
 import { findService } from '../config/services';
@@ -839,7 +839,7 @@ export default function PostServicePaymentPage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-8" />
+            <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-8" />
             <div className="w-9" /> {/* Spacer */}
           </div>
         </div>
@@ -974,7 +974,7 @@ export default function PostServicePaymentPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-8" />
+          <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-8" />
           <div className="w-9" /> {/* Spacer */}
         </div>
       </div>

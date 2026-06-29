@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Settings, Calendar, LogOut, ChevronDown, Inbox, ArrowLeft, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AvilaPlatformsLogo } from '@assets';
+import { PismoPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface BarberHeaderProps {
@@ -46,7 +46,7 @@ export default function BarberHeader({
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={AvilaPlatformsLogo} alt="PismoPlatforms" className="h-10 w-auto" />
+            <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10 w-auto" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
             </div>

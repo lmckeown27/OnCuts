@@ -18,7 +18,7 @@ import api from '../../services/api.service';
 import barberService from '../../services/barber.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import Button from '../../components/Button';
-import { AvilaPlatformsLogo } from '@assets';
+import { PismoPlatformsLogo } from '@assets';
 import Avatar from '../../components/Avatar';
 
 type Tab = 'upcoming' | 'today' | 'past';
@@ -179,7 +179,7 @@ export default function ConsumerBookingsPage() {
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <img src={AvilaPlatformsLogo} alt="" className="h-9 w-auto" />
+        <img src={PismoPlatformsLogo} alt="" className="h-9 w-auto" />
         <h1 className="text-lg font-bold text-gray-900">My bookings</h1>
       </header>
 
