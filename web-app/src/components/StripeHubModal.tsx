@@ -87,13 +87,14 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
     try {
       setBusy('onboarding');
       const { onboarding_url: onboardingUrl } = await createBarberConnectOnboarding();
-      window.location.assign(onboardingUrl);
+      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       toast.error(msg || 'Could not start Stripe Connect');
+    } finally {
       setBusy(null);
     }
   };
@@ -102,13 +103,14 @@ export default function StripeHubModal({ isOpen, onClose }: StripeHubModalProps)
     try {
       setBusy('refresh');
       const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
-      window.location.assign(onboardingUrl);
+      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       toast.error(msg || 'Could not refresh Stripe setup link');
+    } finally {
       setBusy(null);
     }
   };
