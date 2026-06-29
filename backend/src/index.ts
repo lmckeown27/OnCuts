@@ -130,11 +130,16 @@ const httpServer = createServer(app);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:5173',
   'https://campuscut.com',
   'https://www.campuscut.com',
   'https://campuscuts.app',
   'https://www.campuscuts.app',
   'https://api.campuscuts.app',
+  'https://pismoplatforms.com',
+  'https://www.pismoplatforms.com',
+  'https://avilaplatforms.com',
+  'https://www.avilaplatforms.com',
 ];
 
 /** Some native WebSocket clients send Origin as wss://host — map to https for allowlist match */
