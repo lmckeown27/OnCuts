@@ -29,20 +29,10 @@ const STRIPE_ONBOARDING_STEPS = [
     short: 'Sign in',
     title: 'Sign in to Express',
     instructions: (
-      <>
-        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-          <li>
-            Enter the <strong>email address</strong> you use to sign in to PismoPlatforms. It must match — Stripe uses
-            this to link your payout account.
-          </li>
-          <li>Review the address for typos, then click <strong>Continue</strong>.</li>
-          <li>
-            If Stripe asks you to verify your email, open the message they send, confirm it, then return to the Stripe
-            tab and finish this step.
-          </li>
-          <li>When Stripe moves you to the next screen, switch back here and tap <strong>Next</strong>.</li>
-        </ol>
-      </>
+      <p className="text-sm text-gray-600">
+        Enter the <strong>email address</strong> you use to sign in to PismoPlatforms into{' '}
+        <strong>Stripe Express</strong>. It must match — Stripe uses this to link your payout account.
+      </p>
     ),
   },
   {
@@ -357,7 +347,10 @@ export default function StripeHubModal({
               ? 'Review your setup'
               : 'Before you start';
           }
-          return `Step ${n} of ${STRIPE_STEP_COUNT} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
+          if (n === 1) {
+            return STRIPE_ONBOARDING_STEPS[0].title;
+          }
+          return `Step ${n - 1} of ${STRIPE_STEP_COUNT - 1} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
         })()
       : 'Payments, payouts, and bank account';
 
@@ -414,8 +407,8 @@ export default function StripeHubModal({
               </p>
             )}
             <p className="text-sm text-gray-600">
-              Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. This guide tells you what to do on
-              each Stripe screen, in order — starting with step 1 (your email address).
+              Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. Start by entering your PismoPlatforms
+              email in Stripe Express, then follow this guide for identity, payments, and bank setup.
             </p>
           </>
         );
@@ -452,20 +445,21 @@ export default function StripeHubModal({
       default: {
         if (guideStep >= 1 && guideStep <= STRIPE_STEP_COUNT) {
           const stripeStep = STRIPE_ONBOARDING_STEPS[guideStep - 1];
-          return (
-            <>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Step {guideStep} of {STRIPE_STEP_COUNT}
-                </p>
-                <p className="text-sm font-semibold text-gray-900">What to do: {stripeStep.title}</p>
+          if (guideStep === 1) {
+            return (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 {stripeStep.instructions}
               </div>
-              <p className="text-xs text-gray-500">
-                Stuck? Tap <strong>Open Stripe tab</strong> below, complete what you can, then return here — you can
-                move back and forth as many times as you need.
+            );
+          }
+          return (
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Step {guideStep - 1} of {STRIPE_STEP_COUNT - 1}
               </p>
-            </>
+              <p className="text-sm font-semibold text-gray-900">What to do: {stripeStep.title}</p>
+              {stripeStep.instructions}
+            </div>
           );
         }
         return null;
@@ -582,8 +576,8 @@ export default function StripeHubModal({
             )}
             {showWizard && !isLoading && (
               <div className="flex gap-1 mt-2">
-                {STRIPE_ONBOARDING_STEPS.map((step, i) => {
-                  const stripeStepIndex = i + 1;
+                {STRIPE_ONBOARDING_STEPS.slice(1).map((step, i) => {
+                  const stripeStepIndex = i + 2;
                   const active = guideStep >= stripeStepIndex;
                   return (
                     <div
@@ -591,7 +585,7 @@ export default function StripeHubModal({
                       className={`h-1 flex-1 rounded-full transition-colors ${
                         active ? 'bg-white' : 'bg-white/30'
                       }`}
-                      title={`Step ${stripeStepIndex}: ${step.title}`}
+                      title={`Step ${i + 1} of ${STRIPE_STEP_COUNT - 1}: ${step.title}`}
                     />
                   );
                 })}
