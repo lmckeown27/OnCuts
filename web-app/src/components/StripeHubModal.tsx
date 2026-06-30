@@ -2,7 +2,7 @@
  * Stripe Connect hub: step-by-step onboarding guide, Express dashboard, payout management.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -151,6 +151,7 @@ export default function StripeHubModal({
   const [guideStep, setGuideStep] = useState(0);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -169,13 +170,17 @@ export default function StripeHubModal({
     }
   }, [onFullyConnected]);
 
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
-      setStripeTabOpened(false);
-      setPlatformSetupBlocked(null);
-      setGuideStep(GUIDE_OVERVIEW_STEP);
-      void load();
+      if (!wasOpenRef.current) {
+        setStripeTabOpened(false);
+        setPlatformSetupBlocked(null);
+      }
+      void loadRef.current();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsAnimating(true));
       });
@@ -184,13 +189,14 @@ export default function StripeHubModal({
       const t = setTimeout(() => setIsVisible(false), 150);
       return () => clearTimeout(t);
     }
-  }, [isOpen, load]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void load();
+        void loadRef.current();
       }
     };
     window.addEventListener('focus', onVisible);
@@ -199,7 +205,7 @@ export default function StripeHubModal({
       window.removeEventListener('focus', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [isOpen, load]);
+  }, [isOpen]);
 
   const markStripeTabOpened = useCallback(() => {
     setStripeTabOpened(true);
@@ -310,28 +316,24 @@ export default function StripeHubModal({
   const fullyConnected = isBarberStripeFullyConnected(connectStatus);
   const needsSetup = !fullyConnected;
   const canDismiss = !blocking || fullyConnected;
-  const showWizard = needsSetup;
+  const showWizard = needsSetup || blocking;
 
   const handleBackdropClick = () => {
     if (canDismiss) onClose();
   };
 
-  const headerSubtitle = fullyConnected
-    ? 'Payments, payouts, and bank account'
-    : blocking || showWizard
-      ? (() => {
-          const n = stripeStepNumber(guideStep);
-          if (n === null) {
-            return guideStep === GUIDE_VERIFY_STEP
-              ? 'Review your setup'
-              : 'Before you start';
-          }
-          if (n === 1) {
-            return STRIPE_ONBOARDING_STEPS[0].title;
-          }
-          return `Step ${n - 1} of ${STRIPE_STEP_COUNT - 1} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
-        })()
-      : 'Payments, payouts, and bank account';
+  const headerSubtitle = showWizard
+    ? (() => {
+        const n = stripeStepNumber(guideStep);
+        if (n === null) {
+          return guideStep === GUIDE_VERIFY_STEP ? 'Review your setup' : 'Before you start';
+        }
+        if (n === 1) {
+          return STRIPE_ONBOARDING_STEPS[0].title;
+        }
+        return `Step ${n - 1} of ${STRIPE_STEP_COUNT - 1} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
+      })()
+    : 'Payments, payouts, and bank account';
 
   const renderChecklist = () => (
     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
