@@ -134,7 +134,7 @@ function StatusRow({ label, done }: { label: string; done: boolean }) {
 
 function guideStepForStatus(status: BarberConnectStatus | null): number {
   if (!status?.has_account || status.needs_reconnect) return GUIDE_OVERVIEW_STEP;
-  if (!status.detailsSubmitted) return 1;
+  if (!status.detailsSubmitted) return 2;
   if (!status.chargesEnabled) return 3;
   if (!status.payoutsEnabled) return 4;
   return GUIDE_VERIFY_STEP;
@@ -161,36 +161,43 @@ export default function StripeHubModal({
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setConnectStatusUnknown(false);
-      const status = await fetchBarberConnectStatus();
-      setConnectStatus(status);
-      if (isBarberStripeFullyConnected(status)) {
-        onFullyConnected?.();
-      } else if (blocking) {
-        setGuideStep((prev) => Math.max(prev, guideStepForStatus(status)));
+  const load = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      try {
+        if (!silent) setIsLoading(true);
+        setConnectStatusUnknown(false);
+        const status = await fetchBarberConnectStatus();
+        setConnectStatus(status);
+        if (isBarberStripeFullyConnected(status)) {
+          onFullyConnected?.();
+        }
+        return status;
+      } catch (e) {
+        console.error(e);
+        setConnectStatus(null);
+        setConnectStatusUnknown(true);
+        if (!silent) toast.error('Could not load Stripe status');
+        return null;
+      } finally {
+        if (!silent) setIsLoading(false);
       }
-      return status;
-    } catch (e) {
-      console.error(e);
-      setConnectStatus(null);
-      setConnectStatusUnknown(true);
-      toast.error('Could not load Stripe status');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [blocking, onFullyConnected]);
+    },
+    [onFullyConnected]
+  );
 
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
-      setGuideStep(0);
       setStripeTabOpened(false);
       setPlatformSetupBlocked(null);
-      void load();
+      void load().then((status) => {
+        if (status && !isBarberStripeFullyConnected(status)) {
+          setGuideStep(guideStepForStatus(status));
+        } else {
+          setGuideStep(GUIDE_OVERVIEW_STEP);
+        }
+      });
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsAnimating(true));
       });
@@ -205,7 +212,7 @@ export default function StripeHubModal({
     if (!isOpen || isLoading) return;
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void load();
+        void load({ silent: true });
       }
     };
     window.addEventListener('focus', onVisible);
@@ -230,7 +237,7 @@ export default function StripeHubModal({
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
       advanceAfterStripeOpen(advanceFromStep);
       if (needsReconnect) {
-        await load();
+        await load({ silent: true });
       }
     },
     [advanceAfterStripeOpen, connectStatus?.needs_reconnect, load]
@@ -306,14 +313,14 @@ export default function StripeHubModal({
   const checkProgress = async () => {
     try {
       setBusy('status');
-      const status = await load();
+      const status = await load({ silent: true });
       if (status && isBarberStripeFullyConnected(status)) {
         toast.success('Stripe setup complete — your dashboard is unlocked.');
         return;
       }
       if (status) {
         const resumeStep = guideStepForStatus(status);
-        setGuideStep(resumeStep);
+        setGuideStep((prev) => Math.max(prev, resumeStep));
         toast('Status updated — continue where Stripe still shows items to complete.', { icon: 'ℹ️' });
       }
     } finally {
@@ -546,7 +553,7 @@ export default function StripeHubModal({
             {busy === 'status' ? 'Checking…' : 'Check my progress'}
           </Button>
         )}
-        {hasAccount && !needsReconnect && guideStep > 0 && (
+        {hasAccount && !needsReconnect && guideStep === GUIDE_VERIFY_STEP && (
           <button
             type="button"
             onClick={() => void refreshStripeOnboarding()}
@@ -620,7 +627,7 @@ export default function StripeHubModal({
             </div>
           ) : showWizard ? (
             <>
-              {renderChecklist()}
+              {(guideStep === GUIDE_OVERVIEW_STEP || guideStep === GUIDE_VERIFY_STEP) && renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
