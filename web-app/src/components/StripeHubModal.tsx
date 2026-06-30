@@ -109,13 +109,16 @@ const STRIPE_ONBOARDING_STEPS = [
 ] as const;
 
 const STRIPE_STEP_COUNT = STRIPE_ONBOARDING_STEPS.length;
-/** Overview (index 0) + Stripe onboarding steps + verify. */
-const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 2;
-const GUIDE_OVERVIEW_STEP = 0;
+/** Intro + connect overview + Stripe onboarding steps + verify. */
+const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 3;
+const GUIDE_INTRO_STEP = 0;
+const GUIDE_CONNECT_STEP = 1;
 const GUIDE_VERIFY_STEP = GUIDE_STEP_COUNT - 1;
+const GUIDE_FIRST_STRIPE_STEP = 2;
 
 const GUIDE_PROGRESS_STEPS = [
-  { short: 'Start', title: 'Before you start' },
+  { short: 'Intro', title: 'How payments work' },
+  { short: 'Connect', title: 'Connect with Stripe' },
   ...STRIPE_ONBOARDING_STEPS.map((step) => ({ short: step.short, title: step.title })),
   { short: 'Review', title: 'Review your setup' },
 ] as const;
@@ -138,9 +141,11 @@ function StatusRow({ label, done }: { label: string; done: boolean }) {
   );
 }
 
-function stripeStepNumber(guideStep: number): number | null {
-  if (guideStep < 1 || guideStep > STRIPE_STEP_COUNT) return null;
-  return guideStep;
+function stripeOnboardingIndex(guideStep: number): number | null {
+  if (guideStep < GUIDE_FIRST_STRIPE_STEP || guideStep > GUIDE_FIRST_STRIPE_STEP + STRIPE_STEP_COUNT - 1) {
+    return null;
+  }
+  return guideStep - GUIDE_FIRST_STRIPE_STEP;
 }
 
 export default function StripeHubModal({
@@ -251,7 +256,7 @@ export default function StripeHubModal({
   const openStripeTabForCurrentStep = async () => {
     try {
       setBusy('onboarding');
-      if (guideStep === 0) {
+      if (guideStep === GUIDE_INTRO_STEP || guideStep === GUIDE_CONNECT_STEP) {
         await openOnboardingUrl();
       } else if (connectStatus?.has_account && !connectStatus?.needs_reconnect) {
         const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
@@ -330,14 +335,14 @@ export default function StripeHubModal({
 
   const headerSubtitle = showWizard
     ? (() => {
-        const n = stripeStepNumber(guideStep);
-        if (n === null) {
-          return guideStep === GUIDE_VERIFY_STEP ? 'Review your setup' : 'Before you start';
-        }
-        if (n === 1) {
-          return STRIPE_ONBOARDING_STEPS[0].title;
-        }
-        return `Step ${n - 1} of ${STRIPE_STEP_COUNT - 1} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
+        if (guideStep === GUIDE_INTRO_STEP) return 'How payments work';
+        if (guideStep === GUIDE_CONNECT_STEP) return 'Connect with Stripe';
+        if (guideStep === GUIDE_VERIFY_STEP) return 'Review your setup';
+        const stripeIndex = stripeOnboardingIndex(guideStep);
+        if (stripeIndex === null) return 'Stripe setup';
+        const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
+        if (stripeIndex === 0) return stripeStep.title;
+        return `Step ${stripeIndex} of ${STRIPE_STEP_COUNT - 1} · ${stripeStep.title}`;
       })()
     : 'Payments, payouts, and bank account';
 
@@ -353,7 +358,22 @@ export default function StripeHubModal({
 
   const renderGuideStep = () => {
     switch (guideStep) {
-      case 0:
+      case GUIDE_INTRO_STEP:
+        return (
+          <>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              PismoPlatforms helps customers book and pay for your services online. When a customer pays, the money
+              does not sit in a PismoPlatforms balance. It is processed by <strong>Stripe</strong>, a third-party payment
+              company, and deposited into the bank account you link during setup.
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Stripe handles card processing, identity verification, payout schedules, and tax forms. You will create
+              or sign in to a <strong>Stripe Express</strong> account so payouts go directly to you. Tap{' '}
+              <strong>Next</strong> to see what to connect and how the checklist tracks your progress.
+            </p>
+          </>
+        );
+      case GUIDE_CONNECT_STEP:
         return (
           <>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -432,9 +452,10 @@ export default function StripeHubModal({
           </>
         );
       default: {
-        if (guideStep >= 1 && guideStep <= STRIPE_STEP_COUNT) {
-          const stripeStep = STRIPE_ONBOARDING_STEPS[guideStep - 1];
-          if (guideStep === 1) {
+        const stripeIndex = stripeOnboardingIndex(guideStep);
+        if (stripeIndex !== null) {
+          const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
+          if (stripeIndex === 0) {
             return (
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 {stripeStep.instructions}
@@ -444,7 +465,7 @@ export default function StripeHubModal({
           return (
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Step {guideStep - 1} of {STRIPE_STEP_COUNT - 1}
+                Step {stripeIndex} of {STRIPE_STEP_COUNT - 1}
               </p>
               <p className="text-sm font-semibold text-gray-900">What to do: {stripeStep.title}</p>
               {stripeStep.instructions}
@@ -464,8 +485,8 @@ export default function StripeHubModal({
           variant="secondary"
           size="lg"
           className="flex-1"
-          onClick={() => setGuideStep((s) => Math.max(GUIDE_OVERVIEW_STEP, s - 1))}
-          disabled={busy !== null || guideStep === GUIDE_OVERVIEW_STEP}
+          onClick={() => setGuideStep((s) => Math.max(GUIDE_INTRO_STEP, s - 1))}
+          disabled={busy !== null || guideStep === GUIDE_INTRO_STEP}
         >
           Back
         </Button>
@@ -482,7 +503,7 @@ export default function StripeHubModal({
           </Button>
         ) : null}
       </div>
-      {guideStep === GUIDE_OVERVIEW_STEP ? (
+      {guideStep === GUIDE_CONNECT_STEP ? (
         <Button
           type="button"
           variant="primary"
@@ -555,7 +576,7 @@ export default function StripeHubModal({
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Stripe</h2>
             <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
-            {showWizard && (
+            {showWizard && guideStep >= GUIDE_CONNECT_STEP && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
                 Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
