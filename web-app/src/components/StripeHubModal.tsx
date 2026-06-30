@@ -617,7 +617,7 @@ export default function StripeHubModal({
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
           {showWizard ? (
             <>
-              {renderChecklist()}
+              {guideStep >= GUIDE_CONNECT_STEP && renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
