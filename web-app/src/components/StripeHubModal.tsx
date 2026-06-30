@@ -153,7 +153,6 @@ export default function StripeHubModal({
 }: StripeHubModalProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [connectStatusUnknown, setConnectStatusUnknown] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState<'dashboard' | 'onboarding' | 'refresh' | 'status' | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -161,30 +160,22 @@ export default function StripeHubModal({
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
 
-  const load = useCallback(
-    async (options?: { silent?: boolean }) => {
-      const silent = options?.silent ?? false;
-      try {
-        if (!silent) setIsLoading(true);
-        setConnectStatusUnknown(false);
-        const status = await fetchBarberConnectStatus();
-        setConnectStatus(status);
-        if (isBarberStripeFullyConnected(status)) {
-          onFullyConnected?.();
-        }
-        return status;
-      } catch (e) {
-        console.error(e);
-        setConnectStatus(null);
-        setConnectStatusUnknown(true);
-        if (!silent) toast.error('Could not load Stripe status');
-        return null;
-      } finally {
-        if (!silent) setIsLoading(false);
+  const load = useCallback(async () => {
+    try {
+      setConnectStatusUnknown(false);
+      const status = await fetchBarberConnectStatus();
+      setConnectStatus(status);
+      if (isBarberStripeFullyConnected(status)) {
+        onFullyConnected?.();
       }
-    },
-    [onFullyConnected]
-  );
+      return status;
+    } catch (e) {
+      console.error(e);
+      setConnectStatus(null);
+      setConnectStatusUnknown(true);
+      return null;
+    }
+  }, [onFullyConnected]);
 
   useEffect(() => {
     if (isOpen) {
@@ -209,10 +200,10 @@ export default function StripeHubModal({
   }, [isOpen, load]);
 
   useEffect(() => {
-    if (!isOpen || isLoading) return;
+    if (!isOpen) return;
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void load({ silent: true });
+        void load();
       }
     };
     window.addEventListener('focus', onVisible);
@@ -221,7 +212,7 @@ export default function StripeHubModal({
       window.removeEventListener('focus', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [isOpen, isLoading, load]);
+  }, [isOpen, load]);
 
   const advanceAfterStripeOpen = useCallback((openedStep: number) => {
     setStripeTabOpened(true);
@@ -237,7 +228,7 @@ export default function StripeHubModal({
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
       advanceAfterStripeOpen(advanceFromStep);
       if (needsReconnect) {
-        await load({ silent: true });
+        await load();
       }
     },
     [advanceAfterStripeOpen, connectStatus?.needs_reconnect, load]
@@ -313,7 +304,7 @@ export default function StripeHubModal({
   const checkProgress = async () => {
     try {
       setBusy('status');
-      const status = await load({ silent: true });
+      const status = await load();
       if (status && isBarberStripeFullyConnected(status)) {
         toast.success('Stripe setup complete — your dashboard is unlocked.');
         return;
@@ -584,13 +575,13 @@ export default function StripeHubModal({
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Stripe</h2>
             <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
-            {showWizard && !isLoading && guideStep > 0 && (
+            {showWizard && guideStep > 0 && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
                 Keep this guide and Stripe open side by side — jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
               </p>
             )}
-            {showWizard && !isLoading && (
+            {showWizard && (
               <div className="flex gap-1 mt-2">
                 {STRIPE_ONBOARDING_STEPS.slice(1).map((step, i) => {
                   const stripeStepIndex = i + 2;
@@ -620,12 +611,7 @@ export default function StripeHubModal({
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
-          {isLoading ? (
-            <div className="text-center py-16">
-              <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4" />
-              <p className="text-gray-500">Loading Stripe status…</p>
-            </div>
-          ) : showWizard ? (
+          {showWizard ? (
             <>
               {(guideStep === GUIDE_OVERVIEW_STEP || guideStep === GUIDE_VERIFY_STEP) && renderChecklist()}
               {renderGuideStep()}

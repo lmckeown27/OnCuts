@@ -16,13 +16,14 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
   const [isLoading, setIsLoading] = useState(enabled);
   const [loadError, setLoadError] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
     if (!enabled) {
       setIsLoading(false);
       return null;
     }
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       setLoadError(false);
       const next = await fetchBarberConnectStatus();
       setStatus(next);
@@ -32,7 +33,7 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
       setStatus(null);
       return null;
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [enabled]);
 
@@ -44,7 +45,7 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
     if (!enabled) return;
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void refresh();
+        void refresh({ silent: true });
       }
     };
     window.addEventListener('focus', onVisible);
