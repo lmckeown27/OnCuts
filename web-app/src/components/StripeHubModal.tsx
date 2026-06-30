@@ -455,9 +455,33 @@ export default function StripeHubModal({
     }
   };
 
-  const renderWizardFooter = () => {
-    if (guideStep === GUIDE_OVERVIEW_STEP) {
-      return (
+  const renderWizardFooter = () => (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          className="flex-1"
+          onClick={() => setGuideStep((s) => Math.max(GUIDE_OVERVIEW_STEP, s - 1))}
+          disabled={busy !== null || guideStep === GUIDE_OVERVIEW_STEP}
+        >
+          Back
+        </Button>
+        {guideStep < GUIDE_STEP_COUNT - 1 ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            className="flex-1"
+            onClick={() => setGuideStep((s) => Math.min(GUIDE_STEP_COUNT - 1, s + 1))}
+            disabled={busy !== null}
+          >
+            Next
+          </Button>
+        ) : null}
+      </div>
+      {guideStep === GUIDE_OVERVIEW_STEP ? (
         <Button
           type="button"
           variant="primary"
@@ -474,70 +498,44 @@ export default function StripeHubModal({
                 ? 'Continue setup in Stripe'
                 : 'Connect with Stripe'}
         </Button>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            className="flex-1"
-            onClick={() => setGuideStep((s) => Math.max(GUIDE_OVERVIEW_STEP, s - 1))}
-            disabled={busy !== null || guideStep === GUIDE_OVERVIEW_STEP}
-          >
-            Back
-          </Button>
-          {guideStep < GUIDE_STEP_COUNT - 1 ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="flex-1"
-              onClick={() => setGuideStep((s) => Math.min(GUIDE_STEP_COUNT - 1, s + 1))}
-              disabled={busy !== null}
-            >
-              Next
-            </Button>
-          ) : null}
-        </div>
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          className="w-full"
-          onClick={() => void openStripeTabForCurrentStep()}
-          disabled={busy !== null}
-        >
-          {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
-        </Button>
-        {guideStep === GUIDE_VERIFY_STEP && (
+      ) : (
+        <>
           <Button
             type="button"
             variant="primary"
             size="lg"
             className="w-full"
-            onClick={() => void checkProgress()}
+            onClick={() => void openStripeTabForCurrentStep()}
             disabled={busy !== null}
           >
-            {busy === 'status' ? 'Checking…' : 'Check my progress'}
+            {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
           </Button>
-        )}
-        {hasAccount && !needsReconnect && guideStep === GUIDE_VERIFY_STEP && (
-          <button
-            type="button"
-            onClick={() => void refreshStripeOnboarding()}
-            disabled={busy !== null}
-            className="w-full text-sm text-primary-600 hover:text-black font-medium py-2 disabled:opacity-60"
-          >
-            {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
-          </button>
-        )}
-      </div>
-    );
-  };
+          {guideStep === GUIDE_VERIFY_STEP && (
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              className="w-full"
+              onClick={() => void checkProgress()}
+              disabled={busy !== null}
+            >
+              {busy === 'status' ? 'Checking…' : 'Check my progress'}
+            </Button>
+          )}
+          {hasAccount && !needsReconnect && guideStep === GUIDE_VERIFY_STEP && (
+            <button
+              type="button"
+              onClick={() => void refreshStripeOnboarding()}
+              disabled={busy !== null}
+              className="w-full text-sm text-primary-600 hover:text-black font-medium py-2 disabled:opacity-60"
+            >
+              {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div
