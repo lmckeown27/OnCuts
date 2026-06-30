@@ -14,6 +14,30 @@ function stripeErrorMessage(error: unknown): string {
   return String(error);
 }
 
+/** Platform owner must finish Connect questionnaire before live connected accounts can be created. */
+function isStripeConnectPlatformProfileIncompleteError(error: unknown): boolean {
+  return /complete your platform profile to use Connect/i.test(stripeErrorMessage(error));
+}
+
+function connectOperationalApiError(error: unknown, fallback: string): ApiError {
+  if (error instanceof ApiError) return error;
+  const msg = stripeErrorMessage(error);
+  if (isStripeConnectPlatformProfileIncompleteError(error)) {
+    return new ApiError(
+      503,
+      'PismoPlatforms must finish Stripe Connect platform setup before barbers can onboard. ' +
+        'A platform admin needs to open https://dashboard.stripe.com/connect/accounts/overview (live mode), ' +
+        'complete the Connect profile questionnaire, then try again.',
+      'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE'
+    );
+  }
+  if (isStripeTestKeyLiveAccountError(error) || isStripeLiveKeyTestAccountError(error)) {
+    return new ApiError(400, msg, 'STRIPE_CONNECT_KEY_MODE_MISMATCH');
+  }
+  logger.error(fallback, { stripeError: msg });
+  return new ApiError(500, fallback);
+}
+
 /** Test API key used against a live-mode Connect account (common prod misconfig). */
 function isStripeTestKeyLiveAccountError(error: unknown): boolean {
   const msg = stripeErrorMessage(error);
@@ -248,8 +272,7 @@ class StripeService {
       logger.info(`Connected account created: ${account.id} for ${email}`);
       return account.id;
     } catch (error) {
-      logger.error('Failed to create connected account:', error);
-      throw new ApiError(500, 'Failed to create payment account');
+      throw connectOperationalApiError(error, 'Failed to create payment account');
     }
   }
 
@@ -269,8 +292,7 @@ class StripeService {
       });
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      logger.error('Failed to create account link:', error);
-      throw new ApiError(500, 'Failed to create onboarding link');
+      throw connectOperationalApiError(error, 'Failed to create onboarding link');
     }
   }
 

@@ -27,6 +27,13 @@ interface StripeHubModalProps {
 const GUIDE_STEP_LABELS = ['Overview', 'Identity', 'Payments', 'Bank', 'Verify'] as const;
 const GUIDE_STEP_COUNT = GUIDE_STEP_LABELS.length;
 
+function apiErrorDetails(err: unknown): { message?: string; code?: string } {
+  if (!err || typeof err !== 'object' || !('response' in err)) return {};
+  const errBody = (err as { response?: { data?: { error?: { message?: string; code?: string } } } }).response
+    ?.data?.error;
+  return { message: errBody?.message, code: errBody?.code };
+}
+
 function StatusRow({ label, done }: { label: string; done: boolean }) {
   return (
     <div className="flex items-center justify-between text-sm">
@@ -60,6 +67,7 @@ export default function StripeHubModal({
   const [isAnimating, setIsAnimating] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
+  const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +97,7 @@ export default function StripeHubModal({
       setIsVisible(true);
       setGuideStep(0);
       setStripeTabOpened(false);
+      setPlatformSetupBlocked(null);
       void load();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsAnimating(true));
@@ -141,10 +150,13 @@ export default function StripeHubModal({
       await openOnboardingUrl(0);
       toast.success('Stripe opened in a new tab — follow the steps on the next page here.');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
+      const { message: msg, code } = apiErrorDetails(err);
+      if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
+        setPlatformSetupBlocked(
+          msg ||
+            'PismoPlatforms must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
+        );
+      }
       toast.error(msg || 'Could not start Stripe Connect');
     } finally {
       setBusy(null);
@@ -165,10 +177,7 @@ export default function StripeHubModal({
       }
       toast('Switch between this tab and Stripe as needed — both stay open.', { icon: '↔️' });
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
+      const { message: msg } = apiErrorDetails(err);
       toast.error(msg || 'Could not open Stripe');
     } finally {
       setBusy(null);
@@ -181,10 +190,7 @@ export default function StripeHubModal({
       const url = await fetchBarberStripeDashboardUrl();
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
+      const { message: msg } = apiErrorDetails(err);
       toast.error(msg || 'Could not open Stripe. Complete Connect setup first.');
     } finally {
       setBusy(null);
@@ -198,10 +204,7 @@ export default function StripeHubModal({
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
       advanceAfterStripeOpen(Math.max(guideStep, 1));
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
+      const { message: msg } = apiErrorDetails(err);
       toast.error(msg || 'Could not refresh Stripe setup link');
     } finally {
       setBusy(null);
@@ -258,13 +261,6 @@ export default function StripeHubModal({
     </div>
   );
 
-  const tabSwitchTip = (
-    <p className="text-xs text-primary-800 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2">
-      <strong>Tip:</strong> Keep this guide open in one tab and Stripe in another. Jump back and forth freely if
-      you get stuck — use <strong>Open Stripe tab</strong> below anytime.
-    </p>
-  );
-
   const renderGuideStep = () => {
     switch (guideStep) {
       case 0:
@@ -275,6 +271,21 @@ export default function StripeHubModal({
               account. Stripe handles identity verification, card processing, payout schedules, balances, and tax
               forms—not a PismoPlatforms balance.
             </p>
+            {platformSetupBlocked && (
+              <p className="text-xs text-red-900 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
+                <strong>Platform setup required:</strong> {platformSetupBlocked} Stripe Dashboard →{' '}
+                <a
+                  href="https://dashboard.stripe.com/connect/accounts/overview"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                >
+                  Connect → Accounts overview
+                </a>{' '}
+                (toggle <strong>live mode</strong> on). This is a one-time step for the PismoPlatforms owner—not
+                something barbers can fix themselves.
+              </p>
+            )}
             {connectStatusUnknown && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 Could not verify Stripe status. You can still start connecting below.
@@ -292,7 +303,6 @@ export default function StripeHubModal({
                 <strong>Complete</strong>. This guide walks you through each part.
               </p>
             )}
-            {renderChecklist()}
             <p className="text-sm text-gray-600">
               When you tap <strong>Connect with Stripe</strong>, Stripe opens in a new tab and this guide moves to
               step-by-step instructions for what to enter there.
@@ -302,7 +312,6 @@ export default function StripeHubModal({
       case 1:
         return (
           <>
-            {tabSwitchTip}
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
               <p className="text-sm font-semibold text-gray-900">In Stripe: Identity & business details</p>
               <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
@@ -318,13 +327,11 @@ export default function StripeHubModal({
               Stripe may save progress partway through. If a section looks grayed out, you may have already completed
               it — use <strong>Check my progress</strong> on the last step.
             </p>
-            {renderChecklist()}
           </>
         );
       case 2:
         return (
           <>
-            {tabSwitchTip}
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
               <p className="text-sm font-semibold text-gray-900">In Stripe: Accept card payments</p>
               <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
@@ -339,13 +346,11 @@ export default function StripeHubModal({
               Stripe enables charges only after identity and business sections pass review — this can take a minute
               after you submit.
             </p>
-            {renderChecklist()}
           </>
         );
       case 3:
         return (
           <>
-            {tabSwitchTip}
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
               <p className="text-sm font-semibold text-gray-900">In Stripe: Bank account & payouts</p>
               <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
@@ -359,7 +364,6 @@ export default function StripeHubModal({
             <p className="text-xs text-gray-500">
               PismoPlatforms never stores your bank login — only Stripe receives this information.
             </p>
-            {renderChecklist()}
           </>
         );
       case 4:
@@ -373,12 +377,10 @@ export default function StripeHubModal({
               </p>
             ) : (
               <p className="text-sm text-gray-600">
-                Open Stripe to finish any remaining sections, then verify everything shows{' '}
-                <strong>Complete</strong> below.
+                Open Stripe to finish any remaining sections, then verify everything in the checklist shows{' '}
+                <strong>Complete</strong>.
               </p>
             )}
-            {tabSwitchTip}
-            {renderChecklist()}
             {!fullyConnected && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 Items still marked <strong>Needed</strong>? Open Stripe again and complete those sections, then check
@@ -407,7 +409,7 @@ export default function StripeHubModal({
           size="lg"
           className="w-full"
           onClick={() => void startStripeOnboarding()}
-          disabled={busy !== null}
+          disabled={busy !== null || Boolean(platformSetupBlocked)}
         >
           {busy === 'onboarding'
             ? 'Opening Stripe…'
@@ -499,6 +501,12 @@ export default function StripeHubModal({
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Stripe</h2>
             <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
+            {showWizard && !isLoading && guideStep > 0 && (
+              <p className="text-white/70 text-xs mt-1.5 leading-snug">
+                Keep this guide and Stripe open side by side — jump back and forth if you get stuck. Use{' '}
+                <strong className="text-white/90">Open Stripe tab</strong> below anytime.
+              </p>
+            )}
             {showWizard && !isLoading && (
               <div className="flex gap-1 mt-2">
                 {GUIDE_STEP_LABELS.map((label, i) => (
@@ -532,6 +540,7 @@ export default function StripeHubModal({
             </div>
           ) : showWizard ? (
             <>
+              {renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
