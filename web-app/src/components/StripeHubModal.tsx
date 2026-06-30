@@ -333,19 +333,6 @@ export default function StripeHubModal({
     if (canDismiss) onClose();
   };
 
-  const headerSubtitle = showWizard
-    ? (() => {
-        if (guideStep === GUIDE_INTRO_STEP) return 'How payments work';
-        if (guideStep === GUIDE_CONNECT_STEP) return 'Connect with Stripe';
-        if (guideStep === GUIDE_VERIFY_STEP) return 'Review your setup';
-        const stripeIndex = stripeOnboardingIndex(guideStep);
-        if (stripeIndex === null) return 'Stripe setup';
-        const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
-        if (stripeIndex === 0) return stripeStep.title;
-        return `Step ${stripeIndex} of ${STRIPE_STEP_COUNT - 1} · ${stripeStep.title}`;
-      })()
-    : 'Payments, payouts, and bank account';
-
   const renderChecklist = () => (
     <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
       <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
@@ -589,8 +576,7 @@ export default function StripeHubModal({
       >
         <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 flex items-center justify-between z-10 shrink-0">
           <div className="min-w-0">
-            <h2 className="text-3xl font-bold">Stripe</h2>
-            <p className="text-white/80 text-base truncate">{headerSubtitle}</p>
+            <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding</h2>
             {showWizard && guideStep >= GUIDE_CONNECT_STEP && (
               <p className="text-white/70 text-sm mt-2 leading-snug">
                 Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
