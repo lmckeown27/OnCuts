@@ -1,5 +1,5 @@
 /**
- * Stripe Connect hub — step-by-step onboarding guide, Express dashboard, payout management.
+ * Stripe Connect hub: step-by-step onboarding guide, Express dashboard, payout management.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -31,7 +31,7 @@ const STRIPE_ONBOARDING_STEPS = [
     instructions: (
       <p className="text-sm text-gray-600">
         Enter the <strong>email address</strong> you use to sign in to PismoPlatforms into{' '}
-        <strong>Stripe Express</strong>. It must match — Stripe uses this to link your payout account.
+        <strong>Stripe Express</strong>. It must match. Stripe uses this to link your payout account.
       </p>
     ),
   },
@@ -56,7 +56,7 @@ const STRIPE_ONBOARDING_STEPS = [
             number.
           </li>
           <li>
-            Upload a photo of your ID if Stripe requests it — use a clear, well-lit image with all corners visible.
+            Upload a photo of your ID if Stripe requests it. Use a clear, well-lit image with all corners visible.
           </li>
           <li>Save or continue until Stripe accepts this section, then come back here and tap <strong>Next</strong>.</li>
         </ol>
@@ -96,12 +96,12 @@ const STRIPE_ONBOARDING_STEPS = [
             <strong>account number</strong>.
           </li>
           <li>Select <strong>Checking</strong> or <strong>Savings</strong> to match your bank account type.</li>
-          <li>Choose how often you want payouts (daily, weekly, etc.) — you can change this later in Stripe.</li>
+          <li>Choose how often you want payouts (daily, weekly, etc.). You can change this later in Stripe.</li>
           <li>Save the details. Stripe may verify the account with small test deposits.</li>
           <li>When finished, return here and tap <strong>Next</strong>, then <strong>Check my progress</strong>.</li>
         </ol>
         <p className="text-xs text-gray-500 mt-3">
-          PismoPlatforms never sees your bank login — only Stripe stores this information.
+          PismoPlatforms never sees your bank login. Only Stripe stores this information.
         </p>
       </>
     ),
@@ -238,7 +238,7 @@ export default function StripeHubModal({
     try {
       setBusy('onboarding');
       await openOnboardingUrl(0);
-      toast.success('Stripe opened in a new tab — complete step 1 (your email), then Continue.');
+      toast.success('Stripe opened in a new tab. Complete step 1 (your email), then Continue.');
     } catch (err: unknown) {
       const { message: msg, code } = apiErrorDetails(err);
       if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
@@ -265,7 +265,7 @@ export default function StripeHubModal({
       } else {
         await openOnboardingUrl(guideStep);
       }
-      toast('Switch between this tab and Stripe as needed — both stay open.', { icon: '↔️' });
+      toast('Switch between this tab and Stripe as needed. Both stay open.', { icon: '↔️' });
     } catch (err: unknown) {
       const { message: msg } = apiErrorDetails(err);
       toast.error(msg || 'Could not open Stripe');
@@ -306,13 +306,13 @@ export default function StripeHubModal({
       setBusy('status');
       const status = await load();
       if (status && isBarberStripeFullyConnected(status)) {
-        toast.success('Stripe setup complete — your dashboard is unlocked.');
+        toast.success('Stripe setup complete. Your dashboard is unlocked.');
         return;
       }
       if (status) {
         const resumeStep = guideStepForStatus(status);
         setGuideStep((prev) => Math.max(prev, resumeStep));
-        toast('Status updated — continue where Stripe still shows items to complete.', { icon: 'ℹ️' });
+        toast('Status updated. Continue where Stripe still shows items to complete.', { icon: 'ℹ️' });
       }
     } finally {
       setBusy(null);
@@ -369,7 +369,7 @@ export default function StripeHubModal({
           <>
             <p className="text-sm text-gray-600 leading-relaxed">
               Customer payments go to your linked bank account through <strong>Stripe Connect</strong>, a third-party
-              payment service—not PismoPlatforms.{' '}
+              payment service, not PismoPlatforms.{' '}
               <a
                 href="https://en.wikipedia.org/wiki/Stripe,_Inc."
                 target="_blank"
@@ -391,7 +391,7 @@ export default function StripeHubModal({
                 >
                   Connect → Accounts overview
                 </a>{' '}
-                (toggle <strong>live mode</strong> on). This is a one-time step for the PismoPlatforms owner—not
+                (toggle <strong>live mode</strong> on). This is a one-time step for the PismoPlatforms owner, not
                 something barbers can fix themselves.
               </p>
             )}
@@ -409,7 +409,7 @@ export default function StripeHubModal({
             {blocking && (
               <p className="text-xs text-gray-700 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
                 Your provider dashboard stays disabled until every checklist item shows{' '}
-                <strong>Complete</strong>. Stripe is a third-party payment service—this guide walks you through
+                <strong>Complete</strong>. Stripe is a third-party payment service. This guide walks you through
                 connecting your account.
               </p>
             )}
@@ -444,7 +444,7 @@ export default function StripeHubModal({
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                Stripe is connected — payouts flow directly to your bank. Your dashboard is unlocked.
+                Stripe is connected. Payouts flow directly to your bank. Your dashboard is unlocked.
               </div>
             )}
           </>
@@ -577,7 +577,7 @@ export default function StripeHubModal({
             <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
             {showWizard && guideStep > 0 && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
-                Keep this guide and Stripe open side by side — jump back and forth if you get stuck. Use{' '}
+                Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
               </p>
             )}
@@ -648,7 +648,7 @@ export default function StripeHubModal({
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                Stripe is connected — payouts flow directly to your bank.
+                Stripe is connected. Payouts flow directly to your bank.
               </div>
             </>
           )}
