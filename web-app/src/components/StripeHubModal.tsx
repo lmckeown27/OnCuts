@@ -29,7 +29,7 @@ const STRIPE_ONBOARDING_STEPS = [
     short: 'Sign in',
     title: 'Sign in to Express',
     instructions: (
-      <p className="text-sm text-gray-600">
+      <p className="text-base text-gray-600">
         Enter the <strong>email address</strong> you use to sign in to PismoPlatforms into{' '}
         <strong>Stripe Express</strong>. It must match. Stripe uses this to link your payout account.
       </p>
@@ -40,7 +40,7 @@ const STRIPE_ONBOARDING_STEPS = [
     title: 'Identity & business details',
     instructions: (
       <>
-        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
           <li>
             Enter your <strong>legal name</strong> and <strong>date of birth</strong> exactly as they appear on your
             government ID.
@@ -68,7 +68,7 @@ const STRIPE_ONBOARDING_STEPS = [
     title: 'Accept card payments',
     instructions: (
       <>
-        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
           <li>
             Pick a <strong>business category</strong> that matches your services (for example, personal care or
             beauty services).
@@ -90,7 +90,7 @@ const STRIPE_ONBOARDING_STEPS = [
     title: 'Bank account & payouts',
     instructions: (
       <>
-        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
           <li>
             Open the bank or payout section and enter your <strong>routing number</strong> and{' '}
             <strong>account number</strong>.
@@ -100,7 +100,7 @@ const STRIPE_ONBOARDING_STEPS = [
           <li>Save the details. Stripe may verify the account with small test deposits.</li>
           <li>When finished, return here and tap <strong>Next</strong>, then <strong>Check my progress</strong>.</li>
         </ol>
-        <p className="text-xs text-gray-500 mt-3">
+        <p className="text-sm text-gray-500 mt-3">
           PismoPlatforms never sees your bank login. Only Stripe stores this information.
         </p>
       </>
@@ -132,7 +132,7 @@ function apiErrorDetails(err: unknown): { message?: string; code?: string } {
 
 function StatusRow({ label, done }: { label: string; done: boolean }) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center justify-between text-base">
       <span className="text-gray-600">{label}</span>
       <span className={done ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
         {done ? 'Complete' : 'Needed'}
@@ -347,8 +347,8 @@ export default function StripeHubModal({
     : 'Payments, payouts, and bank account';
 
   const renderChecklist = () => (
-    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
+    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+      <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
       <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} />
       <StatusRow label="Identity & business details" done={detailsSubmitted} />
       <StatusRow label="Accept card payments" done={chargesEnabled} />
@@ -360,18 +360,18 @@ export default function StripeHubModal({
     switch (guideStep) {
       case GUIDE_INTRO_STEP:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+          <div className="space-y-5">
+            <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
+            <p className="text-base text-gray-600 leading-relaxed">
               PismoPlatforms is where you manage bookings and your provider profile. We do not process or store customer
               payments on our platform.
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed">
               When a client pays you, the transaction is handled by <strong>Stripe</strong>, a trusted third-party
               payments platform. Stripe securely moves funds from your customers to the bank account you connect during
               setup.
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed">
               Take a moment to read about Stripe so you know your payments are in good hands.{' '}
               <a
                 href="https://en.wikipedia.org/wiki/Stripe,_Inc."
@@ -383,7 +383,7 @@ export default function StripeHubModal({
               </a>
               .
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed">
               Tap <strong>Next</strong> when you&apos;re ready to connect your Stripe account.
             </p>
           </div>
@@ -391,7 +391,7 @@ export default function StripeHubModal({
       case GUIDE_CONNECT_STEP:
         return (
           <>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-base text-gray-600 leading-relaxed">
               Customer payments go to your linked bank account through <strong>Stripe Connect</strong>, a third-party
               payment service, not PismoPlatforms.{' '}
               <a
@@ -405,7 +405,7 @@ export default function StripeHubModal({
               .
             </p>
             {platformSetupBlocked && (
-              <p className="text-xs text-red-900 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
+              <p className="text-sm text-red-900 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 leading-relaxed">
                 <strong>Platform setup required:</strong> {platformSetupBlocked} Stripe Dashboard →{' '}
                 <a
                   href="https://dashboard.stripe.com/connect/accounts/overview"
@@ -420,17 +420,17 @@ export default function StripeHubModal({
               </p>
             )}
             {connectStatusUnknown && (
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
                 Could not verify Stripe status. You can still start connecting below.
               </p>
             )}
             {needsReconnect && (
-              <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
                 Your saved payout account is from a previous Stripe setup (test mode or an old platform account).
                 The next step creates a fresh connection to the current live payout account.
               </p>
             )}
-            <p className="text-sm text-gray-600">
+            <p className="text-base text-gray-600">
               Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. Start by entering your PismoPlatforms
               email in Stripe Express, then follow this guide for identity, payments, and bank setup.
             </p>
@@ -440,24 +440,24 @@ export default function StripeHubModal({
         return (
           <>
             {stripeTabOpened ? (
-              <p className="text-sm text-gray-600">
+              <p className="text-base text-gray-600">
                 Return here after working in Stripe. We automatically refresh when you switch back to this tab, or
                 tap <strong>Check my progress</strong> below.
               </p>
             ) : (
-              <p className="text-sm text-gray-600">
+              <p className="text-base text-gray-600">
                 Open Stripe to finish any remaining sections, then verify everything in the checklist shows{' '}
                 <strong>Complete</strong>.
               </p>
             )}
             {!fullyConnected && (
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
                 Items still marked <strong>Needed</strong>? Open Stripe again and complete those sections, then check
                 progress here. Use <strong>Back</strong> to reread earlier steps if you need help.
               </p>
             )}
             {fullyConnected && (
-              <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
@@ -472,17 +472,17 @@ export default function StripeHubModal({
           const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
           if (stripeIndex === 0) {
             return (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
                 {stripeStep.instructions}
               </div>
             );
           }
           return (
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                 Step {stripeIndex} of {STRIPE_STEP_COUNT - 1}
               </p>
-              <p className="text-sm font-semibold text-gray-900">What to do: {stripeStep.title}</p>
+              <p className="text-base font-semibold text-gray-900">What to do: {stripeStep.title}</p>
               {stripeStep.instructions}
             </div>
           );
@@ -564,7 +564,7 @@ export default function StripeHubModal({
               type="button"
               onClick={() => void refreshStripeOnboarding()}
               disabled={busy !== null}
-              className="w-full text-sm text-primary-600 hover:text-black font-medium py-2 disabled:opacity-60"
+              className="w-full text-base text-primary-600 hover:text-black font-medium py-2.5 disabled:opacity-60"
             >
               {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
             </button>
@@ -582,23 +582,23 @@ export default function StripeHubModal({
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
+        className={`bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
           isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 flex items-center justify-between z-10 shrink-0">
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold">Stripe</h2>
-            <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
+            <h2 className="text-3xl font-bold">Stripe</h2>
+            <p className="text-white/80 text-base truncate">{headerSubtitle}</p>
             {showWizard && guideStep >= GUIDE_CONNECT_STEP && (
-              <p className="text-white/70 text-xs mt-1.5 leading-snug">
+              <p className="text-white/70 text-sm mt-2 leading-snug">
                 Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
               </p>
             )}
             {showWizard && (
-              <div className="flex gap-1 mt-2" role="tablist" aria-label="Onboarding progress">
+              <div className="flex gap-1.5 mt-3" role="tablist" aria-label="Onboarding progress">
                 {GUIDE_PROGRESS_STEPS.map((step, i) => {
                   const isCurrent = guideStep === i;
                   const isPast = guideStep > i;
@@ -608,7 +608,7 @@ export default function StripeHubModal({
                       role="tab"
                       aria-selected={isCurrent}
                       aria-label={step.title}
-                      className={`h-1 flex-1 rounded-full transition-colors ${
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
                         isCurrent ? 'bg-white' : isPast ? 'bg-white/60' : 'bg-white/30'
                       }`}
                       title={step.title}
@@ -622,14 +622,14 @@ export default function StripeHubModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0 ml-3"
+              className="text-white hover:bg-white/20 rounded-lg px-4 py-2 text-base font-medium transition-colors shrink-0 ml-3"
             >
               Close
             </button>
           )}
         </div>
 
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
           {showWizard ? (
             <>
               {guideStep >= GUIDE_CONNECT_STEP && renderChecklist()}
@@ -638,7 +638,7 @@ export default function StripeHubModal({
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-base text-gray-600 leading-relaxed">
                 PismoPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account.
               </p>
@@ -658,12 +658,12 @@ export default function StripeHubModal({
                   type="button"
                   onClick={() => void openStripeDashboard()}
                   disabled={busy !== null}
-                  className="w-full text-sm text-primary-600 hover:text-black font-medium py-2 disabled:opacity-60"
+                  className="w-full text-base text-primary-600 hover:text-black font-medium py-2.5 disabled:opacity-60"
                 >
                   Manage bank account & payouts in Stripe
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
