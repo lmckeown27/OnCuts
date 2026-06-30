@@ -360,11 +360,33 @@ export default function StripeHubModal({
     switch (guideStep) {
       case GUIDE_INTRO_STEP:
         return (
-          <p className="text-sm text-gray-600 leading-relaxed">
-            When customers pay you on PismoPlatforms, the money goes straight to your bank. We don&apos;t hold it for
-            you. <strong>Stripe</strong>, a trusted payment partner, handles the transfer securely. Tap{' '}
-            <strong>Next</strong> when you&apos;re ready to connect your account.
-          </p>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              PismoPlatforms is where you manage bookings and your provider profile. We do not process or store customer
+              payments on our platform.
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              When a client pays you, the transaction is handled by <strong>Stripe</strong>, a trusted third-party
+              payments platform. Stripe securely moves funds from your customers to the bank account you connect during
+              setup.
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Take a moment to read about Stripe so you know your payments are in good hands.{' '}
+              <a
+                href="https://en.wikipedia.org/wiki/Stripe,_Inc."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 underline font-medium hover:text-black"
+              >
+                Learn about Stripe on Wikipedia
+              </a>
+              .
+            </p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Tap <strong>Next</strong> when you&apos;re ready to connect your Stripe account.
+            </p>
+          </div>
         );
       case GUIDE_CONNECT_STEP:
         return (
