@@ -395,13 +395,6 @@ export default function StripeHubModal({
                 The next step creates a fresh connection to the current live payout account.
               </p>
             )}
-            {blocking && (
-              <p className="text-xs text-gray-700 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
-                Your provider dashboard stays disabled until every checklist item shows{' '}
-                <strong>Complete</strong>. Stripe is a third-party payment service. This guide walks you through
-                connecting your account.
-              </p>
-            )}
             <p className="text-sm text-gray-600">
               Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. Start by entering your PismoPlatforms
               email in Stripe Express, then follow this guide for identity, payments, and bank setup.
