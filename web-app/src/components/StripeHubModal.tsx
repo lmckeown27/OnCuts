@@ -360,18 +360,11 @@ export default function StripeHubModal({
     switch (guideStep) {
       case GUIDE_INTRO_STEP:
         return (
-          <>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              PismoPlatforms helps customers book and pay for your services online. When a customer pays, the money
-              does not sit in a PismoPlatforms balance. It is processed by <strong>Stripe</strong>, a third-party payment
-              company, and deposited into the bank account you link during setup.
-            </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Stripe handles card processing, identity verification, payout schedules, and tax forms. You will create
-              or sign in to a <strong>Stripe Express</strong> account so payouts go directly to you. Tap{' '}
-              <strong>Next</strong> to see what to connect and how the checklist tracks your progress.
-            </p>
-          </>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            When customers pay you on PismoPlatforms, the money goes straight to your bank. We don&apos;t hold it for
+            you. <strong>Stripe</strong>, a trusted payment partner, handles the transfer securely. Tap{' '}
+            <strong>Next</strong> when you&apos;re ready to connect your account.
+          </p>
         );
       case GUIDE_CONNECT_STEP:
         return (
@@ -520,7 +513,7 @@ export default function StripeHubModal({
                 ? 'Continue setup in Stripe'
                 : 'Connect with Stripe'}
         </Button>
-      ) : (
+      ) : guideStep > GUIDE_INTRO_STEP ? (
         <>
           <Button
             type="button"
@@ -555,7 +548,7 @@ export default function StripeHubModal({
             </button>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 
