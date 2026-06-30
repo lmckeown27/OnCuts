@@ -370,9 +370,17 @@ export default function StripeHubModal({
         return (
           <>
             <p className="text-sm text-gray-600 leading-relaxed">
-              PismoPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
-              account. Stripe handles identity verification, card processing, payout schedules, balances, and tax
-              forms—not a PismoPlatforms balance.
+              Customer payments go to your linked bank account through <strong>Stripe Connect</strong>, a third-party
+              payment service—not PismoPlatforms.{' '}
+              <a
+                href="https://en.wikipedia.org/wiki/Stripe,_Inc."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 underline font-medium hover:text-black"
+              >
+                Learn about Stripe on Wikipedia
+              </a>
+              .
             </p>
             {platformSetupBlocked && (
               <p className="text-xs text-red-900 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
@@ -403,7 +411,8 @@ export default function StripeHubModal({
             {blocking && (
               <p className="text-xs text-gray-700 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
                 Your provider dashboard stays disabled until every checklist item shows{' '}
-                <strong>Complete</strong>. This guide walks you through each part.
+                <strong>Complete</strong>. Stripe is a third-party payment service—this guide walks you through
+                connecting your account.
               </p>
             )}
             <p className="text-sm text-gray-600">
