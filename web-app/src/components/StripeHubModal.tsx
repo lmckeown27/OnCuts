@@ -132,14 +132,6 @@ function StatusRow({ label, done }: { label: string; done: boolean }) {
   );
 }
 
-function guideStepForStatus(status: BarberConnectStatus | null): number {
-  if (!status?.has_account || status.needs_reconnect) return GUIDE_OVERVIEW_STEP;
-  if (!status.detailsSubmitted) return 2;
-  if (!status.chargesEnabled) return 3;
-  if (!status.payoutsEnabled) return 4;
-  return GUIDE_VERIFY_STEP;
-}
-
 function stripeStepNumber(guideStep: number): number | null {
   if (guideStep < 1 || guideStep > STRIPE_STEP_COUNT) return null;
   return guideStep;
@@ -182,13 +174,8 @@ export default function StripeHubModal({
       setIsVisible(true);
       setStripeTabOpened(false);
       setPlatformSetupBlocked(null);
-      void load().then((status) => {
-        if (status && !isBarberStripeFullyConnected(status)) {
-          setGuideStep(guideStepForStatus(status));
-        } else {
-          setGuideStep(GUIDE_OVERVIEW_STEP);
-        }
-      });
+      setGuideStep(GUIDE_OVERVIEW_STEP);
+      void load();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsAnimating(true));
       });
@@ -214,30 +201,26 @@ export default function StripeHubModal({
     };
   }, [isOpen, load]);
 
-  const advanceAfterStripeOpen = useCallback((openedStep: number) => {
+  const markStripeTabOpened = useCallback(() => {
     setStripeTabOpened(true);
-    setGuideStep((prev) => Math.max(prev, Math.min(openedStep + 1, GUIDE_STEP_COUNT - 1)));
   }, []);
 
-  const openOnboardingUrl = useCallback(
-    async (advanceFromStep: number) => {
-      const needsReconnect = Boolean(connectStatus?.needs_reconnect);
-      const { onboarding_url: onboardingUrl } = needsReconnect
-        ? await resetBarberConnect()
-        : await createBarberConnectOnboarding();
-      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-      advanceAfterStripeOpen(advanceFromStep);
-      if (needsReconnect) {
-        await load();
-      }
-    },
-    [advanceAfterStripeOpen, connectStatus?.needs_reconnect, load]
-  );
+  const openOnboardingUrl = useCallback(async () => {
+    const needsReconnect = Boolean(connectStatus?.needs_reconnect);
+    const { onboarding_url: onboardingUrl } = needsReconnect
+      ? await resetBarberConnect()
+      : await createBarberConnectOnboarding();
+    window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
+    markStripeTabOpened();
+    if (needsReconnect) {
+      await load();
+    }
+  }, [markStripeTabOpened, connectStatus?.needs_reconnect, load]);
 
   const startStripeOnboarding = async () => {
     try {
       setBusy('onboarding');
-      await openOnboardingUrl(0);
+      await openOnboardingUrl();
       toast.success('Stripe opened in a new tab. Complete step 1 (your email), then Continue.');
     } catch (err: unknown) {
       const { message: msg, code } = apiErrorDetails(err);
@@ -257,13 +240,13 @@ export default function StripeHubModal({
     try {
       setBusy('onboarding');
       if (guideStep === 0) {
-        await openOnboardingUrl(0);
+        await openOnboardingUrl();
       } else if (connectStatus?.has_account && !connectStatus?.needs_reconnect) {
         const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
         window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-        advanceAfterStripeOpen(guideStep);
+        markStripeTabOpened();
       } else {
-        await openOnboardingUrl(guideStep);
+        await openOnboardingUrl();
       }
       toast('Switch between this tab and Stripe as needed. Both stay open.', { icon: '↔️' });
     } catch (err: unknown) {
@@ -292,7 +275,7 @@ export default function StripeHubModal({
       setBusy('refresh');
       const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-      advanceAfterStripeOpen(Math.max(guideStep, 1));
+      markStripeTabOpened();
     } catch (err: unknown) {
       const { message: msg } = apiErrorDetails(err);
       toast.error(msg || 'Could not refresh Stripe setup link');
@@ -310,9 +293,7 @@ export default function StripeHubModal({
         return;
       }
       if (status) {
-        const resumeStep = guideStepForStatus(status);
-        setGuideStep((prev) => Math.max(prev, resumeStep));
-        toast('Status updated. Continue where Stripe still shows items to complete.', { icon: 'ℹ️' });
+        toast('Status updated. Check the checklist for items still marked Needed.', { icon: 'ℹ️' });
       }
     } finally {
       setBusy(null);
@@ -584,15 +565,15 @@ export default function StripeHubModal({
             {showWizard && (
               <div className="flex gap-1 mt-2">
                 {STRIPE_ONBOARDING_STEPS.slice(1).map((step, i) => {
-                  const stripeStepIndex = i + 2;
-                  const active = guideStep >= stripeStepIndex;
+                  const done =
+                    i === 0 ? detailsSubmitted : i === 1 ? chargesEnabled : payoutsEnabled;
                   return (
                     <div
                       key={step.short}
                       className={`h-1 flex-1 rounded-full transition-colors ${
-                        active ? 'bg-white' : 'bg-white/30'
+                        done ? 'bg-white' : 'bg-white/30'
                       }`}
-                      title={`Step ${i + 1} of ${STRIPE_STEP_COUNT - 1}: ${step.title}`}
+                      title={`${step.title}: ${done ? 'Complete' : 'Needed'}`}
                     />
                   );
                 })}
@@ -613,7 +594,7 @@ export default function StripeHubModal({
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
           {showWizard ? (
             <>
-              {(guideStep === GUIDE_OVERVIEW_STEP || guideStep === GUIDE_VERIFY_STEP) && renderChecklist()}
+              {renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
