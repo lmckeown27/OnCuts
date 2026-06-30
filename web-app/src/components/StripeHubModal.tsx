@@ -109,10 +109,16 @@ const STRIPE_ONBOARDING_STEPS = [
 ] as const;
 
 const STRIPE_STEP_COUNT = STRIPE_ONBOARDING_STEPS.length;
-/** Overview (index 0) + five Stripe onboarding steps + verify. */
+/** Overview (index 0) + Stripe onboarding steps + verify. */
 const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 2;
 const GUIDE_OVERVIEW_STEP = 0;
 const GUIDE_VERIFY_STEP = GUIDE_STEP_COUNT - 1;
+
+const GUIDE_PROGRESS_STEPS = [
+  { short: 'Start', title: 'Before you start' },
+  ...STRIPE_ONBOARDING_STEPS.map((step) => ({ short: step.short, title: step.title })),
+  { short: 'Review', title: 'Review your setup' },
+] as const;
 
 function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   if (!err || typeof err !== 'object' || !('response' in err)) return {};
@@ -563,17 +569,20 @@ export default function StripeHubModal({
               </p>
             )}
             {showWizard && (
-              <div className="flex gap-1 mt-2">
-                {STRIPE_ONBOARDING_STEPS.slice(1).map((step, i) => {
-                  const done =
-                    i === 0 ? detailsSubmitted : i === 1 ? chargesEnabled : payoutsEnabled;
+              <div className="flex gap-1 mt-2" role="tablist" aria-label="Onboarding progress">
+                {GUIDE_PROGRESS_STEPS.map((step, i) => {
+                  const isCurrent = guideStep === i;
+                  const isPast = guideStep > i;
                   return (
                     <div
                       key={step.short}
+                      role="tab"
+                      aria-selected={isCurrent}
+                      aria-label={step.title}
                       className={`h-1 flex-1 rounded-full transition-colors ${
-                        done ? 'bg-white' : 'bg-white/30'
+                        isCurrent ? 'bg-white' : isPast ? 'bg-white/60' : 'bg-white/30'
                       }`}
-                      title={`${step.title}: ${done ? 'Complete' : 'Needed'}`}
+                      title={step.title}
                     />
                   );
                 })}
