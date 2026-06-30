@@ -562,7 +562,7 @@ export default function StripeHubModal({
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Stripe</h2>
             <p className="text-white/80 text-sm truncate">{headerSubtitle}</p>
-            {showWizard && guideStep > 0 && (
+            {showWizard && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
                 Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
