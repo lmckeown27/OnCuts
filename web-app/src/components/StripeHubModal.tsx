@@ -24,8 +24,105 @@ interface StripeHubModalProps {
   onFullyConnected?: () => void;
 }
 
-const GUIDE_STEP_LABELS = ['Overview', 'Identity', 'Payments', 'Bank', 'Verify'] as const;
-const GUIDE_STEP_COUNT = GUIDE_STEP_LABELS.length;
+const STRIPE_ONBOARDING_STEPS = [
+  {
+    short: 'Sign in',
+    title: 'Sign in to Express',
+    instructions: (
+      <>
+        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>
+            Enter the <strong>email address</strong> you use to sign in to PismoPlatforms. It must match — Stripe uses
+            this to link your payout account.
+          </li>
+          <li>Review the address for typos, then click <strong>Continue</strong>.</li>
+          <li>
+            If Stripe asks you to verify your email, open the message they send, confirm it, then return to the Stripe
+            tab and finish this step.
+          </li>
+          <li>When Stripe moves you to the next screen, switch back here and tap <strong>Next</strong>.</li>
+        </ol>
+      </>
+    ),
+  },
+  {
+    short: 'Identity',
+    title: 'Identity & business details',
+    instructions: (
+      <>
+        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>
+            Enter your <strong>legal name</strong> and <strong>date of birth</strong> exactly as they appear on your
+            government ID.
+          </li>
+          <li>
+            Provide the <strong>last four digits of your SSN</strong> (or ITIN if applicable) when asked.
+          </li>
+          <li>
+            Choose <strong>Individual</strong> or sole proprietor unless you operate as a registered company.
+          </li>
+          <li>
+            Add the <strong>business name</strong> customers know you by, plus your <strong>address</strong> and phone
+            number.
+          </li>
+          <li>
+            Upload a photo of your ID if Stripe requests it — use a clear, well-lit image with all corners visible.
+          </li>
+          <li>Save or continue until Stripe accepts this section, then come back here and tap <strong>Next</strong>.</li>
+        </ol>
+      </>
+    ),
+  },
+  {
+    short: 'Payments',
+    title: 'Accept card payments',
+    instructions: (
+      <>
+        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>
+            Pick a <strong>business category</strong> that matches your services (for example, personal care or
+            beauty services).
+          </li>
+          <li>
+            Write a short description of what you sell (for example, &quot;Haircuts and grooming by appointment&quot;).
+          </li>
+          <li>
+            If Stripe asks for a website, enter your <strong>PismoPlatforms profile URL</strong> or business site.
+          </li>
+          <li>Complete every field marked required, then submit so Stripe can enable <strong>card payments</strong>.</li>
+          <li>Wait for Stripe to accept this section (it can take a minute), then tap <strong>Next</strong> here.</li>
+        </ol>
+      </>
+    ),
+  },
+  {
+    short: 'Bank',
+    title: 'Bank account & payouts',
+    instructions: (
+      <>
+        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>
+            Open the bank or payout section and enter your <strong>routing number</strong> and{' '}
+            <strong>account number</strong>.
+          </li>
+          <li>Select <strong>Checking</strong> or <strong>Savings</strong> to match your bank account type.</li>
+          <li>Choose how often you want payouts (daily, weekly, etc.) — you can change this later in Stripe.</li>
+          <li>Save the details. Stripe may verify the account with small test deposits.</li>
+          <li>When finished, return here and tap <strong>Next</strong>, then <strong>Check my progress</strong>.</li>
+        </ol>
+        <p className="text-xs text-gray-500 mt-3">
+          PismoPlatforms never sees your bank login — only Stripe stores this information.
+        </p>
+      </>
+    ),
+  },
+] as const;
+
+const STRIPE_STEP_COUNT = STRIPE_ONBOARDING_STEPS.length;
+/** Overview (index 0) + five Stripe onboarding steps + verify. */
+const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 2;
+const GUIDE_OVERVIEW_STEP = 0;
+const GUIDE_VERIFY_STEP = GUIDE_STEP_COUNT - 1;
 
 function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   if (!err || typeof err !== 'object' || !('response' in err)) return {};
@@ -46,11 +143,16 @@ function StatusRow({ label, done }: { label: string; done: boolean }) {
 }
 
 function guideStepForStatus(status: BarberConnectStatus | null): number {
-  if (!status?.has_account || status.needs_reconnect) return 0;
+  if (!status?.has_account || status.needs_reconnect) return GUIDE_OVERVIEW_STEP;
   if (!status.detailsSubmitted) return 1;
-  if (!status.chargesEnabled) return 2;
-  if (!status.payoutsEnabled) return 3;
-  return 4;
+  if (!status.chargesEnabled) return 3;
+  if (!status.payoutsEnabled) return 4;
+  return GUIDE_VERIFY_STEP;
+}
+
+function stripeStepNumber(guideStep: number): number | null {
+  if (guideStep < 1 || guideStep > STRIPE_STEP_COUNT) return null;
+  return guideStep;
 }
 
 export default function StripeHubModal({
@@ -148,7 +250,7 @@ export default function StripeHubModal({
     try {
       setBusy('onboarding');
       await openOnboardingUrl(0);
-      toast.success('Stripe opened in a new tab — follow the steps on the next page here.');
+      toast.success('Stripe opened in a new tab — complete step 1 (your email), then Continue.');
     } catch (err: unknown) {
       const { message: msg, code } = apiErrorDetails(err);
       if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
@@ -247,8 +349,16 @@ export default function StripeHubModal({
 
   const headerSubtitle = fullyConnected
     ? 'Payments, payouts, and bank account'
-    : blocking
-      ? `Setup guide · Step ${guideStep + 1} of ${GUIDE_STEP_COUNT}`
+    : blocking || showWizard
+      ? (() => {
+          const n = stripeStepNumber(guideStep);
+          if (n === null) {
+            return guideStep === GUIDE_VERIFY_STEP
+              ? 'Review your setup'
+              : 'Before you start';
+          }
+          return `Step ${n} of ${STRIPE_STEP_COUNT} · ${STRIPE_ONBOARDING_STEPS[n - 1].title}`;
+        })()
       : 'Payments, payouts, and bank account';
 
   const renderChecklist = () => (
@@ -304,70 +414,12 @@ export default function StripeHubModal({
               </p>
             )}
             <p className="text-sm text-gray-600">
-              When you tap <strong>Connect with Stripe</strong>, Stripe opens in a new tab and this guide moves to
-              step-by-step instructions for what to enter there.
+              Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. This guide tells you what to do on
+              each Stripe screen, in order — starting with step 1 (your email address).
             </p>
           </>
         );
-      case 1:
-        return (
-          <>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-              <p className="text-sm font-semibold text-gray-900">In Stripe: Identity & business details</p>
-              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-                <li>Confirm your <strong>legal name</strong> and date of birth match your government ID.</li>
-                <li>Enter the <strong>last 4 digits of your SSN</strong> (or ITIN where applicable) for verification.</li>
-                <li>Choose your business type — most solo providers select <strong>Individual</strong> or sole proprietor.</li>
-                <li>Add a <strong>business name</strong> customers may recognize (your brand or your name).</li>
-                <li>Provide your <strong>address</strong> and phone number when prompted.</li>
-                <li>If Stripe asks for an ID photo, upload a clear image of your driver&apos;s license or passport.</li>
-              </ol>
-            </div>
-            <p className="text-xs text-gray-500">
-              Stripe may save progress partway through. If a section looks grayed out, you may have already completed
-              it — use <strong>Check my progress</strong> on the last step.
-            </p>
-          </>
-        );
-      case 2:
-        return (
-          <>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-              <p className="text-sm font-semibold text-gray-900">In Stripe: Accept card payments</p>
-              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-                <li>Review your <strong>business category</strong> — select a service that matches what you offer (e.g. personal services).</li>
-                <li>Describe what you sell in a sentence (e.g. &quot;Haircuts and grooming appointments&quot;).</li>
-                <li>Confirm your <strong>website or app</strong> — you can use your PismoPlatforms profile URL if asked.</li>
-                <li>Complete any remaining <strong>business details</strong> fields with a red asterisk.</li>
-                <li>Submit the section so Stripe can enable <strong>card payments</strong> on your account.</li>
-              </ol>
-            </div>
-            <p className="text-xs text-gray-500">
-              Stripe enables charges only after identity and business sections pass review — this can take a minute
-              after you submit.
-            </p>
-          </>
-        );
-      case 3:
-        return (
-          <>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-              <p className="text-sm font-semibold text-gray-900">In Stripe: Bank account & payouts</p>
-              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
-                <li>Open the <strong>Payouts</strong> or <strong>Bank details</strong> section in Stripe Express.</li>
-                <li>Enter your <strong>routing number</strong> and <strong>account number</strong> for the bank where you want deposits.</li>
-                <li>Double-check account type (<strong>Checking</strong> vs savings) matches your bank.</li>
-                <li>Choose a <strong>payout schedule</strong> (daily, weekly, etc.) — you can change this later in Stripe.</li>
-                <li>Save and confirm — Stripe may send small test deposits to verify the account.</li>
-              </ol>
-            </div>
-            <p className="text-xs text-gray-500">
-              PismoPlatforms never stores your bank login — only Stripe receives this information.
-            </p>
-          </>
-        );
-      case 4:
-      default:
+      case GUIDE_VERIFY_STEP:
         return (
           <>
             {stripeTabOpened ? (
@@ -384,7 +436,7 @@ export default function StripeHubModal({
             {!fullyConnected && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 Items still marked <strong>Needed</strong>? Open Stripe again and complete those sections, then check
-                progress here. You can move back to earlier guide pages if you need the instructions.
+                progress here. Use <strong>Back</strong> to reread earlier steps if you need help.
               </p>
             )}
             {fullyConnected && (
@@ -397,11 +449,32 @@ export default function StripeHubModal({
             )}
           </>
         );
+      default: {
+        if (guideStep >= 1 && guideStep <= STRIPE_STEP_COUNT) {
+          const stripeStep = STRIPE_ONBOARDING_STEPS[guideStep - 1];
+          return (
+            <>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Step {guideStep} of {STRIPE_STEP_COUNT}
+                </p>
+                <p className="text-sm font-semibold text-gray-900">What to do: {stripeStep.title}</p>
+                {stripeStep.instructions}
+              </div>
+              <p className="text-xs text-gray-500">
+                Stuck? Tap <strong>Open Stripe tab</strong> below, complete what you can, then return here — you can
+                move back and forth as many times as you need.
+              </p>
+            </>
+          );
+        }
+        return null;
+      }
     }
   };
 
   const renderWizardFooter = () => {
-    if (guideStep === 0) {
+    if (guideStep === GUIDE_OVERVIEW_STEP) {
       return (
         <Button
           type="button"
@@ -430,8 +503,8 @@ export default function StripeHubModal({
             variant="secondary"
             size="lg"
             className="flex-1"
-            onClick={() => setGuideStep((s) => Math.max(0, s - 1))}
-            disabled={busy !== null || guideStep === 0}
+            onClick={() => setGuideStep((s) => Math.max(GUIDE_OVERVIEW_STEP, s - 1))}
+            disabled={busy !== null || guideStep === GUIDE_OVERVIEW_STEP}
           >
             Back
           </Button>
@@ -458,7 +531,7 @@ export default function StripeHubModal({
         >
           {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
         </Button>
-        {guideStep === GUIDE_STEP_COUNT - 1 && (
+        {guideStep === GUIDE_VERIFY_STEP && (
           <Button
             type="button"
             variant="primary"
@@ -509,15 +582,19 @@ export default function StripeHubModal({
             )}
             {showWizard && !isLoading && (
               <div className="flex gap-1 mt-2">
-                {GUIDE_STEP_LABELS.map((label, i) => (
-                  <div
-                    key={label}
-                    className={`h-1 flex-1 rounded-full transition-colors ${
-                      i <= guideStep ? 'bg-white' : 'bg-white/30'
-                    }`}
-                    title={label}
-                  />
-                ))}
+                {STRIPE_ONBOARDING_STEPS.map((step, i) => {
+                  const stripeStepIndex = i + 1;
+                  const active = guideStep >= stripeStepIndex;
+                  return (
+                    <div
+                      key={step.short}
+                      className={`h-1 flex-1 rounded-full transition-colors ${
+                        active ? 'bg-white' : 'bg-white/30'
+                      }`}
+                      title={`Step ${stripeStepIndex}: ${step.title}`}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
