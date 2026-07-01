@@ -4,6 +4,7 @@ export interface BarberConnectStatus {
   has_account: boolean;
   account_id?: string;
   needs_reconnect?: boolean;
+  stale_account_cleared?: boolean;
   detailsSubmitted?: boolean;
   chargesEnabled?: boolean;
   payoutsEnabled?: boolean;

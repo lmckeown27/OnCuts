@@ -265,15 +265,17 @@ export default function StripeHubModal({
 
   const openOnboardingUrl = useCallback(async () => {
     const needsReconnect = Boolean(connectStatus?.needs_reconnect);
-    const { onboarding_url: onboardingUrl } = needsReconnect
-      ? await resetBarberConnect()
-      : await createBarberConnectOnboarding();
+    const hasAccount = Boolean(connectStatus?.has_account);
+    const { onboarding_url: onboardingUrl } =
+      needsReconnect || !hasAccount
+        ? needsReconnect
+          ? await resetBarberConnect()
+          : await createBarberConnectOnboarding()
+        : await refreshBarberConnectOnboarding();
     window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
     markStripeTabOpened();
-    if (needsReconnect) {
-      await load();
-    }
-  }, [markStripeTabOpened, connectStatus?.needs_reconnect, load]);
+    await load();
+  }, [markStripeTabOpened, connectStatus?.needs_reconnect, connectStatus?.has_account, load]);
 
   const startStripeOnboarding = async () => {
     try {
@@ -297,18 +299,13 @@ export default function StripeHubModal({
   const openStripeTabForCurrentStep = async () => {
     try {
       setBusy('onboarding');
-      if (guideStep === GUIDE_INTRO_STEP) {
-        await openOnboardingUrl();
-      } else if (connectStatus?.has_account && !connectStatus?.needs_reconnect) {
-        const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
-        window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-        markStripeTabOpened();
-      } else {
-        await openOnboardingUrl();
-      }
+      await openOnboardingUrl();
       toast('Switch between this tab and Stripe as needed. Both stay open.', { icon: '↔️' });
     } catch (err: unknown) {
-      const { message: msg } = apiErrorDetails(err);
+      const { message: msg, code } = apiErrorDetails(err);
+      if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
+        await load();
+      }
       toast.error(msg || 'Could not open Stripe');
     } finally {
       setBusy(null);
@@ -409,8 +406,9 @@ export default function StripeHubModal({
       )}
       {needsReconnect && (
         <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
-          Your saved payout account is from a previous Stripe setup (test mode or an old platform account). The next
-          step creates a fresh connection to the current live payout account.
+          Your saved payout account is from a previous Stripe setup (test mode or an old platform account). Use{' '}
+          <strong>Continue with Stripe</strong> on the sign-in step to create a fresh connection to the current live
+          payout account.
         </p>
       )}
     </>

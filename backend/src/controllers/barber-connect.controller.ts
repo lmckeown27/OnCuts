@@ -6,7 +6,7 @@
  */
 
 import { Response, NextFunction } from 'express';
-import stripeService from '../services/stripe.service';
+import stripeService, { isStaleConnectAccountError } from '../services/stripe.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -33,11 +33,6 @@ async function getBarberUserRecord(userId: string) {
   };
 }
 
-function isStaleConnectAccountError(error: unknown): boolean {
-  if (!(error instanceof ApiError)) return false;
-  return error.statusCode === 400 && /not valid for server Stripe key/i.test(error.message);
-}
-
 async function clearBarberConnectAccount(userId: string): Promise<void> {
   await pool.query(
     `UPDATE users
@@ -47,6 +42,28 @@ async function clearBarberConnectAccount(userId: string): Promise<void> {
      WHERE id = $1`,
     [userId]
   );
+}
+
+/**
+ * Returns a usable Connect account id, or null after clearing a stale id from the platform DB.
+ */
+async function resolveSavedConnectAccountId(userId: string, accountId: string | null): Promise<string | null> {
+  if (!accountId) return null;
+
+  try {
+    await stripeService.validateConnectAccountForCurrentPlatform(accountId);
+    return accountId;
+  } catch (error) {
+    if (!isStaleConnectAccountError(error)) {
+      throw error;
+    }
+    logger.warn('Clearing stale Stripe Connect account from platform database', {
+      user_id: userId,
+      stale_account_id: accountId,
+    });
+    await clearBarberConnectAccount(userId);
+    return null;
+  }
 }
 
 async function createFreshConnectAccountForUser(userId: string, user: {
@@ -91,34 +108,23 @@ export const createConnectAccount = async (
     });
 
     const user = await getBarberUserRecord(userId);
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, user.stripe_account_id);
 
-    if (user.stripe_account_id) {
-      try {
-        await stripeService.validateConnectDestination(user.stripe_account_id);
-        const accountLink = await stripeService.createAccountLink(
-          user.stripe_account_id,
-          connectRefreshUrl(),
-          connectReturnUrl()
-        );
+    if (resolvedAccountId) {
+      const accountLink = await stripeService.createAccountLink(
+        resolvedAccountId,
+        connectRefreshUrl(),
+        connectReturnUrl()
+      );
 
-        return res.status(200).json({
-          success: true,
-          message: 'Connect account already exists',
-          data: {
-            account_id: user.stripe_account_id,
-            onboarding_url: accountLink,
-          },
-        });
-      } catch (error) {
-        if (!isStaleConnectAccountError(error)) {
-          throw error;
-        }
-        logger.warn('Replacing stale Stripe Connect account for barber', {
-          user_id: userId,
-          stale_account_id: user.stripe_account_id,
-        });
-        await clearBarberConnectAccount(userId);
-      }
+      return res.status(200).json({
+        success: true,
+        message: 'Connect account already exists',
+        data: {
+          account_id: resolvedAccountId,
+          onboarding_url: accountLink,
+        },
+      });
     }
 
     const { accountId, onboardingUrl } = await createFreshConnectAccountForUser(userId, user);
@@ -223,41 +229,38 @@ export const getConnectStatus = async (
       });
     }
 
-    // Get account status from Stripe
-    let status;
-    let needsReconnect = false;
-    try {
-      await stripeService.validateConnectDestination(stripeAccountId);
-      status = await stripeService.getAccountStatus(stripeAccountId);
-    } catch (error) {
-      if (isStaleConnectAccountError(error)) {
-        needsReconnect = true;
-        status = {
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, stripeAccountId);
+
+    if (!resolvedAccountId) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          has_account: false,
+          needs_reconnect: true,
+          stale_account_cleared: true,
           detailsSubmitted: false,
           chargesEnabled: false,
           payoutsEnabled: false,
-        };
-      } else {
-        throw error;
-      }
+        },
+      });
     }
 
-    if (!needsReconnect) {
-      // Sync database with current Stripe status
-      await pool.query(
-        `UPDATE users 
-         SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
-         WHERE id = $3`,
-        [status.payoutsEnabled, status.chargesEnabled, userId]
-      );
-    }
+    const status = await stripeService.getAccountStatus(resolvedAccountId);
+
+    // Sync database with current Stripe status
+    await pool.query(
+      `UPDATE users 
+       SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
+       WHERE id = $3`,
+      [status.payoutsEnabled, status.chargesEnabled, userId]
+    );
 
     res.status(200).json({
       success: true,
       data: {
         has_account: true,
-        account_id: stripeAccountId,
-        needs_reconnect: needsReconnect,
+        account_id: resolvedAccountId,
+        needs_reconnect: false,
         ...status,
       },
     });
@@ -290,11 +293,19 @@ export const refreshOnboardingLink = async (
       throw new ApiError(400, 'No Connect account found. Create one first.');
     }
 
-    await stripeService.validateConnectDestination(stripeAccountId);
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, stripeAccountId);
+
+    if (!resolvedAccountId) {
+      throw new ApiError(
+        400,
+        'Your saved Stripe connection was invalid and has been cleared. Use Continue with Stripe to start again.',
+        'STRIPE_CONNECT_STALE_ACCOUNT'
+      );
+    }
 
     // Create new account link
     const accountLink = await stripeService.createAccountLink(
-      stripeAccountId,
+      resolvedAccountId,
       connectRefreshUrl(),
       connectReturnUrl()
     );
@@ -339,7 +350,17 @@ export const handleOnboardingReturn = async (
       throw new ApiError(400, 'No Connect account found');
     }
 
-    const status = await stripeService.getAccountStatus(stripeAccountId);
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, stripeAccountId);
+
+    if (!resolvedAccountId) {
+      throw new ApiError(
+        400,
+        'Your saved Stripe connection was invalid and has been cleared. Use Continue with Stripe to start again.',
+        'STRIPE_CONNECT_STALE_ACCOUNT'
+      );
+    }
+
+    const status = await stripeService.getAccountStatus(resolvedAccountId);
 
     // Update the database with current Stripe status
     await pool.query(
@@ -353,7 +374,7 @@ export const handleOnboardingReturn = async (
     logger.info('Stripe Connect onboarding completed', {
       user_id: userId,
       action: 'STRIPE_CONNECT_ONBOARDING_COMPLETED',
-      account_id: stripeAccountId,
+      account_id: resolvedAccountId,
       status,
     });
 
@@ -385,8 +406,17 @@ export const getDashboardLink = async (
       throw new ApiError(400, 'No Connect account found. Complete onboarding first.');
     }
 
-    await stripeService.validateConnectDestination(user.stripe_account_id);
-    const loginLink = await stripeService.createExpressLoginLink(user.stripe_account_id);
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, user.stripe_account_id);
+
+    if (!resolvedAccountId) {
+      throw new ApiError(
+        400,
+        'Your saved Stripe connection was invalid and has been cleared. Complete Connect onboarding again.',
+        'STRIPE_CONNECT_STALE_ACCOUNT'
+      );
+    }
+
+    const loginLink = await stripeService.createExpressLoginLink(resolvedAccountId);
 
     res.status(200).json({
       success: true,
@@ -436,8 +466,17 @@ export const createStripeLoginLink = async (
       );
     }
 
-    await stripeService.validateConnectDestination(stripeAccountId);
-    const url = await stripeService.createExpressLoginLink(stripeAccountId);
+    const resolvedAccountId = await resolveSavedConnectAccountId(userId, stripeAccountId);
+
+    if (!resolvedAccountId) {
+      throw new ApiError(
+        400,
+        'Your saved Stripe connection was invalid and has been cleared. Complete Connect onboarding again.',
+        'STRIPE_CONNECT_STALE_ACCOUNT'
+      );
+    }
+
+    const url = await stripeService.createExpressLoginLink(resolvedAccountId);
 
     res.status(200).json({
       success: true,
@@ -445,7 +484,7 @@ export const createStripeLoginLink = async (
       data: {
         url,
         dashboard_url: url,
-        account_id: stripeAccountId,
+        account_id: resolvedAccountId,
       },
     });
   } catch (error) {

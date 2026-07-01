@@ -50,6 +50,39 @@ function isStripeLiveKeyTestAccountError(error: unknown): boolean {
   return /livemode API key/i.test(msg) && /test account/i.test(msg);
 }
 
+/** Connected account cannot be used with the platform's current Stripe account/mode. */
+export function isStaleConnectAccountError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    if (error.code === 'STRIPE_CONNECT_STALE_ACCOUNT') return true;
+    if (error.code === 'STRIPE_CONNECT_KEY_MODE_MISMATCH') return true;
+    if (error.statusCode === 400 && /not valid for (this )?platform Stripe account|not valid for server Stripe key/i.test(error.message)) {
+      return true;
+    }
+  }
+  const msg = stripeErrorMessage(error);
+  return (
+    /no such destination|resource_missing|does not exist/i.test(msg) ||
+    isStripeTestKeyLiveAccountError(error) ||
+    isStripeLiveKeyTestAccountError(error)
+  );
+}
+
+function staleConnectAccountApiError(accountId: string, cause: unknown): ApiError {
+  const stripeKey = formatStripeSecretKeyForSafeLog(getDefaultStripeSecretKey());
+  logger.warn('Stale Stripe Connect account for current platform', {
+    accountId,
+    stripeKey,
+    stripeError: stripeErrorMessage(cause),
+  });
+  return new ApiError(
+    400,
+    `Barber payout account ${accountId} is not valid for this platform Stripe account (${stripeKey}). ` +
+      'It may be from test mode, a previous platform account, or was deleted in Stripe. ' +
+      'The platform cleared the saved account ID — complete Connect onboarding again.',
+    'STRIPE_CONNECT_STALE_ACCOUNT'
+  );
+}
+
 class StripeService {
   private getStripe(): Stripe {
     return getDefaultStripeClient();
@@ -363,6 +396,22 @@ class StripeService {
     } catch (error) {
       logger.error('Failed to create payout:', error);
       throw new ApiError(500, 'Instant payout failed');
+    }
+  }
+
+  /**
+   * Strict Connect validation for onboarding/status: uses the platform default key only
+   * (no test/live cross-retry) so stale test or foreign-platform accounts are detected.
+   */
+  async validateConnectAccountForCurrentPlatform(accountId: string): Promise<void> {
+    try {
+      await this.getStripe().accounts.retrieve(accountId);
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (isStaleConnectAccountError(error)) {
+        throw staleConnectAccountApiError(accountId, error);
+      }
+      throw connectOperationalApiError(error, 'Failed to validate Connect account');
     }
   }
 

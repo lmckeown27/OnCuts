@@ -1896,7 +1896,31 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 
 ## STRIPE CONNECT (Barber Payouts)
 
-> **Note:** Stripe Connect account IDs are stored in the `users` table (`stripe_account_id` column). Barbers must complete Stripe Connect onboarding to receive payouts.
+> **Note:** Stripe Connect lives on the `users` table (not `barbers`). Barbers must complete Express onboarding and have **both** `stripe_charges_enabled` and `stripe_payouts_enabled` true before payouts work.
+
+| Column | Meaning |
+|--------|---------|
+| `stripe_account_id` | Connect Express account (`acct_...`). NULL = no saved connection. |
+| `stripe_connect_onboarded` | Legacy/onboarding flag from webhooks (can drift — trust charges/payouts flags). |
+| `stripe_charges_enabled` | Stripe says this account can accept destination charges. |
+| `stripe_payouts_enabled` | Stripe says this account can receive payouts. |
+
+**Common failure:** Stripe onboarding shows *"Something went wrong. There was an error during authentication"* while the platform still has an old `acct_*` (test mode, deleted account, or wrong platform Stripe keys). The app now auto-clears stale IDs on status/load; use the queries below to confirm and fix manually if needed.
+
+### Troubleshooting cheat sheet
+
+| Symptom | Likely cause | Start with |
+|---------|--------------|------------|
+| Stripe auth error on onboarding | Stale `acct_*` in DB | [Full Connect profile](#view-full-stripe-connect-profile-for-one-user-by-email) → [Clear stale account](#clear-stale-stripe-connect-account-manual-reset) |
+| `acct_*` set but both flags `f` | Incomplete onboarding or stale account | [Suspected stale accounts](#find-suspected-stale-connect-accounts) |
+| Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Lookup by account id](#lookup-user-by-stripe-account-id) + clear reset |
+| `stripe_connect_onboarded` true but flags false | DB out of sync with Stripe | [Onboarded flag mismatch](#find-onboarded-flag-mismatch-with-stripe-flags) |
+| Barber can't get paid | Not fully enabled | [Ready for payouts](#barbers-ready-to-receive-payouts) |
+
+### Describe Stripe columns on users
+```bash
+sudo -u postgres psql -d campuscuts -c "\d users" | grep stripe
+```
 
 ### View All Barbers with Stripe Connect Status
 ```bash
@@ -1906,14 +1930,66 @@ SELECT
     u.first_name,
     u.last_name,
     b.\"isActive\",
-    CASE 
-        WHEN u.stripe_account_id IS NOT NULL THEN 'Yes'
-        ELSE 'No'
-    END AS stripe_connected,
-    u.stripe_account_id
+    u.stripe_account_id,
+    u.stripe_connect_onboarded,
+    u.stripe_charges_enabled,
+    u.stripe_payouts_enabled,
+    CASE
+        WHEN u.stripe_account_id IS NULL THEN 'no_account'
+        WHEN u.stripe_charges_enabled AND u.stripe_payouts_enabled THEN 'live_ready'
+        WHEN u.stripe_account_id IS NOT NULL THEN 'incomplete_or_stale'
+        ELSE 'unknown'
+    END AS connect_state
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
-ORDER BY u.stripe_account_id IS NULL, u.first_name;
+ORDER BY connect_state, u.first_name;
+"
+```
+
+### View Full Stripe Connect Profile for One User (by email)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    u.id,
+    u.email,
+    u.first_name,
+    u.last_name,
+    u.role,
+    u.stripe_account_id,
+    u.stripe_connect_onboarded,
+    u.stripe_charges_enabled,
+    u.stripe_payouts_enabled,
+    u.\"updatedAt\"
+FROM users u
+WHERE u.email = 'barber@example.com';
+"
+```
+
+### View Full Stripe Connect Profile (by user UUID)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    u.id,
+    u.email,
+    u.stripe_account_id,
+    u.stripe_connect_onboarded,
+    u.stripe_charges_enabled,
+    u.stripe_payouts_enabled
+FROM users u
+WHERE u.id = 'USER_UUID_HERE';
+"
+```
+
+### Check Specific Barber's Stripe Status (minimal)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    stripe_account_id,
+    stripe_connect_onboarded,
+    stripe_charges_enabled,
+    stripe_payouts_enabled
+FROM users
+WHERE email = 'barber@example.com';
 "
 ```
 
@@ -1927,19 +2003,192 @@ WHERE u.stripe_account_id IS NULL;
 "
 ```
 
-### View Barbers WITH Stripe Connect
+### View Barbers WITH Stripe Connect (any saved acct_*)
 ```bash
 sudo -u postgres psql -d campuscuts -c "
-SELECT u.email, u.first_name, u.last_name, b.\"isActive\", u.stripe_account_id
+SELECT u.email, u.first_name, u.last_name, b.\"isActive\", u.stripe_account_id,
+       u.stripe_charges_enabled, u.stripe_payouts_enabled
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
 WHERE u.stripe_account_id IS NOT NULL;
 "
 ```
 
-### Check Specific Barber's Stripe Status
+### Barbers Ready to Receive Payouts
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT stripe_account_id FROM users WHERE email = 'barber@example.com';"
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.first_name, u.last_name, u.stripe_account_id
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.stripe_account_id IS NOT NULL
+  AND u.stripe_charges_enabled = true
+  AND u.stripe_payouts_enabled = true
+ORDER BY u.email;
+"
+```
+
+### Barbers with Saved Account but NOT Ready (incomplete or restricted)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.stripe_account_id,
+       u.stripe_charges_enabled, u.stripe_payouts_enabled
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.stripe_account_id IS NOT NULL
+  AND (u.stripe_charges_enabled = false OR u.stripe_payouts_enabled = false)
+ORDER BY u.email;
+"
+```
+
+### Find Suspected Stale Connect Accounts
+Accounts saved in Postgres but both capability flags false — common when onboarding failed, test/live keys changed, or the account was deleted in Stripe.
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.stripe_account_id,
+       u.stripe_charges_enabled, u.stripe_payouts_enabled,
+       u.stripe_connect_onboarded, u.\"updatedAt\"
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.stripe_account_id IS NOT NULL
+  AND u.stripe_charges_enabled = false
+  AND u.stripe_payouts_enabled = false
+ORDER BY u.\"updatedAt\" DESC;
+"
+```
+
+### Find Onboarded Flag Mismatch with Stripe Flags
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.stripe_account_id,
+       u.stripe_connect_onboarded,
+       u.stripe_charges_enabled, u.stripe_payouts_enabled
+FROM users u
+JOIN barbers b ON b.\"userId\" = u.id
+WHERE u.stripe_connect_onboarded = true
+  AND (u.stripe_charges_enabled = false OR u.stripe_payouts_enabled = false);
+"
+```
+
+### Lookup User by Stripe Account ID
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.id, u.email, u.first_name, u.last_name,
+       u.stripe_charges_enabled, u.stripe_payouts_enabled
+FROM users u
+WHERE u.stripe_account_id = 'acct_XXXXXXXXXXXXX';
+"
+```
+
+### Find Duplicate Stripe Account IDs (should be empty — column is UNIQUE)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT stripe_account_id, COUNT(*) AS user_count,
+       array_agg(email ORDER BY email) AS emails
+FROM users
+WHERE stripe_account_id IS NOT NULL
+GROUP BY stripe_account_id
+HAVING COUNT(*) > 1;
+"
+```
+
+### Count Barbers by Connect State
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    CASE
+        WHEN u.stripe_account_id IS NULL THEN 'no_account'
+        WHEN u.stripe_charges_enabled AND u.stripe_payouts_enabled THEN 'live_ready'
+        ELSE 'saved_but_not_ready'
+    END AS connect_state,
+    COUNT(*) AS barber_count
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+GROUP BY 1
+ORDER BY 1;
+"
+```
+
+### Clear Stale Stripe Connect Account (manual reset)
+Use when Stripe onboarding auth fails and the platform still holds an invalid `acct_*`. After this, the barber should use **Continue with Stripe** in the hub (creates a fresh live account).
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_account_id = NULL,
+    stripe_charges_enabled = false,
+    stripe_payouts_enabled = false
+WHERE email = 'barber@example.com'
+RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
+"
+```
+
+### Clear Stale Connect Account (by user UUID)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_account_id = NULL,
+    stripe_charges_enabled = false,
+    stripe_payouts_enabled = false
+WHERE id = 'USER_UUID_HERE'
+RETURNING id, email, stripe_account_id;
+"
+```
+
+### Manually Set Connect Capability Flags (after confirming in Stripe Dashboard)
+Only use when Stripe Dashboard shows charges/payouts enabled but Postgres is stale.
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_charges_enabled = true,
+    stripe_payouts_enabled = true,
+    stripe_connect_onboarded = true
+WHERE email = 'barber@example.com'
+RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
+"
+```
+
+### Assign Stripe Account ID Manually (rare — prefer in-app onboarding)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_account_id = 'acct_XXXXXXXXXXXXX'
+WHERE email = 'barber@example.com'
+RETURNING email, stripe_account_id;
+"
+```
+
+### Barber Connect + Recent Payment Activity
+See whether a barber with a saved `acct_*` has successful charges.
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    u.email AS barber_email,
+    u.stripe_account_id,
+    u.stripe_charges_enabled,
+    u.stripe_payouts_enabled,
+    COUNT(pt.id) FILTER (WHERE pt.status = 'succeeded') AS succeeded_payments,
+    COUNT(pt.id) FILTER (WHERE pt.status = 'failed') AS failed_payments,
+    MAX(pt.created_at) AS last_payment_at
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+LEFT JOIN payment_transactions pt ON pt.barber_id = b.id
+WHERE u.email = 'barber@example.com'
+GROUP BY u.email, u.stripe_account_id, u.stripe_charges_enabled, u.stripe_payouts_enabled;
+"
+```
+
+### Escrows Linked to Barber Stripe Account
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT e.id, e.booking_id, e.status, e.stripe_payment_intent_id,
+       e.stripe_transfer_id, u.email AS barber_email, u.stripe_account_id
+FROM escrows e
+JOIN bookings bk ON e.booking_id = bk.id
+JOIN barbers b ON bk.\"barberId\" = b.id
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.email = 'barber@example.com'
+ORDER BY e.created_at DESC
+LIMIT 20;
+"
 ```
 
 ---
@@ -2122,6 +2371,43 @@ ORDER BY total_earned DESC;
 sudo -u postgres psql -d campuscuts -c "\d payment_transactions"
 ```
 
+### Lookup Payment by Stripe PaymentIntent ID
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT pt.*, u_c.email AS consumer_email, u_b.email AS barber_email, u_b.stripe_account_id
+FROM payment_transactions pt
+LEFT JOIN users u_c ON pt.client_id = u_c.id
+LEFT JOIN barbers b ON pt.barber_id = b.id
+LEFT JOIN users u_b ON b.\"userId\" = u_b.id
+WHERE pt.stripe_payment_intent_id = 'pi_XXXXXXXXXXXXX';
+"
+```
+
+### Failed Payments with Barber Connect Context
+Useful when debugging "No such destination" or restricted Connect accounts.
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT pt.stripe_payment_intent_id, pt.status, pt.amount, pt.created_at,
+       u_b.email AS barber_email, u_b.stripe_account_id,
+       u_b.stripe_charges_enabled, u_b.stripe_payouts_enabled
+FROM payment_transactions pt
+JOIN barbers b ON pt.barber_id = b.id
+JOIN users u_b ON b.\"userId\" = u_b.id
+WHERE pt.status = 'failed'
+ORDER BY pt.created_at DESC
+LIMIT 25;
+"
+```
+
+### Payments Table (alternate audit trail) by PaymentIntent
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT id, booking_id, payment_intent_id, status, failure_reason, amount_cents, created_at
+FROM payments
+WHERE payment_intent_id = 'pi_XXXXXXXXXXXXX';
+"
+```
+
 ---
 
 ## ESCROWS (Stripe PaymentIntent Holds)
@@ -2226,6 +2512,9 @@ sudo -u postgres psql -d campuscuts -c "\d referrals"
 
 ## STRIPE EVENTS (Webhook Logs)
 
+> **`stripe_events`** — rich payment monitoring feed (amounts, booking emails, raw JSON).  
+> **`stripe_webhook_events`** — idempotency log (event processed or failed).
+
 ### View Recent Stripe Events
 ```bash
 sudo -u postgres psql -d campuscuts -c "
@@ -2244,6 +2533,65 @@ LIMIT 20;
 "
 ```
 
+### View Stripe Connect / Account Webhook Events
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT event_id, event_type, barber_email, status, timestamp
+FROM stripe_events
+WHERE event_type LIKE 'account.%'
+   OR event_type IN ('capability.updated', 'person.updated')
+ORDER BY timestamp DESC
+LIMIT 30;
+"
+```
+
+### View Stripe Events for One Barber (by email)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT event_id, event_type, payment_intent_id, amount_usd, status, timestamp
+FROM stripe_events
+WHERE barber_email = 'barber@example.com'
+ORDER BY timestamp DESC
+LIMIT 30;
+"
+```
+
+### View Stripe Events for One PaymentIntent
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT event_id, event_type, status, amount_usd, barber_email, student_email, timestamp
+FROM stripe_events
+WHERE payment_intent_id = 'pi_XXXXXXXXXXXXX'
+ORDER BY timestamp ASC;
+"
+```
+
+### View Failed Stripe Webhook Processing
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT event_id, event_type, processing_result, processed_at
+FROM stripe_webhook_events
+WHERE processing_result = 'failed'
+ORDER BY processed_at DESC
+LIMIT 30;
+"
+```
+
+### View Recent Stripe Webhook Events (idempotency table)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT event_id, event_type, processing_result, processed_at
+FROM stripe_webhook_events
+ORDER BY processed_at DESC
+LIMIT 30;
+"
+```
+
+### Describe Stripe Webhook Events Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d stripe_webhook_events"
+```
+
 ### View Stripe Events by Type
 ```bash
 # Payment succeeded events
@@ -2254,6 +2602,9 @@ sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_
 
 # Payout events
 sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type LIKE 'payout.%' ORDER BY timestamp DESC LIMIT 10;"
+
+# Connect account updated (onboarding progress)
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'account.updated' ORDER BY timestamp DESC LIMIT 10;"
 ```
 
 ### View Stripe Event Summary
