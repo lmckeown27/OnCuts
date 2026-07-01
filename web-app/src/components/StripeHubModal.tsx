@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -33,205 +34,177 @@ const PISMO_PLATFORMS_URL = 'https://pismoplatforms.com';
 /** Matches Stripe Dashboard “Actions required” for Express individual providers on PismoPlatforms. */
 const STRIPE_REQUIRED_ACTIONS = [
   {
+    id: 'dob',
     label: 'Date of birth',
     input:
       'Your legal date of birth exactly as it appears on your government ID (MM / DD / YYYY).',
     stripeWhere: 'Personal details → Date of birth',
+    navigation: [
+      'Select Open Stripe tab (or Continue with Stripe if you have not signed in yet).',
+      'In Stripe Express, open Personal details (or the section Stripe highlights as incomplete).',
+      'Find Date of birth and enter the date exactly as printed on your government ID.',
+      'Save or Continue until Stripe accepts the field.',
+    ],
   },
   {
+    id: 'address',
     label: 'Home address',
     input:
-      'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements — not a P.O. box unless Stripe allows it for your situation.',
+      'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements.',
     stripeWhere: 'Personal details → Address',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Personal details.',
+      'Enter your residential street address, city, state, and ZIP — match your ID or bank records.',
+      'Save and continue.',
+    ],
   },
   {
+    id: 'phone',
     label: 'Phone number',
     input:
-      'A US mobile number you can receive SMS on. Use the same number you use for PismoProvider if possible — Stripe may send verification codes.',
+      'A US mobile number you can receive SMS on. Use the same number you use for PismoProvider if possible.',
     stripeWhere: 'Personal details → Phone',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Personal details → Phone.',
+      'Enter your US mobile number and complete any SMS verification Stripe sends.',
+    ],
   },
   {
+    id: 'ssn',
     label: 'Last four digits of SSN',
     input:
-      'The last 4 digits of your Social Security number as the account representative. If Stripe asks for your full SSN, enter it only in Stripe — PismoPlatforms never collects this.',
+      'The last 4 digits of your Social Security number as the account representative. Enter full SSN only inside Stripe if asked.',
     stripeWhere: 'Personal details → Identity / SSN',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Personal details → Identity (or Verify your identity).',
+      'Enter the last four digits of your SSN when prompted.',
+      'Upload ID photos if Stripe requests them.',
+    ],
   },
   {
+    id: 'industry',
     label: 'Industry',
     input: 'Enter Personal care services.',
     stripeWhere: 'Business details → Industry',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Business details.',
+      'Open Industry and type or select Personal care services.',
+      'Save and continue.',
+    ],
   },
   {
+    id: 'website',
     label: 'Business website',
     input: `Enter ${PISMO_PLATFORMS_URL}.`,
     stripeWhere: 'Business details → Website',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Business details → Website (or Business profile URL).',
+      `Enter ${PISMO_PLATFORMS_URL} exactly.`,
+      'Save and continue.',
+    ],
   },
   {
+    id: 'tos',
     label: 'Accept terms of service',
     input:
-      'Read and accept the Stripe Connected Account Agreement when Stripe presents it. You must accept before payments and payouts can be enabled.',
+      'Read and accept the Stripe Connected Account Agreement. Payments and payouts stay blocked until you accept.',
     stripeWhere: 'Review → Terms of service',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Scroll to the Review step or any banner about required actions.',
+      'Read the Stripe Connected Account Agreement and tap Accept (or Agree and submit).',
+    ],
   },
   {
+    id: 'bank',
     label: 'Bank account (external account)',
     input:
       'Your routing number and account number for the checking or savings account where you want payouts deposited.',
     stripeWhere: 'Payout details → Bank account',
+    navigation: [
+      'Open Stripe using Open Stripe tab below.',
+      'Go to Payout details, Bank account, or Add external account.',
+      'Enter routing number and account number; choose Checking or Savings.',
+      'Confirm the account name matches your ID, then save.',
+    ],
   },
 ] as const;
 
-function StripeRequirementsList({ compact = false }: { compact?: boolean }) {
+type StripeRequirementId = (typeof STRIPE_REQUIRED_ACTIONS)[number]['id'];
+
+function StripeRequirementsDrawerPanel({
+  expandedId,
+  onToggle,
+}: {
+  expandedId: StripeRequirementId | null;
+  onToggle: (id: StripeRequirementId) => void;
+}) {
   return (
-    <ul className={`space-y-3 ${compact ? 'text-sm' : 'text-base'}`}>
-      {STRIPE_REQUIRED_ACTIONS.map((item) => (
-        <li key={item.label} className="text-gray-600 leading-relaxed">
-          <strong className="text-gray-900">{item.label}</strong>
-          {!compact && (
-            <>
-              <span className="block mt-0.5">{item.input}</span>
-              <span className="block mt-1 text-sm text-gray-500">
-                In Stripe: {item.stripeWhere}
-              </span>
-            </>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Stripe requirements</p>
+        <p className="text-sm text-gray-600 mt-1">
+          Tap an item you&apos;re stuck on for navigation help. Work in any order — finish all eight in Stripe.
+        </p>
+      </div>
+      <ul className="space-y-2">
+        {STRIPE_REQUIRED_ACTIONS.map((item) => {
+          const isExpanded = expandedId === item.id;
+          return (
+            <li key={item.id} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                aria-expanded={isExpanded}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-inset"
+              >
+                <span className="text-sm font-medium text-gray-900 leading-snug">{item.label}</span>
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
+              {isExpanded && (
+                <div className="px-3 pb-3 pt-0 space-y-3 border-t border-gray-100">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">What to enter</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Where in Stripe</p>
+                    <p className="text-sm text-gray-600">{item.stripeWhere}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">How to navigate</p>
+                    <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside leading-relaxed">
+                      {item.navigation.map((step) => (
+                        <li key={step}>{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
-const STRIPE_ONBOARDING_STEPS = [
-  {
-    short: 'Sign in',
-    title: 'Sign in to Express',
-    instructions: (
-      <div className="space-y-4 text-base text-gray-600">
-        <p>
-          When you&apos;re ready to begin, select <strong>Continue with Stripe</strong> below to open Stripe in a new
-          tab.
-        </p>
-        <p>
-          Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
-          <strong>Stripe Express</strong>, which you can read more about{' '}
-          <a
-            href={STRIPE_EXPRESS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={LEARN_MORE_LINK_CLASS}
-          >
-            here
-          </a>
-          . It must match. Stripe uses this to connect your Express account to your provider profile and finish
-          onboarding.
-        </p>
-        <p>
-          Stripe will show a verification challenge. Complete it to confirm you&apos;re not a robot and continue into
-          Stripe Express.
-        </p>
-      </div>
-    ),
-  },
-  {
-    short: 'Identity',
-    title: 'Identity & personal details',
-    instructions: (
-      <div className="space-y-4">
-        <p className="text-base text-gray-600">
-          In Stripe, complete everything under <strong>Personal details</strong>. All fields below must match your
-          government ID.
-        </p>
-        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
-          <li>
-            <strong>Date of birth</strong> — legal DOB (MM / DD / YYYY) exactly as on your ID.
-          </li>
-          <li>
-            <strong>Home address</strong> — street, city, state, and ZIP (residential address, not a business mail drop
-            unless Stripe accepts it).
-          </li>
-          <li>
-            <strong>Phone number</strong> — US mobile you can verify by SMS; match your PismoProvider number when
-            possible.
-          </li>
-          <li>
-            <strong>Last four digits of SSN</strong> — for you as the account representative. Enter only in Stripe; never
-            share this with clients or in PismoPlatforms chat.
-          </li>
-          <li>
-            Upload a photo of your ID if Stripe requests it. Use a clear, well-lit image with all corners visible.
-          </li>
-        </ol>
-      </div>
-    ),
-  },
-  {
-    short: 'Business',
-    title: 'Business details & terms',
-    instructions: (
-      <div className="space-y-4">
-        <p className="text-base text-gray-600">
-          In Stripe, open <strong>Business details</strong> and the final <strong>Review</strong> step.
-        </p>
-        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
-          <li>
-            <strong>Industry</strong> — enter <strong>Personal care services</strong>.
-          </li>
-          <li>
-            <strong>Business website</strong> — enter{' '}
-            <a
-              href={PISMO_PLATFORMS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={LEARN_MORE_LINK_CLASS}
-            >
-              {PISMO_PLATFORMS_URL}
-            </a>
-            .
-          </li>
-          <li>
-            Short business description if asked — for example, &quot;Haircuts and grooming by appointment.&quot;
-          </li>
-          <li>
-            <strong>Accept terms of service</strong> — read and accept the Stripe Connected Account Agreement. Payments
-            and payouts stay blocked until you accept.
-          </li>
-        </ol>
-      </div>
-    ),
-  },
-  {
-    short: 'Bank',
-    title: 'Bank account & payouts',
-    instructions: (
-      <div className="space-y-4">
-        <p className="text-base text-gray-600">
-          In Stripe, add an <strong>external account</strong> (bank account) for payouts.
-        </p>
-        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
-          <li>
-            Enter your bank <strong>routing number</strong> and <strong>account number</strong>.
-          </li>
-          <li>Select <strong>Checking</strong> or <strong>Savings</strong> to match your account type.</li>
-          <li>Confirm the account belongs to you (same name as on your ID).</li>
-          <li>Save the details. Stripe may verify with small test deposits before enabling payouts.</li>
-        </ol>
-        <p className="text-sm text-gray-500">
-          PismoPlatforms never sees your bank login or full account credentials. Only Stripe stores this information.
-        </p>
-      </div>
-    ),
-  },
-] as const;
-
-const STRIPE_STEP_COUNT = STRIPE_ONBOARDING_STEPS.length;
-/** Intro + Stripe onboarding steps + verify. */
-const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 2;
 const GUIDE_INTRO_STEP = 0;
-const GUIDE_VERIFY_STEP = GUIDE_STEP_COUNT - 1;
-const GUIDE_FIRST_STRIPE_STEP = 1;
+const GUIDE_SETUP_STEP = 1;
+const GUIDE_VERIFY_STEP = 2;
+const GUIDE_STEP_COUNT = 3;
 
 const GUIDE_PROGRESS_STEPS = [
   { short: 'Intro', title: 'How payments work' },
-  ...STRIPE_ONBOARDING_STEPS.map((step) => ({ short: step.short, title: step.title })),
+  { short: 'Setup', title: 'Complete Stripe requirements' },
   { short: 'Review', title: 'Review your setup' },
 ] as const;
 
@@ -240,13 +213,6 @@ function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   const errBody = (err as { response?: { data?: { error?: { message?: string; code?: string } } } }).response
     ?.data?.error;
   return { message: errBody?.message, code: errBody?.code };
-}
-
-function stripeOnboardingIndex(guideStep: number): number | null {
-  if (guideStep < GUIDE_FIRST_STRIPE_STEP || guideStep > GUIDE_FIRST_STRIPE_STEP + STRIPE_STEP_COUNT - 1) {
-    return null;
-  }
-  return guideStep - GUIDE_FIRST_STRIPE_STEP;
 }
 
 export default function StripeHubModal({
@@ -261,6 +227,8 @@ export default function StripeHubModal({
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
+  const [requirementsDrawerOpen, setRequirementsDrawerOpen] = useState(false);
+  const [expandedRequirementId, setExpandedRequirementId] = useState<StripeRequirementId | null>(null);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
   const wasOpenRef = useRef(false);
@@ -302,6 +270,13 @@ export default function StripeHubModal({
       return () => clearTimeout(t);
     }
     wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setRequirementsDrawerOpen(false);
+      setExpandedRequirementId(null);
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -423,6 +398,11 @@ export default function StripeHubModal({
   const needsSetup = !fullyConnected;
   const canDismiss = !blocking || fullyConnected;
   const showWizard = needsSetup || blocking;
+  const showRequirementsDrawer = showWizard;
+
+  const toggleRequirement = (id: StripeRequirementId) => {
+    setExpandedRequirementId((current) => (current === id ? null : id));
+  };
 
   const handleBackdropClick = () => {
     if (canDismiss) onClose();
@@ -484,31 +464,54 @@ export default function StripeHubModal({
               <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during
               setup.
             </p>
+            <p className="text-base text-gray-600 leading-relaxed">
+              Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and
+              more). Open the <strong>Requirements</strong> panel on the left anytime — tap any item for navigation help.
+              You can complete them in any order.
+            </p>
             <p className="text-base text-gray-600 leading-relaxed whitespace-nowrap">
               Select <strong>Next</strong> when you&apos;re ready to set up payments with{' '}
               <strong>PismoPlatforms</strong>.
             </p>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Stripe will require these 8 items
+          </div>
+        );
+      case GUIDE_SETUP_STEP:
+        return (
+          <div className="space-y-4">
+            {renderConnectAlerts()}
+            <p className="text-base text-gray-600 leading-relaxed">
+              Use the <strong>Requirements</strong> panel on the left and tap whichever field Stripe is blocking you
+              on. Each item expands with where to go in Stripe and what to enter — you do not need to follow a fixed
+              order.
+            </p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 text-base text-gray-600">
+              <p>
+                <strong>First time?</strong> Select <strong>Continue with Stripe</strong> below and sign in with the
+                same email you use for <strong>PismoProvider</strong> (
+                <a
+                  href={STRIPE_EXPRESS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={LEARN_MORE_LINK_CLASS}
+                >
+                  Stripe Express
+                </a>
+                ).
               </p>
-              <p className="text-sm text-gray-600">
-                Enter each value in the Stripe tab — not here. Until all are complete, payments and payouts stay
-                restricted.
+              <p>
+                <strong>Already in Stripe?</strong> Select <strong>Open Stripe tab</strong> and complete any past-due
+                items. Return here and tap <strong>Check my progress</strong> on the Review step when finished.
               </p>
-              <StripeRequirementsList compact />
             </div>
           </div>
         );
       case GUIDE_VERIFY_STEP:
         return (
           <>
-            <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 space-y-3 mb-4">
-              <p className="text-sm font-semibold text-amber-950">
-                Complete all Stripe requirements before checking progress
-              </p>
-              <StripeRequirementsList />
-            </div>
+            <p className="text-base text-gray-600 mb-4">
+              Use the <strong>Requirements</strong> panel if anything is still past due in Stripe. When all eight are
+              done, tap <strong>Check my progress</strong> below.
+            </p>
             {stripeTabOpened ? (
               <p className="text-base text-gray-600">
                 Return here after working in Stripe. We automatically refresh when you switch back to this tab, or
@@ -521,8 +524,8 @@ export default function StripeHubModal({
             )}
             {!fullyConnected && (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-                Still restricted in Stripe? Open Stripe again and complete every required field above, then check
-                progress here. Use <strong>Back</strong> to reread earlier steps if you need help.
+                Still restricted in Stripe? Open the Requirements panel, finish any past-due fields in Stripe, then
+                check progress here.
               </p>
             )}
             {fullyConnected && (
@@ -535,22 +538,8 @@ export default function StripeHubModal({
             )}
           </>
         );
-      default: {
-        const stripeIndex = stripeOnboardingIndex(guideStep);
-        if (stripeIndex !== null) {
-          const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
-          if (stripeIndex === 0) {
-            return (
-              <>
-                {renderConnectAlerts()}
-                {stripeStep.instructions}
-              </>
-            );
-          }
-          return stripeStep.instructions;
-        }
+      default:
         return null;
-      }
     }
   };
 
@@ -580,7 +569,7 @@ export default function StripeHubModal({
           </Button>
         ) : null}
       </div>
-      {guideStep === GUIDE_FIRST_STRIPE_STEP ? (
+      {guideStep === GUIDE_SETUP_STEP && (!hasAccount || needsReconnect) ? (
         <Button
           type="button"
           variant="primary"
@@ -591,7 +580,8 @@ export default function StripeHubModal({
         >
           {busy === 'onboarding' ? 'Opening Stripe…' : 'Continue with Stripe'}
         </Button>
-      ) : guideStep > GUIDE_INTRO_STEP ? (
+      ) : null}
+      {guideStep >= GUIDE_SETUP_STEP ? (
         <>
           <Button
             type="button"
@@ -603,10 +593,10 @@ export default function StripeHubModal({
           >
             {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
           </Button>
-          {guideStep === GUIDE_VERIFY_STEP && (
+          {guideStep >= GUIDE_SETUP_STEP && (
             <Button
               type="button"
-              variant="primary"
+              variant="secondary"
               size="lg"
               className="w-full"
               onClick={() => void checkProgress()}
@@ -643,13 +633,55 @@ export default function StripeHubModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {showRequirementsDrawer && (
+          <>
+            {requirementsDrawerOpen && (
+              <button
+                type="button"
+                className="absolute inset-0 z-[15] bg-black/20"
+                aria-label="Close Stripe requirements panel"
+                onClick={() => setRequirementsDrawerOpen(false)}
+              />
+            )}
+            <div
+              className={`absolute top-0 bottom-0 left-0 z-20 flex items-stretch transition-transform duration-200 ease-out ${
+                requirementsDrawerOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
+              }`}
+            >
+              <div className="w-96 max-w-[90vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
+                <div className="min-h-full flex flex-col justify-center p-5">
+                  <StripeRequirementsDrawerPanel
+                    expandedId={expandedRequirementId}
+                    onToggle={toggleRequirement}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRequirementsDrawerOpen((open) => !open)}
+                aria-expanded={requirementsDrawerOpen}
+                aria-label={requirementsDrawerOpen ? 'Hide Stripe requirements' : 'Show Stripe requirements'}
+                className="self-start mt-14 flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+              >
+                {requirementsDrawerOpen ? (
+                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                )}
+                <span className="text-[11px] font-semibold text-gray-700 leading-tight text-center">Requirements</span>
+              </button>
+            </div>
+          </>
+        )}
         <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
-          <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
+          <div
+            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}${showRequirementsDrawer ? ' pl-14' : ''}`}
+          >
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
-                Keep this guide and <strong className="text-white/90">Stripe</strong> open side by side. Jump back and
-                forth if you get stuck.
+                Open <strong className="text-white/90">Requirements</strong> for help on any field. Keep Stripe and this
+                guide side by side.
               </p>
             )}
             {showWizard && (
