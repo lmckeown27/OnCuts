@@ -579,8 +579,8 @@ export default function StripeHubModal({
                 checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
               }`}
             >
-              <div className="w-80 max-w-[85vw] overflow-y-auto bg-white border-r border-gray-200 shadow-xl p-5">
-                {renderChecklist(true)}
+              <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
+                <div className="min-h-full flex flex-col justify-center p-5">{renderChecklist(true)}</div>
               </div>
               <button
                 type="button"
