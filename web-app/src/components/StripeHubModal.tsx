@@ -29,7 +29,6 @@ const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
 const STRIPE_EXPRESS_URL = 'https://support.stripe.com/express';
-const STRIPE_CONNECT_URL = 'https://stripe.com/connect';
 
 const STRIPE_ONBOARDING_STEPS = [
   {
@@ -42,6 +41,7 @@ const STRIPE_ONBOARDING_STEPS = [
           tab.
         </p>
         <p>
+          Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
           <strong>Stripe Express</strong>, which you can read more about{' '}
           <a
             href={STRIPE_EXPRESS_URL}
@@ -51,25 +51,8 @@ const STRIPE_ONBOARDING_STEPS = [
           >
             here
           </a>
-          , is Stripe&apos;s dashboard for service providers on platforms like <strong>PismoProvider</strong>.
-        </p>
-        <p>
-          <strong>Stripe Connect</strong>, which you can read more about{' '}
-          <a
-            href={STRIPE_CONNECT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={LEARN_MORE_LINK_CLASS}
-          >
-            here
-          </a>
-          , links your payout account to the platform so you can complete payment setup in one place while PismoProvider
-          routes customers to you.
-        </p>
-        <p>
-          Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
-          <strong>Stripe Express</strong>. It must match. Stripe uses this to connect your Express account to your
-          provider profile and finish onboarding.
+          . It must match. Stripe uses this to connect your Express account to your provider profile and finish
+          onboarding.
         </p>
       </div>
     ),
