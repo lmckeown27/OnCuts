@@ -2228,6 +2228,97 @@ http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
 [ "$http" = "200" ] && echo "t" || echo "f"
 ```
 
+#### Diagnose test Connect account on live server (example: `liam.mckeown38415@gmail.com`)
+
+Stripe Express auth fails when Postgres still holds an `acct_*` from **test** onboarding or an **old platform** while EC2 runs **live** keys. Postgres shows the saved id and flags; use the steps below in order.
+
+**Step 1 — Postgres: saved account and capability flags**
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+    u.email,
+    u.stripe_account_id,
+    u.stripe_charges_enabled,
+    u.stripe_payouts_enabled,
+    CASE
+        WHEN u.stripe_account_id IS NULL THEN 'no_account'
+        WHEN u.stripe_charges_enabled AND u.stripe_payouts_enabled THEN 'live_ready'
+        ELSE 'incomplete_or_stale'
+    END AS connect_state
+FROM users u
+WHERE u.email = 'liam.mckeown38415@gmail.com';
+"
+```
+Typical auth-failure pattern: `stripe_account_id` is set, both flags are **`f`**, `connect_state` = **`incomplete_or_stale`**.
+
+**Step 2 — Postgres: barber row + saved `acct_*` (same user)**
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.stripe_account_id, b.\"isActive\"
+FROM users u
+LEFT JOIN barbers b ON b.\"userId\" = u.id
+WHERE u.email ILIKE 'liam.mckeown%';
+"
+```
+
+**Step 3 — Confirm valid for current live keys (`t` / `f`)**
+Uses the `acct_*` from Step 1. **`f`** = not on live keys (test account, wrong platform, or deleted) → explains Stripe auth errors.
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
+EMAIL='liam.mckeown38415@gmail.com'
+
+ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+  "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
+if [ -z "$ACCT" ]; then echo "${EMAIL}|f (no stripe_account_id)"; exit 0; fi
+http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}")
+if [ "$http" = "200" ]; then echo "${EMAIL}|t"; else echo "${EMAIL}|f"; fi
+```
+
+**Step 4 — If Step 3 is `f`, check test vs live (which key owns the saved `acct_*`)**
+Postgres stores the id only; this tells you if it is a **test** Connect account.
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+  "SELECT stripe_account_id FROM users WHERE email = 'liam.mckeown38415@gmail.com' LIMIT 1;")
+
+echo "acct: ${ACCT}"
+echo -n "live key: "
+curl -s -o /dev/null -w "%{http_code}\n" -u "${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}"
+echo -n "test key: "
+curl -s -o /dev/null -w "%{http_code}\n" -u "${STRIPE_SECRET_KEY_TEST:-${STRIPE_TEST_SECRET_KEY:-}}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}"
+```
+- **live = 404, test = 200** → test Connect account on a live server (clear DB + re-onboard on live).  
+- **both 404** → wrong platform or deleted in Stripe (clear DB + re-onboard).
+
+**Step 5 — Postgres: clear stale account (then re-onboard in app)**
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_account_id = NULL,
+    stripe_charges_enabled = false,
+    stripe_payouts_enabled = false
+WHERE email = 'liam.mckeown38415@gmail.com'
+RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
+"
+```
+Provider should use **Continue with Stripe** on the sign-in step (not **Open Stripe tab** alone).
+
+**Step 6 — Postgres: confirm cleared**
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
+FROM users
+WHERE email = 'liam.mckeown38415@gmail.com';
+"
+```
+Expect `stripe_account_id` **NULL**, both flags **`f`**, until live onboarding completes.
+
 #### Compare test vs live keys (mode mismatch)
 If unsure whether an `acct_*` is test or live, try both keys (only if you have both configured):
 ```bash
