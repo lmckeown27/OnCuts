@@ -29,6 +29,77 @@ const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
 const STRIPE_EXPRESS_URL = 'https://support.stripe.com/express';
+const PISMO_PLATFORMS_URL = 'https://pismoplatforms.com';
+
+/** Matches Stripe Dashboard “Actions required” for Express individual providers on PismoPlatforms. */
+const STRIPE_REQUIRED_ACTIONS = [
+  {
+    label: 'Date of birth',
+    input:
+      'Your legal date of birth exactly as it appears on your government ID (MM / DD / YYYY).',
+    stripeWhere: 'Personal details → Date of birth',
+  },
+  {
+    label: 'Home address',
+    input:
+      'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements — not a P.O. box unless Stripe allows it for your situation.',
+    stripeWhere: 'Personal details → Address',
+  },
+  {
+    label: 'Phone number',
+    input:
+      'A US mobile number you can receive SMS on. Use the same number you use for PismoProvider if possible — Stripe may send verification codes.',
+    stripeWhere: 'Personal details → Phone',
+  },
+  {
+    label: 'Last four digits of SSN',
+    input:
+      'The last 4 digits of your Social Security number as the account representative. If Stripe asks for your full SSN, enter it only in Stripe — PismoPlatforms never collects this.',
+    stripeWhere: 'Personal details → Identity / SSN',
+  },
+  {
+    label: 'Industry',
+    input: 'Enter Personal care services.',
+    stripeWhere: 'Business details → Industry',
+  },
+  {
+    label: 'Business website',
+    input: `Enter ${PISMO_PLATFORMS_URL}.`,
+    stripeWhere: 'Business details → Website',
+  },
+  {
+    label: 'Accept terms of service',
+    input:
+      'Read and accept the Stripe Connected Account Agreement when Stripe presents it. You must accept before payments and payouts can be enabled.',
+    stripeWhere: 'Review → Terms of service',
+  },
+  {
+    label: 'Bank account (external account)',
+    input:
+      'Your routing number and account number for the checking or savings account where you want payouts deposited.',
+    stripeWhere: 'Payout details → Bank account',
+  },
+] as const;
+
+function StripeRequirementsList({ compact = false }: { compact?: boolean }) {
+  return (
+    <ul className={`space-y-3 ${compact ? 'text-sm' : 'text-base'}`}>
+      {STRIPE_REQUIRED_ACTIONS.map((item) => (
+        <li key={item.label} className="text-gray-600 leading-relaxed">
+          <strong className="text-gray-900">{item.label}</strong>
+          {!compact && (
+            <>
+              <span className="block mt-0.5">{item.input}</span>
+              <span className="block mt-1 text-sm text-gray-500">
+                In Stripe: {item.stripeWhere}
+              </span>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 const STRIPE_ONBOARDING_STEPS = [
   {
@@ -63,73 +134,91 @@ const STRIPE_ONBOARDING_STEPS = [
   },
   {
     short: 'Identity',
-    title: 'Identity & business details',
+    title: 'Identity & personal details',
     instructions: (
-      <>
-        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
+      <div className="space-y-4">
+        <p className="text-base text-gray-600">
+          In Stripe, complete everything under <strong>Personal details</strong>. All fields below must match your
+          government ID.
+        </p>
+        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
           <li>
-            Enter your <strong>legal name</strong> and <strong>date of birth</strong> exactly as they appear on your
-            government ID.
+            <strong>Date of birth</strong> — legal DOB (MM / DD / YYYY) exactly as on your ID.
           </li>
           <li>
-            Provide the <strong>last four digits of your SSN</strong> (or ITIN if applicable) when asked.
+            <strong>Home address</strong> — street, city, state, and ZIP (residential address, not a business mail drop
+            unless Stripe accepts it).
           </li>
           <li>
-            Choose <strong>Individual</strong> or sole proprietor unless you operate as a registered company.
+            <strong>Phone number</strong> — US mobile you can verify by SMS; match your PismoProvider number when
+            possible.
           </li>
           <li>
-            Add the <strong>business name</strong> customers know you by, plus your <strong>address</strong> and phone
-            number.
+            <strong>Last four digits of SSN</strong> — for you as the account representative. Enter only in Stripe; never
+            share this with clients or in PismoPlatforms chat.
           </li>
           <li>
             Upload a photo of your ID if Stripe requests it. Use a clear, well-lit image with all corners visible.
           </li>
-          <li>Save or continue until Stripe accepts this section, then come back here and tap <strong>Next</strong>.</li>
         </ol>
-      </>
+      </div>
     ),
   },
   {
-    short: 'Payments',
-    title: 'Accept card payments',
+    short: 'Business',
+    title: 'Business details & terms',
     instructions: (
-      <>
-        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
+      <div className="space-y-4">
+        <p className="text-base text-gray-600">
+          In Stripe, open <strong>Business details</strong> and the final <strong>Review</strong> step.
+        </p>
+        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
           <li>
-            Pick a <strong>business category</strong> that matches your services (for example, personal care or
-            beauty services).
+            <strong>Industry</strong> — enter <strong>Personal care services</strong>.
           </li>
           <li>
-            Write a short description of what you sell (for example, &quot;Haircuts and grooming by appointment&quot;).
+            <strong>Business website</strong> — enter{' '}
+            <a
+              href={PISMO_PLATFORMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={LEARN_MORE_LINK_CLASS}
+            >
+              {PISMO_PLATFORMS_URL}
+            </a>
+            .
           </li>
           <li>
-            If Stripe asks for a website, enter your <strong>PismoPlatforms profile URL</strong> or business site.
+            Short business description if asked — for example, &quot;Haircuts and grooming by appointment.&quot;
           </li>
-          <li>Complete every field marked required, then submit so Stripe can enable <strong>card payments</strong>.</li>
-          <li>Wait for Stripe to accept this section (it can take a minute), then tap <strong>Next</strong> here.</li>
+          <li>
+            <strong>Accept terms of service</strong> — read and accept the Stripe Connected Account Agreement. Payments
+            and payouts stay blocked until you accept.
+          </li>
         </ol>
-      </>
+      </div>
     ),
   },
   {
     short: 'Bank',
     title: 'Bank account & payouts',
     instructions: (
-      <>
-        <ol className="text-base text-gray-600 space-y-2 list-decimal list-inside">
-          <li>
-            Open the bank or payout section and enter your <strong>routing number</strong> and{' '}
-            <strong>account number</strong>.
-          </li>
-          <li>Select <strong>Checking</strong> or <strong>Savings</strong> to match your bank account type.</li>
-          <li>Choose how often you want payouts (daily, weekly, etc.). You can change this later in Stripe.</li>
-          <li>Save the details. Stripe may verify the account with small test deposits.</li>
-          <li>When finished, return here and tap <strong>Next</strong>, then <strong>Check my progress</strong>.</li>
-        </ol>
-        <p className="text-sm text-gray-500 mt-3">
-          PismoPlatforms never sees your bank login. Only Stripe stores this information.
+      <div className="space-y-4">
+        <p className="text-base text-gray-600">
+          In Stripe, add an <strong>external account</strong> (bank account) for payouts.
         </p>
-      </>
+        <ol className="text-base text-gray-600 space-y-3 list-decimal list-inside">
+          <li>
+            Enter your bank <strong>routing number</strong> and <strong>account number</strong>.
+          </li>
+          <li>Select <strong>Checking</strong> or <strong>Savings</strong> to match your account type.</li>
+          <li>Confirm the account belongs to you (same name as on your ID).</li>
+          <li>Save the details. Stripe may verify with small test deposits before enabling payouts.</li>
+        </ol>
+        <p className="text-sm text-gray-500">
+          PismoPlatforms never sees your bank login or full account credentials. Only Stripe stores this information.
+        </p>
+      </div>
     ),
   },
 ] as const;
@@ -373,12 +462,20 @@ export default function StripeHubModal({
   };
 
   const renderChecklist = (stacked = false) => (
-    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-      <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
-      <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} stacked={stacked} />
-      <StatusRow label="Identity & business details" done={detailsSubmitted} stacked={stacked} />
-      <StatusRow label="Accept card payments" done={chargesEnabled} stacked={stacked} />
-      <StatusRow label="Bank account & payouts" done={payoutsEnabled} stacked={stacked} />
+    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+      <div className="space-y-2">
+        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
+        <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} stacked={stacked} />
+        <StatusRow label="Identity & business details" done={detailsSubmitted} stacked={stacked} />
+        <StatusRow label="Accept card payments" done={chargesEnabled} stacked={stacked} />
+        <StatusRow label="Bank account & payouts" done={payoutsEnabled} stacked={stacked} />
+      </div>
+      <div className="pt-3 border-t border-gray-200 space-y-2">
+        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          Stripe required fields
+        </p>
+        <StripeRequirementsList compact />
+      </div>
     </div>
   );
 
@@ -442,11 +539,27 @@ export default function StripeHubModal({
               Select <strong>Next</strong> when you&apos;re ready to set up payments with{' '}
               <strong>PismoPlatforms</strong>.
             </p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Stripe will require these 8 items
+              </p>
+              <p className="text-sm text-gray-600">
+                Enter each value in the Stripe tab — not here. Until all are complete, payments and payouts stay
+                restricted.
+              </p>
+              <StripeRequirementsList compact />
+            </div>
           </div>
         );
       case GUIDE_VERIFY_STEP:
         return (
           <>
+            <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 space-y-3 mb-4">
+              <p className="text-sm font-semibold text-amber-950">
+                Complete all Stripe requirements before checking progress
+              </p>
+              <StripeRequirementsList />
+            </div>
             {stripeTabOpened ? (
               <p className="text-base text-gray-600">
                 Return here after working in Stripe. We automatically refresh when you switch back to this tab, or
@@ -597,7 +710,7 @@ export default function StripeHubModal({
                 checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
               }`}
             >
-              <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
+              <div className="w-96 max-w-[90vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
                 <div className="min-h-full flex flex-col justify-center p-5">{renderChecklist(true)}</div>
               </div>
               <button
