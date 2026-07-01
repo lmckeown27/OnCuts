@@ -197,7 +197,7 @@ function StripeRequirementsDrawerPanel({
   );
 }
 
-const CHECKLIST_TOGGLE_TOP_CLASS = 'self-start mt-[8.5rem]';
+const CHECKLIST_TOGGLE_FALLBACK_TOP_PX = 112;
 
 function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   if (!err || typeof err !== 'object' || !('response' in err)) return {};
@@ -222,6 +222,10 @@ export default function StripeHubModal({
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
   const wasOpenRef = useRef(false);
+  const modalPanelRef = useRef<HTMLDivElement>(null);
+  const welcomeRowRef = useRef<HTMLDivElement>(null);
+  const checklistToggleRef = useRef<HTMLButtonElement>(null);
+  const [checklistToggleTopPx, setChecklistToggleTopPx] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -268,6 +272,45 @@ export default function StripeHubModal({
       setExpandedRequirementId(null);
     }
   }, [isOpen]);
+
+  const updateChecklistTogglePosition = useCallback(() => {
+    const modal = modalPanelRef.current;
+    const welcomeRow = welcomeRowRef.current;
+    const toggle = checklistToggleRef.current;
+    if (!modal || !welcomeRow) return;
+
+    const modalTop = modal.getBoundingClientRect().top;
+    const welcomeRowRect = welcomeRow.getBoundingClientRect();
+    const toggleHeight = toggle?.getBoundingClientRect().height ?? 56;
+    const top =
+      welcomeRowRect.top - modalTop + Math.max(0, (welcomeRowRect.height - toggleHeight) / 2);
+    setChecklistToggleTopPx(Math.round(top));
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !isVisible) {
+      setChecklistToggleTopPx(null);
+      return;
+    }
+
+    const scheduleUpdate = () => {
+      requestAnimationFrame(updateChecklistTogglePosition);
+    };
+
+    scheduleUpdate();
+    window.addEventListener('resize', scheduleUpdate);
+
+    const observer = new ResizeObserver(scheduleUpdate);
+    const modal = modalPanelRef.current;
+    const welcomeRow = welcomeRowRef.current;
+    if (modal) observer.observe(modal);
+    if (welcomeRow) observer.observe(welcomeRow);
+
+    return () => {
+      window.removeEventListener('resize', scheduleUpdate);
+      observer.disconnect();
+    };
+  }, [isOpen, isVisible, isAnimating, connectStatus, updateChecklistTogglePosition]);
 
   const stripeTabOpenedRef = useRef(false);
   stripeTabOpenedRef.current = stripeTabOpened;
@@ -401,11 +444,14 @@ export default function StripeHubModal({
     </>
   );
 
-  const checklistToggleTopClass = CHECKLIST_TOGGLE_TOP_CLASS;
-
   const renderOnboardingContent = () => (
     <div className="space-y-5">
-      <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
+      <div
+        ref={welcomeRowRef}
+        className="min-h-[3.75rem] flex items-center justify-center"
+      >
+        <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
+      </div>
       <p className="text-base text-gray-600 leading-relaxed">
         PismoPlatforms relies on a third-party payment processing system. This third-party is{' '}
         <strong>Stripe</strong>, which you can read more about{' '}
@@ -482,6 +528,7 @@ export default function StripeHubModal({
       onClick={handleBackdropClick}
     >
       <div
+        ref={modalPanelRef}
         className={`relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
           isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
@@ -511,11 +558,13 @@ export default function StripeHubModal({
                 </div>
               </div>
               <button
+                ref={checklistToggleRef}
                 type="button"
                 onClick={() => setRequirementsDrawerOpen((open) => !open)}
                 aria-expanded={requirementsDrawerOpen}
                 aria-label={requirementsDrawerOpen ? 'Hide Stripe checklist' : 'Show Stripe checklist'}
-                className={`${checklistToggleTopClass} flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2`}
+                className="self-start flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                style={{ marginTop: checklistToggleTopPx ?? CHECKLIST_TOGGLE_FALLBACK_TOP_PX }}
               >
                 {requirementsDrawerOpen ? (
                   <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -550,7 +599,9 @@ export default function StripeHubModal({
           )}
         </div>
 
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
+        <div
+          className={`p-6 sm:p-8 overflow-y-auto flex-1 space-y-6${showRequirementsDrawer ? ' pl-14 sm:pl-16' : ''}`}
+        >
           {showWizard ? (
             <>
               {renderOnboardingContent()}
