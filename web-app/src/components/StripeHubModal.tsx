@@ -3,7 +3,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -243,27 +242,6 @@ function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   return { message: errBody?.message, code: errBody?.code };
 }
 
-function StatusRow({ label, done, stacked = false }: { label: string; done: boolean; stacked?: boolean }) {
-  const statusClass = done ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium';
-  const statusText = done ? 'Complete' : 'Needed';
-
-  if (stacked) {
-    return (
-      <div className="space-y-0.5">
-        <span className="block text-base text-gray-600 leading-snug">{label}</span>
-        <span className={`block text-sm ${statusClass}`}>{statusText}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-between text-base">
-      <span className="text-gray-600">{label}</span>
-      <span className={statusClass}>{statusText}</span>
-    </div>
-  );
-}
-
 function stripeOnboardingIndex(guideStep: number): number | null {
   if (guideStep < GUIDE_FIRST_STRIPE_STEP || guideStep > GUIDE_FIRST_STRIPE_STEP + STRIPE_STEP_COUNT - 1) {
     return null;
@@ -283,7 +261,6 @@ export default function StripeHubModal({
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
-  const [checklistOpen, setChecklistOpen] = useState(false);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
   const wasOpenRef = useRef(false);
@@ -325,12 +302,6 @@ export default function StripeHubModal({
       return () => clearTimeout(t);
     }
     wasOpenRef.current = isOpen;
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setChecklistOpen(false);
-    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -437,7 +408,7 @@ export default function StripeHubModal({
         return;
       }
       if (status) {
-        toast('Status updated. Check the checklist for items still marked Needed.', { icon: 'ℹ️' });
+        toast('Status updated. Finish any remaining Stripe requirements, then check again.', { icon: 'ℹ️' });
       }
     } finally {
       setBusy(null);
@@ -448,36 +419,14 @@ export default function StripeHubModal({
 
   const hasAccount = Boolean(connectStatus?.has_account);
   const needsReconnect = Boolean(connectStatus?.needs_reconnect);
-  const detailsSubmitted = Boolean(connectStatus?.detailsSubmitted);
-  const chargesEnabled = Boolean(connectStatus?.chargesEnabled);
-  const payoutsEnabled = Boolean(connectStatus?.payoutsEnabled);
   const fullyConnected = isBarberStripeFullyConnected(connectStatus);
   const needsSetup = !fullyConnected;
   const canDismiss = !blocking || fullyConnected;
   const showWizard = needsSetup || blocking;
-  const showChecklistDrawer = showWizard;
 
   const handleBackdropClick = () => {
     if (canDismiss) onClose();
   };
-
-  const renderChecklist = (stacked = false) => (
-    <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
-      <div className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
-        <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} stacked={stacked} />
-        <StatusRow label="Identity & business details" done={detailsSubmitted} stacked={stacked} />
-        <StatusRow label="Accept card payments" done={chargesEnabled} stacked={stacked} />
-        <StatusRow label="Bank account & payouts" done={payoutsEnabled} stacked={stacked} />
-      </div>
-      <div className="pt-3 border-t border-gray-200 space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Stripe required fields
-        </p>
-        <StripeRequirementsList compact />
-      </div>
-    </div>
-  );
 
   const renderConnectAlerts = () => (
     <>
@@ -567,13 +516,12 @@ export default function StripeHubModal({
               </p>
             ) : (
               <p className="text-base text-gray-600">
-                Open Stripe to finish any remaining sections, then verify everything in the checklist shows{' '}
-                <strong>Complete</strong>.
+                Open Stripe to finish any remaining sections, then tap <strong>Check my progress</strong> below.
               </p>
             )}
             {!fullyConnected && (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-                Items still marked <strong>Needed</strong>? Open Stripe again and complete those sections, then check
+                Still restricted in Stripe? Open Stripe again and complete every required field above, then check
                 progress here. Use <strong>Back</strong> to reread earlier steps if you need help.
               </p>
             )}
@@ -695,45 +643,8 @@ export default function StripeHubModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {showChecklistDrawer && (
-          <>
-            {checklistOpen && (
-              <button
-                type="button"
-                className="absolute inset-0 z-[15] bg-black/20"
-                aria-label="Close setup checklist"
-                onClick={() => setChecklistOpen(false)}
-              />
-            )}
-            <div
-              className={`absolute top-0 bottom-0 left-0 z-20 flex items-stretch transition-transform duration-200 ease-out ${
-                checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
-              }`}
-            >
-              <div className="w-96 max-w-[90vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
-                <div className="min-h-full flex flex-col justify-center p-5">{renderChecklist(true)}</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setChecklistOpen((open) => !open)}
-                aria-expanded={checklistOpen}
-                aria-label={checklistOpen ? 'Hide setup checklist' : 'Show setup checklist'}
-                className="self-start mt-14 flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-              >
-                {checklistOpen ? (
-                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                )}
-                <span className="text-[11px] font-semibold text-gray-700 leading-tight text-center">Checklist</span>
-              </button>
-            </div>
-          </>
-        )}
         <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
-          <div
-            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}${showChecklistDrawer ? ' pl-14' : ''}`}
-          >
+          <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
@@ -784,7 +695,6 @@ export default function StripeHubModal({
                 PismoPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account.
               </p>
-              {renderChecklist()}
               <div className="space-y-3 pt-1">
                 <Button
                   type="button"
