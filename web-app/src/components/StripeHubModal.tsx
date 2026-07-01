@@ -440,35 +440,15 @@ export default function StripeHubModal({
     </>
   );
 
-  const renderChecklistToggle = (className = '') => (
-    <button
-      type="button"
-      onClick={() => setRequirementsDrawerOpen((open) => !open)}
-      aria-expanded={requirementsDrawerOpen}
-      aria-label={requirementsDrawerOpen ? 'Hide Stripe checklist' : 'Show Stripe checklist'}
-      className={`flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 rounded-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${className}`}
-    >
-      {requirementsDrawerOpen ? (
-        <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-      ) : (
-        <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-      )}
-      <span className="text-[11px] font-semibold text-gray-700 leading-tight text-center">Checklist</span>
-    </button>
-  );
+  const checklistToggleTopClass =
+    guideStep === GUIDE_INTRO_STEP ? 'self-start mt-[8.5rem]' : 'self-start mt-36';
 
   const renderGuideStep = () => {
     switch (guideStep) {
       case GUIDE_INTRO_STEP:
         return (
           <div className="space-y-5">
-            <div className="flex items-center justify-center gap-2">
-              {showRequirementsDrawer ? renderChecklistToggle() : null}
-              <h3 className="text-xl font-semibold text-gray-900 text-center flex-1">
-                Welcome to Pismo Provider!
-              </h3>
-              {showRequirementsDrawer ? <div className="w-[3.75rem] shrink-0" aria-hidden="true" /> : null}
-            </div>
+            <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
             <p className="text-base text-gray-600 leading-relaxed">
               PismoPlatforms relies on a third-party payment processing system. This third-party is{' '}
               <strong>Stripe</strong>, which you can read more about{' '}
@@ -501,7 +481,6 @@ export default function StripeHubModal({
       case GUIDE_SETUP_STEP:
         return (
           <div className="space-y-4">
-            {showRequirementsDrawer ? <div className="flex justify-start">{renderChecklistToggle()}</div> : null}
             {renderConnectAlerts()}
             <p className="text-base text-gray-600 leading-relaxed">
               Use <strong>Checklist</strong> and tap whichever field Stripe is blocking you
@@ -532,9 +511,6 @@ export default function StripeHubModal({
       case GUIDE_VERIFY_STEP:
         return (
           <>
-            {showRequirementsDrawer ? (
-              <div className="flex justify-start mb-4">{renderChecklistToggle()}</div>
-            ) : null}
             <p className="text-base text-gray-600 mb-4">
               Use <strong>Checklist</strong> if anything is still past due in Stripe. When all eight are
               done, tap <strong>Check my progress</strong> below.
@@ -663,28 +639,46 @@ export default function StripeHubModal({
         {showRequirementsDrawer && (
           <>
             {requirementsDrawerOpen && (
-              <>
-                <button
-                  type="button"
-                  className="absolute inset-0 z-[15] bg-black/20"
-                  aria-label="Close Stripe checklist panel"
-                  onClick={() => setRequirementsDrawerOpen(false)}
-                />
-                <div className="absolute top-0 bottom-0 left-0 z-20 w-96 max-w-[90vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl transition-transform duration-200 ease-out translate-x-0">
-                  <div className="min-h-full flex flex-col justify-center p-5">
-                    <StripeRequirementsDrawerPanel
-                      expandedId={expandedRequirementId}
-                      onToggle={toggleRequirement}
-                    />
-                  </div>
-                </div>
-              </>
+              <button
+                type="button"
+                className="absolute inset-0 z-[15] bg-black/20"
+                aria-label="Close Stripe checklist panel"
+                onClick={() => setRequirementsDrawerOpen(false)}
+              />
             )}
+            <div
+              className={`absolute top-0 bottom-0 left-0 z-20 flex items-stretch transition-transform duration-200 ease-out ${
+                requirementsDrawerOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
+              }`}
+            >
+              <div className="w-96 max-w-[90vw] h-full overflow-y-auto bg-white border-r border-gray-200 shadow-xl">
+                <div className="min-h-full flex flex-col justify-center p-5">
+                  <StripeRequirementsDrawerPanel
+                    expandedId={expandedRequirementId}
+                    onToggle={toggleRequirement}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRequirementsDrawerOpen((open) => !open)}
+                aria-expanded={requirementsDrawerOpen}
+                aria-label={requirementsDrawerOpen ? 'Hide Stripe checklist' : 'Show Stripe checklist'}
+                className={`${checklistToggleTopClass} flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2`}
+              >
+                {requirementsDrawerOpen ? (
+                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                )}
+                <span className="text-[11px] font-semibold text-gray-700 leading-tight text-center">Checklist</span>
+              </button>
+            </div>
           </>
         )}
         <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
           <div
-            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}
+            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}${showRequirementsDrawer ? ' pl-14' : ''}`}
           >
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
