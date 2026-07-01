@@ -571,9 +571,9 @@ export default function StripeHubModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 flex items-center justify-between z-10 shrink-0">
-          <div className="min-w-0">
-            <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding</h2>
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 z-10 shrink-0">
+          <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
+            <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
               <p className="text-white/70 text-sm mt-2 leading-snug">
                 Keep this guide and <strong className="text-white/90">Stripe</strong> open side by side. Jump back and
@@ -604,7 +604,7 @@ export default function StripeHubModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-lg px-4 py-2 text-base font-medium transition-colors shrink-0 ml-3"
+              className="absolute top-5 right-8 text-white hover:bg-white/20 rounded-lg px-4 py-2 text-base font-medium transition-colors"
             >
               Close
             </button>
