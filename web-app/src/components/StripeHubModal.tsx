@@ -25,6 +25,10 @@ interface StripeHubModalProps {
   onFullyConnected?: () => void;
 }
 
+const WIKI_LEARN_MORE_LINK_CLASS =
+  'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
+const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
+
 const STRIPE_ONBOARDING_STEPS = [
   {
     short: 'Sign in',
@@ -32,9 +36,27 @@ const STRIPE_ONBOARDING_STEPS = [
     instructions: (
       <div className="space-y-4 text-base text-gray-600">
         <p>
-          <strong>Stripe Express</strong> is Stripe&apos;s dashboard for service providers on platforms like{' '}
-          <strong>PismoProvider</strong>. It runs on <strong>Stripe Connect</strong>, which links your payout account to
-          the platform so you can complete payment setup in one place while PismoProvider routes customers to you.
+          <strong>Stripe Express</strong>, which you can read more about{' '}
+          <a
+            href={STRIPE_WIKIPEDIA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={WIKI_LEARN_MORE_LINK_CLASS}
+          >
+            here
+          </a>
+          , is Stripe&apos;s dashboard for service providers on platforms like <strong>PismoProvider</strong>. It runs on{' '}
+          <strong>Stripe Connect</strong>, which you can read more about{' '}
+          <a
+            href={STRIPE_WIKIPEDIA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={WIKI_LEARN_MORE_LINK_CLASS}
+          >
+            here
+          </a>
+          . Connect links your payout account to the platform so you can complete payment setup in one place while
+          PismoProvider routes customers to you.
         </p>
         <p>
           Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
@@ -409,10 +431,10 @@ export default function StripeHubModal({
               PismoPlatforms relies on a third-party payment processing system. This third-party is{' '}
               <strong>Stripe</strong>, which you can read more about{' '}
               <a
-                href="https://en.wikipedia.org/wiki/Stripe,_Inc."
+                href={STRIPE_WIKIPEDIA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100"
+                className={WIKI_LEARN_MORE_LINK_CLASS}
               >
                 here
               </a>
