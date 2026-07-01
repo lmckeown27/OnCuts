@@ -577,7 +577,7 @@ export default function StripeHubModal({
         <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 flex items-center justify-between z-10 shrink-0">
           <div className="min-w-0">
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding</h2>
-            {showWizard && guideStep >= GUIDE_CONNECT_STEP && (
+            {showWizard && (
               <p className="text-white/70 text-sm mt-2 leading-snug">
                 Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
                 <strong className="text-white/90">Open Stripe tab</strong> below anytime.
@@ -587,7 +587,6 @@ export default function StripeHubModal({
               <div className="flex gap-1.5 mt-3" role="tablist" aria-label="Onboarding progress">
                 {GUIDE_PROGRESS_STEPS.map((step, i) => {
                   const isCurrent = guideStep === i;
-                  const isPast = guideStep > i;
                   return (
                     <div
                       key={step.short}
@@ -595,7 +594,7 @@ export default function StripeHubModal({
                       aria-selected={isCurrent}
                       aria-label={step.title}
                       className={`h-1.5 flex-1 rounded-full transition-colors ${
-                        isCurrent ? 'bg-white' : isPast ? 'bg-white/60' : 'bg-white/30'
+                        isCurrent ? 'bg-white' : 'bg-white/30'
                       }`}
                       title={step.title}
                     />
