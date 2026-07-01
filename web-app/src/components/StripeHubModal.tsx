@@ -109,16 +109,14 @@ const STRIPE_ONBOARDING_STEPS = [
 ] as const;
 
 const STRIPE_STEP_COUNT = STRIPE_ONBOARDING_STEPS.length;
-/** Intro + connect overview + Stripe onboarding steps + verify. */
-const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 3;
+/** Intro + Stripe onboarding steps + verify. */
+const GUIDE_STEP_COUNT = STRIPE_STEP_COUNT + 2;
 const GUIDE_INTRO_STEP = 0;
-const GUIDE_CONNECT_STEP = 1;
 const GUIDE_VERIFY_STEP = GUIDE_STEP_COUNT - 1;
-const GUIDE_FIRST_STRIPE_STEP = 2;
+const GUIDE_FIRST_STRIPE_STEP = 1;
 
 const GUIDE_PROGRESS_STEPS = [
   { short: 'Intro', title: 'How payments work' },
-  { short: 'Connect', title: 'Connect with Stripe' },
   ...STRIPE_ONBOARDING_STEPS.map((step) => ({ short: step.short, title: step.title })),
   { short: 'Review', title: 'Review your setup' },
 ] as const;
@@ -256,7 +254,7 @@ export default function StripeHubModal({
   const openStripeTabForCurrentStep = async () => {
     try {
       setBusy('onboarding');
-      if (guideStep === GUIDE_INTRO_STEP || guideStep === GUIDE_CONNECT_STEP) {
+      if (guideStep === GUIDE_INTRO_STEP) {
         await openOnboardingUrl();
       } else if (connectStatus?.has_account && !connectStatus?.needs_reconnect) {
         const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
@@ -343,6 +341,37 @@ export default function StripeHubModal({
     </div>
   );
 
+  const renderConnectAlerts = () => (
+    <>
+      {platformSetupBlocked && (
+        <p className="text-sm text-red-900 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 leading-relaxed">
+          <strong>Platform setup required:</strong> {platformSetupBlocked} Stripe Dashboard →{' '}
+          <a
+            href="https://dashboard.stripe.com/connect/accounts/overview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-medium"
+          >
+            Connect → Accounts overview
+          </a>{' '}
+          (toggle <strong>live mode</strong> on). This is a one-time step for the PismoPlatforms owner, not something
+          barbers can fix themselves.
+        </p>
+      )}
+      {connectStatusUnknown && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+          Could not verify Stripe status. You can still start connecting below.
+        </p>
+      )}
+      {needsReconnect && (
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
+          Your saved payout account is from a previous Stripe setup (test mode or an old platform account). The next
+          step creates a fresh connection to the current live payout account.
+        </p>
+      )}
+    </>
+  );
+
   const renderGuideStep = () => {
     switch (guideStep) {
       case GUIDE_INTRO_STEP:
@@ -371,54 +400,6 @@ export default function StripeHubModal({
               Tap <strong>Next</strong> when you&apos;re ready to connect your <strong>Stripe</strong> account.
             </p>
           </div>
-        );
-      case GUIDE_CONNECT_STEP:
-        return (
-          <>
-            <p className="text-base text-gray-600 leading-relaxed">
-              Customer payments go to your linked bank account through <strong>Stripe Connect</strong>, a third-party
-              payment service, not PismoPlatforms.{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Stripe,_Inc."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 underline font-medium hover:text-black"
-              >
-                Learn about Stripe on Wikipedia
-              </a>
-              .
-            </p>
-            {platformSetupBlocked && (
-              <p className="text-sm text-red-900 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 leading-relaxed">
-                <strong>Platform setup required:</strong> {platformSetupBlocked} Stripe Dashboard →{' '}
-                <a
-                  href="https://dashboard.stripe.com/connect/accounts/overview"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline font-medium"
-                >
-                  Connect → Accounts overview
-                </a>{' '}
-                (toggle <strong>live mode</strong> on). This is a one-time step for the PismoPlatforms owner, not
-                something barbers can fix themselves.
-              </p>
-            )}
-            {connectStatusUnknown && (
-              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-                Could not verify Stripe status. You can still start connecting below.
-              </p>
-            )}
-            {needsReconnect && (
-              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
-                Your saved payout account is from a previous Stripe setup (test mode or an old platform account).
-                The next step creates a fresh connection to the current live payout account.
-              </p>
-            )}
-            <p className="text-base text-gray-600">
-              Tap <strong>Connect with Stripe</strong> to open Stripe in a new tab. Start by entering your PismoPlatforms
-              email in Stripe Express, then follow this guide for identity, payments, and bank setup.
-            </p>
-          </>
         );
       case GUIDE_VERIFY_STEP:
         return (
@@ -456,9 +437,12 @@ export default function StripeHubModal({
           const stripeStep = STRIPE_ONBOARDING_STEPS[stripeIndex];
           if (stripeIndex === 0) {
             return (
-              <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-                {stripeStep.instructions}
-              </div>
+              <>
+                {renderConnectAlerts()}
+                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+                  {stripeStep.instructions}
+                </div>
+              </>
             );
           }
           return (
@@ -502,7 +486,7 @@ export default function StripeHubModal({
           </Button>
         ) : null}
       </div>
-      {guideStep === GUIDE_CONNECT_STEP ? (
+      {guideStep === GUIDE_FIRST_STRIPE_STEP ? (
         <Button
           type="button"
           variant="primary"
@@ -614,7 +598,7 @@ export default function StripeHubModal({
         <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
           {showWizard ? (
             <>
-              {guideStep >= GUIDE_CONNECT_STEP && renderChecklist()}
+              {guideStep >= GUIDE_FIRST_STRIPE_STEP && renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
