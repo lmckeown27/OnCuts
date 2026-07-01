@@ -129,13 +129,23 @@ function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   return { message: errBody?.message, code: errBody?.code };
 }
 
-function StatusRow({ label, done }: { label: string; done: boolean }) {
+function StatusRow({ label, done, stacked = false }: { label: string; done: boolean; stacked?: boolean }) {
+  const statusClass = done ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium';
+  const statusText = done ? 'Complete' : 'Needed';
+
+  if (stacked) {
+    return (
+      <div className="space-y-0.5">
+        <span className="block text-base text-gray-600 leading-snug">{label}</span>
+        <span className={`block text-sm ${statusClass}`}>{statusText}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between text-base">
       <span className="text-gray-600">{label}</span>
-      <span className={done ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
-        {done ? 'Complete' : 'Needed'}
-      </span>
+      <span className={statusClass}>{statusText}</span>
     </div>
   );
 }
@@ -346,13 +356,13 @@ export default function StripeHubModal({
     if (canDismiss) onClose();
   };
 
-  const renderChecklist = () => (
+  const renderChecklist = (stacked = false) => (
     <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
       <p className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Setup checklist</p>
-      <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} />
-      <StatusRow label="Identity & business details" done={detailsSubmitted} />
-      <StatusRow label="Accept card payments" done={chargesEnabled} />
-      <StatusRow label="Bank account & payouts" done={payoutsEnabled} />
+      <StatusRow label="Stripe account linked" done={hasAccount && !needsReconnect} stacked={stacked} />
+      <StatusRow label="Identity & business details" done={detailsSubmitted} stacked={stacked} />
+      <StatusRow label="Accept card payments" done={chargesEnabled} stacked={stacked} />
+      <StatusRow label="Bank account & payouts" done={payoutsEnabled} stacked={stacked} />
     </div>
   );
 
@@ -572,20 +582,25 @@ export default function StripeHubModal({
             )}
             <div
               className={`absolute top-0 bottom-0 left-0 z-20 flex items-stretch transition-transform duration-200 ease-out ${
-                checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-2.5rem)]'
+                checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-3.75rem)]'
               }`}
             >
-              <div className="w-72 max-w-[85vw] overflow-y-auto bg-white border-r border-gray-200 shadow-xl p-5">
-                {renderChecklist()}
+              <div className="w-80 max-w-[85vw] overflow-y-auto bg-white border-r border-gray-200 shadow-xl p-5">
+                {renderChecklist(true)}
               </div>
               <button
                 type="button"
                 onClick={() => setChecklistOpen((open) => !open)}
                 aria-expanded={checklistOpen}
                 aria-label={checklistOpen ? 'Hide setup checklist' : 'Show setup checklist'}
-                className="self-center flex items-center justify-center w-10 h-16 shrink-0 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                className="self-start mt-14 flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
               >
-                {checklistOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                {checklistOpen ? (
+                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                )}
+                <span className="text-[11px] font-semibold text-gray-700 leading-tight text-center">Checklist</span>
               </button>
             </div>
           </>
