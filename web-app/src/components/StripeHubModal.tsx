@@ -25,9 +25,11 @@ interface StripeHubModalProps {
   onFullyConnected?: () => void;
 }
 
-const WIKI_LEARN_MORE_LINK_CLASS =
+const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
+const STRIPE_EXPRESS_URL = 'https://support.stripe.com/express';
+const STRIPE_CONNECT_URL = 'https://stripe.com/connect';
 
 const STRIPE_ONBOARDING_STEPS = [
   {
@@ -38,20 +40,20 @@ const STRIPE_ONBOARDING_STEPS = [
         <p>
           <strong>Stripe Express</strong>, which you can read more about{' '}
           <a
-            href={STRIPE_WIKIPEDIA_URL}
+            href={STRIPE_EXPRESS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className={WIKI_LEARN_MORE_LINK_CLASS}
+            className={LEARN_MORE_LINK_CLASS}
           >
             here
           </a>
           , is Stripe&apos;s dashboard for service providers on platforms like <strong>PismoProvider</strong>. It runs on{' '}
           <strong>Stripe Connect</strong>, which you can read more about{' '}
           <a
-            href={STRIPE_WIKIPEDIA_URL}
+            href={STRIPE_CONNECT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className={WIKI_LEARN_MORE_LINK_CLASS}
+            className={LEARN_MORE_LINK_CLASS}
           >
             here
           </a>
@@ -434,7 +436,7 @@ export default function StripeHubModal({
                 href={STRIPE_WIKIPEDIA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={WIKI_LEARN_MORE_LINK_CLASS}
+                className={LEARN_MORE_LINK_CLASS}
               >
                 here
               </a>
