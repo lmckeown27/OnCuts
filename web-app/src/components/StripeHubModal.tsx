@@ -449,13 +449,9 @@ export default function StripeHubModal({
               <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during
               setup.
             </p>
-            <p className="text-base text-gray-600 leading-relaxed">
-              Go to the{' '}
-              <span className="whitespace-nowrap">
-                <strong>Next</strong> page when you&apos;re ready to set up payments with{' '}
-                <strong>PismoPlatforms</strong>
-              </span>
-              .
+            <p className="text-base text-gray-600 leading-relaxed whitespace-nowrap">
+              Select <strong>Next</strong> when you&apos;re ready to set up payments with{' '}
+              <strong>PismoPlatforms</strong>.
             </p>
           </div>
         );
