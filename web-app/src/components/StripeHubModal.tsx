@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -158,6 +159,7 @@ export default function StripeHubModal({
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
   const wasOpenRef = useRef(false);
@@ -200,6 +202,18 @@ export default function StripeHubModal({
     }
     wasOpenRef.current = isOpen;
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setChecklistOpen(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (guideStep < GUIDE_FIRST_STRIPE_STEP) {
+      setChecklistOpen(false);
+    }
+  }, [guideStep]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -326,6 +340,7 @@ export default function StripeHubModal({
   const needsSetup = !fullyConnected;
   const canDismiss = !blocking || fullyConnected;
   const showWizard = needsSetup || blocking;
+  const showChecklistDrawer = showWizard && guideStep >= GUIDE_FIRST_STRIPE_STEP;
 
   const handleBackdropClick = () => {
     if (canDismiss) onClose();
@@ -540,11 +555,41 @@ export default function StripeHubModal({
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
+        className={`relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
           isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {showChecklistDrawer && (
+          <>
+            {checklistOpen && (
+              <button
+                type="button"
+                className="absolute inset-0 z-[15] bg-black/20"
+                aria-label="Close setup checklist"
+                onClick={() => setChecklistOpen(false)}
+              />
+            )}
+            <div
+              className={`absolute top-0 bottom-0 left-0 z-20 flex items-stretch transition-transform duration-200 ease-out ${
+                checklistOpen ? 'translate-x-0' : '-translate-x-[calc(100%-2.5rem)]'
+              }`}
+            >
+              <div className="w-72 max-w-[85vw] overflow-y-auto bg-white border-r border-gray-200 shadow-xl p-5">
+                {renderChecklist()}
+              </div>
+              <button
+                type="button"
+                onClick={() => setChecklistOpen((open) => !open)}
+                aria-expanded={checklistOpen}
+                aria-label={checklistOpen ? 'Hide setup checklist' : 'Show setup checklist'}
+                className="self-center flex items-center justify-center w-10 h-16 shrink-0 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+              >
+                {checklistOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+              </button>
+            </div>
+          </>
+        )}
         <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
           <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
@@ -588,7 +633,6 @@ export default function StripeHubModal({
         <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
           {showWizard ? (
             <>
-              {guideStep >= GUIDE_FIRST_STRIPE_STEP && renderChecklist()}
               {renderGuideStep()}
               <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
             </>
