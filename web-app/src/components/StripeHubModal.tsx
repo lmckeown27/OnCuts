@@ -450,8 +450,12 @@ export default function StripeHubModal({
               setup.
             </p>
             <p className="text-base text-gray-600 leading-relaxed">
-              Go to the <strong>Next</strong> page when you&apos;re ready to set up payments with{' '}
-              <strong>PismoPlatforms</strong>.
+              Go to the{' '}
+              <span className="whitespace-nowrap">
+                <strong>Next</strong> page when you&apos;re ready to set up payments with{' '}
+                <strong>PismoPlatforms</strong>
+              </span>
+              .
             </p>
           </div>
         );
