@@ -30,10 +30,18 @@ const STRIPE_ONBOARDING_STEPS = [
     short: 'Sign in',
     title: 'Sign in to Express',
     instructions: (
-      <p className="text-base text-gray-600">
-        Enter the <strong>email address</strong> you use to sign in to PismoPlatforms into{' '}
-        <strong>Stripe Express</strong>. It must match. Stripe uses this to link your payout account.
-      </p>
+      <div className="space-y-4 text-base text-gray-600">
+        <p>
+          <strong>Stripe Express</strong> is Stripe&apos;s dashboard for service providers on platforms like{' '}
+          <strong>PismoProvider</strong>. It runs on <strong>Stripe Connect</strong>, which links your payout account to
+          the platform so you can complete payment setup in one place while PismoProvider routes customers to you.
+        </p>
+        <p>
+          Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
+          <strong>Stripe Express</strong>. It must match. Stripe uses this to connect your Express account to your
+          provider profile and finish onboarding.
+        </p>
+      </div>
     ),
   },
   {
