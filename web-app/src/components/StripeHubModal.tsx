@@ -54,6 +54,10 @@ const STRIPE_ONBOARDING_STEPS = [
           . It must match. Stripe uses this to connect your Express account to your provider profile and finish
           onboarding.
         </p>
+        <p>
+          Stripe will show a verification challenge. Complete it to confirm you&apos;re not a robot and continue into
+          Express.
+        </p>
       </div>
     ),
   },
