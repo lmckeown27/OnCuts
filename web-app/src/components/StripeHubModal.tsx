@@ -576,8 +576,8 @@ export default function StripeHubModal({
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding</h2>
             {showWizard && (
               <p className="text-white/70 text-sm mt-2 leading-snug">
-                Keep this guide and Stripe open side by side. Jump back and forth if you get stuck. Use{' '}
-                <strong className="text-white/90">Open Stripe tab</strong> below anytime.
+                Keep this guide and <strong className="text-white/90">Stripe</strong> open side by side. Jump back and
+                forth if you get stuck.
               </p>
             )}
             {showWizard && (
