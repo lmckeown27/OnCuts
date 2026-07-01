@@ -40,7 +40,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'Your legal date of birth exactly as it appears on your government ID (MM / DD / YYYY).',
     stripeWhere: 'Personal details → Date of birth',
     navigation: [
-      'Select Open Stripe tab (or Continue with Stripe if you have not signed in yet).',
+      'Select the Stripe button below (or Continue with Stripe if you have not signed in yet).',
       'In Stripe Express, open Personal details (or the section Stripe highlights as incomplete).',
       'Find Date of birth and enter the date exactly as printed on your government ID.',
       'Save or Continue until Stripe accepts the field.',
@@ -53,7 +53,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements.',
     stripeWhere: 'Personal details → Address',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Personal details.',
       'Enter your residential street address, city, state, and ZIP. Match your ID or bank records.',
       'Save and continue.',
@@ -66,7 +66,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'A US mobile number you can receive SMS on. Use the same number you use for PismoProvider if possible.',
     stripeWhere: 'Personal details → Phone',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Personal details → Phone.',
       'Enter your US mobile number and complete any SMS verification Stripe sends.',
     ],
@@ -78,7 +78,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'The last 4 digits of your Social Security number as the account representative. Enter full SSN only inside Stripe if asked.',
     stripeWhere: 'Personal details → Identity / SSN',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Personal details → Identity (or Verify your identity).',
       'Enter the last four digits of your SSN when prompted.',
       'Upload ID photos if Stripe requests them.',
@@ -90,7 +90,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     input: 'Enter Personal care services.',
     stripeWhere: 'Business details → Industry',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Business details.',
       'Open Industry and type or select Personal care services.',
       'Save and continue.',
@@ -102,7 +102,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     input: `Enter ${PISMO_PLATFORMS_URL}.`,
     stripeWhere: 'Business details → Website',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Business details → Website (or Business profile URL).',
       `Enter ${PISMO_PLATFORMS_URL} exactly.`,
       'Save and continue.',
@@ -115,7 +115,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'Read and accept the Stripe Connected Account Agreement. Payments and payouts stay blocked until you accept.',
     stripeWhere: 'Review → Terms of service',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Scroll to the Review step or any banner about required actions.',
       'Read the Stripe Connected Account Agreement and tap Accept (or Agree and submit).',
     ],
@@ -127,7 +127,7 @@ const STRIPE_REQUIRED_ACTIONS = [
       'Your routing number and account number for the checking or savings account where you want payouts deposited.',
     stripeWhere: 'Payout details → Bank account',
     navigation: [
-      'Open Stripe using Open Stripe tab below.',
+      'Select the Stripe button below.',
       'Go to Payout details, Bank account, or Add external account.',
       'Enter routing number and account number; choose Checking or Savings.',
       'Confirm the account name matches your ID, then save.',
@@ -214,7 +214,7 @@ export default function StripeHubModal({
 }: StripeHubModalProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [connectStatusUnknown, setConnectStatusUnknown] = useState(false);
-  const [busy, setBusy] = useState<'dashboard' | 'onboarding' | 'refresh' | 'status' | null>(null);
+  const [busy, setBusy] = useState<'stripe' | 'dashboard' | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [requirementsDrawerOpen, setRequirementsDrawerOpen] = useState(false);
@@ -269,12 +269,19 @@ export default function StripeHubModal({
     }
   }, [isOpen]);
 
+  const stripeTabOpenedRef = useRef(false);
+  stripeTabOpenedRef.current = stripeTabOpened;
+
   useEffect(() => {
     if (!isOpen) return;
     const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        void loadRef.current();
-      }
+      if (document.visibilityState !== 'visible') return;
+      void (async () => {
+        const status = await loadRef.current();
+        if (stripeTabOpenedRef.current && status && isBarberStripeFullyConnected(status)) {
+          toast.success('Stripe setup complete. Your dashboard is unlocked.');
+        }
+      })();
     };
     window.addEventListener('focus', onVisible);
     document.addEventListener('visibilitychange', onVisible);
@@ -284,29 +291,35 @@ export default function StripeHubModal({
     };
   }, [isOpen]);
 
-  const markStripeTabOpened = useCallback(() => {
-    setStripeTabOpened(true);
-  }, []);
-
-  const openOnboardingUrl = useCallback(async () => {
-    const needsReconnect = Boolean(connectStatus?.needs_reconnect);
-    const hasAccount = Boolean(connectStatus?.has_account);
-    const { onboarding_url: onboardingUrl } =
-      needsReconnect || !hasAccount
-        ? needsReconnect
-          ? await resetBarberConnect()
-          : await createBarberConnectOnboarding()
-        : await refreshBarberConnectOnboarding();
-    window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-    markStripeTabOpened();
-    await load();
-  }, [markStripeTabOpened, connectStatus?.needs_reconnect, connectStatus?.has_account, load]);
-
-  const startStripeOnboarding = async () => {
+  const handlePrimaryStripeAction = async () => {
     try {
-      setBusy('onboarding');
-      await openOnboardingUrl();
-      toast.success('Stripe opened in a new tab. Complete step 1 (your email), then Continue.');
+      setBusy('stripe');
+      const status = await load();
+      if (status && isBarberStripeFullyConnected(status)) {
+        toast.success('Stripe setup complete. Your dashboard is unlocked.');
+        return;
+      }
+
+      const needsReconnectNow = Boolean(status?.needs_reconnect);
+      const hasAccountNow = Boolean(status?.has_account);
+      const { onboarding_url: onboardingUrl } =
+        needsReconnectNow || !hasAccountNow
+          ? needsReconnectNow
+            ? await resetBarberConnect()
+            : await createBarberConnectOnboarding()
+          : await refreshBarberConnectOnboarding();
+
+      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
+      setStripeTabOpened(true);
+      await load();
+
+      if (needsReconnectNow || !hasAccountNow) {
+        toast.success('Stripe opened in a new tab. Sign in with your PismoProvider email to continue.');
+      } else {
+        toast('Finish any remaining items in Stripe, then return here. We check your progress automatically.', {
+          icon: '↔️',
+        });
+      }
     } catch (err: unknown) {
       const { message: msg, code } = apiErrorDetails(err);
       if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
@@ -315,19 +328,6 @@ export default function StripeHubModal({
             'PismoPlatforms must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
         );
       }
-      toast.error(msg || 'Could not start Stripe Connect');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const openStripeTabForCurrentStep = async () => {
-    try {
-      setBusy('onboarding');
-      await openOnboardingUrl();
-      toast('Switch between this tab and Stripe as needed. Both stay open.', { icon: '↔️' });
-    } catch (err: unknown) {
-      const { message: msg, code } = apiErrorDetails(err);
       if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
         await load();
       }
@@ -350,36 +350,6 @@ export default function StripeHubModal({
     }
   };
 
-  const refreshStripeOnboarding = async () => {
-    try {
-      setBusy('refresh');
-      const { onboarding_url: onboardingUrl } = await refreshBarberConnectOnboarding();
-      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
-      markStripeTabOpened();
-    } catch (err: unknown) {
-      const { message: msg } = apiErrorDetails(err);
-      toast.error(msg || 'Could not refresh Stripe setup link');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const checkProgress = async () => {
-    try {
-      setBusy('status');
-      const status = await load();
-      if (status && isBarberStripeFullyConnected(status)) {
-        toast.success('Stripe setup complete. Your dashboard is unlocked.');
-        return;
-      }
-      if (status) {
-        toast('Status updated. Finish any remaining Stripe checklist items, then check again.', { icon: 'ℹ️' });
-      }
-    } finally {
-      setBusy(null);
-    }
-  };
-
   if (!isVisible && !isOpen) return null;
 
   const hasAccount = Boolean(connectStatus?.has_account);
@@ -389,6 +359,8 @@ export default function StripeHubModal({
   const canDismiss = !blocking || fullyConnected;
   const showWizard = needsSetup || blocking;
   const showRequirementsDrawer = showWizard;
+  const primaryStripeButtonLabel =
+    !hasAccount || needsReconnect ? 'Continue with Stripe' : 'Open Stripe';
 
   const toggleRequirement = (id: StripeRequirementId) => {
     setExpandedRequirementId((current) => (current === id ? null : id));
@@ -422,7 +394,7 @@ export default function StripeHubModal({
       )}
       {needsReconnect && (
         <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
-          Your saved payout account is from a previous Stripe setup (test mode or an old platform account). Use{' '}
+          Your saved payout account is from a previous Stripe setup (test mode or an old platform account). Select{' '}
           <strong>Continue with Stripe</strong> below to create a fresh connection to the current live payout account.
         </p>
       )}
@@ -456,29 +428,26 @@ export default function StripeHubModal({
         Open <strong>Checklist</strong> anytime. Tap any item for navigation help. You can complete them in any order.
       </p>
       {renderConnectAlerts()}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 text-base text-gray-600">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-base text-gray-600">
         <p>
-          <strong>First time?</strong> Select <strong>Continue with Stripe</strong> below and sign in with the same
-          email you use for <strong>PismoProvider</strong> (
+          Select <strong>{primaryStripeButtonLabel}</strong> below to sign in with{' '}
+          <strong>PismoProvider</strong> (
           <a href={STRIPE_EXPRESS_URL} target="_blank" rel="noopener noreferrer" className={LEARN_MORE_LINK_CLASS}>
             Stripe Express
           </a>
-          ).
-        </p>
-        <p>
-          <strong>Already in Stripe?</strong> Select <strong>Open Stripe tab</strong> and complete any past-due items.
-          Return here and tap <strong>Check my progress</strong> when finished.
+          ). The button checks your progress first, then opens or refreshes Stripe as needed. When you return here, we
+          check again automatically.
         </p>
       </div>
-      {stripeTabOpened ? (
+      {stripeTabOpened && !fullyConnected ? (
         <p className="text-base text-gray-600">
-          Return here after working in Stripe. We automatically refresh when you switch back to this tab, or tap{' '}
-          <strong>Check my progress</strong> below.
+          Return here after working in Stripe. We automatically check your progress when you switch back to this tab.
         </p>
       ) : null}
       {!fullyConnected && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-          Still restricted in Stripe? Open Checklist, finish any past-due fields in Stripe, then check progress here.
+          Still restricted in Stripe? Open Checklist for help, finish any past-due fields in Stripe, then select{' '}
+          <strong>{primaryStripeButtonLabel}</strong> again.
         </p>
       )}
       {fullyConnected && (
@@ -493,50 +462,16 @@ export default function StripeHubModal({
   );
 
   const renderOnboardingActions = () => (
-    <div className="space-y-3">
-      {(!hasAccount || needsReconnect) && (
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          className="w-full"
-          onClick={() => void startStripeOnboarding()}
-          disabled={busy !== null || Boolean(platformSetupBlocked)}
-        >
-          {busy === 'onboarding' ? 'Opening Stripe…' : 'Continue with Stripe'}
-        </Button>
-      )}
-      <Button
-        type="button"
-        variant="primary"
-        size="lg"
-        className="w-full"
-        onClick={() => void openStripeTabForCurrentStep()}
-        disabled={busy !== null}
-      >
-        {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="lg"
-        className="w-full"
-        onClick={() => void checkProgress()}
-        disabled={busy !== null}
-      >
-        {busy === 'status' ? 'Checking…' : 'Check my progress'}
-      </Button>
-      {hasAccount && !needsReconnect && (
-        <button
-          type="button"
-          onClick={() => void refreshStripeOnboarding()}
-          disabled={busy !== null}
-          className="w-full text-base text-primary-600 hover:text-black font-medium py-2.5 disabled:opacity-60"
-        >
-          {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
-        </button>
-      )}
-    </div>
+    <Button
+      type="button"
+      variant="primary"
+      size="lg"
+      className="w-full"
+      onClick={() => void handlePrimaryStripeAction()}
+      disabled={busy !== null || Boolean(platformSetupBlocked)}
+    >
+      {busy === 'stripe' ? 'Opening Stripe…' : primaryStripeButtonLabel}
+    </Button>
   );
 
   return (
