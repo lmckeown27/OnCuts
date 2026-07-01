@@ -1084,7 +1084,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Barber license</p>
                   <p className="font-medium">
                     {form.licenseDeclared === 'yes'
-                      ? `Licensed — #${form.licenseNumber.trim() || 'provided'}`
+                      ? `Licensed: #${form.licenseNumber.trim() || 'provided'}`
                       : form.licenseDeclared === 'no'
                         ? 'No license declared (manager may follow up)'
                         : 'Not provided'}

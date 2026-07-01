@@ -3192,7 +3192,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
               <p className="text-gray-400 text-sm mt-1">
                 {activeTab === 'today' && 'No appointments scheduled for today'}
                 {activeTab === 'upcoming' && 'No future appointments yet'}
-                {activeTab === 'past' && 'No items here — or remove Paid bookings with “Remove from list” to tidy up.'}
+                {activeTab === 'past' && 'No items here, or remove Paid bookings with “Remove from list” to tidy up.'}
               </p>
             </div>
           ) : (

@@ -1125,7 +1125,7 @@ export default function MessagesPage() {
               </button>
             </div>
             <p className="text-xs text-gray-500 self-center">
-              Photo ready — add a caption (optional) and tap send
+              Photo ready. Add a caption (optional) and tap send
             </p>
           </div>
         )}

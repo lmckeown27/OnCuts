@@ -289,7 +289,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
               {schedule.length > 3 && <p className="text-xs text-primary-500">+{schedule.length - 3} more</p>}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 mt-1">—</p>
+            <p className="text-xs text-gray-400 mt-1">-</p>
           )}
         </div>
       );

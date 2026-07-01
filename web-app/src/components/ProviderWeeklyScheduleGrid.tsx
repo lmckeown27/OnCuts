@@ -470,7 +470,7 @@ export default function ProviderWeeklyScheduleGrid({
                         <button
                           key={`${day.dateStr}-${slotStartMin}`}
                           type="button"
-                          title="Blocked — click to unblock"
+                          title="Blocked. Click to unblock"
                           onClick={() => onUnblockTime?.(cell.block!.id)}
                           className={`absolute inset-x-0 bg-red-200 hover:bg-red-300 border-red-300/50 transition-colors ${
                             showHourLine ? 'border-t border-red-300/60' : ''
@@ -580,10 +580,10 @@ export default function ProviderWeeklyScheduleGrid({
         </p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-2 rounded-sm bg-primary-200" /> Open — tap to block
+            <span className="w-3 h-2 rounded-sm bg-primary-200" /> Open: tap to block
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-2 rounded-sm bg-[#B8C97A] border border-[#5C6B2E]/40" /> Booked — tap for details
+            <span className="w-3 h-2 rounded-sm bg-[#B8C97A] border border-[#5C6B2E]/40" /> Booked: tap for details
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="w-3 h-2 rounded-sm bg-red-200" /> Blocked
@@ -605,7 +605,7 @@ export default function ProviderWeeklyScheduleGrid({
               onClick={() => onDisconnectGoogleCalendar?.()}
               className="text-xs text-primary-600 hover:text-black hover:underline"
             >
-              Google Calendar connected — disconnect
+              Google Calendar connected. Disconnect
             </button>
           ) : (
             <button

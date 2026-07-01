@@ -88,7 +88,7 @@ function formatServiceType(service: string): string {
 }
 
 function formatDateTime(value: string | null): string {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Date(value).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -496,7 +496,7 @@ export default function BarberAnalyticsPanel({
                         <span className="text-gray-700">
                           {performance.completedBookings > 0
                             ? formatCurrencyFromCents(Math.round(performance.totalTips / performance.completedBookings))
-                            : '—'}
+                            : '-'}
                         </span>
                       </div>
                     </div>
@@ -552,7 +552,7 @@ export default function BarberAnalyticsPanel({
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 italic pt-1">
-                      Payouts settle through your Stripe Connect account—not a PismoPlatforms balance.
+                      Payouts settle through your Stripe Connect account, not a PismoPlatforms balance.
                     </p>
                   </div>
                 </div>
@@ -577,7 +577,7 @@ export default function BarberAnalyticsPanel({
                     <div>
                       <p className="text-[10px] text-gray-500">Avg Star Rating</p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '—'}
+                        {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '-'}
                       </p>
                     </div>
                     <div>
@@ -589,7 +589,7 @@ export default function BarberAnalyticsPanel({
                       <p className="text-sm font-semibold text-gray-900">
                         {performance.completedBookings > 0
                           ? formatCurrencyFromCents(Math.round(performance.totalTips / performance.completedBookings))
-                          : '—'}
+                          : '-'}
                       </p>
                     </div>
                   </div>

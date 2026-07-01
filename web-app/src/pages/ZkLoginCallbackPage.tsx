@@ -109,7 +109,7 @@ function ZkLoginCallbackInner() {
         sessionStorage.removeItem(NONCE_SESSION_KEY);
         sessionStorage.removeItem(JWT_RANDOMNESS_SESSION_KEY);
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        toast.success('zkLogin wallet linked — your Sui address is saved.');
+        toast.success('zkLogin wallet linked. Your Sui address is saved.');
         navigate(`${platformPrefix}/barber`, { replace: true });
       } catch (e: unknown) {
         flowStartedRef.current = false;

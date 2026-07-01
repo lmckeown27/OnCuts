@@ -43,7 +43,7 @@ export default function BarberEarningsPage() {
               <h2 className="font-semibold text-gray-900">Stripe Connect payouts</h2>
               <p className="text-sm text-gray-600 mt-1">
                 Customer payments are processed with <strong>Stripe</strong>. Your share is paid to your{' '}
-                <strong>Stripe Connect</strong> account—PismoPlatforms does <strong>not</strong> hold barber payout funds.
+                <strong>Stripe Connect</strong> account. PismoPlatforms does <strong>not</strong> hold barber payout funds.
                 Manage bank transfers and tax forms in your Stripe Express / Connect dashboard. Open{' '}
                 <button
                   type="button"

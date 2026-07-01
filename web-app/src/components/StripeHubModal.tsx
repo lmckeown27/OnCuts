@@ -55,7 +55,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     navigation: [
       'Open Stripe using Open Stripe tab below.',
       'Go to Personal details.',
-      'Enter your residential street address, city, state, and ZIP — match your ID or bank records.',
+      'Enter your residential street address, city, state, and ZIP. Match your ID or bank records.',
       'Save and continue.',
     ],
   },
@@ -149,7 +149,7 @@ function StripeRequirementsDrawerPanel({
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Stripe requirements</p>
         <p className="text-sm text-gray-600 mt-1">
-          Tap an item you&apos;re stuck on for navigation help. Work in any order — finish all eight in Stripe.
+          Tap an item you&apos;re stuck on for navigation help. Work in any order. Finish all eight in Stripe.
         </p>
       </div>
       <ul className="space-y-2">
@@ -466,7 +466,7 @@ export default function StripeHubModal({
             </p>
             <p className="text-base text-gray-600 leading-relaxed">
               Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and
-              more). Open the <strong>Requirements</strong> panel on the left anytime — tap any item for navigation help.
+              more). Open the <strong>Requirements</strong> panel on the left anytime. Tap any item for navigation help.
               You can complete them in any order.
             </p>
             <p className="text-base text-gray-600 leading-relaxed whitespace-nowrap">
@@ -481,7 +481,7 @@ export default function StripeHubModal({
             {renderConnectAlerts()}
             <p className="text-base text-gray-600 leading-relaxed">
               Use the <strong>Requirements</strong> panel on the left and tap whichever field Stripe is blocking you
-              on. Each item expands with where to go in Stripe and what to enter — you do not need to follow a fixed
+              on. Each item expands with where to go in Stripe and what to enter. You do not need to follow a fixed
               order.
             </p>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 text-base text-gray-600">

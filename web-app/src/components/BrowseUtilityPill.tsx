@@ -185,7 +185,7 @@ export default function BrowseUtilityPill({
             </div>
             {missingTownCoords && (
               <p className="text-xs text-amber-700 text-center">
-                This college town has no map coordinates — distance filtering may be unavailable.
+                This college town has no map coordinates. Distance filtering may be unavailable.
               </p>
             )}
           </div>

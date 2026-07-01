@@ -1,0 +1,22 @@
+---
+description: No em dashes in user-facing web copy (web-app UI strings)
+globs: web-app/src/**/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# No em dashes in user-facing web copy
+
+Do not use the em dash character (`—`, Unicode U+2014) in text shown to users in the web app: JSX copy, button labels, toasts, placeholders, aria-labels, titles, etc.
+
+Comments, backend code, and internal docs may use em dashes if needed.
+
+Use instead in UI copy:
+- A period and new sentence
+- A comma
+- A colon
+- Parentheses
+- A hyphen `-` for empty table cells (not an em dash)
+
+Examples:
+- Bad: `Complete onboarding — then check progress`
+- Good: `Complete onboarding, then check progress`

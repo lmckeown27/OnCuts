@@ -88,7 +88,7 @@ function AppCard({ title, appLogo, appLogoAlt, storeHref, storeLabel }: AppCardP
   }
 
   return (
-    <article className={cardBaseClassName} aria-label={`${storeLabel} — App Store link coming soon`}>
+    <article className={cardBaseClassName} aria-label={`${storeLabel}: App Store link coming soon`}>
       <AppCardContent
         title={title}
         appLogo={appLogo}

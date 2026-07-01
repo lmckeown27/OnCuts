@@ -1601,7 +1601,7 @@ export function AdminDashboard({
                 <div>
                   <p className="text-[10px] text-gray-500">Avg Star Rating</p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '—'}
+                    {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '-'}
                   </p>
                 </div>
                 <div>
@@ -1609,7 +1609,7 @@ export function AdminDashboard({
                   <p className="text-sm font-semibold text-gray-900">
                     {performance.completedBookings + performance.cancelledBookings > 0
                       ? `${Math.round((performance.completedBookings / (performance.completedBookings + performance.cancelledBookings)) * 100)}%`
-                      : '—'}
+                      : '-'}
                   </p>
                 </div>
                 <div>
@@ -1617,7 +1617,7 @@ export function AdminDashboard({
                   <p className="text-sm font-semibold text-gray-900">
                     {performance.completedTransactionCount > 0
                       ? formatCurrency(Math.round(performance.totalTips / performance.completedTransactionCount))
-                      : '—'}
+                      : '-'}
                   </p>
                 </div>
               </div>
@@ -2091,7 +2091,7 @@ export function AdminDashboard({
                             <p className="font-semibold text-gray-900">
                               {selectedApplication.has_license
                                 ? selectedApplication.license_number
-                                  ? `Yes — #${selectedApplication.license_number}`
+                                  ? `Yes: #${selectedApplication.license_number}`
                                   : 'Yes (number not provided)'
                                 : 'Not declared'}
                             </p>
@@ -2535,7 +2535,7 @@ export function AdminDashboard({
                         <p className="font-semibold text-gray-900">
                           {selectedApplication.has_license
                             ? selectedApplication.license_number
-                              ? `Yes — #${selectedApplication.license_number}`
+                              ? `Yes: #${selectedApplication.license_number}`
                               : 'Yes (number not provided)'
                             : 'Not declared'}
                         </p>

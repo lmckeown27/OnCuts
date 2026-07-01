@@ -79,7 +79,7 @@ function statusBadge(status: string): { label: string; className: string } {
     case 'REJECTED':
       return { label: s === 'REJECTED' ? 'Declined' : 'Cancelled', className: 'bg-gray-200 text-gray-700' };
     default:
-      return { label: s || '—', className: 'bg-gray-100 text-gray-700' };
+      return { label: s || '-', className: 'bg-gray-100 text-gray-700' };
   }
 }
 
@@ -239,7 +239,7 @@ export default function ConsumerBookingsPage() {
                 minute: '2-digit',
               });
               const price =
-                b.priceUsdCents != null ? `$${(b.priceUsdCents / 100).toFixed(2)}` : '—';
+                b.priceUsdCents != null ? `$${(b.priceUsdCents / 100).toFixed(2)}` : '-';
 
               return (
                 <li

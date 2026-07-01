@@ -90,7 +90,7 @@ export default function PaymentProcessingPage() {
       <div className="max-w-md w-full bg-white rounded-xl shadow p-8 text-center">
         <h1 className="text-xl font-semibold text-gray-900 mb-2">Processing your payment</h1>
         <p className="text-gray-600 text-sm mb-6">
-          Stripe confirmed your checkout. We&apos;re finalizing your booking—this usually takes a few seconds.
+          Stripe confirmed your checkout. We&apos;re finalizing your booking. This usually takes a few seconds.
         </p>
         {data && (
           <ul className="text-left text-sm text-gray-700 space-y-2 mb-6">

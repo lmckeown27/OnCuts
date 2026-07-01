@@ -65,7 +65,7 @@ export default function PlaceSearchInput({
       setResults(places);
       setOpen(places.length > 0);
       if (places.length === 0) {
-        setSearchError('No places found — try a nearby city or campus name.');
+        setSearchError('No places found. Try a nearby city or campus name.');
       }
     } catch {
       setResults([]);
@@ -128,7 +128,7 @@ export default function PlaceSearchInput({
       if (places.length > 0) {
         handleSelect(places[0]);
       } else {
-        setSearchError('No places found — try a nearby city or campus name.');
+        setSearchError('No places found. Try a nearby city or campus name.');
       }
     } catch {
       setSearchError('Location search is temporarily unavailable. Try again shortly.');

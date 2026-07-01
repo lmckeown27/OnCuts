@@ -21,12 +21,12 @@ type Props = {
  * Reads USDC balance for the barber’s zkLogin / invisible wallet via Sui RPC (read-only).
  */
 export default function InvisibleUsdcBalance({ suiAddress, className }: Props) {
-  const [display, setDisplay] = useState<string>('—');
+  const [display, setDisplay] = useState<string>('-');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!suiAddress?.trim() || !SUI_USDC_COIN_TYPE) {
-      setDisplay(SUI_USDC_COIN_TYPE ? '—' : 'Set VITE_SUI_USDC_COIN_TYPE');
+      setDisplay(SUI_USDC_COIN_TYPE ? '-' : 'Set VITE_SUI_USDC_COIN_TYPE');
       return;
     }
 

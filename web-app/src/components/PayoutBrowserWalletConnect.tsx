@@ -82,7 +82,7 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
       <p className="text-sm font-medium text-gray-900 mb-1">Optional: browser extension</p>
       <p className="text-xs text-gray-600 mb-3">
         If you use Sui Wallet, Suiet, or similar (Wallet Standard), you can connect to fill the field. You can
-        always paste an address instead—no extension required.
+        always paste an address instead. No extension required.
       </p>
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         <button
