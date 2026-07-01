@@ -56,7 +56,7 @@ const STRIPE_ONBOARDING_STEPS = [
         </p>
         <p>
           Stripe will show a verification challenge. Complete it to confirm you&apos;re not a robot and continue into
-          Express.
+          Stripe Express.
         </p>
       </div>
     ),
