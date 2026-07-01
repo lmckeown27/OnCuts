@@ -38,6 +38,10 @@ const STRIPE_ONBOARDING_STEPS = [
     instructions: (
       <div className="space-y-4 text-base text-gray-600">
         <p>
+          When you&apos;re ready to begin, select <strong>Continue with Stripe</strong> below to open Stripe in a new
+          tab.
+        </p>
+        <p>
           <strong>Stripe Express</strong>, which you can read more about{' '}
           <a
             href={STRIPE_EXPRESS_URL}
@@ -539,13 +543,7 @@ export default function StripeHubModal({
           onClick={() => void startStripeOnboarding()}
           disabled={busy !== null || Boolean(platformSetupBlocked)}
         >
-          {busy === 'onboarding'
-            ? 'Opening Stripe…'
-            : needsReconnect
-              ? 'Connect with Stripe'
-              : hasAccount
-                ? 'Continue setup in Stripe'
-                : 'Connect with Stripe'}
+          {busy === 'onboarding' ? 'Opening Stripe…' : 'Continue with Stripe'}
         </Button>
       ) : guideStep > GUIDE_INTRO_STEP ? (
         <>
