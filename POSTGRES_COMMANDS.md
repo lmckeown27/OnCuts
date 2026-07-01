@@ -2192,16 +2192,13 @@ stripe accounts retrieve acct_XXXXXXXXXXXXX --api-key "$STRIPE_SECRET_KEY"
 ```
 
 #### Validate ALL saved Connect accounts (batch — recommended on EC2)
-Checks every `users.stripe_account_id` against the server key. Prints `OK` or `STALE` per barber.
+Checks every saved `stripe_account_id` against the **live** platform key. One line per user: **`t`** = connected to current live keys, **`f`** = stale / wrong platform / wrong mode.
 ```bash
 cd ~/CampusCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
+LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 
-if [ -z "$STRIPE_SECRET_KEY" ]; then
-  echo "STRIPE_SECRET_KEY not set — load backend .env or export from PM2"
-  exit 1
-fi
-
+echo "email|connected_to_live_keys"
 sudo -u postgres psql -d campuscuts -t -A -c "
 SELECT email || '|' || stripe_account_id
 FROM users
@@ -2209,34 +2206,26 @@ WHERE stripe_account_id IS NOT NULL
 ORDER BY email;
 " | while IFS='|' read -r email acct; do
   [ -z "$acct" ] && continue
-  resp=$(curl -s -w "\n%{http_code}" -u "${STRIPE_SECRET_KEY}:" \
+  http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
     "https://api.stripe.com/v1/accounts/${acct}")
-  http=$(echo "$resp" | tail -n1)
-  body=$(echo "$resp" | sed '$d')
-  if [ "$http" = "200" ]; then
-    charges=$(echo "$body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('charges_enabled', False))" 2>/dev/null)
-    payouts=$(echo "$body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('payouts_enabled', False))" 2>/dev/null)
-    echo "OK      | $email | $acct | charges=$charges payouts=$payouts"
-  else
-    msg=$(echo "$body" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('error',{}).get('message',''))" 2>/dev/null)
-    echo "STALE   | $email | $acct | HTTP $http ${msg}"
-  fi
+  if [ "$http" = "200" ]; then echo "${email}|t"; else echo "${email}|f"; fi
 done
 ```
-Clear any line marked `STALE` using [Clear stale account](#clear-stale-stripe-connect-account-manual-reset), then have the barber use **Continue with Stripe**.
+Clear any `|f` row using [Clear stale account](#clear-stale-stripe-connect-account-manual-reset), then have the barber use **Continue with Stripe**.
 
-#### Validate one user by email (batch helper)
+#### Validate one user by email (`t` or `f`)
 ```bash
 cd ~/CampusCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
-
+LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 EMAIL='barber@example.com'
+
 ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
-if [ -z "$ACCT" ]; then echo "No stripe_account_id for $EMAIL"; exit 0; fi
-echo "Checking $EMAIL → $ACCT"
-curl -s -w "\nHTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY}:" \
-  "https://api.stripe.com/v1/accounts/${ACCT}"
+if [ -z "$ACCT" ]; then echo "f"; exit 0; fi
+http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}")
+[ "$http" = "200" ] && echo "t" || echo "f"
 ```
 
 #### Compare test vs live keys (mode mismatch)
