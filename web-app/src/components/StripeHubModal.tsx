@@ -1,5 +1,5 @@
 /**
- * Stripe Connect hub: step-by-step onboarding guide, Express dashboard, payout management.
+ * Stripe Connect hub: onboarding guide, Express dashboard, payout management.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -197,16 +197,7 @@ function StripeRequirementsDrawerPanel({
   );
 }
 
-const GUIDE_INTRO_STEP = 0;
-const GUIDE_SETUP_STEP = 1;
-const GUIDE_VERIFY_STEP = 2;
-const GUIDE_STEP_COUNT = 3;
-
-const GUIDE_PROGRESS_STEPS = [
-  { short: 'Intro', title: 'How payments work' },
-  { short: 'Setup', title: 'Complete Stripe checklist' },
-  { short: 'Review', title: 'Review your setup' },
-] as const;
+const CHECKLIST_TOGGLE_TOP_CLASS = 'self-start mt-[8.5rem]';
 
 function apiErrorDetails(err: unknown): { message?: string; code?: string } {
   if (!err || typeof err !== 'object' || !('response' in err)) return {};
@@ -226,7 +217,6 @@ export default function StripeHubModal({
   const [busy, setBusy] = useState<'dashboard' | 'onboarding' | 'refresh' | 'status' | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [guideStep, setGuideStep] = useState(0);
   const [requirementsDrawerOpen, setRequirementsDrawerOpen] = useState(false);
   const [expandedRequirementId, setExpandedRequirementId] = useState<StripeRequirementId | null>(null);
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
@@ -433,146 +423,78 @@ export default function StripeHubModal({
       {needsReconnect && (
         <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
           Your saved payout account is from a previous Stripe setup (test mode or an old platform account). Use{' '}
-          <strong>Continue with Stripe</strong> on the sign-in step to create a fresh connection to the current live
-          payout account.
+          <strong>Continue with Stripe</strong> below to create a fresh connection to the current live payout account.
         </p>
       )}
     </>
   );
 
-  const checklistToggleTopClass =
-    guideStep === GUIDE_INTRO_STEP ? 'self-start mt-[8.5rem]' : 'self-start mt-36';
+  const checklistToggleTopClass = CHECKLIST_TOGGLE_TOP_CLASS;
 
-  const renderGuideStep = () => {
-    switch (guideStep) {
-      case GUIDE_INTRO_STEP:
-        return (
-          <div className="space-y-5">
-            <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
-            <p className="text-base text-gray-600 leading-relaxed">
-              PismoPlatforms relies on a third-party payment processing system. This third-party is{' '}
-              <strong>Stripe</strong>, which you can read more about{' '}
-              <a
-                href={STRIPE_WIKIPEDIA_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={LEARN_MORE_LINK_CLASS}
-              >
-                here
-              </a>
-              :
-            </p>
-            <p className="text-base text-gray-600 leading-relaxed">
-              When a client pays you, the transaction is handled by <strong>Stripe</strong>.{' '}
-              <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during
-              setup.
-            </p>
-            <p className="text-base text-gray-600 leading-relaxed">
-              Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and
-              more). Open <strong>Checklist</strong> anytime. Tap any item for navigation help.
-              You can complete them in any order.
-            </p>
-            <p className="text-base text-gray-600 leading-relaxed whitespace-nowrap">
-              Select <strong>Next</strong> when you&apos;re ready to set up payments with{' '}
-              <strong>PismoPlatforms</strong>.
-            </p>
-          </div>
-        );
-      case GUIDE_SETUP_STEP:
-        return (
-          <div className="space-y-4">
-            {renderConnectAlerts()}
-            <p className="text-base text-gray-600 leading-relaxed">
-              Use <strong>Checklist</strong> and tap whichever field Stripe is blocking you
-              on. Each item expands with where to go in Stripe and what to enter. You do not need to follow a fixed
-              order.
-            </p>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 text-base text-gray-600">
-              <p>
-                <strong>First time?</strong> Select <strong>Continue with Stripe</strong> below and sign in with the
-                same email you use for <strong>PismoProvider</strong> (
-                <a
-                  href={STRIPE_EXPRESS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={LEARN_MORE_LINK_CLASS}
-                >
-                  Stripe Express
-                </a>
-                ).
-              </p>
-              <p>
-                <strong>Already in Stripe?</strong> Select <strong>Open Stripe tab</strong> and complete any past-due
-                items. Return here and tap <strong>Check my progress</strong> on the Review step when finished.
-              </p>
-            </div>
-          </div>
-        );
-      case GUIDE_VERIFY_STEP:
-        return (
-          <>
-            <p className="text-base text-gray-600 mb-4">
-              Use <strong>Checklist</strong> if anything is still past due in Stripe. When all eight are
-              done, tap <strong>Check my progress</strong> below.
-            </p>
-            {stripeTabOpened ? (
-              <p className="text-base text-gray-600">
-                Return here after working in Stripe. We automatically refresh when you switch back to this tab, or
-                tap <strong>Check my progress</strong> below.
-              </p>
-            ) : (
-              <p className="text-base text-gray-600">
-                Open Stripe to finish any remaining sections, then tap <strong>Check my progress</strong> below.
-              </p>
-            )}
-            {!fullyConnected && (
-              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-                Still restricted in Stripe? Open Checklist, finish any past-due fields in Stripe, then
-                check progress here.
-              </p>
-            )}
-            {fullyConnected && (
-              <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                Stripe is connected. Payouts flow directly to your bank. Your dashboard is unlocked.
-              </div>
-            )}
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const renderWizardFooter = () => (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="lg"
-          className="flex-1"
-          onClick={() => setGuideStep((s) => Math.max(GUIDE_INTRO_STEP, s - 1))}
-          disabled={busy !== null || guideStep === GUIDE_INTRO_STEP}
+  const renderOnboardingContent = () => (
+    <div className="space-y-5">
+      <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
+      <p className="text-base text-gray-600 leading-relaxed">
+        PismoPlatforms relies on a third-party payment processing system. This third-party is{' '}
+        <strong>Stripe</strong>, which you can read more about{' '}
+        <a
+          href={STRIPE_WIKIPEDIA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LEARN_MORE_LINK_CLASS}
         >
-          Back
-        </Button>
-        {guideStep < GUIDE_STEP_COUNT - 1 ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            className="flex-1"
-            onClick={() => setGuideStep((s) => Math.min(GUIDE_STEP_COUNT - 1, s + 1))}
-            disabled={busy !== null}
-          >
-            Next
-          </Button>
-        ) : null}
+          here
+        </a>
+        :
+      </p>
+      <p className="text-base text-gray-600 leading-relaxed">
+        When a client pays you, the transaction is handled by <strong>Stripe</strong>.{' '}
+        <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during setup.
+      </p>
+      <p className="text-base text-gray-600 leading-relaxed">
+        Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and more).
+        Open <strong>Checklist</strong> anytime. Tap any item for navigation help. You can complete them in any order.
+      </p>
+      {renderConnectAlerts()}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3 text-base text-gray-600">
+        <p>
+          <strong>First time?</strong> Select <strong>Continue with Stripe</strong> below and sign in with the same
+          email you use for <strong>PismoProvider</strong> (
+          <a href={STRIPE_EXPRESS_URL} target="_blank" rel="noopener noreferrer" className={LEARN_MORE_LINK_CLASS}>
+            Stripe Express
+          </a>
+          ).
+        </p>
+        <p>
+          <strong>Already in Stripe?</strong> Select <strong>Open Stripe tab</strong> and complete any past-due items.
+          Return here and tap <strong>Check my progress</strong> when finished.
+        </p>
       </div>
-      {guideStep === GUIDE_SETUP_STEP && (!hasAccount || needsReconnect) ? (
+      {stripeTabOpened ? (
+        <p className="text-base text-gray-600">
+          Return here after working in Stripe. We automatically refresh when you switch back to this tab, or tap{' '}
+          <strong>Check my progress</strong> below.
+        </p>
+      ) : null}
+      {!fullyConnected && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+          Still restricted in Stripe? Open Checklist, finish any past-due fields in Stripe, then check progress here.
+        </p>
+      )}
+      {fullyConnected && (
+        <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          Stripe is connected. Payouts flow directly to your bank. Your dashboard is unlocked.
+        </div>
+      )}
+    </div>
+  );
+
+  const renderOnboardingActions = () => (
+    <div className="space-y-3">
+      {(!hasAccount || needsReconnect) && (
         <Button
           type="button"
           variant="primary"
@@ -583,43 +505,37 @@ export default function StripeHubModal({
         >
           {busy === 'onboarding' ? 'Opening Stripe…' : 'Continue with Stripe'}
         </Button>
-      ) : null}
-      {guideStep >= GUIDE_SETUP_STEP ? (
-        <>
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            className="w-full"
-            onClick={() => void openStripeTabForCurrentStep()}
-            disabled={busy !== null}
-          >
-            {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
-          </Button>
-          {guideStep >= GUIDE_SETUP_STEP && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              onClick={() => void checkProgress()}
-              disabled={busy !== null}
-            >
-              {busy === 'status' ? 'Checking…' : 'Check my progress'}
-            </Button>
-          )}
-          {hasAccount && !needsReconnect && guideStep === GUIDE_VERIFY_STEP && (
-            <button
-              type="button"
-              onClick={() => void refreshStripeOnboarding()}
-              disabled={busy !== null}
-              className="w-full text-base text-primary-600 hover:text-black font-medium py-2.5 disabled:opacity-60"
-            >
-              {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
-            </button>
-          )}
-        </>
-      ) : null}
+      )}
+      <Button
+        type="button"
+        variant="primary"
+        size="lg"
+        className="w-full"
+        onClick={() => void openStripeTabForCurrentStep()}
+        disabled={busy !== null}
+      >
+        {busy === 'onboarding' ? 'Opening Stripe…' : 'Open Stripe tab'}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        size="lg"
+        className="w-full"
+        onClick={() => void checkProgress()}
+        disabled={busy !== null}
+      >
+        {busy === 'status' ? 'Checking…' : 'Check my progress'}
+      </Button>
+      {hasAccount && !needsReconnect && (
+        <button
+          type="button"
+          onClick={() => void refreshStripeOnboarding()}
+          disabled={busy !== null}
+          className="w-full text-base text-primary-600 hover:text-black font-medium py-2.5 disabled:opacity-60"
+        >
+          {busy === 'refresh' ? 'Opening…' : 'Get a fresh Stripe setup link'}
+        </button>
+      )}
     </div>
   );
 
@@ -687,25 +603,6 @@ export default function StripeHubModal({
                 guide side by side.
               </p>
             )}
-            {showWizard && (
-              <div className="flex gap-1.5 mt-3" role="tablist" aria-label="Onboarding progress">
-                {GUIDE_PROGRESS_STEPS.map((step, i) => {
-                  const isCurrent = guideStep === i;
-                  return (
-                    <div
-                      key={step.short}
-                      role="tab"
-                      aria-selected={isCurrent}
-                      aria-label={step.title}
-                      className={`h-1.5 flex-1 rounded-full transition-colors ${
-                        isCurrent ? 'bg-white' : 'bg-white/30'
-                      }`}
-                      title={step.title}
-                    />
-                  );
-                })}
-              </div>
-            )}
           </div>
           {canDismiss && (
             <button
@@ -721,8 +618,8 @@ export default function StripeHubModal({
         <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
           {showWizard ? (
             <>
-              {renderGuideStep()}
-              <div className="space-y-3 pt-1 border-t border-gray-100">{renderWizardFooter()}</div>
+              {renderOnboardingContent()}
+              <div className="space-y-3 pt-1 border-t border-gray-100">{renderOnboardingActions()}</div>
             </>
           ) : (
             <>
