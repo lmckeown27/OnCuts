@@ -439,21 +439,11 @@ export default function StripeHubModal({
             return (
               <>
                 {renderConnectAlerts()}
-                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-                  {stripeStep.instructions}
-                </div>
+                {stripeStep.instructions}
               </>
             );
           }
-          return (
-            <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Step {stripeIndex} of {STRIPE_STEP_COUNT - 1}
-              </p>
-              <p className="text-base font-semibold text-gray-900">What to do: {stripeStep.title}</p>
-              {stripeStep.instructions}
-            </div>
-          );
+          return stripeStep.instructions;
         }
         return null;
       }
