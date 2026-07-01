@@ -350,25 +350,22 @@ export default function StripeHubModal({
           <div className="space-y-5">
             <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Pismo Provider!</h3>
             <p className="text-base text-gray-600 leading-relaxed">
-              PismoPlatforms is where you manage bookings and your provider profile. We do not process or store customer
-              payments on our platform.
-            </p>
-            <p className="text-base text-gray-600 leading-relaxed">
-              When a client pays you, the transaction is handled by <strong>Stripe</strong>, a trusted third-party
-              payments platform. Stripe securely moves funds from your customers to the bank account you connect during
-              setup.
-            </p>
-            <p className="text-base text-gray-600 leading-relaxed">
-              Take a moment to read about Stripe so you know your payments are in good hands.{' '}
+              PismoPlatforms relies on a third-party payment processing system. This third-party is Stripe, which you
+              can read more about{' '}
               <a
                 href="https://en.wikipedia.org/wiki/Stripe,_Inc."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-600 underline font-medium hover:text-black"
               >
-                Learn about Stripe on Wikipedia
+                here
               </a>
-              .
+              :
+            </p>
+            <p className="text-base text-gray-600 leading-relaxed">
+              When a client pays you, the transaction is handled by <strong>Stripe</strong>, a trusted third-party
+              payments platform. Stripe securely moves funds from your customers to the bank account you connect during
+              setup.
             </p>
             <p className="text-base text-gray-600 leading-relaxed">
               Tap <strong>Next</strong> when you&apos;re ready to connect your Stripe account.
