@@ -363,9 +363,9 @@ export default function StripeHubModal({
               :
             </p>
             <p className="text-base text-gray-600 leading-relaxed">
-              When a client pays you, the transaction is handled by <strong>Stripe</strong>, a trusted third-party
-              payments platform. <strong>Stripe</strong> securely moves funds from your customers to the bank account you
-              connect during setup.
+              When a client pays you, the transaction is handled by <strong>Stripe</strong>.{' '}
+              <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during
+              setup.
             </p>
             <p className="text-base text-gray-600 leading-relaxed">
               Tap <strong>Next</strong> when you&apos;re ready to connect your <strong>Stripe</strong> account.
