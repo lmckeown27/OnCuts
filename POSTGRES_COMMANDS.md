@@ -1898,12 +1898,16 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 
 > **Note:** Stripe Connect lives on the `users` table (not `barbers`). Barbers must complete Express onboarding and have **both** `stripe_charges_enabled` and `stripe_payouts_enabled` true before payouts work.
 
+**Production schema:** EC2 may not have every column from older migrations. Run [Describe Stripe columns](#describe-stripe-columns-on-users) first. Standard queries below use only:
+- `stripe_account_id` (always)
+- `stripe_charges_enabled`, `stripe_payouts_enabled` (required for Connect status — add if missing)
+
 | Column | Meaning |
 |--------|---------|
 | `stripe_account_id` | Connect Express account (`acct_...`). NULL = no saved connection. |
-| `stripe_connect_onboarded` | Legacy/onboarding flag from webhooks (can drift — trust charges/payouts flags). |
 | `stripe_charges_enabled` | Stripe says this account can accept destination charges. |
 | `stripe_payouts_enabled` | Stripe says this account can receive payouts. |
+| `stripe_connect_onboarded` | **Optional** — only on some DBs; webhooks may set it. Trust charges/payouts flags instead. |
 
 **Common failure:** Stripe onboarding shows *"Something went wrong. There was an error during authentication"* while the platform still has an old `acct_*` (test mode, deleted account, or wrong platform Stripe keys). The app now auto-clears stale IDs on status/load; use the queries below to confirm and fix manually if needed.
 
@@ -1914,12 +1918,24 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 | Stripe auth error on onboarding | Stale `acct_*` in DB | [Full Connect profile](#view-full-stripe-connect-profile-for-one-user-by-email) → [Clear stale account](#clear-stale-stripe-connect-account-manual-reset) |
 | `acct_*` set but both flags `f` | Incomplete onboarding or stale account | [Suspected stale accounts](#find-suspected-stale-connect-accounts) |
 | Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Lookup by account id](#lookup-user-by-stripe-account-id) + clear reset |
-| `stripe_connect_onboarded` true but flags false | DB out of sync with Stripe | [Onboarded flag mismatch](#find-onboarded-flag-mismatch-with-stripe-flags) |
+| Capability flags missing in DB | Migration not applied on EC2 | [Add missing Stripe columns](#add-missing-stripe-columns-on-ec2) |
 | Barber can't get paid | Not fully enabled | [Ready for payouts](#barbers-ready-to-receive-payouts) |
 
 ### Describe Stripe columns on users
 ```bash
 sudo -u postgres psql -d campuscuts -c "\d users" | grep stripe
+```
+
+### Add missing Stripe columns on EC2
+Run once if queries fail with `column ... does not exist` (safe to re-run — uses `IF NOT EXISTS`):
+```bash
+sudo -u postgres psql -d campuscuts -c "
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_account_id VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_charges_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_payouts_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_connect_onboarded BOOLEAN DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_users_stripe_account_id ON users(stripe_account_id);
+"
 ```
 
 ### View All Barbers with Stripe Connect Status
@@ -1931,7 +1947,6 @@ SELECT
     u.last_name,
     b.\"isActive\",
     u.stripe_account_id,
-    u.stripe_connect_onboarded,
     u.stripe_charges_enabled,
     u.stripe_payouts_enabled,
     CASE
@@ -1956,7 +1971,6 @@ SELECT
     u.last_name,
     u.role,
     u.stripe_account_id,
-    u.stripe_connect_onboarded,
     u.stripe_charges_enabled,
     u.stripe_payouts_enabled,
     u.\"updatedAt\"
@@ -1972,7 +1986,6 @@ SELECT
     u.id,
     u.email,
     u.stripe_account_id,
-    u.stripe_connect_onboarded,
     u.stripe_charges_enabled,
     u.stripe_payouts_enabled
 FROM users u
@@ -1985,7 +1998,6 @@ WHERE u.id = 'USER_UUID_HERE';
 sudo -u postgres psql -d campuscuts -c "
 SELECT
     stripe_account_id,
-    stripe_connect_onboarded,
     stripe_charges_enabled,
     stripe_payouts_enabled
 FROM users
@@ -2046,7 +2058,7 @@ Accounts saved in Postgres but both capability flags false — common when onboa
 sudo -u postgres psql -d campuscuts -c "
 SELECT u.email, u.stripe_account_id,
        u.stripe_charges_enabled, u.stripe_payouts_enabled,
-       u.stripe_connect_onboarded, u.\"updatedAt\"
+       u.\"updatedAt\"
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
 WHERE u.stripe_account_id IS NOT NULL
@@ -2056,7 +2068,8 @@ ORDER BY u.\"updatedAt\" DESC;
 "
 ```
 
-### Find Onboarded Flag Mismatch with Stripe Flags
+### Find Onboarded Flag Mismatch (only if `stripe_connect_onboarded` column exists)
+Skip this query if `\d users | grep stripe_connect_onboarded` returns nothing.
 ```bash
 sudo -u postgres psql -d campuscuts -c "
 SELECT u.email, u.stripe_account_id,
@@ -2121,6 +2134,14 @@ RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabl
 "
 ```
 
+If capability columns do not exist yet, clear only the account id:
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users SET stripe_account_id = NULL WHERE email = 'barber@example.com'
+RETURNING email, stripe_account_id;
+"
+```
+
 ### Clear Stale Connect Account (by user UUID)
 ```bash
 sudo -u postgres psql -d campuscuts -c "
@@ -2139,8 +2160,7 @@ Only use when Stripe Dashboard shows charges/payouts enabled but Postgres is sta
 sudo -u postgres psql -d campuscuts -c "
 UPDATE users
 SET stripe_charges_enabled = true,
-    stripe_payouts_enabled = true,
-    stripe_connect_onboarded = true
+    stripe_payouts_enabled = true
 WHERE email = 'barber@example.com'
 RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
 "
