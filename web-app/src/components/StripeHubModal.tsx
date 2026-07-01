@@ -571,7 +571,7 @@ export default function StripeHubModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 py-5 z-10 shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
           <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
