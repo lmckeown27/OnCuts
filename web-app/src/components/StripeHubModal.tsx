@@ -47,7 +47,9 @@ const STRIPE_ONBOARDING_STEPS = [
           >
             here
           </a>
-          , is Stripe&apos;s dashboard for service providers on platforms like <strong>PismoProvider</strong>. It runs on{' '}
+          , is Stripe&apos;s dashboard for service providers on platforms like <strong>PismoProvider</strong>.
+        </p>
+        <p>
           <strong>Stripe Connect</strong>, which you can read more about{' '}
           <a
             href={STRIPE_CONNECT_URL}
@@ -57,8 +59,8 @@ const STRIPE_ONBOARDING_STEPS = [
           >
             here
           </a>
-          . Connect links your payout account to the platform so you can complete payment setup in one place while
-          PismoProvider routes customers to you.
+          , links your payout account to the platform so you can complete payment setup in one place while PismoProvider
+          routes customers to you.
         </p>
         <p>
           Enter the <strong>email address</strong> you use to sign in to <strong>PismoProvider</strong> into{' '}
