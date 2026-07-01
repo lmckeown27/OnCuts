@@ -1917,9 +1917,10 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 |---------|--------------|------------|
 | Stripe auth error on onboarding | Stale `acct_*` in DB | [Full Connect profile](#view-full-stripe-connect-profile-for-one-user-by-email) → [Clear stale account](#clear-stale-stripe-connect-account-manual-reset) |
 | `acct_*` set but both flags `f` | Incomplete onboarding or stale account | [Suspected stale accounts](#find-suspected-stale-connect-accounts) |
-| Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Lookup by account id](#lookup-user-by-stripe-account-id) + clear reset |
+| Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Validate against server keys](#validate-connect-accounts-against-current-server-stripe-keys) |
 | Capability flags missing in DB | Migration not applied on EC2 | [Add missing Stripe columns](#add-missing-stripe-columns-on-ec2) |
 | Barber can't get paid | Not fully enabled | [Ready for payouts](#barbers-ready-to-receive-payouts) |
+| Wrong platform (Intera vs Pismo keys) | `acct_*` from old Stripe platform account | [Validate against server keys](#validate-connect-accounts-against-current-server-stripe-keys) |
 
 ### Describe Stripe columns on users
 ```bash
@@ -2119,6 +2120,147 @@ JOIN users u ON b.\"userId\" = u.id
 GROUP BY 1
 ORDER BY 1;
 "
+```
+
+### Validate Connect accounts against current server Stripe keys
+
+Postgres alone **cannot** tell if an `acct_*` belongs to the platform Stripe account your server uses. You must call the Stripe API with the same secret key the backend uses (`STRIPE_SECRET_KEY`, or `STRIPE_SECRET_KEY_LIVE` / `STRIPE_SECRET_KEY_TEST` when split).
+
+| API result | Meaning |
+|------------|---------|
+| HTTP **200** + account JSON | `acct_*` belongs to **this** server key's Stripe platform (valid destination). |
+| **404** / `resource_missing` / `No such account` | Wrong platform, deleted account, or never connected to these keys — **stale** (clear DB + re-onboard). |
+| Live/test mismatch error | Account created under `sk_test_…` but server uses `sk_live_…` (or vice versa). |
+
+#### List all saved Connect account IDs (Postgres)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.stripe_account_id, u.stripe_charges_enabled, u.stripe_payouts_enabled
+FROM users u
+WHERE u.stripe_account_id IS NOT NULL
+ORDER BY u.email;
+"
+```
+
+#### Show which Stripe key the backend is using (fingerprint only — safe to paste)
+Run from the backend directory so `.env` / PM2 env loads. Does **not** print the full secret.
+```bash
+cd ~/CampusCuts/backend
+node -e "
+require('dotenv').config();
+const sk =
+  process.env.STRIPE_SECRET_KEY ||
+  process.env.STRIPE_SECRET_KEY_LIVE ||
+  process.env.STRIPE_LIVE_SECRET_KEY ||
+  '';
+if (!sk) { console.log('(no STRIPE_SECRET_KEY in env)'); process.exit(1); }
+const kind = sk.startsWith('sk_live') ? 'live' : sk.startsWith('sk_test') ? 'test' : 'other';
+console.log('Server key:', kind + ':' + sk.slice(0, 10) + '…' + sk.slice(-4));
+"
+```
+
+#### Show the platform Stripe account (the Connect "parent" for this key)
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+curl -s -u "${STRIPE_SECRET_KEY}:" https://api.stripe.com/v1/account \
+  | python3 -m json.tool 2>/dev/null \
+  | grep -E '"id"|"display_name"|"business_profile"' | head -20
+```
+Connected accounts that pass validation below are owned by this platform account.
+
+#### Validate one Connect account (curl)
+Replace `acct_XXXXXXXXXXXXX` and ensure `STRIPE_SECRET_KEY` is exported (same as PM2 backend).
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+
+ACCT=acct_XXXXXXXXXXXXX
+curl -s -w "\nHTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}" \
+  | python3 -m json.tool 2>/dev/null || true
+```
+- **HTTP 200** → valid for current server keys.  
+- **HTTP 404** (or error message *No such account* / *does not exist*) → **stale** for this server.
+
+#### Validate one Connect account (Stripe CLI)
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+
+stripe accounts retrieve acct_XXXXXXXXXXXXX --api-key "$STRIPE_SECRET_KEY"
+```
+
+#### Validate ALL saved Connect accounts (batch — recommended on EC2)
+Checks every `users.stripe_account_id` against the server key. Prints `OK` or `STALE` per barber.
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+
+if [ -z "$STRIPE_SECRET_KEY" ]; then
+  echo "STRIPE_SECRET_KEY not set — load backend .env or export from PM2"
+  exit 1
+fi
+
+sudo -u postgres psql -d campuscuts -t -A -c "
+SELECT email || '|' || stripe_account_id
+FROM users
+WHERE stripe_account_id IS NOT NULL
+ORDER BY email;
+" | while IFS='|' read -r email acct; do
+  [ -z "$acct" ] && continue
+  resp=$(curl -s -w "\n%{http_code}" -u "${STRIPE_SECRET_KEY}:" \
+    "https://api.stripe.com/v1/accounts/${acct}")
+  http=$(echo "$resp" | tail -n1)
+  body=$(echo "$resp" | sed '$d')
+  if [ "$http" = "200" ]; then
+    charges=$(echo "$body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('charges_enabled', False))" 2>/dev/null)
+    payouts=$(echo "$body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('payouts_enabled', False))" 2>/dev/null)
+    echo "OK      | $email | $acct | charges=$charges payouts=$payouts"
+  else
+    msg=$(echo "$body" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('error',{}).get('message',''))" 2>/dev/null)
+    echo "STALE   | $email | $acct | HTTP $http ${msg}"
+  fi
+done
+```
+Clear any line marked `STALE` using [Clear stale account](#clear-stale-stripe-connect-account-manual-reset), then have the barber use **Continue with Stripe**.
+
+#### Validate one user by email (batch helper)
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+
+EMAIL='barber@example.com'
+ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+  "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
+if [ -z "$ACCT" ]; then echo "No stripe_account_id for $EMAIL"; exit 0; fi
+echo "Checking $EMAIL → $ACCT"
+curl -s -w "\nHTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}"
+```
+
+#### Compare test vs live keys (mode mismatch)
+If unsure whether an `acct_*` is test or live, try both keys (only if you have both configured):
+```bash
+cd ~/CampusCuts/backend
+set -a && [ -f .env ] && . ./.env; set +a
+ACCT=acct_XXXXXXXXXXXXX
+
+echo "=== LIVE key ==="
+curl -s -o /dev/null -w "HTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY_LIVE:-$STRIPE_SECRET_KEY}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}"
+
+echo "=== TEST key ==="
+curl -s -o /dev/null -w "HTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY_TEST:-}:" \
+  "https://api.stripe.com/v1/accounts/${ACCT}"
+```
+Whichever returns **200** owns that connected account. The server must use that same mode in production.
+
+#### Sync DB flags from Stripe (valid accounts only)
+After validation, refresh `stripe_charges_enabled` / `stripe_payouts_enabled` from Stripe for all saved accounts (skips invalid with a warning):
+```bash
+cd ~/CampusCuts/backend
+npm run sync-stripe-status
 ```
 
 ### Clear Stale Stripe Connect Account (manual reset)
