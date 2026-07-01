@@ -220,12 +220,6 @@ export default function StripeHubModal({
   }, [isOpen]);
 
   useEffect(() => {
-    if (guideStep < GUIDE_FIRST_STRIPE_STEP) {
-      setChecklistOpen(false);
-    }
-  }, [guideStep]);
-
-  useEffect(() => {
     if (!isOpen) return;
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
@@ -350,7 +344,7 @@ export default function StripeHubModal({
   const needsSetup = !fullyConnected;
   const canDismiss = !blocking || fullyConnected;
   const showWizard = needsSetup || blocking;
-  const showChecklistDrawer = showWizard && guideStep >= GUIDE_FIRST_STRIPE_STEP;
+  const showChecklistDrawer = showWizard;
 
   const handleBackdropClick = () => {
     if (canDismiss) onClose();
@@ -606,10 +600,12 @@ export default function StripeHubModal({
           </>
         )}
         <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
-          <div className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}`}>
+          <div
+            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}${showChecklistDrawer ? ' pl-14' : ''}`}
+          >
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
-              <p className="text-white/70 text-sm mt-2 leading-snug">
+              <p className="text-white/70 text-xs mt-1.5 leading-snug">
                 Keep this guide and <strong className="text-white/90">Stripe</strong> open side by side. Jump back and
                 forth if you get stuck.
               </p>
