@@ -356,7 +356,7 @@ export default function StripeHubModal({
                 href="https://en.wikipedia.org/wiki/Stripe,_Inc."
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-600 underline font-medium hover:text-black"
+                className="text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100"
               >
                 here
               </a>
