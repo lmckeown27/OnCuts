@@ -72,7 +72,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'bank',
     label: 'Bank account (external account)',
     input:
-      'Select your bank institution in Stripe and connect the account where you want payouts deposited.',
+      'Select your bank institution in Stripe (Chase, Wells Fargo, etc) and connect the account where you want payouts deposited.',
   },
   {
     id: 'tos',
