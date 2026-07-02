@@ -71,6 +71,7 @@ module.exports = {
         'fade-in': 'fadeIn 0.3s ease-in',
         'scale-in': 'scaleIn 0.3s ease-out',
         marquee: 'marquee 55s linear infinite',
+        'checklist-tab-bounce': 'checklistTabBounce 2s ease-in-out infinite',
       },
       keyframes: {
         slideDown: {
@@ -92,6 +93,10 @@ module.exports = {
         marquee: {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
+        },
+        checklistTabBounce: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '50%': { transform: 'translateX(4px)' },
         },
       },
       transitionProperty: {

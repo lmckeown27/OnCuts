@@ -523,7 +523,11 @@ export default function StripeHubModal({
                 onClick={() => setRequirementsDrawerOpen((open) => !open)}
                 aria-expanded={requirementsDrawerOpen}
                 aria-label={requirementsDrawerOpen ? 'Hide Stripe checklist' : 'Show Stripe checklist'}
-                className="self-start flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                className={`self-start flex flex-col items-center gap-1 w-[3.75rem] shrink-0 px-1.5 py-2.5 bg-white border border-gray-200 border-l-0 rounded-r-lg shadow-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 motion-safe:transition-transform ${
+                  requirementsDrawerOpen
+                    ? ''
+                    : 'motion-safe:animate-checklist-tab-bounce motion-reduce:animate-none'
+                }`}
                 style={{ marginTop: checklistToggleTopPx ?? CHECKLIST_TOGGLE_FALLBACK_TOP_PX }}
               >
                 {requirementsDrawerOpen ? (
