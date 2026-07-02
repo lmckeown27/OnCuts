@@ -95,8 +95,8 @@ module.exports = {
           '100%': { transform: 'translateX(-50%)' },
         },
         checklistTabBounce: {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '50%': { transform: 'translateX(4px)' },
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.1)' },
         },
       },
       transitionProperty: {
