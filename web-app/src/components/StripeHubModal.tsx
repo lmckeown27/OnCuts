@@ -447,8 +447,10 @@ export default function StripeHubModal({
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
         Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
-        the button below to connect payouts with <strong>PismoPlatforms</strong>. Stuck on a step? Open{' '}
-        <strong>Checklist</strong> for help on that field.
+        the button below to connect payouts with <strong>PismoPlatforms</strong>.
+      </p>
+      <p className="text-base text-gray-600 leading-relaxed">
+        Stuck on a step? Open <strong>Checklist</strong> for help on that field.
       </p>
       {renderConnectAlerts()}
       {stripeTabOpened && !fullyConnected ? (
