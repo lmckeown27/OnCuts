@@ -437,9 +437,8 @@ export default function StripeHubModal({
           rel="noopener noreferrer"
           className={LEARN_MORE_LINK_CLASS}
         >
-          here
-        </a>
-        :
+              here
+            </a>
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
         When a client pays you, the transaction is handled by <strong>Stripe</strong>. Stripe securely moves
