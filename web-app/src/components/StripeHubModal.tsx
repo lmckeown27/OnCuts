@@ -146,19 +146,25 @@ function StripeRequirementsDrawerPanel({
               >
                 <span className="text-sm font-medium text-gray-900 leading-snug">{item.label}</span>
                 <ChevronDown
-                  className={`w-4 h-4 shrink-0 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 shrink-0 text-gray-500 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''}`}
                   aria-hidden="true"
                 />
               </button>
-              {isExpanded && (
-                <div className="px-3 pb-3 pt-3 border-t border-gray-100">
-                  {'copyable' in item && item.copyable ? (
-                    <ChecklistInputBlock text={item.input} />
-                  ) : (
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
-                  )}
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-3 pb-3 pt-3 border-t border-gray-100">
+                    {'copyable' in item && item.copyable ? (
+                      <ChecklistInputBlock text={item.input} />
+                    ) : (
+                      <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </li>
           );
         })}
