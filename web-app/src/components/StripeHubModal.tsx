@@ -28,7 +28,6 @@ interface StripeHubModalProps {
 const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
-const STRIPE_EXPRESS_URL = 'https://support.stripe.com/express';
 const PISMO_PLATFORMS_URL = 'https://pismoplatforms.com';
 
 /** Matches Stripe Dashboard “Actions required” for Express individual providers on PismoPlatforms. */
@@ -470,21 +469,11 @@ export default function StripeHubModal({
         <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during setup.
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
-        Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and more).
-        Open <strong>Checklist</strong> anytime. Tap any item for navigation help. You can complete them in any order.
+        Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and more). Use
+        the button below to connect payouts with <strong>PismoPlatforms</strong>. Stuck on a step? Open{' '}
+        <strong>Checklist</strong> for help on that field.
       </p>
       {renderConnectAlerts()}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-base text-gray-600">
-        <p>
-          Select <strong>{primaryStripeButtonLabel}</strong> below to sign in with{' '}
-          <strong>PismoProvider</strong> (
-          <a href={STRIPE_EXPRESS_URL} target="_blank" rel="noopener noreferrer" className={LEARN_MORE_LINK_CLASS}>
-            Stripe Express
-          </a>
-          ). The button checks your progress first, then opens or refreshes Stripe as needed. When you return here, we
-          check again automatically.
-        </p>
-      </div>
       {stripeTabOpened && !fullyConnected ? (
         <p className="text-base text-gray-600">
           Return here after working in Stripe. We automatically check your progress when you switch back to this tab.
