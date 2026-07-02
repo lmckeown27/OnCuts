@@ -548,8 +548,8 @@ export default function StripeHubModal({
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
-                Open <strong className="text-white/90">Checklist</strong> for help on any field. Keep Stripe and this
-                guide side by side.
+                Open <strong className="text-white/90">Checklist</strong> for help on any field. Jump back and forth
+                if you&apos;re stuck.
               </p>
             )}
           </div>
