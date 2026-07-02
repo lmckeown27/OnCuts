@@ -69,16 +69,16 @@ const STRIPE_REQUIRED_ACTIONS = [
     copyable: true,
   },
   {
+    id: 'bank',
+    label: 'Bank account (external account)',
+    input:
+      'Select your bank institution in Stripe and connect the account where you want payouts deposited.',
+  },
+  {
     id: 'tos',
     label: 'Accept terms of service',
     input:
       'Read and accept the Stripe Connected Account Agreement. Payments and payouts stay blocked until you accept.',
-  },
-  {
-    id: 'bank',
-    label: 'Bank account (external account)',
-    input:
-      'Your routing number and account number for the checking or savings account where you want payouts deposited.',
   },
 ] as const;
 
