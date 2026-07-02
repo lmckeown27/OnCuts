@@ -60,11 +60,13 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'industry',
     label: 'Industry',
     input: 'Personal care services.',
+    copyable: true,
   },
   {
     id: 'website',
     label: 'Business website',
     input: PISMO_PLATFORMS_URL,
+    copyable: true,
   },
   {
     id: 'tos',
@@ -150,7 +152,11 @@ function StripeRequirementsDrawerPanel({
               </button>
               {isExpanded && (
                 <div className="px-3 pb-3 pt-3 border-t border-gray-100">
-                  <ChecklistInputBlock text={item.input} />
+                  {'copyable' in item && item.copyable ? (
+                    <ChecklistInputBlock text={item.input} />
+                  ) : (
+                    <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
+                  )}
                 </div>
               )}
             </li>
