@@ -11,6 +11,7 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import { getDefaultStripeClient } from '../config/stripe';
+import { isStaleConnectAccountError } from '../services/stripe.service';
 
 // Load environment variables
 dotenv.config();
@@ -83,8 +84,8 @@ async function syncStripeStatus(): Promise<void> {
       } catch (error: any) {
         console.log(`⚠️  Error | ${barber.first_name} (${barber.email}): ${error.message}`);
         
-        // If account doesn't exist in Stripe, set to false
-        if (error.code === 'account_invalid' || error.type === 'StripeInvalidRequestError') {
+        // If account doesn't exist for this platform, clear saved Connect id
+        if (isStaleConnectAccountError(error)) {
           await pool.query(`
             UPDATE users 
             SET stripe_account_id = NULL,

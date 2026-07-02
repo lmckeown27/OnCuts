@@ -29,6 +29,7 @@ import {
   providerTypesForCategory,
 } from '../utils/service-provider.mapper';
 import type { ServiceProviderCategory } from '../types/service-provider.types';
+import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -119,7 +120,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND (u."isBanned" IS NOT TRUE)'}
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND u.stripe_charges_enabled = true AND (u."isBanned" IS NOT TRUE)'}
     `;
 
     if (constrainByDistance && hasUserLocation) {
@@ -239,6 +240,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       } else {
         filteredRows = nearbyRows;
       }
+    }
+
+    if (!shouldIncludeHidden && filteredRows.length > 0) {
+      filteredRows = await filterRowsEligibleForConsumerBrowse(filteredRows);
     }
     
     // Get services/pricing for each barber
