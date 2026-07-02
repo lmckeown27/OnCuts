@@ -460,7 +460,7 @@ export default function StripeHubModal({
         the button below to connect payouts with <strong>PismoPlatforms</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed text-center">
-        Stuck on a step? Open <strong>Checklist</strong> for help on that field.
+        Stuck on a step? Open <strong>Checklist</strong> in the top left corner.
       </p>
       {renderConnectAlerts()}
       {stripeTabOpened && !fullyConnected ? (
