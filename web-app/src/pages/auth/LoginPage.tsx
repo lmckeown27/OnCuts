@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
-import { PismoPlatformsLogo } from '../../assets';
+import { TivelaPlatformsLogo } from '../../assets';
 
 interface LoginForm {
   email: string;
@@ -125,15 +125,15 @@ export default function LoginPage() {
         <div className="flex flex-col items-center justify-center mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={PismoPlatformsLogo} 
-              alt="PismoPlatforms Logo" 
+              src={TivelaPlatformsLogo} 
+              alt="TivelaPlatforms Logo" 
               className="h-16 w-auto mb-4"
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
             Sign In
           </h1>
-          <p className="text-gray-300">Access your PismoPlatforms account</p>
+          <p className="text-gray-300">Access your TivelaPlatforms account</p>
         </div>
 
         {/* Form Card */}
@@ -297,7 +297,7 @@ export default function LoginPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to PismoPlatforms
+            ← Back to TivelaPlatforms
           </Link>
         </div>
       </div>

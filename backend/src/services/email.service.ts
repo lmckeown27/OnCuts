@@ -14,6 +14,7 @@
  */
 
 import nodemailer from 'nodemailer';
+import { getFrontendBaseUrl } from '../config/app-url';
 import { logger } from '../utils/logger';
 
 /**
@@ -161,7 +162,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
 
   try {
     const transporter = createRealSmtpTransporter();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -427,7 +428,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
 
   try {
     const transporter = createSkippedSmtpTransporter('transactional');
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -536,7 +537,7 @@ export async function sendBookingConfirmationEmails(details: BookingConfirmation
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   // Send to consumer
   try {
@@ -758,7 +759,7 @@ export async function sendPendingBookingEmails(details: PendingBookingEmailDetai
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   // Send receipt to consumer
   try {
@@ -994,7 +995,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   // Send to consumer
   try {
@@ -1170,7 +1171,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   // Send to consumer - Payment Request
   try {
@@ -1434,7 +1435,7 @@ export async function sendBarberApplicationNotification(
 
   try {
     const transporter = createSkippedSmtpTransporter('transactional');
-    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -1705,7 +1706,7 @@ export async function sendBookingCancellationEmails(details: BookingCancellation
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   // Send to consumer
   try {
@@ -1980,7 +1981,7 @@ export async function sendBookingDeclineEmail(details: BookingDeclineEmailDetail
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   try {
     const transporter = createSkippedSmtpTransporter('transactional');
@@ -2196,7 +2197,7 @@ export async function sendBookingReminderEmail(details: BookingReminderEmailDeta
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   try {
     const transporter = createSkippedSmtpTransporter('transactional');
@@ -2379,7 +2380,7 @@ export async function sendBarberReminderEmail(details: BookingReminderEmailDetai
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   try {
     const transporter = createSkippedSmtpTransporter('transactional');
@@ -2562,7 +2563,7 @@ export async function sendGuestApplicationApprovedEmail(
   firstName: string,
   campusName: string
 ): Promise<void> {
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const signUpLink = `${frontendUrl}/web/auth`;
 
   const subject = 'Your CampusCut Barber Application Has Been Approved!';
@@ -2715,7 +2716,7 @@ export async function sendConsumerNewMessageEmail(details: NewMessageEmailDetail
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   // Link to auth page with redirect to consumer messages after login
   const conversationLink = `${frontendUrl}/web/auth?redirect=/web/consumer/messages/${details.conversationId}`;
 
@@ -2858,7 +2859,7 @@ export async function sendBarberNewMessageFromConsumerEmail(details: NewMessageE
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   // Link to auth page with redirect to barber messages after login
   const conversationLink = `${frontendUrl}/web/auth?redirect=/web/barber/messages/${details.conversationId}`;
 
@@ -3012,7 +3013,7 @@ export async function sendBarberToBarberMessageEmail(details: BarberToBarberMess
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   // Link to auth page with redirect to barber messages after login
   const conversationLink = `${frontendUrl}/web/auth?redirect=/web/barber/messages/${details.conversationId}`;
 
@@ -3154,7 +3155,7 @@ export async function sendConsumerCheckInEmail(details: ConsumerCheckInEmailDeta
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const consumerDashboardUrl = `${frontendUrl}/consumer/booking-status`;
 
   const firstName = details.consumerName.split(' ')[0];
@@ -3335,7 +3336,7 @@ export async function sendBarberCheckInEmail(details: BarberCheckInEmailDetails)
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const barberDashboardUrl = `${frontendUrl}/web/barber`;
 
   const firstName = details.barberName.split(' ')[0];
@@ -3517,7 +3518,7 @@ export async function sendBarber24HFollowupEmail(details: BarberCheckInEmailDeta
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const barberDashboardUrl = `${frontendUrl}/web/barber`;
 
   const firstName = details.barberName.split(' ')[0];
@@ -3710,7 +3711,7 @@ export async function sendPaymentReminderEmail(details: PaymentReminderEmailDeta
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const paymentUrl = `${frontendUrl}/web/booking/${details.bookingId}`;
 
   const firstName = details.consumerName.split(' ')[0];
@@ -3889,7 +3890,7 @@ export async function sendPendingBookingWarningEmail(details: PendingBookingWarn
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const barberDashboardUrl = `${frontendUrl}/web/barber`;
 
   const firstName = details.barberName.split(' ')[0];
@@ -4062,7 +4063,7 @@ export async function sendBarberAutoCancellationEmail(details: AutoCancellationE
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
   const barberDashboardUrl = `${frontendUrl}/web/barber`;
 
   const firstName = details.barberName.split(' ')[0];
@@ -4209,7 +4210,7 @@ export async function sendConsumerAutoCancellationEmail(details: AutoCancellatio
     return;
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const frontendUrl = getFrontendBaseUrl();
 
   const firstName = details.consumerName.split(' ')[0];
   const subject = `Booking Cancelled: ${details.serviceName} with ${details.barberName}`;

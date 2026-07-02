@@ -1,20 +1,15 @@
+import { DEFAULT_PRODUCTION_APP_URL, getFrontendBaseUrl } from './app-url';
+
 /** Default business URL on new Express Connect accounts when env is unset. */
-export const DEFAULT_STRIPE_CONNECT_BUSINESS_URL = 'https://pismoplatforms.com';
+export const DEFAULT_STRIPE_CONNECT_BUSINESS_URL = DEFAULT_PRODUCTION_APP_URL;
 
 export function getConnectBusinessProfileUrl(): string {
   return process.env.STRIPE_CONNECT_BUSINESS_URL?.trim() || DEFAULT_STRIPE_CONNECT_BUSINESS_URL;
 }
 
-/**
- * Base URL for Connect onboarding return/refresh redirects (no trailing slash).
- * Uses FRONTEND_URL when set (same as before the Pismo platform migration).
- */
+/** Base URL for Connect onboarding return/refresh redirects (no trailing slash). */
 export function getConnectFrontendBaseUrl(): string {
-  const base =
-    process.env.FRONTEND_URL?.trim().replace(/\/$/, '') ||
-    process.env.WEB_APP_URL?.trim().replace(/\/$/, '') ||
-    'https://pismoplatforms.com';
-  return base;
+  return getFrontendBaseUrl();
 }
 
 export function getConnectRefreshUrl(): string {

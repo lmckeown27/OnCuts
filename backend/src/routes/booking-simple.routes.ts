@@ -9,6 +9,7 @@ import express from 'express';
 import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { getFrontendBaseUrl } from '../config/app-url';
 import notificationService from '../services/notification.service';
 import pushNotificationService from '../services/pushNotification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
@@ -1165,7 +1166,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
       : 'N/A';
     
     // Build payment URL
-    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const frontendUrl = getFrontendBaseUrl();
     const paymentUrl = `${frontendUrl}/web/payment/${id}`;
 
     // Send payment request notification to consumer
@@ -1699,7 +1700,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     }
 
     // Send payment request email to consumer
-    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const frontendUrl = getFrontendBaseUrl();
     const paymentUrl = `${frontendUrl}/web/payment/${id}`;
     const serviceName = booking.service_name || 'Haircut';
     

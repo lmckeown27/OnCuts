@@ -188,7 +188,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   {hasPartialAccount
                     ? 'Your Stripe account exists but payouts are not active yet. Complete onboarding to unlock business analytics and receive deposits.'
-                    : 'Link Stripe Connect to track earnings, view performance analytics, and receive payouts directly to your bank. PismoPlatforms does not hold barber funds.'}
+                    : 'Link Stripe Connect to track earnings, view performance analytics, and receive payouts directly to your bank. TivelaPlatforms does not hold barber funds.'}
                 </p>
                 {connectStatusUnknown && (
                   <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">

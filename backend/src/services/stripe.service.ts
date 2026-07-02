@@ -26,7 +26,7 @@ function connectOperationalApiError(error: unknown, fallback: string): ApiError 
   if (isStripeConnectPlatformProfileIncompleteError(error)) {
     return new ApiError(
       503,
-      'PismoPlatforms must finish Stripe Connect platform setup before barbers can onboard. ' +
+      'TivelaPlatforms must finish Stripe Connect platform setup before barbers can onboard. ' +
         'A platform admin needs to open https://dashboard.stripe.com/connect/accounts/overview (live mode), ' +
         'complete the Connect profile questionnaire, then try again.',
       'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE'

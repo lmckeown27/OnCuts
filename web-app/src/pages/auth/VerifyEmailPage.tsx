@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Mail, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import authService from '../../services/auth.service';
-import { PismoPlatformsLogo } from '../../assets';
+import { TivelaPlatformsLogo } from '../../assets';
 
 const verifyGateStorageKey = (emailLower: string) => `avilaplatforms_verify_gate_ok:${emailLower}`;
 const verifyTermsLegacyKey = (emailLower: string) => `avilaplatforms_verify_terms_ok:${emailLower}`;
@@ -217,7 +217,7 @@ export default function VerifyEmailPage() {
     try {
       await confirmVerificationCode(email, verificationCode);
       await completeRegistration(email);
-      toast.success('Welcome to PismoPlatforms!');
+      toast.success('Welcome to TivelaPlatforms!');
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
@@ -280,8 +280,8 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={PismoPlatformsLogo} 
-              alt="PismoPlatforms Logo" 
+              src={TivelaPlatformsLogo} 
+              alt="TivelaPlatforms Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>

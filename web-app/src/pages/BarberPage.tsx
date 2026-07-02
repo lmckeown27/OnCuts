@@ -35,7 +35,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
-import { PismoPlatformsLogo } from '@assets';
+import { TivelaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
 import barberService, { TimeBlock } from '../services/barber.service';
@@ -598,7 +598,7 @@ export default function BarberPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
+              <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Booking Requests + Profile */}
@@ -2921,7 +2921,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Google Calendar blocked slot - not unblockable from PismoPlatforms
+                            // Google Calendar blocked slot - not unblockable from TivelaPlatforms
                             const googleBlockModal = getGoogleCalendarBlockForSlotModal(slot);
                             if (googleBlockModal) {
                               return (

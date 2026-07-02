@@ -1,5 +1,5 @@
 /**
- * PismoPlatforms Landing Page
+ * TivelaPlatforms Landing Page
  * 
  * Professional landing page with top navigation and comprehensive footer
  * Inspired by modern SaaS landing pages
@@ -97,11 +97,11 @@ export default function LandingPage() {
             >
               <img
                 src={webpageLogo}
-                alt="PismoPlatforms"
+                alt="TivelaPlatforms"
                 className="h-12 w-auto"
               />
               <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
-                PismoPlatforms
+                TivelaPlatforms
               </span>
             </button>
 
@@ -199,7 +199,7 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be a PismoPlatforms Barber?
+            Want to be a TivelaPlatforms Barber?
           </h2>
           <div className="flex justify-center">
             <button 
@@ -274,7 +274,7 @@ export default function LandingPage() {
                         <li>
                           Download{' '}
                           <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
-                            PismoPlatforms
+                            TivelaPlatforms
                           </a>{' '}
                           on iPhone, or select your college town here and tap &quot;Find Barber&quot; on the web.
                         </li>
@@ -342,7 +342,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Open messaging in the PismoPlatforms app or on the web.</li>
+                        <li>Open messaging in the TivelaPlatforms app or on the web.</li>
                         <li>Chat with your barber to coordinate details or share reference photos.</li>
                       </ol>
                     </div>
@@ -387,7 +387,7 @@ export default function LandingPage() {
                         <li>
                           Once approved, download{' '}
                           <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
-                            Pismo - Provider
+                            Tivela - Provider
                           </a>{' '}
                           from the App Store.
                         </li>
@@ -411,7 +411,7 @@ export default function LandingPage() {
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>You keep 85% of every payment.</li>
                         <li>You keep 100% of tips.</li>
-                        <li>PismoPlatforms takes a 15% platform fee, far less than the 50% many shops take.</li>
+                        <li>TivelaPlatforms takes a 15% platform fee, far less than the 50% many shops take.</li>
                       </ol>
                     </div>
                   </div>
@@ -428,8 +428,8 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Mark the booking complete in Pismo - Provider or your barber dashboard after the haircut.</li>
-                        <li>The customer pays through PismoPlatforms.</li>
+                        <li>Mark the booking complete in Tivela - Provider or your barber dashboard after the haircut.</li>
+                        <li>The customer pays through TivelaPlatforms.</li>
                         <li>Funds deposit directly to your connected Stripe account.</li>
                       </ol>
                     </div>
@@ -447,7 +447,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Set your weekly hours in Pismo - Provider or your barber dashboard.</li>
+                        <li>Set your weekly hours in Tivela - Provider or your barber dashboard.</li>
                         <li>Block specific dates or times when needed.</li>
                         <li>Optionally connect Google Calendar to auto-block busy times.</li>
                       </ol>
@@ -465,7 +465,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Google Calendar sync blocks busy times so customers cannot double-book you. We only see when you are busy, not event details. Disconnect anytime in Pismo - Provider or your dashboard.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Google Calendar sync blocks busy times so customers cannot double-book you. We only see when you are busy, not event details. Disconnect anytime in Tivela - Provider or your dashboard.</p>
                     </div>
                   </div>
                 </div>
@@ -492,7 +492,7 @@ export default function LandingPage() {
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
             <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect</h3>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Whether you&apos;re a prospective barber, a campus partner, or interested in the PismoPlatforms System, we&apos;d love to hear from you
+              Whether you&apos;re a prospective barber, a campus partner, or interested in the TivelaPlatforms System, we&apos;d love to hear from you
             </p>
             <button
               onClick={openContactPopup}
@@ -551,7 +551,7 @@ export default function LandingPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   // Open mailto with pre-filled content
-                  const subject = encodeURIComponent(`PismoPlatforms Support Request from ${contactForm.name}`);
+                  const subject = encodeURIComponent(`TivelaPlatforms Support Request from ${contactForm.name}`);
                   const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
                   window.location.href = `mailto:avilaplatformshelp@gmail.com?subject=${subject}&body=${body}`;
                   setContactSubmitted(true);
@@ -631,17 +631,17 @@ export default function LandingPage() {
                 className="shrink-0 transition-opacity hover:opacity-80"
                 aria-label="Back to top"
               >
-                <img src={webpageLogo} alt="PismoPlatforms" className="h-10 w-auto" />
+                <img src={webpageLogo} alt="TivelaPlatforms" className="h-10 w-auto" />
               </button>
               <p className="text-sm text-gray-500 sm:whitespace-nowrap">
-                © 2026 PismoPlatforms. All rights reserved.
+                © 2026 TivelaPlatforms. All rights reserved.
               </p>
             </div>
 
             <ul className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-4 text-base sm:flex-1 sm:gap-x-8 sm:text-lg max-sm:flex-col max-sm:gap-y-5">
               <li className="flex justify-center">
                 <a
-                  href="https://avilaplatforms.com/privacy"
+                  href="https://tivelaplatforms.com/privacy"
                   className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   Privacy Policy
@@ -649,7 +649,7 @@ export default function LandingPage() {
               </li>
               <li className="flex justify-center">
                 <a
-                  href="https://avilaplatforms.com/terms"
+                  href="https://tivelaplatforms.com/terms"
                   className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   Terms of Service
@@ -657,7 +657,7 @@ export default function LandingPage() {
               </li>
               <li className="flex justify-center">
                 <a
-                  href="https://avilaplatforms.com/gdpr"
+                  href="https://tivelaplatforms.com/gdpr"
                   className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   GDPR

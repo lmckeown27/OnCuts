@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
-import { PismoPlatformsLogo } from '@assets';
+import { TivelaPlatformsLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import DatePicker from '../components/DatePicker';
@@ -672,7 +672,7 @@ export default function ConsumerBookingStatusPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-8" />
+            <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-8" />
             <button
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-black"
@@ -870,7 +870,7 @@ export default function ConsumerBookingStatusPage() {
               </span>
             )}
           </button>
-          <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10" />
+          <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-10" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>

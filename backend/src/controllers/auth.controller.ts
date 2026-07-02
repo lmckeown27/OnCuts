@@ -130,6 +130,7 @@ import {
 import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
 import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
+import { getFrontendBaseUrl } from '../config/app-url';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
@@ -1482,7 +1483,7 @@ export const requestPasswordReset = async (req: AuthRequest, res: Response, next
     // Generate reset token and send email
     const userId = result.rows[0].id;
     const resetToken = generatePasswordResetToken(userId);
-    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const frontendUrl = getFrontendBaseUrl();
     const resetLink = `${frontendUrl}/web/reset-password?token=${resetToken}`;
     
     // Send password reset email (non-blocking)

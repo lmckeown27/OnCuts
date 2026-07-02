@@ -18,7 +18,7 @@ import { generateQrWithLogo, CAMPUSCUT_LOGO_PATH } from '../utils/qr';
 async function main() {
   const args = process.argv.slice(2);
   
-  const url = args[0] || 'https://campuscut.com';
+  const url = args[0] || 'https://tivelaplatforms.com';
   const outputPath = args[1] || path.resolve(__dirname, '../../output/campuscut-qr.png');
   
   console.log('🔲 Generating QR code...');

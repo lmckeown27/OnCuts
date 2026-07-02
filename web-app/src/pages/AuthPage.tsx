@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
-import { PismoPlatformsLogo } from '../assets';
+import { TivelaPlatformsLogo } from '../assets';
 import { useViewport } from '../hooks/useViewport';
 import { isValidE164Phone, normalizeE164Phone } from '../utils/phoneE164';
 
@@ -525,8 +525,8 @@ export default function AuthPage() {
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={PismoPlatformsLogo} 
-              alt="PismoPlatforms Logo" 
+              src={TivelaPlatformsLogo} 
+              alt="TivelaPlatforms Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
@@ -534,7 +534,7 @@ export default function AuthPage() {
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </h1>
           <p className="text-sm sm:text-base text-gray-300">
-            {mode === 'login' ? 'Access your PismoPlatforms account' : 'Join PismoPlatforms today'}
+            {mode === 'login' ? 'Access your TivelaPlatforms account' : 'Join TivelaPlatforms today'}
           </p>
         </div>
 
@@ -1404,7 +1404,7 @@ export default function AuthPage() {
             className="text-gray-400 hover:text-white text-sm transition-colors inline-flex items-center gap-2"
           >
             <ArrowLeft size={16} />
-            Back to PismoPlatforms
+            Back to TivelaPlatforms
           </Link>
         </div>
       </div>

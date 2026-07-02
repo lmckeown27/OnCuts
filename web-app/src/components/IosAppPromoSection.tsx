@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import pismoPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
+import tivelaPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
@@ -119,13 +119,13 @@ export default function IosAppPromoSection() {
   return (
     <section
       className="border-y border-white/60 bg-gradient-to-br from-primary-50 via-white to-pink-50 px-4 py-10 sm:py-12"
-      aria-label="Download the PismoPlatforms iOS apps"
+      aria-label="Download the TivelaPlatforms iOS apps"
       id="ios-apps"
     >
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center sm:mb-10">
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-            PismoPlatforms on iOS
+            TivelaPlatforms on iOS
           </h2>
         </div>
 
@@ -133,21 +133,21 @@ export default function IosAppPromoSection() {
           <AppColumn
             heading="For Customers"
             card={{
-              title: 'PismoPlatforms',
-              appLogo: pismoPlatformsAppLogo,
-              appLogoAlt: 'PismoPlatforms app icon',
+              title: 'TivelaPlatforms',
+              appLogo: tivelaPlatformsAppLogo,
+              appLogoAlt: 'TivelaPlatforms app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
-              storeLabel: 'Download PismoPlatforms on the App Store',
+              storeLabel: 'Download TivelaPlatforms on the App Store',
             }}
           />
           <AppColumn
             heading="For Barbers"
             card={{
-              title: 'Pismo - Provider',
+              title: 'Tivela - Provider',
               appLogo: interaProviderAppLogo,
-              appLogoAlt: 'Pismo - Provider app icon',
+              appLogoAlt: 'Tivela - Provider app icon',
               storeHref: IOS_APP_STORE_LINKS.interaProvider,
-              storeLabel: 'Download Pismo - Provider on the App Store',
+              storeLabel: 'Download Tivela - Provider on the App Store',
             }}
           />
         </div>

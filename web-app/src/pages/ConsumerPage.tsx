@@ -20,7 +20,7 @@ import {
   resolveInitialCollegeTown,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
-import { PismoPlatformsLogo } from '@assets';
+import { TivelaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight } from '../hooks';
@@ -635,7 +635,7 @@ export default function ConsumerPage() {
               onClick={() => navigate('/')}
               className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
             >
-              <img src={PismoPlatformsLogo} alt="PismoPlatforms" className="h-10 sm:h-12 w-auto" />
+              <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-10 sm:h-12 w-auto" />
             </button>
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
@@ -833,7 +833,7 @@ export default function ConsumerPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
             <p className="text-gray-600 mb-4">
-              Please be patient as the PismoPlatforms team goes over your application.
+              Please be patient as the TivelaPlatforms team goes over your application.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               If you suspect your application was not sent, please contact{' '}

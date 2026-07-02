@@ -20,7 +20,7 @@ export const BarberConnectOnboarding = () => {
         </div>
         <p className="text-gray-600 mb-4">
           Customer payments run through <strong>Stripe</strong>. Your earnings are paid out with{' '}
-          <strong>Stripe Connect</strong>. PismoPlatforms does <strong>not</strong> hold barber money in a platform balance.
+          <strong>Stripe Connect</strong>. TivelaPlatforms does <strong>not</strong> hold barber money in a platform balance.
           Complete Connect onboarding (bank account) when prompted from your barber dashboard or Stripe.
         </p>
         <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2 mb-6">

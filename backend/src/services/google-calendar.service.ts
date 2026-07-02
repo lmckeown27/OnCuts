@@ -4,12 +4,12 @@
  */
 
 import { google } from 'googleapis';
+import { getGoogleCalendarRedirectUri } from '../config/app-url';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 'https://campuscut.com/api/v1/auth/google-calendar/callback';
 
 // Scopes needed for calendar read/write
 const SCOPES = [
@@ -28,7 +28,7 @@ export function createOAuth2Client() {
   return new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI
+    getGoogleCalendarRedirectUri()
   );
 }
 

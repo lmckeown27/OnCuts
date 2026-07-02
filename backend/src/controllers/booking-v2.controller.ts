@@ -18,6 +18,7 @@ import paymentServiceV2 from '../services/payment-v2.service';
 // import escrowService, { EscrowStatus } from '../services/escrow.service';
 import auditService from '../services/audit.service';
 import { logger } from '../utils/logger';
+import { getFrontendBaseUrl } from '../config/app-url';
 
 /**
  * Poll Stripe Checkout + DB settlement after redirect.
@@ -129,8 +130,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
     const booking = bookingResult.rows[0];
 
     // 4. Stripe Checkout (card + crypto) → Bridge USDC on Sui
-    const frontend =
-      process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5173';
+    const frontend = getFrontendBaseUrl();
     const checkout = await paymentServiceV2.createBookingCheckoutSession({
       bookingId: booking.id,
       consumerId,

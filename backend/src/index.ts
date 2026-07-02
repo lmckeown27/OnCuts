@@ -141,6 +141,8 @@ const allowedOrigins = [
   'https://api.campuscuts.app',
   'https://pismoplatforms.com',
   'https://www.pismoplatforms.com',
+  'https://tivelaplatforms.com',
+  'https://www.tivelaplatforms.com',
   'https://avilaplatforms.com',
   'https://www.avilaplatforms.com',
 ];

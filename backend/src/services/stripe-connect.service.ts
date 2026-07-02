@@ -5,14 +5,13 @@
  */
 
 import Stripe from 'stripe';
+import { getConnectFrontendBaseUrl, getConnectRefreshUrl } from '../config/stripe-connect';
 import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 
 function stripeClient(): Stripe {
   return getDefaultStripeClient();
 }
-
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 interface CreateConnectAccountParams {
   email: string;
@@ -70,8 +69,8 @@ class StripeConnectService {
     try {
       const accountLink = await stripeClient().accountLinks.create({
         account: accountId,
-        refresh_url: `${FRONTEND_URL}/web/barber/connect/refresh`,
-        return_url: `${FRONTEND_URL}${returnPath}`,
+        refresh_url: getConnectRefreshUrl(),
+        return_url: `${getConnectFrontendBaseUrl()}${returnPath}`,
         type: 'account_onboarding',
       });
 

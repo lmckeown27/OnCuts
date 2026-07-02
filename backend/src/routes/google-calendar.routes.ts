@@ -7,11 +7,10 @@ import express, { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { getFrontendBaseUrl } from '../config/app-url';
 import * as googleCalendarService from '../services/google-calendar.service';
 
 const router: Router = express.Router();
-
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://campuscut.com';
 
 /**
  * @route   GET /api/v1/auth/google-calendar/connect
@@ -61,11 +60,11 @@ router.get('/callback', async (req: Request, res: Response) => {
     // Handle OAuth errors
     if (oauthError) {
       logger.warn('Google OAuth error:', { error: oauthError });
-      return res.redirect(`${FRONTEND_URL}/web/barber?googleCalendar=error&message=${encodeURIComponent(String(oauthError))}`);
+      return res.redirect(`${getFrontendBaseUrl()}/web/barber?googleCalendar=error&message=${encodeURIComponent(String(oauthError))}`);
     }
     
     if (!code || !state) {
-      return res.redirect(`${FRONTEND_URL}/web/barber?googleCalendar=error&message=missing_params`);
+      return res.redirect(`${getFrontendBaseUrl()}/web/barber?googleCalendar=error&message=missing_params`);
     }
     
     const barberUserId = String(state);
@@ -75,13 +74,13 @@ router.get('/callback', async (req: Request, res: Response) => {
     
     if (result.success) {
       logger.info('Google Calendar connected via callback', { barberUserId });
-      return res.redirect(`${FRONTEND_URL}/web/barber?googleCalendar=success`);
+      return res.redirect(`${getFrontendBaseUrl()}/web/barber?googleCalendar=success`);
     } else {
-      return res.redirect(`${FRONTEND_URL}/web/barber?googleCalendar=error&message=${encodeURIComponent(result.error || 'unknown')}`);
+      return res.redirect(`${getFrontendBaseUrl()}/web/barber?googleCalendar=error&message=${encodeURIComponent(result.error || 'unknown')}`);
     }
   } catch (error) {
     logger.error('Google Calendar callback error:', error);
-    res.redirect(`${FRONTEND_URL}/web/barber?googleCalendar=error&message=callback_failed`);
+    res.redirect(`${getFrontendBaseUrl()}/web/barber?googleCalendar=error&message=callback_failed`);
   }
 });
 
