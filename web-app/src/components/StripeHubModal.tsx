@@ -54,7 +54,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'ssn',
     label: 'Last four digits of SSN',
     input:
-      'The last 4 digits of your Social Security number as the account representative. Enter full SSN only inside Stripe if asked.',
+      'The last 4 digits of your Social Security number as the account representative. Stripe will never ask for your full SSN.',
   },
   {
     id: 'industry',
