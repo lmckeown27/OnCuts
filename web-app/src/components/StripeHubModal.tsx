@@ -436,8 +436,8 @@ export default function StripeHubModal({
         :
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
-        When a client pays you, the transaction is handled by <strong>Stripe</strong>.{' '}
-        <strong>Stripe</strong> securely moves funds from your customers to your bank account.
+        When a client pays you, the transaction is handled by <strong>Stripe</strong>. Stripe securely moves
+        funds from your customers to your <strong>bank account</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
         Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
