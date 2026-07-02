@@ -59,7 +59,7 @@ import providerService from '../../services/provider.service';
 import type { Barber } from '../../types';
 import type { CollegeTown } from '../../types';
 import {
-  loadHydratedCollegeTown,
+  resolveInitialCollegeTown,
 } from '../../utils/collegeTowns';
 
 export default function MobileConsumerPage() {
@@ -89,64 +89,58 @@ export default function MobileConsumerPage() {
   const [showFullEditor, setShowFullEditor] = useState(false);
   const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [townHydrated, setTownHydrated] = useState(false);
 
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Load saved college town on mount — redirect to find-barber if not set
+  // Optional college town; without one, load all providers
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const savedTown = await loadHydratedCollegeTown();
+      const savedTown = await resolveInitialCollegeTown({ campusId: user?.campus_id });
       if (cancelled) return;
 
       if (savedTown) {
         setSelectedCollegeTown(savedTown);
-      } else {
-        navigate('/');
       }
+      setTownHydrated(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [user?.campus_id]);
 
   useEffect(() => {
-    if (selectedCollegeTown) {
-      loadBarbers();
-    }
-  }, [selectedCollegeTown, browseProviderCategory]);
+    if (!townHydrated) return;
+    loadBarbers();
+  }, [townHydrated, selectedCollegeTown, browseProviderCategory]);
 
   // Load unread message count on mount
   useEffect(() => {
     loadUnreadCount();
   }, []);
 
-  // Load barbers — college town is the search center; barbers are matched by public service location
+  // Load barbers — uses college town for distance when set; otherwise all providers
   const loadBarbers = async () => {
-    if (!selectedCollegeTown) return;
-    
     try {
       setIsLoading(true);
       const constrainByDistance = getBrowseConstrainByDistance();
       const maxDistanceMiles = getBrowseMaxDistanceMiles();
-      const { latitude, longitude } = selectedCollegeTown;
+      const latitude = selectedCollegeTown?.latitude ?? null;
+      const longitude = selectedCollegeTown?.longitude ?? null;
       const listFilters = browseCategoryApiParam(browseProviderCategory);
 
       let response;
-      if (latitude != null && longitude != null) {
-        if (constrainByDistance) {
-          response = await providerService.getProvidersByLocation(
-            latitude,
-            longitude,
-            { constrainListByDistance: true, ...listFilters },
-            milesToKmForBrowse(maxDistanceMiles)
-          );
-        } else {
-          response = await providerService.getProviders(listFilters);
-        }
+      if (latitude != null && longitude != null && constrainByDistance) {
+        response = await providerService.getProvidersByLocation(
+          latitude,
+          longitude,
+          { constrainListByDistance: true, ...listFilters },
+          milesToKmForBrowse(maxDistanceMiles)
+        );
       } else {
         response = await providerService.getProviders(listFilters);
       }
@@ -256,13 +250,17 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show loading state while auth is loading, redirecting, or fetching
-  if (isAuthLoading || !selectedCollegeTown || isLoading) {
+  // Show loading while resolving browse area or fetching providers
+  if (isAuthLoading || !townHydrated || isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-gray-800 animate-spin mb-4" />
         <p className="text-gray-600 text-center">
-          {isAuthLoading ? 'Loading...' : `Finding barbers near ${selectedCollegeTown?.shortName || 'your area'}...`}
+          {isAuthLoading || !townHydrated
+            ? 'Loading...'
+            : selectedCollegeTown
+              ? `Finding barbers near ${selectedCollegeTown.shortName}...`
+              : 'Finding providers...'}
         </p>
       </div>
     );
@@ -274,17 +272,23 @@ export default function MobileConsumerPage() {
         <GraduationCap className="w-16 h-16 text-gray-300 mb-4" />
         <h2 className="text-xl font-bold text-gray-900 mb-2">No Barbers Found</h2>
         <p className="text-gray-600 text-center mb-4">
-          We couldn&apos;t find any barbers near {selectedCollegeTown.shortName}.
+          {selectedCollegeTown
+            ? `We couldn't find any barbers near ${selectedCollegeTown.shortName}.`
+            : 'No providers are available yet.'}
         </p>
         <p className="text-sm text-gray-500 text-center mb-6">
-          Check back later or try a different college town.
+          {selectedCollegeTown
+            ? 'Check back later or try a different college town.'
+            : 'Check back soon as more providers join the platform.'}
         </p>
-        <button
-          onClick={() => navigate('/')}
-          className="px-6 py-3 bg-brand-500 text-white rounded-lg font-semibold"
-        >
-          Change Town
-        </button>
+        {selectedCollegeTown && (
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-brand-500 text-white rounded-lg font-semibold"
+          >
+            Change Town
+          </button>
+        )}
       </div>
     );
   }
@@ -314,7 +318,9 @@ export default function MobileConsumerPage() {
               <img src="/src/assets/logos/Logo1.png" alt="PismoPlatforms" className="h-8" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
-                <p className="text-xs text-gray-500 leading-tight">{selectedCollegeTown.shortName}</p>
+                <p className="text-xs text-gray-500 leading-tight">
+                  {selectedCollegeTown?.shortName ?? 'All providers'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">

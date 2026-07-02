@@ -17,7 +17,7 @@ import { barberApplicationService } from '../services/barber-application.service
 import type { Barber } from '../types';
 import type { CollegeTown } from '../types';
 import {
-  loadHydratedCollegeTown,
+  resolveInitialCollegeTown,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
 import { PismoPlatformsLogo } from '@assets';
@@ -1388,6 +1388,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [browseProviderCategory, setBrowseProviderCategoryState] = useState<BrowseProviderCategory>(
     getBrowseProviderCategory,
   );
+  const [townHydrated, setTownHydrated] = useState(false);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1399,25 +1400,21 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const latitude = selectedCollegeTown?.latitude ?? null;
   const longitude = selectedCollegeTown?.longitude ?? null;
 
-  // Load saved college town and filters on mount
+  // Load saved college town when available; browse works without one (all providers).
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const savedTown = await loadHydratedCollegeTown();
+      const savedTown = await resolveInitialCollegeTown({ campusId: user?.campus_id });
       if (cancelled) return;
 
-      if (!savedTown) {
-        navigate('/');
-        return;
+      if (savedTown) {
+        if (location.state?.fromCollegeTownSelection) {
+          setBrowseConstrainByDistance(true);
+          setConstrainByDistanceState(true);
+        }
+        setSelectedCollegeTown(savedTown);
       }
-
-      if (location.state?.fromCollegeTownSelection) {
-        setBrowseConstrainByDistance(true);
-        setConstrainByDistanceState(true);
-      }
-
-      setSelectedCollegeTown(savedTown);
 
       const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
       if (savedFilters) {
@@ -1429,19 +1426,20 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           localStorage.removeItem(FILTER_STORAGE_KEY);
         }
       }
+
+      setTownHydrated(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [navigate, location.state]);
+  }, [location.state, user?.campus_id]);
 
-  // Load barbers when college town or browse radius preferences change
+  // Load barbers when town is resolved (or skipped) or browse preferences change
   useEffect(() => {
-    if (selectedCollegeTown) {
-      loadBarbers();
-    }
-  }, [selectedCollegeTown, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
+    if (!townHydrated) return;
+    loadBarbers();
+  }, [townHydrated, selectedCollegeTown, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
 
   useEffect(() => {
     applyFilters();
@@ -1591,8 +1589,8 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseProviderCategory) ??
     BROWSE_PROVIDER_CATEGORIES[0];
 
-  const browseLabel = constrainByDistance
-    ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown?.shortName ?? ''}`
+  const browseLabel = constrainByDistance && selectedCollegeTown
+    ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown.shortName}`
     : selectedBrowseCategory.id === 'all'
       ? 'All providers'
       : `All ${selectedBrowseCategory.label.toLowerCase()} providers`;
@@ -1671,9 +1669,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     });
   };
 
-  // Redirect handled in useEffect if no college town
-
-  if (loading || !selectedCollegeTown) {
+  if (!townHydrated || loading) {
     return <Loading />;
   }
 
@@ -1681,7 +1677,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     <>
       <BrowseUtilityPill
         browseLabel={browseLabel}
-        townShortName={selectedCollegeTown.shortName}
+        townShortName={selectedCollegeTown?.shortName ?? 'all areas'}
         onChangeTown={() => navigate('/')}
         searchQuery={barberSearchQuery}
         onSearchQueryChange={setBarberSearchQuery}
@@ -1739,7 +1735,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       {/* No Results - Browse */}
       {!constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
-        selectedCollegeTown &&
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
@@ -1749,18 +1744,20 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
               Check back soon as more barbers join the platform!
             </p>
+            {selectedCollegeTown && (
             <button 
               onClick={() => navigate('/')}
               className="text-primary-600 hover:text-black underline"
             >
               Change search area
             </button>
+            )}
           </div>
           
           {/* Become a barber CTA - separated with vertical space */}
           <div className="flex flex-col items-center gap-4 pt-8 border-t border-gray-200">
             <p className="text-base sm:text-lg text-gray-600 font-medium">
-              Want to be a barber in {selectedCollegeTown.shortName}?
+              Want to be a barber{selectedCollegeTown ? ` in ${selectedCollegeTown.shortName}` : ''}?
             </p>
             <button
               onClick={onBecomeBarberClick}

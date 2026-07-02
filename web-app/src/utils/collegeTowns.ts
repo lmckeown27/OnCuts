@@ -206,6 +206,28 @@ export async function loadHydratedCollegeTown(): Promise<CollegeTown | null> {
   }
 }
 
+/** Stored town, or derive one from the signed-in user's campus when available. */
+export async function resolveInitialCollegeTown(options?: {
+  campusId?: string | null;
+}): Promise<CollegeTown | null> {
+  const stored = await loadHydratedCollegeTown();
+  if (stored) return stored;
+
+  const campusId = options?.campusId?.trim();
+  if (!campusId) return null;
+
+  try {
+    const campus = await campusService.getCampusById(campusId);
+    const town = collegeTownFromCampus(campus);
+    const campuses = await campusService.getCampuses();
+    const hydrated = enrichCollegeTownWithCampuses(town, campuses);
+    writeStoredCollegeTown(hydrated);
+    return hydrated;
+  } catch {
+    return null;
+  }
+}
+
 export function writeStoredCollegeTown(town: CollegeTown | null): void {
   if (town) {
     localStorage.setItem(COLLEGE_TOWN_STORAGE_KEY, JSON.stringify(town));
