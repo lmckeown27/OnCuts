@@ -490,12 +490,6 @@ export default function StripeHubModal({
           Return here after working in Stripe. We automatically check your progress when you switch back to this tab.
         </p>
       ) : null}
-      {!fullyConnected && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-          Still restricted in Stripe? Open Checklist for help, finish any past-due fields in Stripe, then select{' '}
-          <strong>{primaryStripeButtonLabel}</strong> again.
-        </p>
-      )}
       {fullyConnected && (
         <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
           <span className="relative flex h-2 w-2 shrink-0">
