@@ -146,9 +146,8 @@ function StripeRequirementsDrawerPanel({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Stripe checklist</p>
-        <p className="text-sm text-gray-600 mt-1">
-          Tap an item you&apos;re stuck on for navigation help. Work in any order. Finish all eight in Stripe.
+        <p className="text-sm text-gray-600">
+          Select an item you are confused on during the onboarding process.
         </p>
       </div>
       <ul className="space-y-2">
