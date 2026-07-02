@@ -59,7 +59,7 @@ const STRIPE_REQUIRED_ACTIONS = [
   {
     id: 'industry',
     label: 'Industry',
-    input: 'Personal care services.',
+    input: 'Other personal services',
     copyable: true,
   },
   {
