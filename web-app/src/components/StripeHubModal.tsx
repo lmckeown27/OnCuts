@@ -448,7 +448,7 @@ export default function StripeHubModal({
         Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
         the button below to connect payouts with <strong>PismoPlatforms</strong>.
       </p>
-      <p className="text-base text-gray-600 leading-relaxed">
+      <p className="text-base text-gray-600 leading-relaxed text-center">
         Stuck on a step? Open <strong>Checklist</strong> for help on that field.
       </p>
       {renderConnectAlerts()}
