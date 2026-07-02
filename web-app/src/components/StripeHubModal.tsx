@@ -28,7 +28,7 @@ interface StripeHubModalProps {
 const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
-const PISMO_PLATFORMS_URL = 'https://pismoplatforms.com';
+const PISMO_PLATFORMS_URL = 'www.pismoplatforms.com';
 
 /** Matches Stripe Dashboard “Actions required” for Express individual providers on PismoPlatforms. */
 const STRIPE_REQUIRED_ACTIONS = [
