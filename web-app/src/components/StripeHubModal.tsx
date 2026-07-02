@@ -399,7 +399,7 @@ export default function StripeHubModal({
         <strong>Stripe</strong> securely moves funds from your customers to the bank account you connect during setup.
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
-        Stripe will ask for <strong>eight required items</strong> (date of birth, address, bank account, and more). Use
+        Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
         the button below to connect payouts with <strong>PismoPlatforms</strong>. Stuck on a step? Open{' '}
         <strong>Checklist</strong> for help on that field.
       </p>
