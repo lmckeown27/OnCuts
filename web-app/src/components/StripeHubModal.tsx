@@ -2,8 +2,8 @@
  * Stripe Connect hub: onboarding guide, Express dashboard, payout management.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, Check, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -82,6 +82,41 @@ const STRIPE_REQUIRED_ACTIONS = [
 
 type StripeRequirementId = (typeof STRIPE_REQUIRED_ACTIONS)[number]['id'];
 
+function ChecklistInputBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success('Copied to clipboard');
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy text');
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-2">
+      <p className="text-sm text-gray-600 leading-relaxed select-text flex-1 min-w-0">{text}</p>
+      <button
+        type="button"
+        onClick={(event) => void handleCopy(event)}
+        className="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        aria-label="Copy text to clipboard"
+        title="Copy"
+      >
+        {copied ? (
+          <Check className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+        ) : (
+          <Copy className="w-4 h-4" aria-hidden="true" />
+        )}
+      </button>
+    </div>
+  );
+}
+
 function StripeRequirementsDrawerPanel({
   expandedId,
   onToggle,
@@ -115,7 +150,7 @@ function StripeRequirementsDrawerPanel({
               </button>
               {isExpanded && (
                 <div className="px-3 pb-3 pt-3 border-t border-gray-100">
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
+                  <ChecklistInputBlock text={item.input} />
                 </div>
               )}
             </li>
