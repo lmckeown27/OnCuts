@@ -6,16 +6,16 @@
  */
 
 import { Response, NextFunction } from 'express';
+import {
+  getConnectBusinessProfileUrl,
+  getConnectRefreshUrl,
+  getConnectReturnUrl,
+} from '../config/stripe-connect';
 import stripeService, { isStaleConnectAccountError } from '../services/stripe.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
-
-const connectRefreshUrl = () =>
-  `${process.env.FRONTEND_URL}/web/barber/connect/refresh`;
-const connectReturnUrl = () =>
-  `${process.env.FRONTEND_URL}/web/barber/connect/return`;
 
 async function getBarberUserRecord(userId: string) {
   const userResult = await pool.query(
@@ -77,12 +77,19 @@ async function createFreshConnectAccountForUser(userId: string, user: {
     lastName: user.last_name,
   });
 
-  await pool.query(`UPDATE users SET stripe_account_id = $1 WHERE id = $2`, [accountId, userId]);
+  await pool.query(
+    `UPDATE users
+     SET stripe_account_id = $1,
+         stripe_payouts_enabled = false,
+         stripe_charges_enabled = false
+     WHERE id = $2`,
+    [accountId, userId]
+  );
 
   const onboardingUrl = await stripeService.createAccountLink(
     accountId,
-    connectRefreshUrl(),
-    connectReturnUrl()
+    getConnectRefreshUrl(),
+    getConnectReturnUrl()
   );
 
   return { accountId, onboardingUrl };
@@ -113,8 +120,8 @@ export const createConnectAccount = async (
     if (resolvedAccountId) {
       const accountLink = await stripeService.createAccountLink(
         resolvedAccountId,
-        connectRefreshUrl(),
-        connectReturnUrl()
+        getConnectRefreshUrl(),
+        getConnectReturnUrl()
       );
 
       return res.status(200).json({
@@ -306,8 +313,8 @@ export const refreshOnboardingLink = async (
     // Create new account link
     const accountLink = await stripeService.createAccountLink(
       resolvedAccountId,
-      connectRefreshUrl(),
-      connectReturnUrl()
+      getConnectRefreshUrl(),
+      getConnectReturnUrl()
     );
 
     res.status(200).json({

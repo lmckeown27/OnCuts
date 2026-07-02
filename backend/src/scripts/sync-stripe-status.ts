@@ -87,10 +87,12 @@ async function syncStripeStatus(): Promise<void> {
         if (error.code === 'account_invalid' || error.type === 'StripeInvalidRequestError') {
           await pool.query(`
             UPDATE users 
-            SET stripe_payouts_enabled = false, stripe_charges_enabled = false
+            SET stripe_account_id = NULL,
+                stripe_payouts_enabled = false,
+                stripe_charges_enabled = false
             WHERE id = $1
           `, [barber.user_id]);
-          console.log(`   └─ Set to restricted (invalid Stripe account)`);
+          console.log(`   └─ Cleared stale stripe_account_id (invalid for current platform keys)`);
         }
         
         errors++;

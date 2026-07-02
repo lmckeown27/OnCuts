@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { getConnectBusinessProfileUrl } from '../config/stripe-connect';
 import {
   formatStripeSecretKeyForSafeLog,
   getDefaultStripeClient,
@@ -287,6 +288,8 @@ class StripeService {
     try {
       const { email, firstName, lastName } = params;
 
+      const businessProfileUrl = getConnectBusinessProfileUrl();
+
       const account = await this.getStripe().accounts.create({
         type: 'express',
         email,
@@ -295,6 +298,9 @@ class StripeService {
           transfers: { requested: true },
         },
         business_type: 'individual',
+        business_profile: {
+          url: businessProfileUrl,
+        },
         individual: {
           first_name: firstName,
           last_name: lastName,

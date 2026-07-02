@@ -348,7 +348,18 @@ export default function StripeHubModal({
         );
       }
       if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
-        await load();
+        try {
+          const { onboarding_url: resetUrl } = await resetBarberConnect();
+          window.open(resetUrl, '_blank', 'noopener,noreferrer');
+          setStripeTabOpened(true);
+          toast.success(
+            'Previous payout account cleared. Stripe opened for a fresh Pismo Platforms connection.'
+          );
+          await load();
+          return;
+        } catch {
+          await load();
+        }
       }
       toast.error(msg || 'Could not open Stripe');
     } finally {

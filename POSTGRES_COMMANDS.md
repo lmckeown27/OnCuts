@@ -1920,7 +1920,54 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 | Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Validate against server keys](#validate-connect-accounts-against-current-server-stripe-keys) |
 | Capability flags missing in DB | Migration not applied on EC2 | [Add missing Stripe columns](#add-missing-stripe-columns-on-ec2) |
 | Barber can't get paid | Not fully enabled | [Ready for payouts](#barbers-ready-to-receive-payouts) |
-| Wrong platform (Intera vs Pismo keys) | `acct_*` from old Stripe platform account | [Validate against server keys](#validate-connect-accounts-against-current-server-stripe-keys) |
+| Wrong platform (Intera vs Pismo keys) | `acct_*` from old Stripe platform account | [Pismo migration](#pismo-platforms-stripe-connect-migration-de-link-intera) |
+
+### Pismo Platforms Stripe Connect migration (de-link Intera)
+
+When moving from **Intera Platforms LLC** Stripe keys to **Pismo Platforms**, you cannot rename old `acct_*` IDs — clear them in Postgres, point the server at Pismo live keys, then re-onboard each provider.
+
+**1. EC2 backend `.env` (live) — only swap Stripe platform keys**
+
+You do **not** need new `FRONTEND_URL`, `STRIPE_CONNECT_BUSINESS_URL`, or `STRIPE_STATEMENT_DESCRIPTOR` lines unless you want to change them. Keep whatever `FRONTEND_URL` you already use for email links and Connect return URLs.
+
+```bash
+STRIPE_SECRET_KEY=sk_live_…          # Pismo Dashboard (replaces Intera platform secret)
+STRIPE_WEBHOOK_SECRET=whsec_…          # Live webhook for this Stripe account
+STRIPE_MODE=live
+# pk_live_… in web-app env (VITE_STRIPE_PUBLISHABLE_KEY) — same Pismo account as sk_live above
+```
+Restart PM2 after editing.
+
+**2. Clear test provider Connect IDs in Postgres**
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users
+SET stripe_account_id = NULL,
+    stripe_charges_enabled = false,
+    stripe_payouts_enabled = false
+WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gmail.com')
+RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
+"
+```
+
+**3. Or use the backend script (from repo on EC2)**
+```bash
+cd ~/CampusCuts/backend
+npm run clear-stripe-connect -- liam.mckeown38415@gmail.com calpolyblockchain@gmail.com
+# Or auto-detect IDs invalid for current keys:
+npm run clear-stripe-connect -- --validate-stale
+```
+
+**4. Re-onboard** — Provider opens Stripe hub → **Continue with Stripe** (calls `POST /api/barber/connect/create` or `/connect/reset` if stale).
+
+**5. Verify**
+```bash
+npm run sync-stripe-status
+sudo -u postgres psql -d campuscuts -c "
+SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
+FROM users WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gmail.com');
+"
+```
 
 ### Describe Stripe columns on users
 ```bash
