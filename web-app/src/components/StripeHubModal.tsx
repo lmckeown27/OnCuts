@@ -37,100 +37,46 @@ const STRIPE_REQUIRED_ACTIONS = [
     label: 'Date of birth',
     input:
       'Your legal date of birth exactly as it appears on your government ID (MM / DD / YYYY).',
-    stripeWhere: 'Personal details → Date of birth',
-    navigation: [
-      'Select the Stripe button below (or Continue with Stripe if you have not signed in yet).',
-      'In Stripe Express, open Personal details (or the section Stripe highlights as incomplete).',
-      'Find Date of birth and enter the date exactly as printed on your government ID.',
-      'Save or Continue until Stripe accepts the field.',
-    ],
   },
   {
     id: 'address',
     label: 'Home address',
     input:
       'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements.',
-    stripeWhere: 'Personal details → Address',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Personal details.',
-      'Enter your residential street address, city, state, and ZIP. Match your ID or bank records.',
-      'Save and continue.',
-    ],
   },
   {
     id: 'phone',
     label: 'Phone number',
     input:
       'A US mobile number you can receive SMS on. Use the same number you use for PismoProvider if possible.',
-    stripeWhere: 'Personal details → Phone',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Personal details → Phone.',
-      'Enter your US mobile number and complete any SMS verification Stripe sends.',
-    ],
   },
   {
     id: 'ssn',
     label: 'Last four digits of SSN',
     input:
       'The last 4 digits of your Social Security number as the account representative. Enter full SSN only inside Stripe if asked.',
-    stripeWhere: 'Personal details → Identity / SSN',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Personal details → Identity (or Verify your identity).',
-      'Enter the last four digits of your SSN when prompted.',
-      'Upload ID photos if Stripe requests them.',
-    ],
   },
   {
     id: 'industry',
     label: 'Industry',
-    input: 'Enter Personal care services.',
-    stripeWhere: 'Business details → Industry',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Business details.',
-      'Open Industry and type or select Personal care services.',
-      'Save and continue.',
-    ],
+    input: 'Personal care services.',
   },
   {
     id: 'website',
     label: 'Business website',
-    input: `Enter ${PISMO_PLATFORMS_URL}.`,
-    stripeWhere: 'Business details → Website',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Business details → Website (or Business profile URL).',
-      `Enter ${PISMO_PLATFORMS_URL} exactly.`,
-      'Save and continue.',
-    ],
+    input: PISMO_PLATFORMS_URL,
   },
   {
     id: 'tos',
     label: 'Accept terms of service',
     input:
       'Read and accept the Stripe Connected Account Agreement. Payments and payouts stay blocked until you accept.',
-    stripeWhere: 'Review → Terms of service',
-    navigation: [
-      'Select the Stripe button below.',
-      'Scroll to the Review step or any banner about required actions.',
-      'Read the Stripe Connected Account Agreement and tap Accept (or Agree and submit).',
-    ],
   },
   {
     id: 'bank',
     label: 'Bank account (external account)',
     input:
       'Your routing number and account number for the checking or savings account where you want payouts deposited.',
-    stripeWhere: 'Payout details → Bank account',
-    navigation: [
-      'Select the Stripe button below.',
-      'Go to Payout details, Bank account, or Add external account.',
-      'Enter routing number and account number; choose Checking or Savings.',
-      'Confirm the account name matches your ID, then save.',
-    ],
   },
 ] as const;
 
@@ -168,23 +114,8 @@ function StripeRequirementsDrawerPanel({
                 />
               </button>
               {isExpanded && (
-                <div className="px-3 pb-3 pt-0 space-y-3 border-t border-gray-100">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">What to enter</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Where in Stripe</p>
-                    <p className="text-sm text-gray-600">{item.stripeWhere}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">How to navigate</p>
-                    <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside leading-relaxed">
-                      {item.navigation.map((step) => (
-                        <li key={step}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
+                <div className="px-3 pb-3 pt-3 border-t border-gray-100">
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
                 </div>
               )}
             </li>
