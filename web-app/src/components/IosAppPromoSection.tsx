@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import tivelaPlatformsAppLogo from '../assets/logos/AvilaPlatformsLogo.png';
+import tivelaPlatformsAppLogo from '../assets/logos/Tivela_Logo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
