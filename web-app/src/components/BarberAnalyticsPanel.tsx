@@ -552,7 +552,7 @@ export default function BarberAnalyticsPanel({
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 italic pt-1">
-                      Payouts settle through your Stripe Connect account, not a TivelaPlatforms balance.
+                      Payouts settle through your Stripe Connect account, not a Tivela balance.
                     </p>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 /**
  * App Installation Instructions Page (Mobile-Optimized)
  * 
- * Touch-friendly guide for installing TivelaPlatforms as a PWA
+ * Touch-friendly guide for installing Tivela as a PWA
  * Features:
  * - Platform-specific instructions (iOS/Android/Desktop)
  * - Large touch targets
@@ -95,7 +95,7 @@ export default function AppInstallPage() {
             <ArrowLeft className="w-6 h-6 text-gray-600" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Install TivelaPlatforms</h1>
+            <h1 className="text-lg font-bold text-gray-900">Install Tivela</h1>
             <p className="text-xs text-gray-500">Get the app experience</p>
           </div>
         </div>
@@ -107,15 +107,15 @@ export default function AppInstallPage() {
         <div className="text-center mb-8">
           <img 
             src="/src/assets/logos/Logo1.png" 
-            alt="TivelaPlatforms" 
+            alt="Tivela" 
             className="h-16 w-auto mx-auto mb-4" 
           />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {isInstalled ? 'App Installed!' : 'Install TivelaPlatforms'}
+            {isInstalled ? 'App Installed!' : 'Install Tivela'}
           </h2>
           <p className="text-gray-600">
             {isInstalled 
-              ? 'You can now use TivelaPlatforms offline!' 
+              ? 'You can now use Tivela offline!' 
               : 'Get instant access from your home screen'}
           </p>
         </div>
@@ -133,7 +133,7 @@ export default function AppInstallPage() {
               </div>
             </div>
             <p className="text-green-800 text-sm">
-              TivelaPlatforms is installed on your device. You can now access it from your home screen and use it offline.
+              Tivela is installed on your device. You can now access it from your home screen and use it offline.
             </p>
           </div>
         ) : (
@@ -273,7 +273,7 @@ export default function AppInstallPage() {
                     <div className="bg-gray-900 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
                     <div className="flex-1">
                       <p className="text-gray-700 text-base leading-relaxed">
-                        TivelaPlatforms opens in its own window!
+                        Tivela opens in its own window!
                       </p>
                     </div>
                   </div>
@@ -331,7 +331,7 @@ export default function AppInstallPage() {
           onClick={() => navigate(isInstalled ? '/app' : '/')}
           className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
         >
-          {isInstalled ? 'Open TivelaPlatforms' : 'Continue to Website'}
+          {isInstalled ? 'Open Tivela' : 'Continue to Website'}
         </button>
         {!isInstalled && (
           <p className="text-center text-xs text-gray-500 mt-3">

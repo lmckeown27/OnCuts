@@ -1,5 +1,5 @@
 /**
- * TivelaPlatforms Landing Page
+ * Tivela Platforms Landing Page
  * 
  * Professional landing page with top navigation and comprehensive footer
  * Inspired by modern SaaS landing pages
@@ -97,11 +97,11 @@ export default function LandingPage() {
             >
               <img
                 src={webpageLogo}
-                alt="TivelaPlatforms"
+                alt="Tivela Platforms"
                 className="h-12 w-auto"
               />
               <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
-                TivelaPlatforms
+                Tivela Platforms
               </span>
             </button>
 
@@ -199,7 +199,7 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be a TivelaPlatforms Barber?
+            Want to be a Tivela Barber?
           </h2>
           <div className="flex justify-center">
             <button 
@@ -274,7 +274,7 @@ export default function LandingPage() {
                         <li>
                           Download{' '}
                           <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
-                            TivelaPlatforms
+                            Tivela
                           </a>{' '}
                           on iPhone, or select your college town here and tap &quot;Find Barber&quot; on the web.
                         </li>
@@ -342,7 +342,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Open messaging in the TivelaPlatforms app or on the web.</li>
+                        <li>Open messaging in the Tivela app or on the web.</li>
                         <li>Chat with your barber to coordinate details or share reference photos.</li>
                       </ol>
                     </div>
@@ -411,7 +411,7 @@ export default function LandingPage() {
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>You keep 85% of every payment.</li>
                         <li>You keep 100% of tips.</li>
-                        <li>TivelaPlatforms takes a 15% platform fee, far less than the 50% many shops take.</li>
+                        <li>Tivela takes a 15% platform fee, far less than the 50% many shops take.</li>
                       </ol>
                     </div>
                   </div>
@@ -429,7 +429,7 @@ export default function LandingPage() {
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>Mark the booking complete in Tivela - Provider or your barber dashboard after the haircut.</li>
-                        <li>The customer pays through TivelaPlatforms.</li>
+                        <li>The customer pays through Tivela.</li>
                         <li>Funds deposit directly to your connected Stripe account.</li>
                       </ol>
                     </div>
@@ -492,7 +492,7 @@ export default function LandingPage() {
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
             <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect</h3>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Whether you&apos;re a prospective barber, a campus partner, or interested in the TivelaPlatforms System, we&apos;d love to hear from you
+              Whether you&apos;re a prospective barber, a campus partner, or interested in the Tivela Platforms System, we&apos;d love to hear from you
             </p>
             <button
               onClick={openContactPopup}
@@ -551,7 +551,7 @@ export default function LandingPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   // Open mailto with pre-filled content
-                  const subject = encodeURIComponent(`TivelaPlatforms Support Request from ${contactForm.name}`);
+                  const subject = encodeURIComponent(`Tivela Platforms Support Request from ${contactForm.name}`);
                   const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
                   window.location.href = `mailto:avilaplatformshelp@gmail.com?subject=${subject}&body=${body}`;
                   setContactSubmitted(true);
@@ -631,10 +631,10 @@ export default function LandingPage() {
                 className="shrink-0 transition-opacity hover:opacity-80"
                 aria-label="Back to top"
               >
-                <img src={webpageLogo} alt="TivelaPlatforms" className="h-10 w-auto" />
+                <img src={webpageLogo} alt="Tivela Platforms" className="h-10 w-auto" />
               </button>
               <p className="text-sm text-gray-500 sm:whitespace-nowrap">
-                © 2026 TivelaPlatforms. All rights reserved.
+                © 2026 Tivela Platforms. All rights reserved.
               </p>
             </div>
 

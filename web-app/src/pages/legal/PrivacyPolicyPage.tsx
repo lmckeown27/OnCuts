@@ -24,8 +24,8 @@ export default function PrivacyPolicyPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="TivelaPlatforms" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">TivelaPlatforms</span>
+            <img src={webpageLogo} alt="Tivela Platforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">Tivela Platforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -46,8 +46,8 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                TivelaPlatforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
-                disclose, and safeguard your information when you use our website, the TivelaPlatforms iOS app for consumers,
+                Tivela Platforms is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
+                disclose, and safeguard your information when you use our website, the Tivela iOS app for consumers,
                 the Tivela - Provider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
@@ -225,17 +225,17 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">11. Google API Services</h2>
               <p>
-                TivelaPlatforms offers optional Google Calendar integration for barbers. When you connect your Google
+                Tivela Platforms offers optional Google Calendar integration for barbers. When you connect your Google
                 Calendar:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>We read busy/free times to prevent double-booking</li>
-                <li>We may create calendar events for TivelaPlatforms appointments with your permission</li>
+                <li>We may create calendar events for Tivela appointments with your permission</li>
                 <li>We store a secure OAuth refresh token to maintain the connection</li>
                 <li>You can disconnect Google Calendar at any time from Tivela - Provider or your barber dashboard</li>
               </ul>
               <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                <strong>Limited Use Disclosure:</strong> TivelaPlatforms&apos;s use and transfer of information received from
+                <strong>Limited Use Disclosure:</strong> Tivela Platforms&apos;s use and transfer of information received from
                 Google APIs will adhere to the{' '}
                 <a
                   href="https://developers.google.com/terms/api-services-user-data-policy"

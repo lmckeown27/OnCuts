@@ -252,7 +252,7 @@ export default function MessagesPage() {
     startConversation?: boolean; 
     otherUserId?: string; 
     bookingId?: string;
-    // Booking context for TivelaPlatforms
+    // Booking context for Tivela
     serviceName?: string;
     servicePrice?: number;
     scheduledAt?: string;
@@ -746,7 +746,7 @@ export default function MessagesPage() {
           const response = await messageService.createConversation({
             other_user_id: startConversationData.otherUserId,
             booking_id: startConversationData.bookingId,
-            // Pass booking context for TivelaPlatforms service-centric messaging
+            // Pass booking context for Tivela service-centric messaging
             service_name: startConversationData.serviceName,
             service_price: startConversationData.servicePrice,
             scheduled_time: startConversationData.scheduledAt,
@@ -1676,7 +1676,7 @@ export default function MessagesPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-10 sm:h-12 w-auto" />
+              <img src={TivelaPlatformsLogo} alt="Tivela" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Messages, Booking Requests (if barber) + Profile */}

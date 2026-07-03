@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="TivelaPlatforms Logo" 
+              alt="Tivela Logo" 
               className="h-20 w-auto mb-4"
             />
           </Link>

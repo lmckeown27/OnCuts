@@ -61,7 +61,7 @@ export default function LoginPageBlockchain() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">TivelaPlatforms</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Tivela</h1>
           <p className="mt-2 text-sm text-gray-600">
             Book haircuts with students on your campus
           </p>

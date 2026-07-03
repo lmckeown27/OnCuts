@@ -24,8 +24,8 @@ export default function GDPRPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="TivelaPlatforms" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">TivelaPlatforms</span>
+            <img src={webpageLogo} alt="Tivela Platforms" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">Tivela Platforms</span>
           </Link>
           <button
             onClick={handleBack}
@@ -43,15 +43,15 @@ export default function GDPRPage() {
           <p className="text-gray-500 mb-4">Last Updated: {lastUpdated}</p>
           <p className="text-gray-600 mb-8">
             For users in the European Union (EU) and European Economic Area (EEA). This page outlines your rights under
-            the General Data Protection Regulation (GDPR) when using TivelaPlatforms, including our website, TivelaPlatforms iOS
-            app, and Tivela - Provider iOS app.
+            the General Data Protection Regulation (GDPR) when using Tivela Platforms, including our website, the Tivela iOS
+            app, and the Tivela - Provider iOS app.
           </p>
 
           <div className="space-y-8 text-gray-700 leading-relaxed">
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                TivelaPlatforms is committed to complying with GDPR for users located in the EU and EEA. This page explains
+                Tivela Platforms is committed to complying with GDPR for users located in the EU and EEA. This page explains
                 how we process your personal data and your rights. For a full description of the data we collect and
                 how we use it, see our{' '}
                 <Link to="/privacy" className="text-primary-600 hover:text-black underline">
@@ -64,7 +64,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Data Controller</h2>
               <p>
-                TivelaPlatforms is the data controller responsible for your personal data. For data protection inquiries,
+                Tivela Platforms is the data controller responsible for your personal data. For data protection inquiries,
                 contact us at avilaplatformshelp@gmail.com.
               </p>
             </section>
@@ -124,7 +124,7 @@ export default function GDPRPage() {
               </ul>
               <p className="mt-3">
                 We require appropriate data processing agreements with sub-processors and limit their use of data to
-                providing services to TivelaPlatforms.
+                providing services to Tivela Platforms.
               </p>
             </section>
 

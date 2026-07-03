@@ -124,7 +124,7 @@ export default function CampusSelectPage() {
             disabled={!selectedCampus}
             size="lg"
           >
-            Continue to TivelaPlatforms
+            Continue to Tivela
           </Button>
         </div>
       </div>

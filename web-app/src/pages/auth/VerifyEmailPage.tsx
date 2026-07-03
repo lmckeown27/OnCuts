@@ -217,7 +217,7 @@ export default function VerifyEmailPage() {
     try {
       await confirmVerificationCode(email, verificationCode);
       await completeRegistration(email);
-      toast.success('Welcome to TivelaPlatforms!');
+      toast.success('Welcome to Tivela!');
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
@@ -281,7 +281,7 @@ export default function VerifyEmailPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="TivelaPlatforms Logo" 
+              alt="Tivela Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>

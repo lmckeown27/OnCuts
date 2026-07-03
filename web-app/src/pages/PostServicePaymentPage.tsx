@@ -839,7 +839,7 @@ export default function PostServicePaymentPage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-8" />
+            <img src={TivelaPlatformsLogo} alt="Tivela" className="h-8" />
             <div className="w-9" /> {/* Spacer */}
           </div>
         </div>
@@ -974,7 +974,7 @@ export default function PostServicePaymentPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-8" />
+          <img src={TivelaPlatformsLogo} alt="Tivela" className="h-8" />
           <div className="w-9" /> {/* Spacer */}
         </div>
       </div>
@@ -986,7 +986,7 @@ export default function PostServicePaymentPage() {
               <Check className="w-10 h-10 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">All Done!</h2>
-            <p className="text-gray-600">Thank you for using TivelaPlatforms.</p>
+            <p className="text-gray-600">Thank you for using Tivela.</p>
           </div>
         ) : step === 'review' ? (
           <div className="bg-white rounded-2xl shadow-lg p-6">

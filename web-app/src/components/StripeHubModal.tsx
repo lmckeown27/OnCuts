@@ -30,7 +30,7 @@ const LEARN_MORE_LINK_CLASS =
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
 const TIVELA_PLATFORMS_URL = 'www.tivelaplatforms.com';
 
-/** Matches Stripe Dashboard “Actions required” for Express individual providers on TivelaPlatforms. */
+/** Matches Stripe Dashboard “Actions required” for Express individual providers on Tivela. */
 const STRIPE_REQUIRED_ACTIONS = [
   {
     id: 'dob',
@@ -344,7 +344,7 @@ export default function StripeHubModal({
       if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
         setPlatformSetupBlocked(
           msg ||
-            'TivelaPlatforms must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
+            'Tivela must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
         );
       }
       if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
@@ -413,7 +413,7 @@ export default function StripeHubModal({
           >
             Connect → Accounts overview
           </a>{' '}
-          (toggle <strong>live mode</strong> on). This is a one-time step for the TivelaPlatforms owner, not something
+          (toggle <strong>live mode</strong> on). This is a one-time step for the Tivela Platforms owner, not something
           barbers can fix themselves.
         </p>
       )}
@@ -440,7 +440,7 @@ export default function StripeHubModal({
         <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Tivela Provider!</h3>
       </div>
       <p className="text-base text-gray-600 leading-relaxed">
-        TivelaPlatforms relies on a third-party payment processing system. This third-party is{' '}
+        Tivela relies on a third-party payment processing system. This third-party is{' '}
         <strong>Stripe</strong>, which you can read more about{' '}
         <a
           href={STRIPE_WIKIPEDIA_URL}
@@ -457,7 +457,7 @@ export default function StripeHubModal({
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
         Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
-        the button below to connect payouts with <strong>TivelaPlatforms</strong>.
+        the button below to connect payouts with <strong>Tivela</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed text-center">
         Stuck on a step? Open <strong>Checklist</strong> in the top left corner.
@@ -586,7 +586,7 @@ export default function StripeHubModal({
           ) : (
             <>
               <p className="text-base text-gray-600 leading-relaxed">
-                TivelaPlatforms uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
+                Tivela uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account.
               </p>
               <div className="space-y-3 pt-1">

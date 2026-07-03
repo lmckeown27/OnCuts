@@ -222,14 +222,14 @@ export default function SignupPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="TivelaPlatforms Logo" 
+              alt="Tivela Logo" 
               className="h-16 w-auto mb-4"
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
             Create Account
           </h1>
-          <p className="text-gray-300">Join TivelaPlatforms today</p>
+          <p className="text-gray-300">Join Tivela today</p>
         </div>
 
         {/* Form Card */}
@@ -551,7 +551,7 @@ export default function SignupPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to TivelaPlatforms
+            ← Back to Tivela
           </Link>
         </div>
       </div>

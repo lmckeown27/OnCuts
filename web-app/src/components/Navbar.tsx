@@ -25,7 +25,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to={isBarber ? ROUTES.BARBER_DASHBOARD : ROUTES.STUDENT_DISCOVERY} className="flex items-center gap-3">
-            <img src={TivelaPlatformsLogo} alt="TivelaPlatforms" className="h-10 w-auto" />
+            <img src={TivelaPlatformsLogo} alt="Tivela" className="h-10 w-auto" />
           </Link>
 
           {/* Navigation Links */}
