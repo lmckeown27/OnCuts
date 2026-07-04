@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import tivelaPlatformsAppLogo from '../assets/logos/Tivela_Logo.png';
+import onCutsAppLogo from '../assets/logos/PismoChair.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
@@ -134,7 +134,7 @@ export default function IosAppPromoSection() {
             heading="For Customers"
             card={{
               title: 'OnCuts',
-              appLogo: tivelaPlatformsAppLogo,
+              appLogo: onCutsAppLogo,
               appLogoAlt: 'OnCuts app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
               storeLabel: 'Download OnCuts on the App Store',
