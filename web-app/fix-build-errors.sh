@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts - Fix Build Errors (Keep Full Functionality)
+# OnCuts - Fix Build Errors (Keep Full Functionality)
 # Patches actual TypeScript errors without changing app functionality
 
 set -e
 
-echo "🔧 Fixing CampusCuts build errors..."
+echo "🔧 Fixing OnCuts build errors..."
 echo ""
 
 cd "$(dirname "$0")"

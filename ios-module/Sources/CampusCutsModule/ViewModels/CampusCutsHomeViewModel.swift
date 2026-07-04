@@ -2,7 +2,7 @@
 //  CampusCutsHomeViewModel.swift
 //  CampusCutsModule
 //
-//  Internal ViewModel for the main CampusCuts home screen.
+//  Internal ViewModel for the main OnCuts home screen.
 //
 
 import Foundation

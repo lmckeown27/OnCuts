@@ -8,7 +8,7 @@
 import Foundation
 import Security
 
-/// Persists CampusCuts API tokens in the iOS Keychain (shared by the host app and this module).
+/// Persists OnCuts API tokens in the iOS Keychain (shared by the host app and this module).
 public enum CampusCutsAuthTokenStore: Sendable {
     private static let service = "com.campuscuts.module.auth"
     private static let accessAccount = "jwt.access"

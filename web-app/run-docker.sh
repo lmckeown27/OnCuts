@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts Frontend - Docker Run Script
+# OnCuts Frontend - Docker Run Script
 # Runs the Docker container with proper configuration
 
 set -e  # Exit on error
 
-echo "🚀 Starting CampusCuts Frontend Container..."
+echo "🚀 Starting OnCuts Frontend Container..."
 echo ""
 
 # Stop and remove existing container if running

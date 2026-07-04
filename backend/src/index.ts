@@ -309,7 +309,7 @@ const authLimiter = rateLimit({
 app.use('/api/v1/auth', authLimiter);
 app.use('/api', generalLimiter);
 
-// Google / Apple ID token → CampusCuts JWT (Intera / iOS). Intera also supports SMS OTP: request-otp /
+// Google / Apple ID token → OnCuts JWT (Intera / iOS). Intera also supports SMS OTP: request-otp /
 // verify-otp in auth.routes (verify-otp issues JWTs when phone_e164 matches an existing user).
 // Registered here so the route is always on the app stack after rate limits.
 app.post('/api/v1/auth/google', googleIdTokenLogin);
@@ -505,7 +505,7 @@ app.use(errorHandler);
 
 // Start server
 httpServer.listen(PORT, async () => {
-  logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
+  logger.info(`🚀 OnCuts API server running on port ${PORT}`);
   logger.info(`📊 NODE_ENV=${process.env.NODE_ENV ?? '(unset)'}`);
   logger.info(`💳 Payment Provider: Stripe (off-chain)`);
   logStripeDefaultSecretKeyFingerprintAtBoot();

@@ -1857,9 +1857,9 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         service_name: booking.service_name || 'Haircut',
         tip_amount_cents: tipAmountCents.toString(),
         platform_fee_cents: platformFeeCents.toString(),
-        platform: 'CampusCuts',
+        platform: 'OnCuts',
       },
-      description: `CampusCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
+      description: `OnCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
     };
 
     // If barber has Stripe Connect account, use destination charges for automatic split

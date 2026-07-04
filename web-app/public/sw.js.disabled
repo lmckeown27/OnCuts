@@ -1,4 +1,4 @@
-// CampusCuts Service Worker - PWA Support
+// OnCuts Service Worker - PWA Support
 const CACHE_NAME = 'campuscuts-v1';
 const urlsToCache = [
   '/',
@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'CampusCuts', options)
+    self.registration.showNotification(data.title || 'OnCuts', options)
   );
 });
 

@@ -24,7 +24,7 @@ public enum CampusCutsSignUpAPIError: LocalizedError, Sendable {
     }
 }
 
-/// Minimal REST client for CampusCuts email registration + verification (matches `auth.controller.ts`).
+/// Minimal REST client for OnCuts email registration + verification (matches `auth.controller.ts`).
 public enum CampusCutsSignUpAPI {
     public static func fetchCampuses(apiV1BaseTrimmed: String) async throws -> [CampusCutsSignUpCampus] {
         let base = apiV1BaseTrimmed.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

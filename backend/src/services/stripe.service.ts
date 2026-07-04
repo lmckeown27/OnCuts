@@ -26,7 +26,7 @@ function connectOperationalApiError(error: unknown, fallback: string): ApiError 
   if (isStripeConnectPlatformProfileIncompleteError(error)) {
     return new ApiError(
       503,
-      'Tivela must finish Stripe Connect platform setup before barbers can onboard. ' +
+      'OnCuts must finish Stripe Connect platform setup before barbers can onboard. ' +
         'A platform admin needs to open https://dashboard.stripe.com/connect/accounts/overview (live mode), ' +
         'complete the Connect profile questionnaire, then try again.',
       'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE'
@@ -163,7 +163,7 @@ class StripeService {
           client_id: clientId,
           barber_id: barberId,
           booking_id: bookingId.toString(),
-          platform: 'CampusCuts',
+          platform: 'OnCuts',
         },
         description,
         // Capture manually after service completion
@@ -240,7 +240,7 @@ class StripeService {
         email,
         name,
         metadata: {
-          platform: 'CampusCuts',
+          platform: 'OnCuts',
           user_id: userId,
         },
       });
@@ -337,7 +337,7 @@ class StripeService {
 
   /**
    * Transfer funds to barber (instant payout)
-   * Step 6: Distribute payment (minus 15% CampusCuts fee) to barber
+   * Step 6: Distribute payment (minus 15% OnCuts fee) to barber
    */
   async transferToBarber(params: {
     amount: number; // Amount in cents (after platform fee deduction)
@@ -363,7 +363,7 @@ class StripeService {
         source_transaction: sourceTransaction, // Link to original payment
         metadata: {
           booking_id: bookingId.toString(),
-          platform: 'CampusCuts',
+          platform: 'OnCuts',
         },
         description,
       });

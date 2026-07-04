@@ -598,7 +598,7 @@ export default function BarberPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={TivelaPlatformsLogo} alt="Tivela" className="h-10 sm:h-12 w-auto" />
+              <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Booking Requests + Profile */}
@@ -2921,7 +2921,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Google Calendar blocked slot - not unblockable from Tivela
+                            // Google Calendar blocked slot - not unblockable from OnCuts
                             const googleBlockModal = getGoogleCalendarBlockForSlotModal(slot);
                             if (googleBlockModal) {
                               return (

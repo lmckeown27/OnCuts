@@ -162,7 +162,7 @@ class PayoutServiceV2 {
           amount: amountCents,
           currency: 'usd',
           method: 'instant',
-          statement_descriptor: 'CampusCuts',
+          statement_descriptor: 'OnCuts',
         },
         {
           stripeAccount: connectedAccountId,

@@ -126,14 +126,14 @@ export default function LoginPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="Tivela Logo" 
+              alt="OnCuts Logo" 
               className="h-16 w-auto mb-4"
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
             Sign In
           </h1>
-          <p className="text-gray-300">Access your Tivela account</p>
+          <p className="text-gray-300">Access your OnCuts account</p>
         </div>
 
         {/* Form Card */}
@@ -273,7 +273,7 @@ export default function LoginPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:avilaplatformshelp@gmail.com"
+                href="mailto:support@oncuts.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
@@ -297,7 +297,7 @@ export default function LoginPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to Tivela
+            ← Back to OnCuts
           </Link>
         </div>
       </div>

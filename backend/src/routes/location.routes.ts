@@ -659,7 +659,7 @@ router.post('/barber/request', authenticate, async (req: AuthRequest, res: Respo
       } else {
         return res.status(400).json({
           success: false,
-          error: 'This location was previously rejected. Please contact CampusCuts support.',
+          error: 'This location was previously rejected. Please contact OnCuts support.',
         });
       }
     }

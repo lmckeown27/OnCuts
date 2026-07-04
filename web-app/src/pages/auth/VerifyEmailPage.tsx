@@ -217,7 +217,7 @@ export default function VerifyEmailPage() {
     try {
       await confirmVerificationCode(email, verificationCode);
       await completeRegistration(email);
-      toast.success('Welcome to Tivela!');
+      toast.success('Welcome to OnCuts!');
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
@@ -281,7 +281,7 @@ export default function VerifyEmailPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="Tivela Logo" 
+              alt="OnCuts Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
@@ -515,7 +515,7 @@ export default function VerifyEmailPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:avilaplatformshelp@gmail.com"
+                href="mailto:support@oncuts.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />

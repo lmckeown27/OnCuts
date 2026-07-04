@@ -238,7 +238,7 @@ class UsdcService {
     }
 
     // Create new wallet set
-    const walletSetId = await this.createWalletSet('CampusCuts Main');
+    const walletSetId = await this.createWalletSet('OnCuts Main');
     this.walletSetId = walletSetId;
 
     logger.info('💡 Add CIRCLE_WALLET_SET_ID to .env:', { wallet_set_id: walletSetId });
@@ -253,7 +253,7 @@ class UsdcService {
   /**
    * Create a Circle wallet for a user
    * 
-   * @param userId - CampusCuts user ID
+   * @param userId - OnCuts user ID
    * @param blockchain - Target blockchain (default: MATIC-AMOY for testnet)
    * @returns Wallet details
    */
@@ -272,7 +272,7 @@ class UsdcService {
           blockchains: [blockchain],
           count: 1,
           metadata: [{
-            name: `CampusCuts User ${userId}`,
+            name: `OnCuts User ${userId}`,
             refId: userId,
           }],
         }
@@ -331,7 +331,7 @@ class UsdcService {
   /**
    * Get or create wallet for user (idempotent)
    * 
-   * @param userId - CampusCuts user ID
+   * @param userId - OnCuts user ID
    * @returns Wallet details
    */
   async ensureUserWallet(userId: string): Promise<WalletCreationResult> {

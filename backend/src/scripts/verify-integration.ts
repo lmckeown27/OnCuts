@@ -139,7 +139,7 @@ async function verifyIntegration() {
     const ipfsService = (await import('../services/ipfs.service')).default;
     
     // Test upload (small text file)
-    const testData = Buffer.from('CampusCuts Integration Test', 'utf-8');
+    const testData = Buffer.from('OnCuts Integration Test', 'utf-8');
     const result = await ipfsService.uploadText('Integration Test', 'test.txt');
     
     const cid = result.cid || result.pinataCID || result.localCID || 'unknown';

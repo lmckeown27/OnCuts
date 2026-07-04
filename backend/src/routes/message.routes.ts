@@ -1,5 +1,5 @@
 /**
- * Message Routes for CampusCuts
+ * Message Routes for OnCuts
  * Handles real-time messaging between students and barbers
  */
 
@@ -82,7 +82,7 @@ router.get('/conversations', authenticate, async (req, res, next) => {
 /**
  * POST /api/messages/conversations
  * Start a new BOOKING-CENTRIC conversation
- * CampusCuts conversations are always about a scheduled service
+ * OnCuts conversations are always about a scheduled service
  */
 router.post('/conversations', authenticate, async (req, res, next) => {
   try {

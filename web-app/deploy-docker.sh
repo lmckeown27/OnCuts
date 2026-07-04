@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# CampusCuts Frontend - Complete Docker Deployment Script
+# OnCuts Frontend - Complete Docker Deployment Script
 # Builds and deploys the frontend application
 
 set -e  # Exit on error
 
 echo "════════════════════════════════════════════════════════"
-echo "  🏆 CampusCuts Frontend - Docker Deployment"
+echo "  🏆 OnCuts Frontend - Docker Deployment"
 echo "════════════════════════════════════════════════════════"
 echo ""
 

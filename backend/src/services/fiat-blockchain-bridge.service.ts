@@ -193,7 +193,7 @@ class FiatBlockchainBridgeService {
           type: 'balance_deposit',
           amount_usd: amountUSD.toString(),
         },
-        description: `CampusCuts balance deposit - $${amountUSD}`,
+        description: `OnCuts balance deposit - $${amountUSD}`,
       });
 
       logger.info(`💳 Payment intent created: ${paymentIntent.id} for ${email} ($${amountUSD})`);

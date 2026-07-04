@@ -1,5 +1,5 @@
 /**
- * Upload Routes for CampusCuts
+ * Upload Routes for OnCuts
  * Handles image uploads for barber portfolios and profile pictures
  * 
  * ## IPFS Integration:

@@ -30,7 +30,7 @@ const LEARN_MORE_LINK_CLASS =
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
 const ONCUTS_URL = 'www.oncuts.com';
 
-/** Matches Stripe Dashboard “Actions required” for Express individual providers on Tivela. */
+/** Matches Stripe Dashboard “Actions required” for Express individual providers on OnCuts. */
 const STRIPE_REQUIRED_ACTIONS = [
   {
     id: 'dob',
@@ -48,7 +48,7 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'phone',
     label: 'Phone number',
     input:
-      'A US mobile number you can receive SMS on. Use the same number you use for TivelaProvider if possible.',
+      'A US mobile number you can receive SMS on. Use the same number you use for OnCuts Provider if possible.',
   },
   {
     id: 'ssn',
@@ -333,7 +333,7 @@ export default function StripeHubModal({
       await load();
 
       if (needsReconnectNow || !hasAccountNow) {
-        toast.success('Stripe opened in a new tab. Sign in with your TivelaProvider email to continue.');
+        toast.success('Stripe opened in a new tab. Sign in with your OnCuts Provider email to continue.');
       } else {
         toast('Finish any remaining items in Stripe, then return here. We check your progress automatically.', {
           icon: '↔️',
@@ -344,7 +344,7 @@ export default function StripeHubModal({
       if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
         setPlatformSetupBlocked(
           msg ||
-            'Tivela must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
+            'OnCuts must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'
         );
       }
       if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
@@ -353,7 +353,7 @@ export default function StripeHubModal({
           window.open(resetUrl, '_blank', 'noopener,noreferrer');
           setStripeTabOpened(true);
           toast.success(
-            'Previous payout account cleared. Stripe opened for a fresh Tivela Platforms connection.'
+            'Previous payout account cleared. Stripe opened for a fresh OnCuts connection.'
           );
           await load();
           return;
@@ -413,7 +413,7 @@ export default function StripeHubModal({
           >
             Connect → Accounts overview
           </a>{' '}
-          (toggle <strong>live mode</strong> on). This is a one-time step for the Tivela Platforms owner, not something
+          (toggle <strong>live mode</strong> on). This is a one-time step for the OnCuts owner, not something
           barbers can fix themselves.
         </p>
       )}
@@ -437,10 +437,10 @@ export default function StripeHubModal({
         ref={welcomeRowRef}
         className="min-h-[3.75rem] flex items-center justify-center"
       >
-        <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to Tivela Provider!</h3>
+        <h3 className="text-xl font-semibold text-gray-900 text-center">Welcome to OnCuts Provider!</h3>
       </div>
       <p className="text-base text-gray-600 leading-relaxed">
-        Tivela relies on a third-party payment processing system. This third-party is{' '}
+        OnCuts relies on a third-party payment processing system. This third-party is{' '}
         <strong>Stripe</strong>, which you can read more about{' '}
         <a
           href={STRIPE_WIKIPEDIA_URL}
@@ -457,7 +457,7 @@ export default function StripeHubModal({
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
         Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
-        the button below to connect payouts with <strong>Tivela</strong>.
+        the button below to connect payouts with <strong>OnCuts</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed text-center">
         Stuck on a step? Open <strong>Checklist</strong> in the top left corner.
@@ -586,7 +586,7 @@ export default function StripeHubModal({
           ) : (
             <>
               <p className="text-base text-gray-600 leading-relaxed">
-                Tivela uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
+                OnCuts uses <strong>Stripe Connect</strong> so customer payments go to your linked bank
                 account.
               </p>
               <div className="space-y-3 pt-1">

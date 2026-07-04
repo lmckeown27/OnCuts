@@ -87,7 +87,7 @@ class PaymentServiceV2 {
           platform_fee_cents: platformFeeCents.toString(),
           barber_receives_cents: barberReceivesCents.toString(),
         },
-        description: input.serviceDescription || 'CampusCuts booking payment',
+        description: input.serviceDescription || 'OnCuts booking payment',
         ...(st ? { statement_descriptor: st } : {}),
       };
 
@@ -169,7 +169,7 @@ class PaymentServiceV2 {
             currency: 'usd',
             unit_amount: input.amountCents,
             product_data: {
-              name: input.serviceDescription || 'CampusCuts booking',
+              name: input.serviceDescription || 'OnCuts booking',
             },
           },
           quantity: 1,
@@ -329,7 +329,7 @@ class PaymentServiceV2 {
         payment_method: input.paymentMethodId,
         confirm: true,
         payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay)
-        description: input.description || 'CampusCuts wallet deposit',
+        description: input.description || 'OnCuts wallet deposit',
         metadata: {
           user_id: input.userId,
           type: 'deposit',
@@ -403,7 +403,7 @@ class PaymentServiceV2 {
           user_id: userId,
           type: 'deposit',
         },
-        description: 'CampusCuts wallet deposit',
+        description: 'OnCuts wallet deposit',
         ...(st ? { statement_descriptor: st } : {}),
       });
 

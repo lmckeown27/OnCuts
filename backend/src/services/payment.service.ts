@@ -215,7 +215,7 @@ class PaymentService {
         barberId: barberId.toString(),
         ...metadata
       },
-      description: `CampusCuts Booking #${bookingId}`,
+      description: `OnCuts Booking #${bookingId}`,
     });
     
     // Store escrow in database

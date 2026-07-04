@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# CampusCuts Service Worker Emergency Fix
+# OnCuts Service Worker Emergency Fix
 # Run this when service workers are causing issues in development
 
-echo "🚨 CampusCuts Service Worker Emergency Fix"
+echo "🚨 OnCuts Service Worker Emergency Fix"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

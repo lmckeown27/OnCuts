@@ -1,7 +1,7 @@
 /**
  * Booking Payment Controller
  * 
- * Handles the complete payment flow for CampusCuts bookings:
+ * Handles the complete payment flow for OnCuts bookings:
  * 1. Student books appointment (no payment upfront)
  * 2. Barber completes service
  * 3. Create Payment Intent for student to pay
@@ -93,7 +93,7 @@ export const createBookingPaymentIntent = async (
       clientId: userId,
       barberId: booking.barber_id,
       bookingId: parseInt(bookingId),
-      description: `Payment for ${booking.service_name} - CampusCuts`,
+      description: `Payment for ${booking.service_name} - OnCuts`,
     });
 
     // 5. Update booking with payment intent ID

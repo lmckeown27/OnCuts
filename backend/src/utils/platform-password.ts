@@ -1,5 +1,5 @@
 /**
- * Platform password (CampusCuts password distinct from Apple / SSO).
+ * Platform password (OnCuts password distinct from Apple / SSO).
  * `has_platform_password` is NOT NULL in schema; treat missing/null as "no explicit password" for safety.
  */
 
@@ -10,7 +10,7 @@ export function userNeedsPlatformPassword(row: { has_platform_password?: boolean
 
 /**
  * DELETE /users/:id may omit body password when the account is Apple-linked and the user has never
- * set a CampusCuts password (device confirms via Face ID / passcode before calling the API).
+ * set an OnCuts password (device confirms via Face ID / passcode before calling the API).
  */
 export function mayDeleteAccountWithoutPasswordBody(row: {
   has_platform_password?: boolean | null;

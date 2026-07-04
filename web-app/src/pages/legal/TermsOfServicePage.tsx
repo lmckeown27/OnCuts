@@ -25,8 +25,8 @@ export default function TermsOfServicePage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={webpageLogo} alt="Tivela Platforms" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">Tivela Platforms</span>
+            <img src={webpageLogo} alt="OnCuts" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">OnCuts</span>
           </Link>
           <button
             onClick={handleBack}
@@ -47,9 +47,9 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                Welcome to Tivela Platforms (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
-                (&quot;Terms&quot;) govern your access to and use of the Tivela Platforms platform, including our website,
-                the Tivela iOS app for consumers, the Tivela - Provider iOS app for barbers, and all related services
+                Welcome to OnCuts (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
+                (&quot;Terms&quot;) govern your access to and use of the OnCuts platform, including our website,
+                the OnCuts iOS app for consumers, the OnCuts Provider iOS app for barbers, and all related services
                 (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
@@ -61,7 +61,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Description of Service</h2>
               <p>
-                Tivela Platforms is a marketplace platform that connects consumers seeking grooming services
+                OnCuts is a marketplace platform that connects consumers seeking grooming services
                 (&quot;Consumers&quot;) with independent barbers (&quot;Barbers&quot;) at college and university
                 campuses. We facilitate:
               </p>
@@ -74,12 +74,12 @@ export default function TermsOfServicePage() {
                 <li>Barber application review and platform administration</li>
               </ul>
               <p className="mt-3">
-                <strong>Important:</strong> Tivela Platforms is a platform that connects users. We are not a grooming service
-                provider. Barbers are independent contractors, not employees of Tivela Platforms.
+                <strong>Important:</strong> OnCuts is a platform that connects users. We are not a grooming service
+                provider. Barbers are independent contractors, not employees of OnCuts.
               </p>
               <p className="mt-3">
-                Consumers may use the Tivela iOS app or our website. Barbers manage bookings, availability,
-                messaging, and payouts through the Tivela - Provider iOS app and/or the barber web dashboard, where
+                Consumers may use the OnCuts iOS app or our website. Barbers manage bookings, availability,
+                messaging, and payouts through the OnCuts Provider iOS app and/or the barber web dashboard, where
                 available.
               </p>
             </section>
@@ -128,7 +128,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-xl font-bold text-gray-900 mb-3">5. Barber Terms</h2>
               <p>As a Barber using the Service, you agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>Submit an application and receive approval from Tivela Platforms administrators before offering services</li>
+                <li>Submit an application and receive approval from OnCuts administrators before offering services</li>
                 <li>Maintain accurate and up-to-date profile information, including services and pricing</li>
                 <li>Respond to booking requests in a timely manner</li>
                 <li>Honor confirmed bookings and arrive on time</li>
@@ -157,12 +157,12 @@ export default function TermsOfServicePage() {
               <p className="font-semibold mt-4 mb-2">6.2 When Consumers Pay</p>
               <p>
                 Consumers pay after a haircut is complete. Once the Barber marks the booking as complete, the Consumer
-                receives a payment prompt in the Tivela app or on the web.
+                receives a payment prompt in the OnCuts app or on the web.
               </p>
 
               <p className="font-semibold mt-4 mb-2">6.3 Platform Fee and Barber Payouts</p>
               <p>
-                Tivela Platforms charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85%
+                OnCuts charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85%
                 of the service amount. Tips, when added, are passed to the Barber in full. Payout timing may vary based
                 on Stripe and banking policies.
               </p>
@@ -178,7 +178,7 @@ export default function TermsOfServicePage() {
               <p className="mt-3">
                 Refund eligibility depends on the timing of the cancellation, the reason for cancellation, whether the
                 service was partially or fully rendered, and applicable payment processor rules. Disputes between
-                Consumers and Barbers should first be resolved directly. Tivela Platforms may assist in mediation but is not
+                Consumers and Barbers should first be resolved directly. OnCuts may assist in mediation but is not
                 obligated to issue refunds.
               </p>
             </section>
@@ -222,12 +222,12 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">10. Intellectual Property</h2>
               <p>
-                The Service and its original content, features, and functionality are owned by Tivela Platforms and are
+                The Service and its original content, features, and functionality are owned by OnCuts and are
                 protected by international copyright, trademark, patent, trade secret, and other intellectual property
                 laws.
               </p>
               <p className="mt-3">
-                By posting User Content, you grant Tivela Platforms a non-exclusive, worldwide, royalty-free license to use,
+                By posting User Content, you grant OnCuts a non-exclusive, worldwide, royalty-free license to use,
                 display, and distribute such content in connection with operating and promoting the Service.
               </p>
             </section>
@@ -261,7 +261,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">13. Indemnification</h2>
               <p>
-                You agree to indemnify, defend, and hold harmless Tivela Platforms and its officers, directors, employees,
+                You agree to indemnify, defend, and hold harmless OnCuts and its officers, directors, employees,
                 and agents from any claims, damages, losses, liabilities, and expenses (including attorneys&apos; fees)
                 arising from your use of the Service or violation of these Terms.
               </p>
@@ -301,7 +301,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">17. Contact Us</h2>
               <p>If you have any questions about these Terms, please contact us at:</p>
-              <p className="mt-2">Email: avilaplatformshelp@gmail.com</p>
+              <p className="mt-2">Email: support@oncuts.com</p>
             </section>
           </div>
         </div>

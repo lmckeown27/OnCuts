@@ -2,7 +2,7 @@
  * Centralized Service/Specialty Definitions
  * 
  * This file is the single source of truth for all service types
- * used across the CampusCuts platform.
+ * used across the OnCuts platform.
  * 
  * IMPORTANT: Any changes here will affect:
  * - Barber profile editor (what barbers can specialize in)
@@ -28,7 +28,7 @@ export const DEFAULT_SERVICE_DURATION_MINUTES = 60;
  * Master list of all service types
  * These are the standardized services across the platform
  * 
- * Price Tiers (aligned with CampusCuts model):
+ * Price Tiers (aligned with OnCuts model):
  * - Budget ($23): Basic quick services
  * - Standard ($28): Standard haircuts
  * - Premium ($35-45): Specialized services

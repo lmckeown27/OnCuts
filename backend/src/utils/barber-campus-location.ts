@@ -1,5 +1,5 @@
 /**
- * Default barber service pin to the campus centroid when they join via CampusCuts.
+ * Default barber service pin to the campus centroid when they join vian OnCuts.
  * Requires campuses.latitude / campuses.longitude (see add_campus_coordinates.sql).
  */
 

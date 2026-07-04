@@ -635,7 +635,7 @@ export default function ConsumerPage() {
               onClick={() => navigate('/')}
               className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
             >
-              <img src={TivelaPlatformsLogo} alt="Tivela" className="h-10 sm:h-12 w-auto" />
+              <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
             </button>
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
@@ -833,17 +833,17 @@ export default function ConsumerPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
             <p className="text-gray-600 mb-4">
-              Please be patient as the Tivela Platforms team goes over your application.
+              Please be patient as the OnCuts team goes over your application.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               If you suspect your application was not sent, please contact{' '}
               <a 
-                href="mailto:avilaplatformshelp@gmail.com?subject=Barber Application Issue"
+                href="mailto:support@oncuts.com?subject=Barber Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-600 hover:text-black font-medium"
               >
-                avilaplatformshelp@gmail.com
+                support@oncuts.com
               </a>
             </p>
             <button
@@ -875,7 +875,7 @@ export default function ConsumerPage() {
               Your previous application was not approved. You can submit a new application with updated information.
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              If you have questions about why your application was rejected, please contact <span className="text-primary-600 font-medium">avilaplatformshelp@gmail.com</span>
+              If you have questions about why your application was rejected, please contact <span className="text-primary-600 font-medium">support@oncuts.com</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
@@ -1164,8 +1164,8 @@ export default function ConsumerPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
                 <p className="text-sm text-amber-800">
                   Think a mistake was made? Contact us at{' '}
-                  <a href="mailto:avilaplatformshelp@gmail.com" className="font-medium underline">
-                    avilaplatformshelp@gmail.com
+                  <a href="mailto:support@oncuts.com" className="font-medium underline">
+                    support@oncuts.com
                   </a>
                 </p>
               </div>

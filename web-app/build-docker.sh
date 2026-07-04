@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts Frontend - Docker Build Script
+# OnCuts Frontend - Docker Build Script
 # Builds the Docker image with proper environment variables
 
 set -e  # Exit on error
 
-echo "🐳 Building CampusCuts Frontend Docker Image..."
+echo "🐳 Building OnCuts Frontend Docker Image..."
 echo ""
 
 # Load environment variables from .env if it exists
@@ -23,7 +23,7 @@ export VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3001}
 export VITE_WS_URL=${VITE_WS_URL:-ws://localhost:3001}
 export VITE_APTOS_NETWORK=${VITE_APTOS_NETWORK:-devnet}
 export VITE_APTOS_NODE_URL=${VITE_APTOS_NODE_URL:-https://fullnode.devnet.aptoslabs.com/v1}
-export VITE_APP_NAME=${VITE_APP_NAME:-CampusCuts}
+export VITE_APP_NAME=${VITE_APP_NAME:-OnCuts}
 export VITE_APP_VERSION=${VITE_APP_VERSION:-1.0.0}
 
 echo ""

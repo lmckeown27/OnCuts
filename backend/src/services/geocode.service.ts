@@ -12,7 +12,7 @@ import NodeCache from 'node-cache';
 import { logger } from '../utils/logger';
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'CampusCuts-Marketplace-App (contact@campuscuts.com)';
+const USER_AGENT = 'OnCuts-Marketplace-App (support@oncuts.com)';
 
 const SEARCH_CACHE_TTL_SEC = 60 * 60 * 24; // 24h — dorm/library names repeat often
 const REVERSE_CACHE_TTL_SEC = 60 * 60 * 6;

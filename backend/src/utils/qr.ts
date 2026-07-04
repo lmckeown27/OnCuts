@@ -2,7 +2,7 @@
 /**
  * QR Code Generator with Centered Logo
  * 
- * Generates QR codes with the CampusCut logo centered in the middle.
+ * Generates QR codes with the OnCuts logo centered in the middle.
  * Uses high error correction (H) to ensure QR remains scannable with logo overlay.
  */
 
@@ -144,7 +144,7 @@ export async function generateQrWithLogoBase64({
   return canvas.toDataURL('image/png');
 }
 
-// Default logo path for CampusCut
+// Default logo path for OnCuts
 export const CAMPUSCUT_LOGO_PATH = path.resolve(
   __dirname,
   '../../../web-app/src/assets/logos/Mobile_Header_Chair.png'

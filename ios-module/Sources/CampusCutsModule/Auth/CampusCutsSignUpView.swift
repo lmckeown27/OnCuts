@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Email + password sign-up aligned with the legacy CampusCuts iOS `SignUpView` and `POST /api/v1/auth/register` + `verify-email`.
+/// Email + password sign-up aligned with the legacy OnCuts iOS `SignUpView` and `POST /api/v1/auth/register` + `verify-email`.
 public struct CampusCutsSignUpView: View {
     public let apiV1BaseTrimmed: String
     /// Called after email verification returns JWTs.

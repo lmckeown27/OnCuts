@@ -672,7 +672,7 @@ export default function ConsumerBookingStatusPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <img src={TivelaPlatformsLogo} alt="Tivela" className="h-8" />
+            <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8" />
             <button
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-black"
@@ -870,7 +870,7 @@ export default function ConsumerBookingStatusPage() {
               </span>
             )}
           </button>
-          <img src={TivelaPlatformsLogo} alt="Tivela" className="h-10" />
+          <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -1595,8 +1595,8 @@ export default function ConsumerBookingStatusPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
                 <p className="text-sm text-amber-800">
                   Think a mistake was made? Contact us at{' '}
-                  <a href="mailto:avilaplatformshelp@gmail.com" className="font-medium underline">
-                    avilaplatformshelp@gmail.com
+                  <a href="mailto:support@oncuts.com" className="font-medium underline">
+                    support@oncuts.com
                   </a>
                 </p>
               </div>

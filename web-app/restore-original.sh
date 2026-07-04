@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts - Restore Original Files
+# OnCuts - Restore Original Files
 # Restores the original App.tsx, tsconfig, and constants.ts from backups
 
 set -e  # Exit on error
 
-echo "🔄 Restoring original CampusCuts web-app files..."
+echo "🔄 Restoring original OnCuts web-app files..."
 echo ""
 
 cd "$(dirname "$0")"

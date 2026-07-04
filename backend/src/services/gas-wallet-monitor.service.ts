@@ -23,7 +23,7 @@ const HEALTHY_THRESHOLD = parseFloat(process.env.GAS_WALLET_HEALTHY_THRESHOLD ||
 const ALERT_COOLDOWN_HOURS = parseInt(process.env.ALERT_COOLDOWN_HOURS || '6'); // 6 hours
 
 // Admin contact info
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@campuscuts.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@oncuts.com';
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '+1234567890';
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL || '';
 

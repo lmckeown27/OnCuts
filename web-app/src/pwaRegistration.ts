@@ -137,7 +137,7 @@ export function setupInstallPrompt() {
   
   // Handle successful installation
   window.addEventListener('appinstalled', () => {
-    console.log('CampusCuts installed as PWA');
+    console.log('OnCuts installed as PWA');
     deferredPrompt = null;
   });
 }
@@ -165,7 +165,7 @@ function showInstallPrompt(deferredPrompt: any) {
   `;
   
   prompt.innerHTML = `
-    <span>Install CampusCuts for quick access!</span>
+    <span>Install OnCuts for quick access!</span>
     <button id="pwa-install-btn" style="
       background: #4F46E5;
       color: white;

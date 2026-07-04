@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Factory class for building the CampusCuts module views
+/// Factory class for building the OnCuts module views
 public struct CampusCutsModuleBuilder {
 
     @MainActor

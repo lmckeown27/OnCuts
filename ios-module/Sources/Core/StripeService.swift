@@ -8,7 +8,7 @@ import StripePaymentSheet
 /// (e.g. injected via xcconfig at build time). Same as `Bundle.main.infoDictionary?["StripePublishableKey"]`.
 public enum StripeService {
     /// Call once at launch with your API root (e.g. `https://oncuts.com/api/v1`). When the host is production
-    /// CampusCuts, a bundled `pk_test_…` or an unresolved `$(STRIPE_PUBLISHABLE_KEY)` is **not** applied, so the SDK
+    /// OnCuts, a bundled `pk_test_…` or an unresolved `$(STRIPE_PUBLISHABLE_KEY)` is **not** applied, so the SDK
     /// never enters the wrong Stripe mode before checkout (avoids live PI + test key 404s).
     public static func applyPublishableKeyAlignedWithAPIHost(apiRootTrimmed: String, bundle: Bundle = .main) {
         #if canImport(StripePaymentSheet)

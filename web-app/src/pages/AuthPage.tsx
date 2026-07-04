@@ -526,7 +526,7 @@ export default function AuthPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TivelaPlatformsLogo} 
-              alt="Tivela Logo" 
+              alt="OnCuts Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
@@ -534,7 +534,7 @@ export default function AuthPage() {
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </h1>
           <p className="text-sm sm:text-base text-gray-300">
-            {mode === 'login' ? 'Access your Tivela account' : 'Join Tivela today'}
+            {mode === 'login' ? 'Access your OnCuts account' : 'Join OnCuts today'}
           </p>
         </div>
 
@@ -1380,7 +1380,7 @@ export default function AuthPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:avilaplatformshelp@gmail.com"
+                href="mailto:support@oncuts.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
@@ -1404,7 +1404,7 @@ export default function AuthPage() {
             className="text-gray-400 hover:text-white text-sm transition-colors inline-flex items-center gap-2"
           >
             <ArrowLeft size={16} />
-            Back to Tivela
+            Back to OnCuts
           </Link>
         </div>
       </div>

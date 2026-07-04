@@ -1,6 +1,6 @@
 /**
- * Push Notification Service for CampusCuts
- * Transferred from CampusKinect with CampusCuts adaptations
+ * Push Notification Service for OnCuts
+ * Transferred from CampusKinect with OnCuts adaptations
  * 
  * Handles:
  * - iOS push notifications (APN)

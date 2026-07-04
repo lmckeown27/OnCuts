@@ -155,7 +155,7 @@ if [ $? -eq 0 ]; then
     echo "  ✅ BUILD SUCCESSFUL!"
     echo "════════════════════════════════════════════════════════"
     echo ""
-    echo "Your full CampusCuts app now builds successfully!"
+    echo "Your full OnCuts app now builds successfully!"
     echo ""
     echo "What was fixed:"
     echo "  ✅ Excluded test files from build"

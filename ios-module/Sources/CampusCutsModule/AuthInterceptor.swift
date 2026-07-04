@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Prepares authorized `URLRequest` values for the CampusCuts API.
+/// Prepares authorized `URLRequest` values for the OnCuts API.
 internal struct AuthInterceptor {
     private let session: UserSessionProtocol
 

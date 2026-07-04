@@ -1,5 +1,5 @@
 /**
- * AWS S3 Upload Service for CampusCuts
+ * AWS S3 Upload Service for OnCuts
  * 
  * Uploads images to S3 for CDN delivery.
  * Uses IAM Role attached to EC2 instance (no credentials needed in code).

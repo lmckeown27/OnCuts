@@ -21,7 +21,7 @@ public struct CampusCutsDayAvailabilitySlot: Sendable, Hashable {
     }
 }
 
-/// Service + price row from `GET /barbers/:id` pricing (CampusCuts backend).
+/// Service + price row from `GET /barbers/:id` pricing (OnCuts backend).
 public struct CampusCutsBarberServiceRow: Sendable, Hashable, Identifiable {
     public let id: String
     public let name: String

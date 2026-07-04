@@ -1,6 +1,6 @@
 /**
- * Image Processing Service for CampusCuts
- * Transferred from CampusKinect with CampusCuts adaptations
+ * Image Processing Service for OnCuts
+ * Transferred from CampusKinect with OnCuts adaptations
  * 
  * Handles:
  * - Barber portfolio image processing

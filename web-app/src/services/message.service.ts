@@ -1,7 +1,7 @@
 import api from './api.service';
 import type { Conversation, Message, PaginatedResponse } from '../types';
 
-// Booking context for CampusCuts booking-centric conversations
+// Booking context for OnCuts booking-centric conversations
 interface BookingContext {
   bookingId?: string;
   serviceName?: string;
@@ -61,7 +61,7 @@ class MessageService {
 
   /**
    * Start a BOOKING-CENTRIC conversation with full service context
-   * This is the primary way to create conversations in CampusCuts
+   * This is the primary way to create conversations in OnCuts
    */
   async startBookingConversation(
     otherUserId: string, 

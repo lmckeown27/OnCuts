@@ -1,6 +1,6 @@
 /**
- * Educational Domain Validation Service for CampusCuts
- * Transferred from CampusKinect with CampusCuts adaptations
+ * Educational Domain Validation Service for OnCuts
+ * Transferred from CampusKinect with OnCuts adaptations
  * 
  * Validates .edu and international educational email domains
  * Three-tier validation: Database → External APIs → Pattern Matching

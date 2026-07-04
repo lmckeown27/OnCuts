@@ -1,5 +1,5 @@
 /**
- * Email Service - SMTP for signup email verification only (CampusCuts)
+ * Email Service - SMTP for signup email verification only (OnCuts)
  *
  * SMTP is used only for the 6-digit signup verification email and health `verify`.
  * Other email-shaped flows (password reset, bookings, messages, etc.) keep their
@@ -112,7 +112,7 @@ export function isAutoVerifyEnabled(): boolean {
  * @returns Promise<void>
  * 
  * @example
- * await sendEmail('admin@campuscuts.com', 'Alert', 'Gas wallet is low!');
+ * await sendEmail('admin@oncuts.com', 'Alert', 'Gas wallet is low!');
  */
 export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
   if (isAutoVerifyEnabled()) {
@@ -124,7 +124,7 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to,
       subject,
       text: body,
@@ -165,9 +165,9 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Verify Your CampusCut Account - Code Inside',
+      subject: 'Verify Your OnCuts Account - Code Inside',
       text: generateVerificationEmailText(code, frontendUrl),
       html: generateVerificationEmailHtml(code, frontendUrl)
     };
@@ -207,9 +207,9 @@ export async function sendPasswordResetEmail(email: string, resetLink: string): 
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Reset Your CampusCut Password',
+      subject: 'Reset Your OnCuts Password',
       text: generatePasswordResetEmailText(resetLink),
       html: generatePasswordResetEmailHtml(resetLink)
     };
@@ -257,7 +257,7 @@ export async function verifyEmailService(): Promise<boolean> {
  */
 function generateVerificationEmailText(code: string, frontendUrl: string): string {
   return `
-Welcome to CampusCut!
+Welcome to OnCuts!
 
 Your verification code is: ${code}
 
@@ -266,10 +266,10 @@ This code does not expire until you complete registration or request a new code.
 To verify your account, enter this code on the verification page:
 ${frontendUrl}/web/verify-email
 
-If you didn't create an account with CampusCut, please ignore this email.
+If you didn't create an account with OnCuts, please ignore this email.
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -288,12 +288,12 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Account Verification</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-    <h2 style="color: #022b19; margin-bottom: 20px;">Welcome to CampusCut!</h2>
+    <h2 style="color: #022b19; margin-bottom: 20px;">Welcome to OnCuts!</h2>
     
     <p style="color: #555555; line-height: 1.6; margin-bottom: 25px;">
       We're excited to have you join our campus community. To complete your registration, 
@@ -321,12 +321,12 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
     
     <p style="color: #6b7280; font-size: 13px; text-align: center;">
-      If you didn't create an account with CampusCut, you can safely ignore this email.
+      If you didn't create an account with OnCuts, you can safely ignore this email.
     </p>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     <p style="margin: 5px 0 0 0;">
       <a href="${frontendUrl}/privacy" style="color: #5a7268; text-decoration: none;">Privacy Policy</a>
     </p>
@@ -341,9 +341,9 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
  */
 function generatePasswordResetEmailText(resetLink: string): string {
   return `
-Reset Your CampusCut Password
+Reset Your OnCuts Password
 
-You requested to reset your password for your CampusCut account.
+You requested to reset your password for your OnCuts account.
 
 Click the link below to reset your password:
 ${resetLink}
@@ -353,7 +353,7 @@ This link will expire in 1 hour.
 If you didn't request a password reset, please ignore this email or contact support if you have concerns.
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -370,7 +370,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Password Reset</p>
   </div>
   
@@ -378,7 +378,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
     <h2 style="color: #022b19; margin-bottom: 20px;">Reset Your Password</h2>
     
     <p style="color: #555555; line-height: 1.6; margin-bottom: 25px;">
-      You requested to reset your password for your CampusCut account. 
+      You requested to reset your password for your OnCuts account. 
       Click the button below to create a new password.
     </p>
     
@@ -405,7 +405,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
   </div>
 </body>
 </html>
@@ -431,11 +431,11 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
     const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Welcome to CampusCut!',
+      subject: 'Welcome to OnCuts!',
       text: `
-Welcome to CampusCut, ${firstName}!
+Welcome to OnCuts, ${firstName}!
 
 Your account has been successfully verified. You can now:
 - Book appointments with talented barbers on your campus
@@ -448,7 +448,7 @@ Get started: ${frontendUrl}/web/discover
 We're excited to help you look your best!
 
 ---
-CampusCut Team
+OnCuts Team
 `.trim(),
       html: `
 <!DOCTYPE html>
@@ -459,7 +459,7 @@ CampusCut Team
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Welcome Aboard!</p>
   </div>
   
@@ -467,7 +467,7 @@ CampusCut Team
     <h2 style="color: #022b19; margin-bottom: 20px;">Hey ${firstName}!</h2>
     
     <p style="color: #555555; line-height: 1.6; margin-bottom: 20px;">
-      Your account has been verified and you're all set! Welcome to the CampusCut community.
+      Your account has been verified and you're all set! Welcome to the OnCuts community.
     </p>
     
     <div style="background-color: #f2f5f4; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -492,7 +492,7 @@ CampusCut Team
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
   </div>
 </body>
 </html>
@@ -544,7 +544,7 @@ export async function sendBookingConfirmationEmails(details: BookingConfirmation
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Booking Confirmed! Your ${details.serviceName} with ${details.barberName}`,
       text: generateBookingConfirmationText(details, 'consumer'),
@@ -562,7 +562,7 @@ export async function sendBookingConfirmationEmails(details: BookingConfirmation
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const barberMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject: `New Booking Confirmed: ${details.serviceName} with ${details.consumerName}`,
       text: generateBookingConfirmationText(details, 'barber'),
@@ -615,7 +615,7 @@ ${isConsumer
   : 'Please review the booking details and be ready for your client at the scheduled time.'}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -648,7 +648,7 @@ function generateBookingConfirmationHtml(
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Booking Confirmed!</p>
   </div>
   
@@ -720,7 +720,7 @@ function generateBookingConfirmationHtml(
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     <p style="margin: 10px 0 0 0;">
       <a href="${frontendUrl}/web" style="color: #9ca3af;">Messages</a>
     </p>
@@ -766,7 +766,7 @@ export async function sendPendingBookingEmails(details: PendingBookingEmailDetai
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Booking Request Submitted - ${details.serviceName} with ${details.barberName}`,
       text: generatePendingBookingText(details, 'consumer'),
@@ -784,7 +784,7 @@ export async function sendPendingBookingEmails(details: PendingBookingEmailDetai
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const barberMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject: `New Booking Request from ${details.consumerName}`,
       text: generatePendingBookingText(details, 'barber'),
@@ -834,10 +834,10 @@ Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ${isConsumer 
   ? "We'll notify you once the barber confirms your booking. You can track your booking status on the webpage."
-  : 'Please review and respond to this booking request in the CampusCut app.'}
+  : 'Please review and respond to this booking request in the OnCuts app.'}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -869,7 +869,7 @@ function generatePendingBookingHtml(
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #d1e0d9; margin: 10px 0 0 0; font-size: 16px;">${title}</p>
   </div>
   
@@ -957,7 +957,7 @@ function generatePendingBookingHtml(
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
   </div>
 </body>
 </html>
@@ -1002,17 +1002,17 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     const transporter = createSkippedSmtpTransporter('transactional');
     
     await transporter.sendMail({
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Booking Updated - Your ${details.serviceName} appointment has been rescheduled`,
-      text: `Hi ${details.consumerName.split(' ')[0]}!\n\n${details.barberName} has made changes to your upcoming ${details.serviceName} appointment.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nIf you have questions, message your barber through the app.\n\n- CampusCut`,
+      text: `Hi ${details.consumerName.split(' ')[0]}!\n\n${details.barberName} has made changes to your upcoming ${details.serviceName} appointment.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nIf you have questions, message your barber through the app.\n\n- OnCuts`,
       html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">Booking Updated</p>
   </div>
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
@@ -1052,7 +1052,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
       <a href="${frontendUrl}/web" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Updated Booking</a>
     </p>
   </div>
-  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} OnCuts</div>
 </body>
 </html>`.trim()
     });
@@ -1066,17 +1066,17 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     const transporter = createSkippedSmtpTransporter('transactional');
     
     await transporter.sendMail({
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject: `Booking Updated - Confirmation of changes to ${details.consumerName}'s appointment`,
-      text: `Hi ${details.barberName.split(' ')[0]}!\n\nThis confirms your changes to the ${details.serviceName} appointment with ${details.consumerName}.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nThe customer has been notified of this change.\n\n- CampusCut`,
+      text: `Hi ${details.barberName.split(' ')[0]}!\n\nThis confirms your changes to the ${details.serviceName} appointment with ${details.consumerName}.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nThe customer has been notified of this change.\n\n- OnCuts`,
       html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">Booking Updated</p>
   </div>
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
@@ -1118,7 +1118,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
       <a href="${frontendUrl}/web" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Booking</a>
     </p>
   </div>
-  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} OnCuts</div>
 </body>
 </html>`.trim()
     });
@@ -1179,7 +1179,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Payment Required: Your ${details.serviceName} is Complete!`,
       text: generateBookingCompletedText(details, 'consumer'),
@@ -1203,7 +1203,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
       const transporter = createSkippedSmtpTransporter('transactional');
       
       const barberMailOptions = {
-        from: `CampusCut <${process.env.SMTP_USER}>`,
+        from: `OnCuts <${process.env.SMTP_USER}>`,
         to: details.barberEmail,
         subject: `Service Complete: ${details.serviceName} with ${details.consumerName}`,
         text: generateBookingCompletedText(details, 'barber'),
@@ -1254,12 +1254,12 @@ Amount Due: $${details.price.toFixed(2)}
 Please complete your payment by visiting:
 ${details.paymentUrl}
 
-Thank you for choosing CampusCut!
+Thank you for choosing OnCuts!
 
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
   } else {
     return `
@@ -1281,7 +1281,7 @@ A payment request has been sent to ${details.consumerName}. You'll be notified w
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
   }
 }
@@ -1301,7 +1301,7 @@ function generateBookingCompletedHtml(
 
   const headerColor = isConsumer ? '#5a7268' : '#3b82f6'; // Primary green for consumer (pay), Blue for barber
   const headerText = isConsumer ? 'Payment Required' : 'Service Complete';
-  const headerEmoji = isConsumer ? '' : '✅'; // No emoji for consumer, show CampusCut text instead
+  const headerEmoji = isConsumer ? '' : '✅'; // No emoji for consumer, show OnCuts text instead
 
   const ctaButton = isConsumer
     ? `<a href="${details.paymentUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 48px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">Pay $${details.price.toFixed(2)} Now</a>`
@@ -1322,7 +1322,7 @@ function generateBookingCompletedHtml(
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="background-color: ${headerColor}; padding: 30px 20px; text-align: center;">
       ${isConsumer 
-        ? `<span style="font-size: 28px; font-weight: 700; color: white; letter-spacing: -1px;">CampusCut</span>`
+        ? `<span style="font-size: 28px; font-weight: 700; color: white; letter-spacing: -1px;">OnCuts</span>`
         : `<span style="font-size: 48px;">${headerEmoji}</span>`
       }
       <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">${headerText}</h1>
@@ -1372,7 +1372,7 @@ function generateBookingCompletedHtml(
 
       ${isConsumer ? `
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        You can also pay by opening the CampusCut app and navigating to your booking.
+        You can also pay by opening the OnCuts app and navigating to your booking.
       </p>` : `
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
         You'll receive a notification when ${details.consumerName.split(' ')[0]} completes their payment.
@@ -1384,7 +1384,7 @@ function generateBookingCompletedHtml(
       </div>
     </div>
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -1438,7 +1438,7 @@ export async function sendBarberApplicationNotification(
     const frontendUrl = getFrontendBaseUrl();
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: campusManagerEmail,
       subject: `New Barber Application: ${details.applicantName} wants to join ${details.campusName}`,
       text: generateBarberApplicationText(campusManagerName, details),
@@ -1465,7 +1465,7 @@ function generateBarberApplicationText(
   return `
 Hi ${firstName}!
 
-Great news! You have a new barber application on CampusCut.
+Great news! You have a new barber application on OnCuts.
 
 APPLICANT INFORMATION
 ---------------------
@@ -1502,12 +1502,12 @@ Suggested interview topics:
 - Verify their experience and skills
 - Discuss availability and commitment
 - Review any portfolio or previous work
-- Explain CampusCut policies and expectations
+- Explain OnCuts policies and expectations
 
 Application Reference: ${details.applicationId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -1591,7 +1591,7 @@ function generateBarberApplicationHtml(
       
       <!-- Why They Want to Be a Barber -->
       <div style="background-color: #f2f5f4; border: 1px solid #bfcdc8; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #445750; margin: 0 0 10px 0; font-size: 14px;">Why They Want to Be a CampusCut Barber:</h4>
+        <h4 style="color: #445750; margin: 0 0 10px 0; font-size: 14px;">Why They Want to Be an OnCuts Barber:</h4>
         <p style="color: #2e3c38; margin: 0; font-style: italic; line-height: 1.6;">"${details.whyBeBarber}"</p>
       </div>
       
@@ -1624,7 +1624,7 @@ function generateBarberApplicationHtml(
         <p style="color: #445750; margin: 0 0 20px 0; font-size: 14px; line-height: 1.6;">
           ${applicantFirstName} is excited to join your campus! Consider reaching out to schedule a quick interview to verify their skills and discuss expectations.
         </p>
-        <a href="mailto:${details.applicantEmail}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${encodeURIComponent(applicantFirstName)}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%0A%0ABest%2C%0A${encodeURIComponent(firstName)}" 
+        <a href="mailto:${details.applicantEmail}?subject=OnCuts%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${encodeURIComponent(applicantFirstName)}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%0A%0ABest%2C%0A${encodeURIComponent(firstName)}" 
            style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Email ${applicantFirstName} for Interview
         </a>
@@ -1637,7 +1637,7 @@ function generateBarberApplicationHtml(
           <li>Ask about specific haircut styles they're comfortable with</li>
           <li>Discuss their availability and commitment level</li>
           <li>Request to see any portfolio photos or previous work</li>
-          <li>Explain CampusCut policies, pricing, and expectations</li>
+          <li>Explain OnCuts policies, pricing, and expectations</li>
           <li>Gauge their professionalism and communication skills</li>
         </ul>
       </div>
@@ -1657,7 +1657,7 @@ function generateBarberApplicationHtml(
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -1717,7 +1717,7 @@ export async function sendBookingCancellationEmails(details: BookingCancellation
       : `Booking Cancelled: ${details.barberName} cancelled your appointment`;
     
     const consumerMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: consumerSubject,
       text: generateBookingCancellationText(details, 'consumer'),
@@ -1739,7 +1739,7 @@ export async function sendBookingCancellationEmails(details: BookingCancellation
       : `Booking Cancelled: ${details.consumerName} cancelled their appointment`;
     
     const barberMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject: barberSubject,
       text: generateBookingCancellationText(details, 'barber'),
@@ -1797,7 +1797,7 @@ ${isConsumer
     : 'This time slot is now available for other bookings.'}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -1932,7 +1932,7 @@ function generateBookingCancellationHtml(
       </p>
     </div>
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -1987,7 +1987,7 @@ export async function sendBookingDeclineEmail(details: BookingDeclineEmailDetail
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Booking Request Declined - ${details.serviceName} with ${details.barberName}`,
       text: generateBookingDeclineText(details),
@@ -2025,12 +2025,12 @@ Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
 If you believe a mistake has been made, please contact us at:
-campuscuthelp@gmail.com
+support@oncuts.com
 
 We're here to help!
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -2074,7 +2074,7 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">OnCuts</h1>
     <p style="color: #fca5a5; margin: 10px 0 0 0; font-size: 16px;">Booking Request Declined</p>
   </div>
   
@@ -2151,13 +2151,13 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
     <div style="background-color: #f2f5f4; border: 1px solid #bfcdc8; border-radius: 8px; padding: 15px; margin: 20px 0;">
       <p style="color: #3d5149; margin: 0; font-size: 14px;">
         <strong>Think a mistake was made?</strong><br>
-        Contact us at <a href="mailto:campuscuthelp@gmail.com" style="color: #5a7268; font-weight: 600;">campuscuthelp@gmail.com</a> and we'll be happy to help.
+        Contact us at <a href="mailto:support@oncuts.com" style="color: #5a7268; font-weight: 600;">support@oncuts.com</a> and we'll be happy to help.
       </p>
     </div>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
   </div>
 </body>
 </html>`.trim();
@@ -2203,7 +2203,7 @@ export async function sendBookingReminderEmail(details: BookingReminderEmailDeta
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject: `Reminder: Your ${details.serviceName} with ${details.barberName} is in 1 hour!`,
       text: generateBookingReminderText(details),
@@ -2250,7 +2250,7 @@ TIPS FOR YOUR APPOINTMENT
 See you soon!
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -2355,7 +2355,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -2386,7 +2386,7 @@ export async function sendBarberReminderEmail(details: BookingReminderEmailDetai
     const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject: `Reminder: ${details.consumerName}'s ${details.serviceName} is in 1 hour!`,
       text: generateBarberReminderText(details),
@@ -2433,7 +2433,7 @@ CHECKLIST
 Time to deliver another great cut!
 
 ---
-CampusCut
+OnCuts
 `.trim();
 }
 
@@ -2541,7 +2541,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -2566,14 +2566,14 @@ export async function sendGuestApplicationApprovedEmail(
   const frontendUrl = getFrontendBaseUrl();
   const signUpLink = `${frontendUrl}/web/auth`;
 
-  const subject = 'Your CampusCut Barber Application Has Been Approved!';
+  const subject = 'Your OnCuts Barber Application Has Been Approved!';
 
   const text = `
 Hi ${firstName}!
 
 Great news! Your barber application for ${campusName} has been approved! 
 
-To complete your onboarding and start receiving bookings, you need to create your CampusCut account.
+To complete your onboarding and start receiving bookings, you need to create your OnCuts account.
 
 Create your account here: ${signUpLink}
 
@@ -2584,10 +2584,10 @@ Once you create your account, you can:
 - Configure your availability
 - Start receiving booking requests from students
 
-Welcome to CampusCut!
+Welcome to OnCuts!
 
 Best,
-The CampusCut Team
+The OnCuts Team
 `.trim();
 
   const html = `
@@ -2602,7 +2602,7 @@ The CampusCut Team
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #5a7268 0%, #445750 100%); padding: 40px 30px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Application Approved!</h1>
-      <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Welcome to the CampusCut barber team</p>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Welcome to the OnCuts barber team</p>
     </div>
     
     <!-- Content -->
@@ -2618,7 +2618,7 @@ The CampusCut Team
       <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
         <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">One More Step</h4>
         <p style="color: #78350f; margin: 0; font-size: 14px; line-height: 1.6;">
-          To complete your onboarding and start receiving bookings, you need to create your CampusCut account.
+          To complete your onboarding and start receiving bookings, you need to create your OnCuts account.
         </p>
       </div>
       
@@ -2651,7 +2651,7 @@ The CampusCut Team
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -2666,7 +2666,7 @@ The CampusCut Team
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: email,
       subject,
       text,
@@ -2746,7 +2746,7 @@ Reply to this message by visiting:
 ${conversationLink}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -2759,7 +2759,7 @@ CampusCut
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
-      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <h1 style="color: white; margin: 0; font-size: 24px;">OnCuts</h1>
       <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 14px;">New Message</p>
     </div>
     
@@ -2817,12 +2817,12 @@ CampusCut
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        Open the CampusCut app to continue the conversation.
+        Open the OnCuts app to continue the conversation.
       </p>
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -2832,7 +2832,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.recipientEmail,
       subject,
       text,
@@ -2889,7 +2889,7 @@ Reply to this message by visiting:
 ${conversationLink}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -2902,7 +2902,7 @@ CampusCut
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
-      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <h1 style="color: white; margin: 0; font-size: 24px;">OnCuts</h1>
       <p style="color: #d1e0d9; margin: 10px 0 0 0; font-size: 14px;">New Message from Customer</p>
     </div>
     
@@ -2960,12 +2960,12 @@ CampusCut
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        Open the CampusCut app to continue the conversation.
+        Open the OnCuts app to continue the conversation.
       </p>
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -2975,7 +2975,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.recipientEmail,
       subject,
       text,
@@ -3033,7 +3033,7 @@ Reply to this message by visiting:
 ${conversationLink}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -3046,7 +3046,7 @@ CampusCut
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
-      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <h1 style="color: white; margin: 0; font-size: 24px;">OnCuts</h1>
       <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 14px;">Message from Fellow Barber</p>
     </div>
     
@@ -3072,12 +3072,12 @@ CampusCut
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        Open the CampusCut app to continue the conversation.
+        Open the OnCuts app to continue the conversation.
       </p>
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -3087,7 +3087,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.recipientEmail,
       subject,
       text,
@@ -3194,7 +3194,7 @@ Check your booking: ${consumerDashboardUrl}
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -3292,7 +3292,7 @@ CampusCut
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -3302,7 +3302,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject,
       text,
@@ -3375,7 +3375,7 @@ Visit your dashboard: ${barberDashboardUrl}
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -3473,7 +3473,7 @@ CampusCut
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -3483,7 +3483,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject,
       text,
@@ -3555,7 +3555,7 @@ Visit your dashboard: ${barberDashboardUrl}
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -3653,7 +3653,7 @@ CampusCut
     </div>
     
     <div style="background-color: #fef2f2; padding: 20px; text-align: center;">
-      <p style="color: #991b1b; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #991b1b; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
       <p style="color: #b91c1c; font-size: 11px; margin: 8px 0 0 0;">Please update this booking as soon as possible</p>
     </div>
   </div>
@@ -3664,7 +3664,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject,
       text,
@@ -3737,7 +3737,7 @@ Pay Now: ${paymentUrl}
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -3827,12 +3827,12 @@ CampusCut
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        Thank you for using CampusCut!
+        Thank you for using OnCuts!
       </p>
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -3842,7 +3842,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject,
       text,
@@ -3922,7 +3922,7 @@ Please visit your dashboard to accept or decline this booking: ${barberDashboard
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -4001,7 +4001,7 @@ CampusCut
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -4011,7 +4011,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject,
       text,
@@ -4092,7 +4092,7 @@ Visit your dashboard: ${barberDashboardUrl}
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   const html = `
@@ -4173,7 +4173,7 @@ CampusCut
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -4183,7 +4183,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
       subject,
       text,
@@ -4249,7 +4249,7 @@ We apologize for any inconvenience. You can book a new appointment with another 
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut
+OnCuts
 `.trim();
 
   // Build alternative barbers HTML
@@ -4368,7 +4368,7 @@ CampusCut
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} OnCuts</p>
     </div>
   </div>
 </body>
@@ -4378,7 +4378,7 @@ CampusCut
     const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
+      from: `OnCuts <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
       subject,
       text,

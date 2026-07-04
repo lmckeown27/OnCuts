@@ -1,7 +1,7 @@
 /**
  * Payout Service
  * 
- * Handles withdrawals from CampusCuts to user bank accounts
+ * Handles withdrawals from OnCuts to user bank accounts
  * Integrates with Stripe Connect for instant payouts to barbers
  */
 
@@ -165,7 +165,7 @@ class PayoutService {
           amount: amountCents,
           currency: 'usd',
           method: 'instant', // Use instant payouts (requires Stripe setup)
-          statement_descriptor: 'CampusCuts Payout',
+          statement_descriptor: 'OnCuts Payout',
         },
         {
           stripeAccount: connectedAccountId, // Send to barber's connected account

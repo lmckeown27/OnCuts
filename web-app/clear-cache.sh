@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# CampusCuts Development Cache Cleaner
+# OnCuts Development Cache Cleaner
 # Run this script when you encounter stale code issues
 
-echo "🧹 CampusCuts Cache Cleaner"
+echo "🧹 OnCuts Cache Cleaner"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

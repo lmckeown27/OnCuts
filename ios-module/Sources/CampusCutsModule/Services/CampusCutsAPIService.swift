@@ -2,12 +2,12 @@
 //  CampusCutsAPIService.swift
 //  CampusCutsModule
 //
-//  Internal networking layer for CampusCuts API calls.
+//  Internal networking layer for OnCuts API calls.
 //
 
 import Foundation
 
-/// Internal API service for CampusCuts backend communication
+/// Internal API service for OnCuts backend communication
 internal class CampusCutsAPIService {
     private let session: UserSessionProtocol
     private let baseURL: URL

@@ -57,7 +57,7 @@ function ZkLoginCallbackInner() {
     }
 
     if (!isAuthenticated) {
-      toast.error('Log in to Tivela first, then link your Sui zkLogin wallet.');
+      toast.error('Log in to OnCuts first, then link your Sui zkLogin wallet.');
       navigate(`${platformPrefix}/auth`, { replace: true });
       return;
     }

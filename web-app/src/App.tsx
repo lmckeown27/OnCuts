@@ -47,7 +47,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
                 </div>
                 <h1 className="text-xl font-bold text-gray-900 mb-2">Update Available</h1>
                 <p className="text-gray-600 mb-6">
-                  A new version of CampusCuts is available. Please reload the page to get the latest updates.
+                  A new version of OnCuts is available. Please reload the page to get the latest updates.
                 </p>
               </>
             ) : (

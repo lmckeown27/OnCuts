@@ -119,13 +119,13 @@ export default function IosAppPromoSection() {
   return (
     <section
       className="border-y border-white/60 bg-gradient-to-br from-primary-50 via-white to-pink-50 px-4 py-10 sm:py-12"
-      aria-label="Download the Tivela iOS apps"
+      aria-label="Download the OnCuts iOS apps"
       id="ios-apps"
     >
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center sm:mb-10">
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-            Tivela on iOS
+            OnCuts on iOS
           </h2>
         </div>
 
@@ -133,21 +133,21 @@ export default function IosAppPromoSection() {
           <AppColumn
             heading="For Customers"
             card={{
-              title: 'Tivela',
+              title: 'OnCuts',
               appLogo: tivelaPlatformsAppLogo,
-              appLogoAlt: 'Tivela app icon',
+              appLogoAlt: 'OnCuts app icon',
               storeHref: IOS_APP_STORE_LINKS.consumer,
-              storeLabel: 'Download Tivela on the App Store',
+              storeLabel: 'Download OnCuts on the App Store',
             }}
           />
           <AppColumn
             heading="For Barbers"
             card={{
-              title: 'Tivela - Provider',
+              title: 'OnCuts Provider',
               appLogo: interaProviderAppLogo,
-              appLogoAlt: 'Tivela - Provider app icon',
+              appLogoAlt: 'OnCuts Provider app icon',
               storeHref: IOS_APP_STORE_LINKS.interaProvider,
-              storeLabel: 'Download Tivela - Provider on the App Store',
+              storeLabel: 'Download OnCuts Provider on the App Store',
             }}
           />
         </div>

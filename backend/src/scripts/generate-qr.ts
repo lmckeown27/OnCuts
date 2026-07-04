@@ -1,7 +1,7 @@
 /**
  * QR Code Generation Script
  * 
- * Generates a CampusCut QR code with the official logo.
+ * Generates an OnCuts QR code with the official logo.
  * 
  * Usage:
  *   npx ts-node src/scripts/generate-qr.ts [url] [output-path]

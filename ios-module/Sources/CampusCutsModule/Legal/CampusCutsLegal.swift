@@ -8,9 +8,9 @@ public enum CampusCutsLegal {
 
     public static var termsOfServiceSummary: String {
         """
-        By using this app, you agree to PismoPlatforms’ Terms of Service and community expectations for booking, messaging, and payments.
+        By using this app, you agree to OnCuts’ Terms of Service and community expectations for booking, messaging, and payments.
 
-        The full in-app Terms of Service are shown when you create an account. For questions, contact avilaplatformshelp@gmail.com.
+        The full in-app Terms of Service are shown when you create an account. For questions, contact support@oncuts.com.
 
         You confirm you are eligible to use the service where you live. Messaging and bookings may generate notifications; adjust preferences in your profile where supported.
         """

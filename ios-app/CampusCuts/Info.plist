@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>PismoPlatforms</string>
+    <string>OnCuts</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -36,11 +36,11 @@
         <string>UIInterfaceOrientationPortrait</string>
     </array>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>PismoPlatforms needs access to your photos to upload portfolio images</string>
+    <string>OnCuts needs access to your photos to upload portfolio images</string>
     <key>NSCameraUsageDescription</key>
-    <string>PismoPlatforms needs access to your camera to take portfolio photos</string>
+    <string>OnCuts needs access to your camera to take portfolio photos</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>PismoPlatforms uses your location to show nearby barbers</string>
+    <string>OnCuts uses your location to show nearby barbers</string>
 </dict>
 </plist>
 

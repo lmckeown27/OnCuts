@@ -1,5 +1,5 @@
 /**
- * Notification Routes for CampusCuts
+ * Notification Routes for OnCuts
  * Handles push notification device registration, preferences, and in-app notifications
  */
 
@@ -411,7 +411,7 @@ if (process.env.NODE_ENV === 'development') {
       const result = await pushNotificationService.sendSystemNotification(
         userId,
         'Test Notification',
-        'This is a test notification from CampusCuts!'
+        'This is a test notification from OnCuts!'
       );
 
       res.json({

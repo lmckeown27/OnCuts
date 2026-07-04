@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CampusCuts - Fix Remaining Build Errors
+# OnCuts - Fix Remaining Build Errors
 # Comprehensive fix for all TypeScript errors
 
 set -e

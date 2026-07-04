@@ -63,7 +63,7 @@ export default function PWAInstallPrompt() {
           </div>
           
           <div className="flex-1">
-            <h3 className="font-bold text-gray-900 mb-1">Install Tivela</h3>
+            <h3 className="font-bold text-gray-900 mb-1">Install OnCuts</h3>
             <p className="text-sm text-gray-600 mb-3">
               Install the app for offline access, push notifications, and a native experience.
             </p>

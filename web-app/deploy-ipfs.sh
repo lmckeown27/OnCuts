@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# CampusCuts Web App - IPFS Deployment Script
+# OnCuts Web App - IPFS Deployment Script
 
-echo "🚀 Deploying CampusCuts Web App to IPFS..."
+echo "🚀 Deploying OnCuts Web App to IPFS..."
 
 # Build the application
 echo "📦 Building application..."

@@ -188,7 +188,7 @@ export async function getBusyTimes(
 }
 
 /**
- * Add a CampusCuts booking to Google Calendar
+ * Add an OnCuts booking to Google Calendar
  * @param barberId - The barber's record ID
  * @param booking - The booking details
  */
@@ -221,8 +221,8 @@ export async function addBookingToCalendar(
     endDate.setMinutes(endDate.getMinutes() + booking.durationMinutes);
     
     const event = {
-      summary: `CampusCut: ${booking.serviceName} - ${booking.consumerName}`,
-      description: `CampusCuts Booking\nService: ${booking.serviceName}\nClient: ${booking.consumerName}\nBooking ID: ${booking.id}`,
+      summary: `OnCuts: ${booking.serviceName} - ${booking.consumerName}`,
+      description: `OnCuts Booking\nService: ${booking.serviceName}\nClient: ${booking.consumerName}\nBooking ID: ${booking.id}`,
       start: {
         dateTime: booking.scheduledDate.toISOString(),
         timeZone: 'America/Los_Angeles',

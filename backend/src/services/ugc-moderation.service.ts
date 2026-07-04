@@ -522,7 +522,7 @@ export async function createContentReport(params: {
   );
   const reportId = ins.rows[0].id as string;
 
-  const subject = `[CampusCuts] UGC report ${reportId}`;
+  const subject = `[OnCuts] UGC report ${reportId}`;
   const body = [
     `Report ID: ${reportId}`,
     `Reporter: ${reporterUserId}`,
@@ -560,7 +560,7 @@ export async function notifyDeveloperOfBlock(params: {
   blockedUserId: string;
 }): Promise<void> {
   const { blockerUserId, blockedUserId } = params;
-  const subject = `[CampusCuts] User block (UGC safety)`;
+  const subject = `[OnCuts] User block (UGC safety)`;
   const body = `User ${blockerUserId} blocked ${blockedUserId}.\n\nReview if reports are associated with the blocked account.`;
   logger.info('user_block_created', { blockerUserId, blockedUserId });
   if (MODERATION_ALERT_EMAIL) {

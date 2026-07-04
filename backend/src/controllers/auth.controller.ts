@@ -450,7 +450,7 @@ export const checkPendingRegistrationCredentials = async (
  * ```json
  * {
  *   "success": true,
- *   "message": "Email verified successfully. Welcome to CampusCuts!",
+ *   "message": "Email verified successfully. Welcome to OnCuts!",
  *   "data": {
  *     "user": {
  *       "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -657,8 +657,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     res.status(201).json({
       success: true,
       message: hasApprovedApplication 
-        ? 'Email verified successfully. Welcome to CampusCuts! Your barber application has been linked to your account.'
-        : 'Email verified successfully. Welcome to CampusCuts!',
+        ? 'Email verified successfully. Welcome to OnCuts! Your barber application has been linked to your account.'
+        : 'Email verified successfully. Welcome to OnCuts!',
       data: {
         user: {
           id: user.id,
@@ -779,7 +779,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
  * GET check-email?email=
  *
  * Mobile clients use this to branch between sign-in (account exists) and sign-up / pending verification.
- * Note: reveals whether an address has a CampusCut account (common tradeoff for this UX).
+ * Note: reveals whether an address has an OnCuts account (common tradeoff for this UX).
  */
 export const checkEmail = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -890,7 +890,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 };
 
 /**
- * Exchange a Google ID token for CampusCuts JWTs (same shape as POST /auth/login).
+ * Exchange a Google ID token for OnCuts JWTs (same shape as POST /auth/login).
  * Used by Intera (iOS) and any client using Google Sign-In.
  */
 export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1139,7 +1139,7 @@ async function maybeUpgradeRelayEmailForAppleUser(
 }
 
 /**
- * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
+ * Exchange an Apple `identityToken` for OnCuts JWTs (same shape as POST /auth/login).
  * Returning users are matched by `apple_sub` only (no email/name in the request body required).
  * New accounts still need an email once (JWT and/or body on first authorization), per Apple’s one-time credential rules.
  */

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts - Minimal Build Fix Script
+# OnCuts - Minimal Build Fix Script
 # Makes the web-app build successfully by simplifying to a base website
 
 set -e  # Exit on error
 
-echo "🔧 Fixing CampusCuts web-app for minimal successful build..."
+echo "🔧 Fixing OnCuts web-app for minimal successful build..."
 echo ""
 
 cd "$(dirname "$0")"
@@ -32,7 +32,7 @@ export const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fu
 export const APTOS_MODULE_ADDRESS = import.meta.env.VITE_APTOS_MODULE_ADDRESS || '';
 
 // App Metadata
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCuts';
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'OnCuts';
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 export const ROUTES = {

@@ -1,6 +1,6 @@
 /**
- * Messaging Service for CampusCuts
- * Transferred from CampusKinect with CampusCuts adaptations
+ * Messaging Service for OnCuts
+ * Transferred from CampusKinect with OnCuts adaptations
  * 
  * Handles:
  * - Booking-centric conversations (student ↔ barber)
@@ -331,7 +331,7 @@ class MessageService {
 
   /**
    * Start a booking-centric conversation
-   * CampusCuts conversations are always about a scheduled service
+   * OnCuts conversations are always about a scheduled service
    */
   async startConversation(
     userId: string | number, 

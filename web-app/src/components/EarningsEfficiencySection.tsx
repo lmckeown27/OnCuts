@@ -94,7 +94,7 @@ export default function EarningsEfficiencySection() {
             barberEarns="$17.50"
           />
           <EarningsColumn
-            title="Tivela"
+            title="OnCuts"
             customerPays="$28"
             feeLabel="Infrastructure & Tech Fee (15%)"
             feeDetail="Booking, payments, and discovery tools"

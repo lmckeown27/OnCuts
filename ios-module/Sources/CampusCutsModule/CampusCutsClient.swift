@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Shared configuration for the CampusCuts feature module.
+/// Shared configuration for the OnCuts feature module.
 public final class CampusCutsClient: @unchecked Sendable {
     public let environment: CampusCutsEnvironment
     /// When `true`, the shell should show a live-data banner and avoid real financial actions while debugging UI.

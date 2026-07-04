@@ -2,7 +2,7 @@
 //  Models.swift
 //  CampusCutsModule
 //
-//  Internal data models matching the CampusCuts backend API responses.
+//  Internal data models matching the OnCuts backend API responses.
 //
 
 import Foundation

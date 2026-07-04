@@ -1,6 +1,6 @@
 /**
  * Redis Configuration and Utilities
- * Transferred from CampusKinect with CampusCuts adaptations
+ * Transferred from CampusKinect with OnCuts adaptations
  * 
  * Used for:
  * - Session caching

@@ -534,7 +534,7 @@ class StudentScoringEngineService {
         minScore: 0,
         maxScore: 100,
         badgeColor: 'gray',
-        benefits: ['Welcome to CampusCuts!'],
+        benefits: ['Welcome to OnCuts!'],
         restrictions: [],
       };
     }

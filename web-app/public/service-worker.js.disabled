@@ -1,5 +1,5 @@
 /**
- * CampusCuts Service Worker
+ * OnCuts Service Worker
  * 
  * Enables offline functionality and caching
  */
@@ -256,7 +256,7 @@ self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
   
   const options = {
-    body: data.body || 'New notification from CampusCuts',
+    body: data.body || 'New notification from OnCuts',
     icon: '/icon-192x192.png',
     badge: '/icon-96x96.png',
     vibrate: [200, 100, 200],
@@ -269,7 +269,7 @@ self.addEventListener('push', (event) => {
   
   event.waitUntil(
     self.registration.showNotification(
-      data.title || 'CampusCuts',
+      data.title || 'OnCuts',
       options
     )
   );

@@ -496,7 +496,7 @@ export const setInitialPassword = async (req: AuthRequest, res: Response) => {
 
 /**
  * Delete account (hard delete). Authenticated user only (`:id` must match JWT).
- * Apple-linked accounts without a chosen CampusCuts password may omit body password
+ * Apple-linked accounts without a chosen OnCuts password may omit body password
  * (client uses Face ID / passcode first); others must send `password` for verification.
  */
 export const deleteAccount = async (req: Request, res: Response) => {

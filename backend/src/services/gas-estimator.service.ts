@@ -247,7 +247,7 @@ class GasEstimatorService {
     // TODO: Implement email/Slack notification
     // await emailService.send({
     //   to: process.env.ADMIN_EMAIL,
-    //   subject: `CampusCuts: Gas Top-Up Required (${amount.toFixed(4)} APT)`,
+    //   subject: `OnCuts: Gas Top-Up Required (${amount.toFixed(4)} APT)`,
     //   body: `Alert ID: ${alertId}\nAmount: ${amount.toFixed(6)} APT\nReason: ${reason}`,
     // });
   }

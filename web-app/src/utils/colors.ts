@@ -1,5 +1,5 @@
 /**
- * CampusCuts Color System
+ * OnCuts Color System
  * Based on CampusKinect design system
  * 
  * Primary: Olive Green (#708d81)
