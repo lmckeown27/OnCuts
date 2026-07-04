@@ -139,10 +139,10 @@ const allowedOrigins = [
   'https://campuscuts.app',
   'https://www.campuscuts.app',
   'https://api.campuscuts.app',
+  'https://oncuts.com',
+  'https://www.oncuts.com',
   'https://pismoplatforms.com',
   'https://www.pismoplatforms.com',
-  'https://tivelaplatforms.com',
-  'https://www.tivelaplatforms.com',
   'https://avilaplatforms.com',
   'https://www.avilaplatforms.com',
 ];

@@ -8,8 +8,8 @@
  * 
  * Examples:
  *   npx ts-node src/scripts/generate-qr.ts
- *   npx ts-node src/scripts/generate-qr.ts https://campuscut.com
- *   npx ts-node src/scripts/generate-qr.ts https://campuscut.com ./output/my-qr.png
+ *   npx ts-node src/scripts/generate-qr.ts https://oncuts.com
+ *   npx ts-node src/scripts/generate-qr.ts https://oncuts.com ./output/my-qr.png
  */
 
 import * as path from 'path';
@@ -18,7 +18,7 @@ import { generateQrWithLogo, CAMPUSCUT_LOGO_PATH } from '../utils/qr';
 async function main() {
   const args = process.argv.slice(2);
   
-  const url = args[0] || 'https://tivelaplatforms.com';
+  const url = args[0] || 'https://oncuts.com';
   const outputPath = args[1] || path.resolve(__dirname, '../../output/campuscut-qr.png');
   
   console.log('🔲 Generating QR code...');

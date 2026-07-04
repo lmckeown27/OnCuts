@@ -1,5 +1,5 @@
 /** Canonical production web origin (no trailing slash). Override with FRONTEND_URL on the server. */
-export const DEFAULT_PRODUCTION_APP_URL = 'https://tivelaplatforms.com';
+export const DEFAULT_PRODUCTION_APP_URL = 'https://oncuts.com';
 
 const LOCAL_DEV_DEFAULT_APP_URL = 'http://localhost:5173';
 

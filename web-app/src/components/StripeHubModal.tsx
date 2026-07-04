@@ -28,7 +28,7 @@ interface StripeHubModalProps {
 const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
-const TIVELA_PLATFORMS_URL = 'www.tivelaplatforms.com';
+const ONCUTS_URL = 'www.oncuts.com';
 
 /** Matches Stripe Dashboard “Actions required” for Express individual providers on Tivela. */
 const STRIPE_REQUIRED_ACTIONS = [
@@ -65,7 +65,7 @@ const STRIPE_REQUIRED_ACTIONS = [
   {
     id: 'website',
     label: 'Business website',
-    input: TIVELA_PLATFORMS_URL,
+    input: ONCUTS_URL,
     copyable: true,
   },
   {
