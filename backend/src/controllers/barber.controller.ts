@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import suiChainService from '../services/sui-chain.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
@@ -825,17 +824,6 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
     );
 
     const barber = result.rows[0];
-
-    const bioHash = Buffer.from(bio).toString('base64');
-    const pricingHash = Buffer.from(JSON.stringify(pricing)).toString('base64');
-
-    await suiChainService.registerBarber({
-      barberAddress: user.primary_wallet,
-      campusId: user.campus_id,
-      specialties,
-      bioHash,
-      pricingHash,
-    });
 
     logger.info(`Barber profile created: ${barber.id}`);
 

@@ -290,22 +290,9 @@ export const processBatch = async (req: AuthRequest, res: Response, next: NextFu
       throw new ApiError(403, 'Admin access required');
     }
 
-    const { chain } = req.body;
-
-    const batch = await withdrawalBatchService.processBatch(chain || 'sui', 1);
-
-    if (!batch) {
-      res.json({
-        success: true,
-        message: 'No withdrawals queued for batching',
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: batch,
-      message: 'Batch processed successfully',
+    res.status(501).json({
+      success: false,
+      message: 'On-chain batch withdrawals are disabled. Platform uses Stripe Connect only.',
     });
   } catch (error) {
     next(error);

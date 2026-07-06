@@ -2,23 +2,16 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import suiChainService from '../services/sui-chain.service';
 import { logger } from '../utils/logger';
-import crypto from 'crypto';
-import { USER_PRIMARY_WALLET_SQL, USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
 export const submitReview = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { bookingId, rating, reviewText, images } = req.body;
+    const { bookingId, rating, reviewText } = req.body;
     const clientId = req.user!.userId;
 
-    // Verify booking exists, is completed, and belongs to client
     const booking = await pool.query(
-      `SELECT bm.*, ${USER_PRIMARY_WALLET_SQL_U} as barber_address, u.campus_id
-       FROM booking_metadata bm
-       JOIN barbers b ON bm.barber_id = b.id
-       JOIN users u ON b.user_id = u.id
-       WHERE bm.blockchain_booking_id = $1 AND bm.client_id = $2`,
+      `SELECT b.* FROM bookings b
+       WHERE b.id = $1 AND b."consumerId" = $2`,
       [bookingId, clientId]
     );
 
@@ -26,56 +19,28 @@ export const submitReview = async (req: AuthRequest, res: Response, next: NextFu
       throw new ApiError(404, 'Booking not found or not authorized');
     }
 
-    // Check if already reviewed
-    const existing = await pool.query(
-      'SELECT id FROM review_metadata WHERE booking_id = $1',
-      [bookingId]
-    );
-
-    if (existing.rows.length > 0) {
+    const row = booking.rows[0];
+    if (row.reviewRating != null) {
       throw new ApiError(400, 'Booking already reviewed');
     }
 
-    const { barber_address, campus_id } = booking.rows[0];
-
-    const clientResult = await pool.query(
-      `SELECT ${USER_PRIMARY_WALLET_SQL} AS primary_wallet FROM users WHERE id = $1`,
-      [clientId]
-    );
-    const clientAddress = clientResult.rows[0]?.primary_wallet;
-
-    // Hash review text for blockchain
-    const reviewHash = crypto.createHash('sha256').update(reviewText).digest('hex');
-
-    // Submit review to blockchain
-    const txHash = await suiChainService.submitReview({
-      clientAddress,
-      bookingId,
-      barberAddress: barber_address,
-      rating,
-      reviewTextHash: reviewHash,
-      campusId: campus_id,
-    });
-
-    // Store full review text off-chain
-    const blockchainReviewId = Date.now(); // Simplified: would parse from transaction events
-
-    const result = await pool.query(
-      `INSERT INTO review_metadata (blockchain_review_id, booking_id, review_text, images)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [blockchainReviewId, bookingId, reviewText, JSON.stringify(images || [])]
+    await pool.query(
+      `UPDATE bookings
+       SET "reviewRating" = $1,
+           "reviewComment" = $2,
+           "reviewedAt" = CURRENT_TIMESTAMP,
+           "updatedAt" = NOW()
+       WHERE id = $3`,
+      [rating, reviewText || null, bookingId]
     );
 
-    // Update barber's average rating
-    await updateBarberAverageRating(booking.rows[0].barber_id);
+    await updateBarberAverageRating(row.barberId);
 
-    logger.info(`Review submitted for booking ${bookingId} (tx: ${txHash})`);
+    logger.info(`Review submitted for booking ${bookingId}`);
 
     res.status(201).json({
       success: true,
-      data: result.rows[0],
-      transactionHash: txHash,
+      data: { bookingId, rating, reviewText },
       message: 'Review submitted successfully',
     });
   } catch (error) {
@@ -91,25 +56,24 @@ export const getBarberReviews = async (req: AuthRequest, res: Response, next: Ne
     const offset = (page - 1) * limit;
 
     const result = await pool.query(
-      `SELECT rm.*, 
-        u.first_name as client_first_name,
-        u.last_name as client_last_name,
-        bm.blockchain_booking_id
-      FROM review_metadata rm
-      JOIN booking_metadata bm ON rm.booking_id = bm.blockchain_booking_id
-      JOIN users u ON bm.client_id = u.id
-      WHERE bm.barber_id = $1
-      ORDER BY rm.created_at DESC
-      LIMIT $2 OFFSET $3`,
+      `SELECT b.id AS booking_id,
+              b."reviewRating" AS rating,
+              b."reviewComment" AS review_text,
+              b."reviewedAt" AS created_at,
+              u.first_name AS client_first_name,
+              u.last_name AS client_last_name
+       FROM bookings b
+       JOIN users u ON b."consumerId" = u.id
+       WHERE b."barberId" = $1 AND b."reviewRating" IS NOT NULL
+       ORDER BY b."reviewedAt" DESC NULLS LAST
+       LIMIT $2 OFFSET $3`,
       [barberId, limit, offset]
     );
 
-    // Get total count
     const countResult = await pool.query(
-      `SELECT COUNT(*) as total
-       FROM review_metadata rm
-       JOIN booking_metadata bm ON rm.booking_id = bm.blockchain_booking_id
-       WHERE bm.barber_id = $1`,
+      `SELECT COUNT(*) AS total
+       FROM bookings
+       WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL`,
       [barberId]
     );
 
@@ -133,13 +97,15 @@ export const getReviewById = async (req: AuthRequest, res: Response, next: NextF
     const { id } = req.params;
 
     const result = await pool.query(
-      `SELECT rm.*,
-        u.first_name as client_first_name,
-        u.last_name as client_last_name
-      FROM review_metadata rm
-      JOIN booking_metadata bm ON rm.booking_id = bm.blockchain_booking_id
-      JOIN users u ON bm.client_id = u.id
-      WHERE rm.id = $1`,
+      `SELECT b.id AS booking_id,
+              b."reviewRating" AS rating,
+              b."reviewComment" AS review_text,
+              b."reviewedAt" AS created_at,
+              u.first_name AS client_first_name,
+              u.last_name AS client_last_name
+       FROM bookings b
+       JOIN users u ON b."consumerId" = u.id
+       WHERE b.id = $1 AND b."reviewRating" IS NOT NULL`,
       [id]
     );
 
@@ -156,15 +122,8 @@ export const getReviewById = async (req: AuthRequest, res: Response, next: NextF
   }
 };
 
-export const markReviewHelpful = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const markReviewHelpful = async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-
-    await pool.query(
-      'UPDATE review_metadata SET helpful_count = helpful_count + 1 WHERE id = $1',
-      [id]
-    );
-
     res.json({
       success: true,
       message: 'Review marked as helpful',
@@ -174,23 +133,17 @@ export const markReviewHelpful = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-/**
- * Helper: Update barber's average rating from all reviews
- */
 async function updateBarberAverageRating(barberId: string): Promise<void> {
   const result = await pool.query(
-    `SELECT AVG(
-      (SELECT rating FROM review_metadata rm 
-       JOIN booking_metadata bm ON rm.booking_id = bm.blockchain_booking_id 
-       WHERE bm.barber_id = $1)
-    ) as avg_rating`,
+    `SELECT AVG("reviewRating")::numeric(3,2) AS avg_rating,
+            COUNT(*) AS review_count
+     FROM bookings
+     WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL`,
     [barberId]
   );
 
-  // This is simplified - would need proper aggregation
   await pool.query(
-    'UPDATE barbers SET average_rating = $1 WHERE id = $2',
-    [result.rows[0].avg_rating || 0, barberId]
+    'UPDATE barbers SET average_rating = $1, total_reviews = $2 WHERE id = $3',
+    [result.rows[0].avg_rating || 0, result.rows[0].review_count || 0, barberId]
   );
 }
-

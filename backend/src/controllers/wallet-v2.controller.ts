@@ -160,52 +160,6 @@ export const withdrawToBank = async (req: AuthRequest, res: Response, next: Next
 };
 
 /**
- * Request on-chain withdrawal
- * POST /api/wallet/withdraw/onchain
- */
-export const withdrawOnChain = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.user!.userId;
-    const { amount, destinationAddress, chain } = req.body;
-
-    if (!amount || amount <= 0) {
-      throw new ApiError(400, 'Invalid amount');
-    }
-
-    if (!destinationAddress) {
-      throw new ApiError(400, 'Destination address required');
-    }
-
-    const amountCents = Math.round(amount * 100);
-
-    // Minimum withdrawal: $10
-    if (amountCents < 1000) {
-      throw new ApiError(400, 'Minimum withdrawal is $10');
-    }
-
-    const result = await payoutServiceV2.withdrawOnChain({
-      userId,
-      amountCents,
-      destinationAddress,
-      chain: chain || 'sui',
-    });
-
-    res.json({
-      success: true,
-      data: {
-        queue_id: result.queueId,
-        status: result.status,
-        amount_dollars: amount,
-      },
-      message: 'Withdrawal queued for batching. Will be processed within 15 minutes.',
-    });
-  } catch (error) {
-    logger.error('Error queuing on-chain withdrawal:', error);
-    next(error);
-  }
-};
-
-/**
  * Get withdrawal history
  * GET /api/wallet/withdrawals
  */

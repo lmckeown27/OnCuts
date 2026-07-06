@@ -6,13 +6,12 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import suiMonitorService from '../services/sui-monitor.service';
 import stripeMonitorService from '../services/stripe-monitor.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 
 /**
- * Get combined transaction feed (Sui + Stripe)
+ * Get combined transaction feed (Stripe)
  * GET /api/admin/live-feed
  */
 export const getLiveFeed = async (
@@ -50,31 +49,6 @@ export const getLiveFeed = async (
     });
   } catch (error) {
     logger.error('Failed to fetch live feed:', error);
-    next(error);
-  }
-};
-
-/**
- * Get recent Sui transactions (indexer/RPC integration pending)
- * GET /api/admin/live-feed/sui
- */
-export const getSuiTransactions = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const limit = parseInt(req.query.limit as string) || 50;
-    const transactions = await suiMonitorService.getRecentTransactions(limit);
-
-    res.json({
-      success: true,
-      data: transactions,
-      count: transactions.length,
-      platform: 'sui',
-    });
-  } catch (error) {
-    logger.error('Failed to fetch Sui transactions:', error);
     next(error);
   }
 };

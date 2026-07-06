@@ -7,7 +7,6 @@ import express from 'express';
 import { authenticate } from '../middleware/auth';
 import {
   getLiveFeed,
-  getSuiTransactions,
   getStripeEvents,
   getPlatformStats,
   searchTransactions,
@@ -20,18 +19,12 @@ const router = express.Router();
 
 /**
  * GET /api/admin/live-feed
- * Get combined transaction feed (Stripe + optional on-chain / Sui metadata)
+ * Get combined transaction feed (Stripe)
  * Query params:
  *   - limit: number (default 50)
- *   - platform: 'sui' | 'stripe' | 'all' (default 'all')
+ *   - platform: 'stripe' | 'all' (default 'all')
  */
 router.get('/', authenticate, getLiveFeed);
-
-/**
- * GET /api/admin/live-feed/sui
- * Get recent Sui transactions (stub until indexer wired)
- */
-router.get('/sui', authenticate, getSuiTransactions);
 
 /**
  * GET /api/admin/live-feed/stripe

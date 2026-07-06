@@ -13,8 +13,6 @@
     "test-pwa": "npm run build && npm run preview"
   },
   "dependencies": {
-    "@mysten/dapp-kit": "^0.19.11",
-    "@mysten/sui": "^1.45.2",
     "@simplewebauthn/browser": "^10.0.0",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.5.3",

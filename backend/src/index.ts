@@ -49,9 +49,7 @@ import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
 import walletRoutes from './routes/wallet.routes';
 
-// V2 Routes (Production custodial wallet system)
-import bookingV2Routes from './routes/booking-v2.routes';
-import zkloginRoutes from './routes/zklogin.routes';
+// V2 wallet (Stripe custodial balance — no on-chain settlement)
 import walletV2Routes from './routes/wallet-v2.routes';
 import adminRoutes from './routes/admin.routes';
 
@@ -64,9 +62,6 @@ import { authenticate, requireRole } from './middleware/auth';
 
 // Live Transaction Feed Routes
 import liveFeedRoutes from './routes/live-feed.routes';
-
-// Gas Wallet Management Routes
-import gasWalletRoutes from './routes/gas-wallet.routes';
 
 // Dynamic Pricing Routes
 import pricingRoutes from './routes/pricing.routes';
@@ -83,10 +78,6 @@ import adminUsersRoutes from './routes/admin-users.routes';
 
 // System Health Routes
 import systemHealthRoutes from './routes/system-health.routes';
-
-// Gas Wallet Monitoring Routes (Admin)
-import gasMonitorRoutes from './routes/gas-wallet.routes';
-import adminGasWalletRoutes from './routes/admin-gas-wallet.routes';
 
 // Marketplace Engine Routes (Capitalistic)
 import marketplaceRoutes from './routes/marketplace.routes';
@@ -404,19 +395,13 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/wallet', walletRoutes);
 
-// Sui zkLogin (salt + link address)
-app.use('/api/zklogin', zkloginRoutes);
-
-// V2 Routes (Production custodial wallet system)
-app.use('/api/v2/bookings', bookingV2Routes);
+// V2 wallet (Stripe custodial balance)
 app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/admin', adminRoutes);  // Also mount at v1 for frontend compatibility
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
 app.use('/api/admin/transactions', adminTransactionsRoutes);  // Transaction history
 app.use('/api/admin/users', adminUsersRoutes);  // User management (block, ban, etc.)
-app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
-
 // Dynamic Pricing Routes
 app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 
@@ -434,10 +419,6 @@ app.use('/api/admin/locations', locationAdminRoutes);  // Admin location managem
 // System health monitoring
 app.use('/api/system', systemHealthRoutes);  // System health and database status
 
-// Gas wallet monitoring (Admin)
-app.use('/api/gas', gasMonitorRoutes);  // Gas wallet balance and usage monitoring
-app.use('/api/admin/gas-wallet', adminGasWalletRoutes);  // Admin gas wallet management (USDC system)
-
 // Marketplace Engine (Capitalistic)
 app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankings, surge
 
@@ -453,19 +434,13 @@ app.use('/api/v1/barber-applications', barberApplicationRoutes);  // Submit and 
 app.use('/api/barber-applications', barberApplicationRoutes);  // Legacy route
 
 logger.info('✅ V2 routes enabled:');
-logger.info('   - /api/v2/bookings (Stripe Checkout + Bridge / Sui)');
-logger.info('   - /api/v2/wallet (production wallet)');
+logger.info('   - /api/v2/wallet (Stripe custodial wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
 logger.info('   - /api/admin/transactions (transaction history)');
-logger.info('   - /api/gas (gas wallet & top-up management)');
 logger.info('   - /api/pricing (dynamic pricing engine)');
 
-// Blockchain routes are disabled - platform uses Stripe for off-chain payments
 logger.info('💳 Payment system: Stripe (off-chain only)');
-logger.info('   - Blockchain routes disabled');
-logger.info('   - All payments processed via Stripe');
-logger.info('   - No cryptocurrency or smart contract escrow');
 
 
 // 404 handler
@@ -561,13 +536,12 @@ httpServer.listen(PORT, async () => {
       });
     }
   } catch (error: any) {
-    logger.error(`❌ PostgreSQL cache unavailable (app will use blockchain fallback)`, {
+    logger.error(`❌ PostgreSQL cache unavailable`, {
       error: error.message,
     });
   }
 
-  // NOTE: Legacy chain monitor removed — Stripe + optional Sui relayer when enabled.
-  // NOTE: Legacy gas-wallet cron disabled — use Sui sponsored txs (GAS_SPONSOR_SECRET) when on-chain is enabled.
+  // NOTE: Legacy chain monitor and gas-wallet crons removed — Stripe-only payments.
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
   await marketplaceCronService.startAllJobs();
@@ -583,22 +557,6 @@ httpServer.listen(PORT, async () => {
 
   // Start pending booking cron job (warns before appointment; auto-cancels stale pending next day)
   pendingBookingCronService.start();
-
-  // DIY Sui relayer: sequential payouts (BullMQ concurrency 1) after Stripe checkout
-  if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
-    try {
-      const { startPayoutWorker } = await import('./queues/process-payout.queue');
-      startPayoutWorker();
-    } catch (e) {
-      logger.error('Failed to start process-payout worker', e);
-    }
-  }
-
-  // NOTE: Blockchain sync disabled - platform uses Stripe for payments
-  // To re-enable blockchain features, uncomment below:
-  // const blockchainSyncCronService = (await import('./services/blockchain-sync-cron.service')).default;
-  // blockchainSyncCronService.start();
-  // logger.info(`Blockchain sync cron job started (hourly sync)`);
 
   // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
   // TEMPORARILY DISABLED: Requires PostgreSQL database to be properly configured
@@ -633,17 +591,7 @@ process.on('SIGTERM', async () => {
     await closePool();
     logger.info('PostgreSQL pool closed');
 
-    if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
-      try {
-        const { closePayoutInfrastructure } = await import('./queues/process-payout.queue');
-        await closePayoutInfrastructure();
-        logger.info('process-payout queue closed');
-      } catch (e) {
-        logger.warn('process-payout shutdown', e);
-      }
-    }
-
-    logger.info('✅ All services shut down gracefully (hybrid architecture)');
+    logger.info('✅ All services shut down gracefully');
     process.exit(0);
   } catch (error) {
     logger.error('Error during shutdown:', error);
@@ -655,14 +603,6 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing servers and database connections');
   
   try {
-    if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
-      try {
-        const { closePayoutInfrastructure } = await import('./queues/process-payout.queue');
-        await closePayoutInfrastructure();
-      } catch {
-        /* ignore */
-      }
-    }
     await closePool();
     logger.info('PostgreSQL pool closed');
     process.exit(0);

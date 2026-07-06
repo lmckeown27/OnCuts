@@ -12,32 +12,6 @@ concurrency:
 
 jobs:
   # ═══════════════════════════════════════════════════════════
-  #  TEST MOVE SMART CONTRACTS
-  # ═══════════════════════════════════════════════════════════
-  test-contracts:
-    name: Test Move Smart Contracts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Aptos CLI
-        run: |
-          curl -fsSL https://aptos.dev/scripts/install_cli.py | python3
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Compile contracts
-        working-directory: ./contracts
-        run: |
-          aptos move compile --skip-fetch-latest-git-deps --named-addresses campus_cuts=0x1 || true
-          echo "Contract compilation attempted (may skip without full environment)"
-
-      - name: Run tests
-        working-directory: ./contracts
-        run: |
-          aptos move test --skip-fetch-latest-git-deps --named-addresses campus_cuts=0x1 || true
-          echo "Contract tests attempted (may skip without full environment)"
-
-  # ═══════════════════════════════════════════════════════════
   #  TEST BACKEND API
   # ═══════════════════════════════════════════════════════════
   test-backend:
@@ -84,8 +58,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test_secret
           NODE_ENV: test
-          APTOS_NODE_URL: https://fullnode.devnet.aptoslabs.com/v1
-          APTOS_PLATFORM_ADDRESS: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
   # ═══════════════════════════════════════════════════════════
   #  BUILD BACKEND

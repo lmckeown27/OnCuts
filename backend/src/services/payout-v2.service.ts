@@ -15,7 +15,6 @@ import { ApiError } from '../middleware/errorHandler';
 import withdrawalBatchService, { DestinationType } from './withdrawal-batch.service';
 import auditService from './audit.service';
 import { pool } from '../database/connection';
-import suiRelayerService from './sui-relayer.service';
 
 function stripeSdk(): Stripe {
   return getDefaultStripeClient();
@@ -25,13 +24,6 @@ export interface WithdrawToBankInput {
   userId: string;
   amountCents: number;
   stripeAccountId: string;
-}
-
-export interface WithdrawOnChainInput {
-  userId: string;
-  amountCents: number;
-  destinationAddress: string;
-  chain: string;
 }
 
 class PayoutServiceV2 {
@@ -89,59 +81,6 @@ class PayoutServiceV2 {
       };
     } catch (error: any) {
       logger.error('Bank withdrawal failed', {
-        user_id: input.userId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Withdraw to on-chain address (queued for batching)
-   */
-  async withdrawOnChain(input: WithdrawOnChainInput): Promise<{
-    success: boolean;
-    queueId: number;
-    status: string;
-  }> {
-    try {
-      // Queue for batching
-      const queueItem = await withdrawalBatchService.queueWithdrawal({
-        user_id: input.userId,
-        amount: input.amountCents,
-        destination_type: DestinationType.ONCHAIN,
-        destination_address: input.destinationAddress,
-        chain: input.chain,
-      });
-
-      // Audit log
-      await auditService.log({
-        actor_user_id: input.userId,
-        action: 'onchain_withdrawal_queued',
-        object_type: 'withdrawal',
-        object_id: queueItem.id.toString(),
-        details: {
-          amount_cents: input.amountCents,
-          destination: input.destinationAddress,
-          chain: input.chain,
-        },
-      });
-
-      logger.info('On-chain withdrawal queued', {
-        user_id: input.userId,
-        amount_dollars: input.amountCents / 100,
-        destination: input.destinationAddress,
-        chain: input.chain,
-        queue_id: queueItem.id,
-      });
-
-      return {
-        success: true,
-        queueId: queueItem.id,
-        status: 'queued',
-      };
-    } catch (error: any) {
-      logger.error('On-chain withdrawal queueing failed', {
         user_id: input.userId,
         error: error.message,
       });
@@ -259,36 +198,6 @@ class PayoutServiceV2 {
    */
   async getWithdrawalStats(): Promise<any> {
     return withdrawalBatchService.getStats();
-  }
-
-  /**
-   * Stripe-settled USDC split on Sui (treasury → barber + platform).
-   * Gas is paid by the treasury / `GAS_SPONSOR_SECRET` path (see `sui-relayer.service`); no Enoki.
-   * Persists `payments.path_b_sui_tx_digest` for explorer links / idempotency.
-   */
-  async executeSuiOnChainUsdcPayout(input: {
-    barberSuiAddress: string;
-    amountBaseUnits: string;
-    bookingId: string;
-    paymentIntentId: string;
-  }): Promise<{ digest: string }> {
-    const total = BigInt(input.amountBaseUnits);
-    const { digest } = await suiRelayerService.executeSplitPayout(input.barberSuiAddress, total);
-
-    if (input.paymentIntentId?.trim()) {
-      await pool.query(
-        `UPDATE payments SET path_b_sui_tx_digest = $1 WHERE payment_intent_id = $2`,
-        [digest, input.paymentIntentId.trim()]
-      );
-    }
-
-    logger.info('Sui on-chain USDC payout executed', {
-      bookingId: input.bookingId,
-      digest,
-      paymentIntentId: input.paymentIntentId,
-    });
-
-    return { digest };
   }
 }
 

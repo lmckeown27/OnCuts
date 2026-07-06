@@ -171,36 +171,7 @@ async function verifyIntegration() {
   }
   
   // ═══════════════════════════════════════════════════════════
-  //  6. Custodial Signer Check
-  // ═══════════════════════════════════════════════════════════
-  
-  logger.info('\n🔐 Checking zkLogin salt service...');
-
-  try {
-    if (!process.env.MASTER_SEED?.trim() && !process.env.SALT_SERVICE_SECRET?.trim()) {
-      throw new Error('MASTER_SEED or SALT_SERVICE_SECRET not set');
-    }
-    const { deriveZkLoginSalt } = await import('../services/salt.service');
-    const salt = deriveZkLoginSalt('https://accounts.google.com', 'integration-test-sub');
-    results.push({
-      name: 'zkLogin salt',
-      status: 'pass',
-      message: `Salt derived (${salt.substring(0, 8)}…)`,
-      required: false,
-    });
-    logger.info('✅ zkLogin salt derivation OK');
-  } catch (error) {
-    results.push({
-      name: 'zkLogin salt',
-      status: 'warning',
-      message: `Salt check skipped or failed: ${(error as Error).message}`,
-      required: false,
-    });
-    logger.warn('⚠️  zkLogin salt check:', error);
-  }
-  
-  // ═══════════════════════════════════════════════════════════
-  //  7. Redis Connection Check (Optional)
+  //  6. Redis Connection Check (Optional)
   // ═══════════════════════════════════════════════════════════
   
   logger.info('\n💾 Checking Redis connection...');

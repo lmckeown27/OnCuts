@@ -20,7 +20,6 @@ router.post('/deposit/intent', authenticate, walletController.createDepositInten
 
 // Withdrawals
 router.post('/withdraw/bank', authenticate, walletController.withdrawToBank);
-router.post('/withdraw/onchain', authenticate, walletController.withdrawOnChain);
 router.get('/withdrawals', authenticate, walletController.getWithdrawalHistory);
 
 // Tips

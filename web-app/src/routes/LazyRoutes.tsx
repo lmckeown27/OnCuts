@@ -16,12 +16,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { SkeletonGrid, ProfileSkeleton } from '../components/Skeleton';
 
 // Lazy load pages (code splitting)
-const LoginPage = lazy(() => import('../pages/auth/LoginPage-blockchain'));
-const SignupPage = lazy(() => import('../pages/auth/SignupPage-blockchain'));
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
+const SignupPage = lazy(() => import('../pages/auth/SignupPage'));
 
 // Student pages
 const DiscoveryPage = lazy(() => import('../pages/student/DiscoveryPage'));
-const StudentBookingsPage = lazy(() => import('../pages/student/StudentBookingsPage-blockchain'));
+const StudentBookingsPage = lazy(() => import('../pages/student/StudentBookingsPage'));
 const StudentProfilePage = lazy(() => import('../pages/student/StudentProfilePage'));
 const BarberDetailPage = lazy(() => import('../pages/student/BarberDetailPage'));
 

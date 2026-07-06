@@ -118,7 +118,6 @@ const MobileConsumerPage = lazy(() => import('./pages/mobile/MobileConsumerPage'
 const TermsOfServicePage = lazy(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 const GDPRPage = lazy(() => import('./pages/legal/GDPRPage'));
-const ZkLoginCallbackPage = lazy(() => import('./pages/ZkLoginCallbackPage'));
 
 // Suspense wrapper for lazy components
 function LazyRoute({ children }: { children: React.ReactNode }) {
@@ -176,7 +175,6 @@ function AppContent() {
         <Route path="/web/auth" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
         <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/reset-password" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ResetPasswordPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/zklogin/callback" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ZkLoginCallbackPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
         
         {/* Web - Consumer/Student Routes */}
@@ -223,7 +221,6 @@ function AppContent() {
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/app" element={<PlatformGuard requiredPlatform="app"><AuthPage /></PlatformGuard>} />
         <Route path="/app/verify-email" element={<PlatformGuard requiredPlatform="app"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/zklogin/callback" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ZkLoginCallbackPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/install" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
         <Route path="/app/download" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
         
