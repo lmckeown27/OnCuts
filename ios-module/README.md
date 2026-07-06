@@ -1,6 +1,6 @@
-# CampusCuts iOS Module
+# OnCuts iOS Module
 
-A Swift Package feature module for the CampusCuts platform, designed to be pulled into a Shell app using a **Contract-First** architecture.
+A Swift Package feature module for the OnCuts platform, designed to be pulled into a Shell app using a **Contract-First** architecture.
 
 ## 🏗️ Architecture
 
@@ -39,9 +39,9 @@ ios-module/
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-org/CampusCuts.git", from: "1.0.0")
+    .package(url: "https://github.com/your-org/OnCuts.git", from: "1.0.0")
     // Or for subdirectory:
-    .package(path: "../CampusCuts/ios-module")
+    .package(path: "../OnCuts/ios-module")
 ]
 ```
 
@@ -101,7 +101,7 @@ struct ContentView: View {
 NavigationLink(destination: CampusCutsModuleBuilder.build(with: session)) {
     ServiceTile(
         icon: "scissors",
-        title: "CampusCuts",
+        title: "OnCuts",
         subtitle: "Campus haircuts"
     )
 }
@@ -118,7 +118,7 @@ The Shell app only needs to interact with the Builder and Protocol. All internal
 
 ## 🌐 API Configuration
 
-The module connects to the CampusCuts backend API at `https://api.campuscut.com/api/v1`. It uses the injected `accessToken` for all authenticated requests.
+The module connects to the OnCuts backend API at `https://api.campuscut.com/api/v1`. It uses the injected `accessToken` for all authenticated requests.
 
 ### Supported Endpoints
 
@@ -162,7 +162,7 @@ Run tests to verify protocol conformance and view creation.
 
 ## 🔗 Related
 
-- [CampusCuts Web App](../web-app) - React/Vite frontend
-- [CampusCuts Backend](../backend) - Node.js/Express API
+- [OnCuts Web App](../web-app) - React/Vite frontend
+- [OnCuts Backend](../backend) - Node.js/Express API
 - [API Documentation](../docs/api)
 

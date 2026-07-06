@@ -4,13 +4,13 @@ Last Updated: June 17, 2026
 
 ## 1. Introduction
 
-Welcome to CampusCuts ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the CampusCuts platform, including our website, the CampusCuts iOS app for consumers, the InteraProvider iOS app for barbers, and all related services (collectively, the "Service").
+Welcome to OnCuts ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the OnCuts platform, including our website, the OnCuts iOS app for consumers, the InteraProvider iOS app for barbers, and all related services (collectively, the "Service").
 
 By accessing or using the Service, you agree to be bound by these Terms. If you do not agree, you may not access or use the Service.
 
 ## 2. Description of Service
 
-CampusCuts is a marketplace platform that connects consumers seeking grooming services ("Consumers") with independent barbers ("Barbers") at college and university campuses. We facilitate:
+OnCuts is a marketplace platform that connects consumers seeking grooming services ("Consumers") with independent barbers ("Barbers") at college and university campuses. We facilitate:
 
 - Discovery and browsing of barber profiles, services, and portfolios
 - Booking and scheduling of appointments on iOS and the web
@@ -19,9 +19,9 @@ CampusCuts is a marketplace platform that connects consumers seeking grooming se
 - Reviews and ratings
 - Barber application review and platform administration
 
-**Important:** CampusCuts is a platform that connects users. We are not a grooming service provider. Barbers are independent contractors, not employees of CampusCuts.
+**Important:** OnCuts is a platform that connects users. We are not a grooming service provider. Barbers are independent contractors, not employees of OnCuts.
 
-Consumers may use the CampusCuts iOS app or our website. Barbers manage bookings, availability, messaging, and payouts through the InteraProvider iOS app and/or the barber web dashboard, where available.
+Consumers may use the OnCuts iOS app or our website. Barbers manage bookings, availability, messaging, and payouts through the InteraProvider iOS app and/or the barber web dashboard, where available.
 
 ## 3. Account Registration
 
@@ -54,7 +54,7 @@ As a Consumer using the Service, you agree to:
 
 As a Barber using the Service, you agree to:
 
-- Submit an application and receive approval from CampusCuts administrators before offering services
+- Submit an application and receive approval from OnCuts administrators before offering services
 - Maintain accurate and up-to-date profile information, including services and pricing
 - Respond to booking requests in a timely manner
 - Honor confirmed bookings and arrive on time
@@ -74,17 +74,17 @@ All payments are processed securely through Stripe. We do not store your full cr
 
 **6.2 When Consumers Pay**
 
-Consumers pay after a haircut is complete. Once the Barber marks the booking as complete, the Consumer receives a payment prompt in the CampusCuts app or on the web.
+Consumers pay after a haircut is complete. Once the Barber marks the booking as complete, the Consumer receives a payment prompt in the OnCuts app or on the web.
 
 **6.3 Platform Fee and Barber Payouts**
 
-CampusCuts charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85% of the service amount. Tips, when added, are passed to the Barber in full.
+OnCuts charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85% of the service amount. Tips, when added, are passed to the Barber in full.
 
 ## 7. Cancellations, Reschedules, and Refunds
 
 While a booking is pending, Consumers may edit the time, date, location, or notes directly. After a Barber accepts, schedule changes require the Barber's approval through a reschedule request. Consumers may cancel before the service is marked complete.
 
-Refund eligibility depends on timing, reason, whether the service was rendered, and payment processor rules. CampusCuts may assist in mediation but is not obligated to issue refunds.
+Refund eligibility depends on timing, reason, whether the service was rendered, and payment processor rules. OnCuts may assist in mediation but is not obligated to issue refunds.
 
 ## 8. User Content and Community Standards
 
@@ -98,7 +98,7 @@ You agree not to use the Service unlawfully, harass others, provide false inform
 
 ## 10. Intellectual Property
 
-The Service is owned by CampusCuts. By posting User Content, you grant CampusCuts a non-exclusive, worldwide, royalty-free license to use, display, and distribute such content in connection with operating and promoting the Service.
+The Service is owned by OnCuts. By posting User Content, you grant OnCuts a non-exclusive, worldwide, royalty-free license to use, display, and distribute such content in connection with operating and promoting the Service.
 
 ## 11. Disclaimer of Warranties
 
@@ -110,7 +110,7 @@ TO THE MAXIMUM EXTENT PERMITTED BY LAW, CAMPUSCUTS SHALL NOT BE LIABLE FOR INDIR
 
 ## 13. Indemnification
 
-You agree to indemnify CampusCuts from claims arising from your use of the Service or violation of these Terms.
+You agree to indemnify OnCuts from claims arising from your use of the Service or violation of these Terms.
 
 ## 14. Termination
 

@@ -3,7 +3,7 @@ import { BROWSE_PROVIDER_CATEGORIES } from '../config/providerCategories';
 
 const BROWSE_CATEGORY_KEY = 'consumer.browse.providerCategory';
 
-export const BROWSE_CATEGORY_CHANGED_EVENT = 'campuscuts-browse-provider-category-changed';
+export const BROWSE_CATEGORY_CHANGED_EVENT = 'oncuts-browse-provider-category-changed';
 
 const VALID_IDS = new Set<BrowseProviderCategory>(
   BROWSE_PROVIDER_CATEGORIES.map((option) => option.id),

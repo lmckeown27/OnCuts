@@ -1,6 +1,6 @@
-# Intera Provider app — barber capabilities from CampusCuts (web)
+# Intera Provider app — barber capabilities from OnCuts (web)
 
-This document inventories **what a barber can do today** on the CampusCuts web experience (`/web/*`), grouped by product area. Use it as a **parity checklist** when building the Intera Provider app.
+This document inventories **what a barber can do today** on the OnCuts web experience (`/web/*`), grouped by product area. Use it as a **parity checklist** when building the Intera Provider app.
 
 **Scope notes**
 

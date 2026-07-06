@@ -1,4 +1,4 @@
-# CampusCuts iOS User Flows
+# OnCuts iOS User Flows
 
 > Detailed documentation of consumer and barber user journeys for the native iOS app.
 
@@ -475,7 +475,7 @@ Common items:
 **Purpose:** Browse barbers and manage bookings
 
 **Header:**
-- CampusCuts logo (center)
+- OnCuts logo (center)
 - Profile avatar button (right) → dropdown
 
 **Tab Picker:**

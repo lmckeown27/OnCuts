@@ -1,6 +1,6 @@
-# CampusCuts: Consumer–Barber Messaging
+# OnCuts: Consumer–Barber Messaging
 
-This document describes how messaging works between consumers and barbers in the CampusCuts codebase: data model, APIs, real-time delivery, UI rules, and related flows.
+This document describes how messaging works between consumers and barbers in the OnCuts codebase: data model, APIs, real-time delivery, UI rules, and related flows.
 
 ---
 

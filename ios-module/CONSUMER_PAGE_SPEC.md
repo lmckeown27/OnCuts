@@ -1,4 +1,4 @@
-# CampusCuts Consumer Page Specification
+# OnCuts Consumer Page Specification
 
 > iOS implementation guide for the Consumer Home experience.
 

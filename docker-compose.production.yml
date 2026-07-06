@@ -9,7 +9,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: campuscuts-api-prod
+    container_name: oncuts-api-prod
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -75,9 +75,9 @@ services:
         - VITE_APTOS_NODE_URL=${APTOS_NODE_URL}
         - VITE_APTOS_MODULE_ADDRESS=${APTOS_MODULE_ADDRESS}
         - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-        - VITE_APP_NAME=CampusCuts
+        - VITE_APP_NAME=OnCuts
         - VITE_APP_VERSION=${APP_VERSION:-1.0.0}
-    container_name: campuscuts-frontend-prod
+    container_name: oncuts-frontend-prod
     depends_on:
       backend:
         condition: service_healthy
@@ -98,5 +98,5 @@ services:
 
 networks:
   default:
-    name: campuscuts-network
+    name: oncuts-network
 

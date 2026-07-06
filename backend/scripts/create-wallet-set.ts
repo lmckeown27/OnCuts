@@ -1,7 +1,7 @@
 /**
  * Create Circle Wallet Set
  * 
- * One-time setup script to create a wallet set for CampusCuts.
+ * One-time setup script to create a wallet set for OnCuts.
  * The wallet set ID must be added to your .env file as CIRCLE_WALLET_SET_ID.
  * 
  * Usage:
@@ -53,9 +53,9 @@ async function main() {
   console.log('─────────────────────────────────────────────────────\n');
 
   try {
-    console.log('Creating wallet set "CampusCuts Main"...\n');
-    
-    const walletSetId = await usdcService.createWalletSet('CampusCuts Main');
+    console.log('Creating wallet set "OnCuts Main"...\n');
+
+    const walletSetId = await usdcService.createWalletSet('OnCuts Main');
     
     console.log('✅ Success! Wallet set created.\n');
     console.log('════════════════════════════════════════════════════');

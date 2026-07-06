@@ -1,6 +1,26 @@
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../middleware/auth';
 
+/** New JWT claims; legacy campuscuts-* tokens remain valid during migration. */
+export const JWT_ISSUER = 'oncuts-api';
+export const JWT_AUDIENCE = 'oncuts-client';
+const LEGACY_JWT_ISSUERS = ['campuscuts-api', JWT_ISSUER] as const;
+const LEGACY_JWT_AUDIENCES = ['campuscuts-client', JWT_AUDIENCE] as const;
+
+function verifyTokenClaims(token: string, secret: string): JwtPayload {
+  let lastError: unknown;
+  for (const issuer of LEGACY_JWT_ISSUERS) {
+    for (const audience of LEGACY_JWT_AUDIENCES) {
+      try {
+        return jwt.verify(token, secret, { issuer, audience }) as JwtPayload;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  }
+  throw lastError;
+}
+
 /**
  * JWT Utilities for Token Generation and Management
  * 
@@ -73,8 +93,8 @@ export const generateAccessToken = (payload: JwtPayload): string => {
    */
   return jwt.sign(payload, secret, {
     expiresIn: expiresIn,
-    issuer: 'campuscuts-api', // Identifies token issuer
-    audience: 'campuscuts-client', // Identifies intended recipient
+    issuer: JWT_ISSUER,
+    audience: JWT_AUDIENCE,
   } as jwt.SignOptions);
 };
 
@@ -115,8 +135,8 @@ export const generateRefreshToken = (payload: JwtPayload): string => {
 
   return jwt.sign(payload, secret, {
     expiresIn: expiresIn,
-    issuer: 'campuscuts-api',
-    audience: 'campuscuts-client',
+    issuer: JWT_ISSUER,
+    audience: JWT_AUDIENCE,
   } as jwt.SignOptions);
 };
 
@@ -164,10 +184,7 @@ export const verifyToken = (token: string, isRefreshToken = false): JwtPayload =
    * 
    * If all checks pass, returns decoded payload. Otherwise throws error.
    */
-  return jwt.verify(token, secret, {
-    issuer: 'campuscuts-api',
-    audience: 'campuscuts-client',
-  }) as JwtPayload;
+  return verifyTokenClaims(token, secret);
 };
 
 /**
@@ -204,7 +221,7 @@ export const decodeToken = (token: string): JwtPayload | null => {
  * @example
  * const verifyToken = generateEmailVerificationToken('user-123');
  * // Send in verification email link
- * const link = `https://campuscuts.com/verify-email?token=${verifyToken}`;
+ * const link = `https://oncuts.com/verify-email?token=${verifyToken}`;
  */
 export const generateEmailVerificationToken = (userId: string): string => {
   const secret = process.env.JWT_SECRET;
@@ -236,7 +253,7 @@ export const generateEmailVerificationToken = (userId: string): string => {
  * @example
  * const resetToken = generatePasswordResetToken('user-123');
  * // Send in password reset email
- * const link = `https://campuscuts.com/reset-password?token=${resetToken}`;
+ * const link = `https://oncuts.com/reset-password?token=${resetToken}`;
  */
 export const generatePasswordResetToken = (userId: string): string => {
   const secret = process.env.JWT_SECRET;

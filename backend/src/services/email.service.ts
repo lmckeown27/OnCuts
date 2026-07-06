@@ -192,7 +192,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
  * @returns Promise<void>
  * 
  * @example
- * const resetLink = `https://campuscuts.com/reset-password?token=${token}`;
+ * const resetLink = `https://oncuts.com/reset-password?token=${token}`;
  * await sendPasswordResetEmail('student@university.edu', resetLink);
  */
 export async function sendPasswordResetEmail(email: string, resetLink: string): Promise<void> {

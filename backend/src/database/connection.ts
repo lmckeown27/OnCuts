@@ -38,7 +38,7 @@ pool.on('connect', (client) => {
   logger.info('PostgreSQL cache connection established');
   
   // Set application name for monitoring
-  client.query(`SET application_name = 'campuscuts-api'`).catch(() => {});
+  client.query(`SET application_name = 'oncuts-api'`).catch(() => {});
 });
 
 pool.on('error', (err: any, client) => {

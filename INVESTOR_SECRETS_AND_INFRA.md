@@ -1,4 +1,4 @@
-# CampusCuts — How core credentials and infrastructure are used
+# OnCuts — How core credentials and infrastructure are used
 
 *Audience: investors and partners. This summarizes **implementation** (what each piece does in the product), not variable names. Technical names and a fuller list live in [`API_KEYS.md`](./API_KEYS.md).*
 
@@ -6,7 +6,7 @@
 
 ## Why this matters
 
-CampusCuts separates **money** (Stripe), **identity** (JWT), **durability** (PostgreSQL, Redis), **media** (object storage), **mobile engagement** (Apple push), **customer communication** (email), and **optional treasury flows** (Bridge). Each is wired only on the **server** or in **managed cloud configuration**—not embedded in mobile or web bundles—so secrets stay out of client code paths.
+OnCuts separates **money** (Stripe), **identity** (JWT), **durability** (PostgreSQL, Redis), **media** (object storage), **mobile engagement** (Apple push), **customer communication** (email), and **optional treasury flows** (Bridge). Each is wired only on the **server** or in **managed cloud configuration**—not embedded in mobile or web bundles—so secrets stay out of client code paths.
 
 ---
 
@@ -14,7 +14,7 @@ CampusCuts separates **money** (Stripe), **identity** (JWT), **durability** (Pos
 
 **Role in the product:** Customers pay for bookings with cards; barbers are paid through Stripe’s marketplace primitives (including Connect-style flows where applicable). Webhooks confirm payment success so bookings and downstream jobs stay in sync with what Stripe recorded.
 
-**Implementation:** The API holds the **secret** keys and creates **PaymentIntents** (and related objects) server-side. A **publishable** key is exposed to clients only so Stripe’s official SDKs can collect card data in Stripe’s UI—the full card number never passes through CampusCuts servers in the same way as raw PAN handling. **Webhook signing secrets** let the backend reject forged payment events. Mode (test vs live) is aligned with deployment so test cards never hit live financial reporting.
+**Implementation:** The API holds the **secret** keys and creates **PaymentIntents** (and related objects) server-side. A **publishable** key is exposed to clients only so Stripe’s official SDKs can collect card data in Stripe’s UI—the full card number never passes through OnCuts servers in the same way as raw PAN handling. **Webhook signing secrets** let the backend reject forged payment events. Mode (test vs live) is aligned with deployment so test cards never hit live financial reporting.
 
 **Investor angle:** Standard, audit-friendly payment rail; reduced custom PCI scope versus building card storage in-house.
 

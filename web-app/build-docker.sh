@@ -45,15 +45,15 @@ docker build \
   --build-arg VITE_STRIPE_PUBLISHABLE_KEY="$VITE_STRIPE_PUBLISHABLE_KEY" \
   --build-arg VITE_APP_NAME="$VITE_APP_NAME" \
   --build-arg VITE_APP_VERSION="$VITE_APP_VERSION" \
-  -t campuscuts-frontend:latest \
-  -t campuscuts-frontend:${VITE_APP_VERSION} \
+  -t oncuts-frontend:latest \
+  -t oncuts-frontend:${VITE_APP_VERSION} \
   .
 
 echo ""
 echo "✅ Docker image built successfully!"
 echo ""
 echo "🚀 Run the container with:"
-echo "   docker run -d -p 80:80 --name campuscuts-frontend campuscuts-frontend:latest"
+echo "   docker run -d -p 80:80 --name oncuts-frontend oncuts-frontend:latest"
 echo ""
 echo "🔍 Or use docker-compose:"
 echo "   docker-compose up -d frontend"

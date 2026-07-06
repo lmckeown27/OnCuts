@@ -1,5 +1,5 @@
 /**
- * PM2 process definition for the CampusCuts API.
+ * PM2 process definition for the OnCuts API.
  *
  * Production (sets NODE_ENV=production — required for correct Stripe fallbacks, etc.):
  *   cd backend && pm2 start ecosystem.config.cjs --env production
@@ -7,12 +7,13 @@
  * Local / staging default:
  *   pm2 start ecosystem.config.cjs
  *
- * After changing this file: pm2 delete campuscuts-backend && pm2 start ecosystem.config.cjs --env production && pm2 save
+ * After changing this file: pm2 delete oncuts-backend && pm2 start ecosystem.config.cjs --env production && pm2 save
+ * (Legacy PM2 name was campuscuts-backend — delete it if still running.)
  */
 module.exports = {
   apps: [
     {
-      name: 'campuscuts-backend',
+      name: 'oncuts-backend',
       script: 'dist/index.js',
       cwd: __dirname,
       instances: 1,

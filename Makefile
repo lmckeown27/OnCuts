@@ -1,10 +1,10 @@
-# CampusCuts Makefile
+# OnCuts Makefile
 # Convenient commands for development
 
 .PHONY: help setup start stop test clean deploy-contracts install-backend install-ios
 
 help: ## Show this help message
-	@echo "CampusCuts Development Commands"
+	@echo "OnCuts Development Commands"
 	@echo "==============================="
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 

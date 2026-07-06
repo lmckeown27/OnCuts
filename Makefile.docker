@@ -1,4 +1,4 @@
-# CampusCuts Docker Deployment Makefile
+# OnCuts Docker Deployment Makefile
 # Simple commands for managing Docker deployment
 
 .PHONY: help setup dev prod build start stop restart logs clean
@@ -6,7 +6,7 @@
 # Default target
 help:
 	@echo "════════════════════════════════════════════════════════"
-	@echo "  🏆 CampusCuts Docker Commands"
+	@echo "  🏆 OnCuts Docker Commands"
 	@echo "════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "  Setup:"
@@ -89,7 +89,7 @@ build:
 
 build-backend:
 	@echo "🔨 Building backend..."
-	cd backend && docker build -t campuscuts-backend .
+	cd backend && docker build -t oncuts-backend .
 	@echo "✅ Backend built"
 
 build-frontend:

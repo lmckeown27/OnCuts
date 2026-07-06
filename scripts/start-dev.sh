@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Start CampusCuts development environment
+# Start OnCuts development environment
 
 set -e
 
-echo "🚀 Starting CampusCuts Development Environment"
+echo "🚀 Starting OnCuts Development Environment"
 echo "==============================================="
 
 # Colors

@@ -58,9 +58,9 @@ echo ""
 echo "🧹 Cleaning up old containers..."
 
 # Stop and remove old container
-if [ "$(docker ps -aq -f name=campuscuts-frontend)" ]; then
-    docker stop campuscuts-frontend || true
-    docker rm campuscuts-frontend || true
+if [ "$(docker ps -aq -f name=oncuts-frontend)" ]; then
+    docker stop oncuts-frontend || true
+    docker rm oncuts-frontend || true
     echo "✅ Old container removed"
 else
     echo "✅ No old container to remove"
@@ -81,10 +81,10 @@ echo ""
 echo "🌐 Application URL: http://localhost"
 echo ""
 echo "📊 Useful Commands:"
-echo "  View logs:    docker logs -f campuscuts-frontend"
-echo "  Stop:         docker stop campuscuts-frontend"
-echo "  Restart:      docker restart campuscuts-frontend"
-echo "  Shell access: docker exec -it campuscuts-frontend sh"
+echo "  View logs:    docker logs -f oncuts-frontend"
+echo "  Stop:         docker stop oncuts-frontend"
+echo "  Restart:      docker restart oncuts-frontend"
+echo "  Shell access: docker exec -it oncuts-frontend sh"
 echo ""
 echo "🔍 Health check: curl http://localhost/health"
 echo ""

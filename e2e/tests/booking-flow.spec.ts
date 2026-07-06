@@ -84,7 +84,7 @@ test.describe('Complete Booking Flow', () => {
   test('admin can view platform stats', async ({ page }) => {
     // 1. Login as admin
     await page.click('text=Login');
-    await page.fill('input[type="email"]', 'admin@campuscuts.com');
+    await page.fill('input[type="email"]', 'admin@oncuts.com');
     await page.fill('input[type="password"]', 'admin123');
     await page.click('button:has-text("Login")');
     

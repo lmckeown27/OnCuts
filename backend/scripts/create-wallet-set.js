@@ -1,7 +1,7 @@
 /**
  * Create Circle Wallet Set (JavaScript version)
  * 
- * Simple script to create a wallet set for CampusCuts.
+ * Simple script to create a wallet set for OnCuts.
  * Can be run directly without TypeScript compilation.
  * 
  * Usage:
@@ -71,9 +71,9 @@ async function main() {
   console.log('─────────────────────────────────────────────────────\n');
 
   try {
-    console.log('Creating wallet set "CampusCuts Main"...\n');
-    
-    const walletSetId = await createWalletSet('CampusCuts Main');
+    console.log('Creating wallet set "OnCuts Main"...\n');
+
+    const walletSetId = await createWalletSet('OnCuts Main');
     
     console.log('✅ Success! Wallet set created.\n');
     console.log('════════════════════════════════════════════════════');

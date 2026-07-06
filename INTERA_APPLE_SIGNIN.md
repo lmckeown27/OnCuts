@@ -1,6 +1,6 @@
-# Intera — Sign in with Apple (aligned with CampusCuts API)
+# Intera — Sign in with Apple (aligned with OnCuts API)
 
-Use this document when prompting an AI or implementing **Intera** so the client **does not invent** endpoints or field names. The backend is **CampusCuts** `backend/` (Node + PostgreSQL).
+Use this document when prompting an AI or implementing **Intera** so the client **does not invent** endpoints or field names. The backend is **OnCuts** `backend/` (Node + PostgreSQL).
 
 ---
 

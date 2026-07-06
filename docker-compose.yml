@@ -6,7 +6,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: campuscuts-api
+    container_name: oncuts-api
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,7 +61,7 @@ services:
   # NOTE: Blockchain is source of truth, PostgreSQL is just a cache
   postgres:
     image: postgis/postgis:15-3.4
-    container_name: campuscuts-postgres
+    container_name: oncuts-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -81,7 +81,7 @@ services:
   # Redis (OPTIONAL - for caching blockchain queries)
   redis:
     image: redis:7-alpine
-    container_name: campuscuts-redis
+    container_name: oncuts-redis
     ports:
       - "6379:6379"
     volumes:
@@ -107,7 +107,7 @@ services:
         - VITE_APTOS_NODE_URL=https://fullnode.devnet.aptoslabs.com/v1
         - VITE_APTOS_MODULE_ADDRESS=${APTOS_MODULE_ADDRESS}
         - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-    container_name: campuscuts-frontend
+    container_name: oncuts-frontend
     depends_on:
       - backend
     ports:

@@ -1,4 +1,4 @@
-# CampusCuts
+# OnCuts
 
 **A campus marketplace connecting students with barbers.**
 
@@ -6,11 +6,11 @@
 
 ## 📖 Overview
 
-CampusCuts is a mobile-first web platform that connects college students with on-campus barbers. The platform streamlines the entire haircut booking experience—from discovering barbers at your university to scheduling appointments, messaging, and secure payment processing.
+OnCuts is a mobile-first web platform that connects college students with on-campus barbers. The platform streamlines the entire haircut booking experience—from discovering barbers at your university to scheduling appointments, messaging, and secure payment processing.
 
-### What is CampusCuts?
+### What is OnCuts?
 
-CampusCuts solves a common problem on college campuses: finding reliable, affordable haircuts nearby. Instead of searching for off-campus barbershops or relying on word-of-mouth, students can browse verified barbers right at their university, view portfolios, check availability, and book appointments in minutes.
+OnCuts solves a common problem on college campuses: finding reliable, affordable haircuts nearby. Instead of searching for off-campus barbershops or relying on word-of-mouth, students can browse verified barbers right at their university, view portfolios, check availability, and book appointments in minutes.
 
 ### How It Works
 
@@ -58,8 +58,8 @@ CampusCuts solves a common problem on college campuses: finding reliable, afford
 
 ```bash
 # Clone repository
-git clone https://github.com/lmckeown27/CampusCuts.git
-cd CampusCuts
+git clone https://github.com/lmckeown27/OnCuts.git
+cd OnCuts
 
 # Backend setup
 cd backend
@@ -156,7 +156,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_16_char_app_password
-EMAIL_FROM="CampusCuts <noreply@campuscuts.com>"
+EMAIL_FROM="OnCuts <noreply@campuscuts.com>"
 FRONTEND_URL=https://campuscut.com
 AUTO_VERIFY_EMAILS=false
 
@@ -262,8 +262,8 @@ Automated email notifications for:
 
 ```bash
 # 1. Clone on server
-git clone https://github.com/lmckeown27/CampusCuts.git
-cd CampusCuts
+git clone https://github.com/lmckeown27/OnCuts.git
+cd OnCuts
 
 # 2. Setup database
 sudo -u postgres createdb campuscuts
@@ -613,7 +613,7 @@ npm run build
 ## 📂 Project Structure
 
 ```
-CampusCuts/
+OnCuts/
 ├── backend/
 │   ├── src/
 │   │   ├── controllers/     # Route handlers

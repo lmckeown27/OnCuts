@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts Setup Script
+# OnCuts Setup Script
 # This script sets up the development environment
 
 set -e
 
-echo "🚀 CampusCuts Setup Script"
+echo "🚀 OnCuts Setup Script"
 echo "================================"
 
 # Colors for output

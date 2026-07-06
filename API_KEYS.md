@@ -1,6 +1,6 @@
 # API keys and secrets reference
 
-This document describes **environment-driven keys and secrets** the CampusCuts stack reads at runtime, what they are for, and where they are defined. It is derived from `backend/src`, `web-app/src`, `backend/env.example`, and `web-app/.env.example`.
+This document describes **environment-driven keys and secrets** the OnCuts stack reads at runtime, what they are for, and where they are defined. It is derived from `backend/src`, `web-app/src`, `backend/env.example`, and `web-app/.env.example`.
 
 **Convention**
 

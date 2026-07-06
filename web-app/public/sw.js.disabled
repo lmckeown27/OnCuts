@@ -1,5 +1,5 @@
 // OnCuts Service Worker - PWA Support
-const CACHE_NAME = 'campuscuts-v1';
+const CACHE_NAME = 'oncuts-v1';
 const urlsToCache = [
   '/',
   '/index.html',

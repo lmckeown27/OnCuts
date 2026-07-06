@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚀 Deploying CampusCuts Smart Contracts to Aptos"
+echo "🚀 Deploying OnCuts Smart Contracts to Aptos"
 echo "=================================================="
 
 # Colors

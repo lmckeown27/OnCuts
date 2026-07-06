@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run Sui relayer smoke test from repo root (CampusCuts/).
+# Run Sui relayer smoke test from repo root (OnCuts/).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT/backend"

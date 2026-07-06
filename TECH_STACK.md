@@ -1,6 +1,6 @@
-# CampusCuts — Tech Stack
+# OnCuts — Tech Stack
 
-This document summarizes the languages, runtimes, and major libraries used across the CampusCuts monorepo. Paths are relative to the repository root.
+This document summarizes the languages, runtimes, and major libraries used across the OnCuts monorepo. Paths are relative to the repository root.
 
 ---
 
@@ -13,7 +13,7 @@ This document summarizes the languages, runtimes, and major libraries used acros
 | **ORM / schema** | Prisma (schema + client; migrations in `backend/prisma`) |
 | **SQL access** | `pg` (node-postgres) — many routes use raw SQL via a shared pool alongside Prisma |
 | **Consumer web** | React 19, Vite 5, TypeScript, Tailwind CSS |
-| **iOS / shared Swift module** | Swift 5.9+, SwiftUI targets iOS 17+ (Swift Package: `CampusCutsModule`) |
+| **iOS / shared Swift module** | Swift 5.9+, SwiftUI targets iOS 17+ (Swift Package: `OnCutsModule`) |
 | **Containers** | Dockerfiles under `backend/` and `web-app/` |
 
 ---
@@ -67,10 +67,10 @@ The production build outputs static assets suitable for CDN or static hosting; A
 ## iOS (`ios-app/`) and Swift module (`ios-module/`)
 
 - **App:** Native Swift / SwiftUI (Xcode project under `ios-app/`)  
-- **Shared package:** `CampusCutsModule` (Swift Package in repo root `Package.swift`)  
+- **Shared package:** `OnCutsModule` (Swift Package in repo root `Package.swift`)  
   - **Platforms:** iOS 17+, macOS 14+ (for the library product)  
   - **Real-time:** [Socket.IO Swift client](https://github.com/socketio/socket.io-client-swift) (`SocketIO`)  
-- **Networking / auth in app:** See `ios-app/CampusCuts/Services` (e.g. `NetworkManager`, Keychain)  
+- **Networking / auth in app:** See `ios-app/OnCuts/Services` (e.g. `NetworkManager`, Keychain)  
 
 ---
 

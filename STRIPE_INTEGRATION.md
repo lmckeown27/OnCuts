@@ -1,6 +1,6 @@
-# Stripe integration — CampusCuts
+# Stripe integration — OnCuts
 
-This document describes **how Stripe is wired into the CampusCuts platform**: configuration, API surface, payment flows, webhooks, Connect onboarding, and the web client. For environment variable names, see [`API_KEYS.md`](./API_KEYS.md). For high-level investor copy, see [`INVESTOR_SECRETS_AND_INFRA.md`](./INVESTOR_SECRETS_AND_INFRA.md).
+This document describes **how Stripe is wired into the OnCuts platform**: configuration, API surface, payment flows, webhooks, Connect onboarding, and the web client. For environment variable names, see [`API_KEYS.md`](./API_KEYS.md). For high-level investor copy, see [`INVESTOR_SECRETS_AND_INFRA.md`](./INVESTOR_SECRETS_AND_INFRA.md).
 
 ---
 
@@ -150,7 +150,7 @@ Configure the **same URL** in the Stripe Dashboard for both test and live if you
 3. `GET /api/v1/barber/connect/status` — Surface onboarding state to the app.
 4. `GET /api/v1/barber/connect/dashboard` — Creates a **login link** to the Express dashboard for payout/bank management.
 
-**UI:** Web barber surfaces (`PaymentManagementModal`, `BarberEarningsPage`, `BarberConnectOnboarding`) explain that payouts are via **Connect**, not a CampusCuts-held balance.
+**UI:** Web barber surfaces (`PaymentManagementModal`, `BarberEarningsPage`, `BarberConnectOnboarding`) explain that payouts are via **Connect**, not a OnCuts-held balance.
 
 ---
 

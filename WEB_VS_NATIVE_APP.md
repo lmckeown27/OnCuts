@@ -9,7 +9,7 @@
 | Term | Meaning here |
 |------|----------------|
 | **Web** | A site served over HTTPS (e.g. React + Vite), opened in **Safari, Chrome, or an in-app browser**. May be “installed” as a **PWA** to the home screen, but capabilities still depend on the OS and browser. |
-| **Native app** | A **Store-distributed** binary (e.g. CampusCuts iOS, SwiftUI) using Apple’s system frameworks, push services, and secure storage. |
+| **Native app** | A **Store-distributed** binary (e.g. OnCuts iOS, SwiftUI) using Apple’s system frameworks, push services, and secure storage. |
 
 This is **not** a claim that the web is “worse” overall—many users should never need an app. The point is to **clarify tradeoffs** so roadmap and UX match expectations.
 
@@ -30,7 +30,7 @@ This is **not** a claim that the web is “worse” overall—many users should 
 ### Identity, trust, and device binding
 
 - Sessions usually rely on **cookies / localStorage / JWT in memory**. Users can **clear site data** or use private browsing; support flows for “I’m logged out on every open” are common.
-- **Phishing** often targets **links that open a fake web login**. A **real app icon from the App Store** is a stronger anchor for “this is the official CampusCuts” than a look-alike domain in the address bar (though both need education).
+- **Phishing** often targets **links that open a fake web login**. A **real app icon from the App Store** is a stronger anchor for “this is the official OnCuts” than a look-alike domain in the address bar (though both need education).
 
 ### Hardware and system integration
 
@@ -78,7 +78,7 @@ Secondary advantages (supporting the three above) include: **App Review / TestFl
 
 ---
 
-## Side-by-side (CampusCuts-oriented)
+## Side-by-side (OnCuts-oriented)
 
 | Dimension | Web | Native iOS app |
 |-----------|-----|----------------|

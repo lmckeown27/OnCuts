@@ -1,4 +1,4 @@
-# Production Dockerfile for CampusCuts Frontend
+# Production Dockerfile for OnCuts Frontend
 
 # Stage 1: Build
 FROM node:20-alpine AS builder

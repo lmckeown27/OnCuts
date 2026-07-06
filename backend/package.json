@@ -1,5 +1,5 @@
 {
-  "name": "campus-cuts-backend",
+  "name": "oncuts-backend",
   "version": "1.0.0",
   "description": "Backend API for OnCuts barber booking platform",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "marketplace",
     "stripe"
   ],
-  "author": "CampusCuts Team",
+  "author": "OnCuts Team",
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-pinpoint-sms-voice-v2": "^3.1024.0",

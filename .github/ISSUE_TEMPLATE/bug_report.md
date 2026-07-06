@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Create a report to help us improve CampusCuts
+about: Create a report to help us improve OnCuts
 title: '[BUG] '
 labels: bug
 assignees: ''

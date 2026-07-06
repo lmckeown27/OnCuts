@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Run all tests for CampusCuts
+# Run all tests for OnCuts
 
 set -e
 
-echo "🧪 Running CampusCuts Test Suite"
+echo "🧪 Running OnCuts Test Suite"
 echo "================================="
 
 # Colors

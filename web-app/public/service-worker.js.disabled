@@ -4,8 +4,8 @@
  * Enables offline functionality and caching
  */
 
-const CACHE_NAME = 'campuscuts-v1';
-const RUNTIME_CACHE = 'campuscuts-runtime';
+const CACHE_NAME = 'oncuts-v1';
+const RUNTIME_CACHE = 'oncuts-runtime';
 
 // Assets to cache on install
 const PRECACHE_URLS = [

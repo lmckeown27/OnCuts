@@ -136,7 +136,7 @@ class PushNotificationService {
           {
             credential: admin.credential.cert(serviceAccount),
           },
-          'campuscuts-mobile'
+          'oncuts-mobile'
         );
 
         console.log('✅ FCM initialized');
@@ -595,7 +595,7 @@ class PushNotificationService {
         priority: 'high' as const,
         notification: {
           sound: notification.sound || 'default',
-          channelId: 'campuscuts_notifications',
+          channelId: 'oncuts_notifications',
         },
       },
     };

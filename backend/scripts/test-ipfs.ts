@@ -65,15 +65,15 @@ async function testIPFS() {
       console.log('Testing File Upload...\n');
       
       // Create a test file buffer
-      const testContent = `CampusCuts IPFS Test\nTimestamp: ${new Date().toISOString()}`;
+      const testContent = `OnCuts IPFS Test\nTimestamp: ${new Date().toISOString()}`;
       const testBuffer = Buffer.from(testContent, 'utf-8');
       
       try {
         const uploadResult = await uploadToIPFS(
           testBuffer,
-          'campuscuts-test.txt',
+          'oncuts-test.txt',
           {
-            name: 'CampusCuts IPFS Test File',
+            name: 'OnCuts IPFS Test File',
             keyvalues: {
               type: 'test',
               timestamp: Date.now()

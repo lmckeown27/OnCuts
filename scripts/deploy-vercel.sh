@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts Vercel Deployment Script
+# OnCuts Vercel Deployment Script
 # This script automates frontend deployment to Vercel
 
 set -e  # Exit on error
 
-echo "🚀 CampusCuts Vercel Deployment"
+echo "🚀 OnCuts Vercel Deployment"
 echo "================================"
 echo ""
 

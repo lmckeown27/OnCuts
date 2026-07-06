@@ -1,4 +1,4 @@
-# CampusCuts System Storage & Cleanup Reference
+# OnCuts System Storage & Cleanup Reference
 
 Quick reference for monitoring disk usage and cleaning up server storage.
 
@@ -103,14 +103,14 @@ find /home/ubuntu -name 'node_modules' -type d 2>/dev/null | xargs -I{} du -sh {
 
 ### Remove node_modules (Reinstall Later)
 ```bash
-rm -rf ~/CampusCuts/web-app/node_modules
-rm -rf ~/CampusCuts/backend/node_modules
+rm -rf ~/OnCuts/web-app/node_modules
+rm -rf ~/OnCuts/backend/node_modules
 ```
 
 ### Reinstall Dependencies
 ```bash
-cd ~/CampusCuts/web-app && npm ci
-cd ~/CampusCuts/backend && npm ci
+cd ~/OnCuts/web-app && npm ci
+cd ~/OnCuts/backend && npm ci
 ```
 
 ---
@@ -254,17 +254,17 @@ find /home/ubuntu -type f -mtime -1 -size +10M 2>/dev/null | xargs -I{} ls -lh {
 
 ### Check Uploads Size
 ```bash
-du -sh ~/CampusCuts/backend/uploads
+du -sh ~/OnCuts/backend/uploads
 ```
 
 ### List Upload Files
 ```bash
-ls -lah ~/CampusCuts/backend/uploads
+ls -lah ~/OnCuts/backend/uploads
 ```
 
 ### Count Upload Files
 ```bash
-find ~/CampusCuts/backend/uploads -type f | wc -l
+find ~/OnCuts/backend/uploads -type f | wc -l
 ```
 
 ---
@@ -273,17 +273,17 @@ find ~/CampusCuts/backend/uploads -type f | wc -l
 
 ### Check Git Object Size
 ```bash
-du -sh ~/CampusCuts/.git
+du -sh ~/OnCuts/.git
 ```
 
 ### Clean Git (Remove Unreachable Objects)
 ```bash
-cd ~/CampusCuts && git gc --prune=now
+cd ~/OnCuts && git gc --prune=now
 ```
 
 ### View Large Files in Git History
 ```bash
-cd ~/CampusCuts && git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | sort -rnk2 | head -20
+cd ~/OnCuts && git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | sort -rnk2 | head -20
 ```
 
 ---
@@ -341,7 +341,7 @@ sudo apt clean && sudo apt autoremove -y
 pm2 flush
 
 # Git cleanup
-cd ~/CampusCuts && git gc --prune=now
+cd ~/OnCuts && git gc --prune=now
 ```
 
 ---

@@ -171,7 +171,7 @@ All date logic for “today” and labels uses **`getTodayInCampusTimezone()`** 
 |--------|----------------------|
 | **Booked** | Blue/green card (green if completed/PAID). Shows time range, customer name, service, price. **Tap** → **`onViewDetails(appointment)`** opens **`BookingDetailsModal`** (not the day modal). |
 | **Manually blocked** | Red styling, **Unblock** button → **`onUnblockTime(block.id)`** → API delete time block. |
-| **Google Calendar busy** | Blue “Google Calendar” row — **no unblock** from CampusCuts. |
+| **Google Calendar busy** | Blue “Google Calendar” row — **no unblock** from OnCuts. |
 | **Available** | Primary-tint row; **“Tap to block”** on mobile — tap calls **`onBlockTime(dateStr, slot.start, slot.end)`** to open **`BlockTimeModal`** prefilled. |
 
 **Google connect row** in daily view exists in markup but is wrapped in **`hidden`** (feature hidden in UI; backend hooks remain).

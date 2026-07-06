@@ -9,32 +9,32 @@ echo "🚀 Starting OnCuts Frontend Container..."
 echo ""
 
 # Stop and remove existing container if running
-if [ "$(docker ps -aq -f name=campuscuts-frontend)" ]; then
+if [ "$(docker ps -aq -f name=oncuts-frontend)" ]; then
     echo "🛑 Stopping existing container..."
-    docker stop campuscuts-frontend || true
-    docker rm campuscuts-frontend || true
+    docker stop oncuts-frontend || true
+    docker rm oncuts-frontend || true
 fi
 
 # Run the container
 docker run -d \
-  --name campuscuts-frontend \
+  --name oncuts-frontend \
   --restart unless-stopped \
   -p 80:80 \
-  campuscuts-frontend:latest
+  oncuts-frontend:latest
 
 echo ""
 echo "✅ Container started successfully!"
 echo ""
 echo "📊 Container Status:"
-docker ps | grep campuscuts-frontend
+docker ps | grep oncuts-frontend
 
 echo ""
 echo "🌐 Access the application at:"
 echo "   http://localhost"
 echo ""
 echo "📝 View logs with:"
-echo "   docker logs -f campuscuts-frontend"
+echo "   docker logs -f oncuts-frontend"
 echo ""
 echo "🛑 Stop the container with:"
-echo "   docker stop campuscuts-frontend"
+echo "   docker stop oncuts-frontend"
 

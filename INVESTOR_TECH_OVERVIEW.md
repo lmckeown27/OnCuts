@@ -1,4 +1,4 @@
-# CampusCuts — Technology overview
+# OnCuts — Technology overview
 
 *For investors and partners. Engineering detail lives in [`TECH_STACK.md`](./TECH_STACK.md).*
 
@@ -6,7 +6,7 @@
 
 ## One sentence
 
-CampusCuts is a **multi-surface marketplace** (web + native iOS) on a **modern TypeScript stack**, with a **Node.js API**, **PostgreSQL** data layer, **Stripe** for payments and payouts, and **real-time** messaging—designed to scale with standard cloud patterns (containers, object storage, Redis-backed jobs).
+OnCuts is a **multi-surface marketplace** (web + native iOS) on a **modern TypeScript stack**, with a **Node.js API**, **PostgreSQL** data layer, **Stripe** for payments and payouts, and **real-time** messaging—designed to scale with standard cloud patterns (containers, object storage, Redis-backed jobs).
 
 ---
 

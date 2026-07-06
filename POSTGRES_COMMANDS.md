@@ -1,4 +1,6 @@
-# CampusCuts PostgreSQL Commands Reference
+# OnCuts PostgreSQL Commands Reference
+
+> **Note:** The product is branded **OnCuts**. Local and production PostgreSQL databases may still use the legacy database name `campuscuts` until a dedicated migration is run.
 
 Quick reference for accessing and managing all database tables.
 
@@ -14,7 +16,7 @@ sudo -u postgres psql -d campuscuts
 
 ## Role Hierarchy
 
-CampusCuts uses a role-based permission system with the following hierarchy:
+OnCuts uses a role-based permission system with the following hierarchy:
 
 | Role | Description | Privileges | University Affiliation |
 |------|-------------|------------|------------------------|
@@ -296,7 +298,7 @@ sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = false, \
 If you connect as `campuscuts_user` via URI (e.g. on EC2 from `backend/.env`):
 
 ```bash
-URL=$(grep '^DATABASE_URL=' ~/CampusCuts/backend/.env | cut -d= -f2- | tr -d '"' | sed 's/?schema=public//')
+URL=$(grep '^DATABASE_URL=' ~/OnCuts/backend/.env | cut -d= -f2- | tr -d '"' | sed 's/?schema=public//')
 psql "$URL" -c "SELECT id, email, role, \"isBanned\" FROM users WHERE \"isBanned\" = true;"
 psql "$URL" -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE id = 'YOUR-USER-UUID-HERE';"
 ```
@@ -1152,15 +1154,15 @@ WHERE slug = 'cal-poly';
 ```bash
 # Run the seed script (after git pull)
 # Option 1: Pipe the file (recommended - avoids permission issues)
-cat ~/CampusCuts/backend/src/database/seed_campuses.sql | sudo -u postgres psql -d campuscuts
+cat ~/OnCuts/backend/src/database/seed_campuses.sql | sudo -u postgres psql -d campuscuts
 
 # Option 2: Copy to tmp first
-cp ~/CampusCuts/backend/src/database/seed_campuses.sql /tmp/
+cp ~/OnCuts/backend/src/database/seed_campuses.sql /tmp/
 sudo -u postgres psql -d campuscuts -f /tmp/seed_campuses.sql
 
 # Option 3: Fix permissions then run directly
-chmod 644 ~/CampusCuts/backend/src/database/seed_campuses.sql
-sudo -u postgres psql -d campuscuts -f ~/CampusCuts/backend/src/database/seed_campuses.sql
+chmod 644 ~/OnCuts/backend/src/database/seed_campuses.sql
+sudo -u postgres psql -d campuscuts -f ~/OnCuts/backend/src/database/seed_campuses.sql
 ```
 
 ### Describe Campuses Table
@@ -1952,7 +1954,7 @@ RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabl
 
 **3. Or use the backend script (from repo on EC2)**
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 npm run clear-stripe-connect -- liam.mckeown38415@gmail.com calpolyblockchain@gmail.com
 # Or auto-detect IDs invalid for current keys:
 npm run clear-stripe-connect -- --validate-stale
@@ -2192,7 +2194,7 @@ ORDER BY u.email;
 #### Show which Stripe key the backend is using (fingerprint only — safe to paste)
 Run from the backend directory so `.env` / PM2 env loads. Does **not** print the full secret.
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 node -e "
 require('dotenv').config();
 const sk =
@@ -2208,7 +2210,7 @@ console.log('Server key:', kind + ':' + sk.slice(0, 10) + '…' + sk.slice(-4));
 
 #### Show the platform Stripe account (the Connect "parent" for this key)
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 curl -s -u "${STRIPE_SECRET_KEY}:" https://api.stripe.com/v1/account \
   | python3 -m json.tool 2>/dev/null \
@@ -2219,7 +2221,7 @@ Connected accounts that pass validation below are owned by this platform account
 #### Validate one Connect account (curl)
 Replace `acct_XXXXXXXXXXXXX` and ensure `STRIPE_SECRET_KEY` is exported (same as PM2 backend).
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 
 ACCT=acct_XXXXXXXXXXXXX
@@ -2232,7 +2234,7 @@ curl -s -w "\nHTTP %{http_code}\n" -u "${STRIPE_SECRET_KEY}:" \
 
 #### Validate one Connect account (Stripe CLI)
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 
 stripe accounts retrieve acct_XXXXXXXXXXXXX --api-key "$STRIPE_SECRET_KEY"
@@ -2241,7 +2243,7 @@ stripe accounts retrieve acct_XXXXXXXXXXXXX --api-key "$STRIPE_SECRET_KEY"
 #### Validate ALL saved Connect accounts (batch — recommended on EC2)
 Checks every saved `stripe_account_id` against the **live** platform key. One line per user: **`t`** = connected to current live keys, **`f`** = stale / wrong platform / wrong mode.
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 
@@ -2262,7 +2264,7 @@ Clear any `|f` row using [Clear stale account](#clear-stale-stripe-connect-accou
 
 #### Validate one user by email (`t` or `f`)
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 EMAIL='barber@example.com'
@@ -2311,7 +2313,7 @@ WHERE u.email ILIKE 'liam.mckeown%';
 **Step 3 — Confirm valid for current live keys (`t` / `f`)**
 Uses the `acct_*` from Step 1. **`f`** = not on live keys (test account, wrong platform, or deleted) → explains Stripe auth errors.
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 EMAIL='liam.mckeown38415@gmail.com'
@@ -2327,7 +2329,7 @@ if [ "$http" = "200" ]; then echo "${EMAIL}|t"; else echo "${EMAIL}|f"; fi
 **Step 4 — If Step 3 is `f`, check test vs live (which key owns the saved `acct_*`)**
 Postgres stores the id only; this tells you if it is a **test** Connect account.
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = 'liam.mckeown38415@gmail.com' LIMIT 1;")
@@ -2369,7 +2371,7 @@ Expect `stripe_account_id` **NULL**, both flags **`f`**, until live onboarding c
 #### Compare test vs live keys (mode mismatch)
 If unsure whether an `acct_*` is test or live, try both keys (only if you have both configured):
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 ACCT=acct_XXXXXXXXXXXXX
 
@@ -2386,7 +2388,7 @@ Whichever returns **200** owns that connected account. The server must use that 
 #### Sync DB flags from Stripe (valid accounts only)
 After validation, refresh `stripe_charges_enabled` / `stripe_payouts_enabled` from Stripe for all saved accounts (skips invalid with a warning):
 ```bash
-cd ~/CampusCuts/backend
+cd ~/OnCuts/backend
 npm run sync-stripe-status
 ```
 
@@ -2584,7 +2586,7 @@ ORDER BY u.first_name;
 
 ## PAYMENTS (Stripe Off-Chain)
 
-> **Note:** CampusCuts uses Stripe for all payments. Blockchain payment columns are deprecated.
+> **Note:** OnCuts uses Stripe for all payments. Blockchain payment columns are deprecated.
 
 ### View All Payment Transactions (Stripe)
 ```bash

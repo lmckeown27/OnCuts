@@ -1,6 +1,6 @@
-# CampusCuts iOS Design System
+# OnCuts iOS Design System
 
-> A comprehensive guide for building the native iOS frontend based on the CampusCuts web platform.
+> A comprehensive guide for building the native iOS frontend based on the OnCuts web platform.
 
 ---
 
@@ -22,17 +22,17 @@
 ## Brand Identity
 
 ### Brand Name
-**CampusCuts** (also referenced as CampusCut or CampusKinect in some branding)
+**OnCuts** (also referenced as CampusCut or CampusKinect in some branding)
 
 ### Brand Positioning
-CampusCuts is a peer-to-peer campus haircut marketplace connecting student barbers with customers. The platform emphasizes:
+OnCuts is a peer-to-peer campus haircut marketplace connecting student barbers with customers. The platform emphasizes:
 - **Convenience**: Mobile-first, on-campus service
 - **Trust**: Reviews, Instagram portfolios, verified students
 - **Affordability**: Lower fees than traditional barbershops (15% platform fee vs 40-60%)
 - **Community**: Campus-based network
 
 ### Logo
-- Primary logo: Chair icon with "CampusCuts" wordmark
+- Primary logo: Chair icon with "OnCuts" wordmark
 - App icon: Stylized barber chair in olive green
 
 ---
@@ -267,7 +267,7 @@ struct PrimaryButton: View {
 ### 2. Cards
 
 ```swift
-struct CampusCutsCard<Content: View>: View {
+struct OnCutsCard<Content: View>: View {
     let content: Content
     var padding: CGFloat = 16
     var cornerRadius: CGFloat = 16
@@ -573,7 +573,7 @@ Auth → Barber Dashboard
 ### Consumer Home Screen
 
 **Header:**
-- Navigation title: "CampusCuts"
+- Navigation title: "OnCuts"
 - Profile button (right) - opens dropdown menu
 
 **Tab Picker:**

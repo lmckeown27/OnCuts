@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🔧 Aptos Profile Setup for CampusCuts"
+echo "🔧 Aptos Profile Setup for OnCuts"
 echo "======================================"
 
 # Colors

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CampusCuts Railway Deployment Script
+# OnCuts Railway Deployment Script
 # This script automates the deployment process to Railway
 
 set -e  # Exit on error
 
-echo "🚀 CampusCuts Railway Deployment"
+echo "🚀 OnCuts Railway Deployment"
 echo "================================="
 echo ""
 

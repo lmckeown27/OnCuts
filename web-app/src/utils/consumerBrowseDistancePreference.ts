@@ -5,7 +5,7 @@ export const BROWSE_MIN_DISTANCE_MILES = 1;
 export const BROWSE_MAX_DISTANCE_MILES = 100;
 export const BROWSE_DEFAULT_DISTANCE_MILES = 25;
 
-export const BROWSE_DISTANCE_CHANGED_EVENT = 'campuscuts-browse-max-distance-changed';
+export const BROWSE_DISTANCE_CHANGED_EVENT = 'oncuts-browse-max-distance-changed';
 
 function clampMiles(miles: number): number {
   return Math.min(BROWSE_MAX_DISTANCE_MILES, Math.max(BROWSE_MIN_DISTANCE_MILES, miles));
