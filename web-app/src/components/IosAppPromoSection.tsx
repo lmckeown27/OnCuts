@@ -1,5 +1,5 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
-import onCutsAppLogo from '../assets/logos/PismoChair.png';
+import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
