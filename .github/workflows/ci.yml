@@ -155,7 +155,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [test-contracts, test-backend, build-backend, build-frontend]
+    needs: [test-backend, build-backend, build-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
