@@ -146,7 +146,7 @@ export default function LandingPage() {
                     </svg>
                   ))}
                 </div>
-                <span className="text-gray-600 text-xs sm:text-base">reviews across campuses</span>
+                <span className="text-gray-600 text-xs sm:text-base">reviews</span>
               </div>
             </div>
           </div>
