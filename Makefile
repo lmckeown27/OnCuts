@@ -59,7 +59,7 @@ db-reset: ## Reset database
 	@docker-compose up -d postgres
 	@echo "Waiting for database..."
 	@sleep 5
-	@docker-compose exec -T postgres psql -U postgres -d campuscuts -f /docker-entrypoint-initdb.d/schema.sql
+	@docker-compose exec -T postgres psql -U postgres -d oncuts -f /docker-entrypoint-initdb.d/schema.sql
 	@echo "✅ Database reset complete"
 
 logs-backend: ## Show backend logs

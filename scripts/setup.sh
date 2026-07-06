@@ -124,7 +124,7 @@ if [ "$START_DB" = "y" ]; then
     echo -e "${GREEN}✅ Database started${NC}"
     
     echo "Running database migrations..."
-    docker-compose exec postgres psql -U postgres -d campuscuts -f /docker-entrypoint-initdb.d/schema.sql || echo -e "${YELLOW}⚠️  Schema already applied${NC}"
+    docker-compose exec postgres psql -U postgres -d oncuts -f /docker-entrypoint-initdb.d/schema.sql || echo -e "${YELLOW}⚠️  Schema already applied${NC}"
 fi
 
 # Final instructions

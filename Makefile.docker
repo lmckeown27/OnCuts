@@ -196,12 +196,12 @@ test-e2e:
 backup:
 	@echo "💾 Creating database backup..."
 	@mkdir -p backups
-	docker-compose exec postgres pg_dump -U postgres campuscuts > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
+	docker-compose exec postgres pg_dump -U postgres oncuts > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
 	@echo "✅ Backup created in backups/"
 
 restore:
 	@echo "📥 Restoring database from backup..."
 	@test -f $(file) || (echo "❌ Usage: make restore file=backups/backup_XXXXXXXX_XXXXXX.sql" && exit 1)
-	cat $(file) | docker-compose exec -T postgres psql -U postgres campuscuts
+	cat $(file) | docker-compose exec -T postgres psql -U postgres oncuts
 	@echo "✅ Database restored"
 

@@ -18,7 +18,7 @@ services:
       
       # PostgreSQL (CACHE LAYER - Not source of truth!)
       # Blockchain is source of truth, PostgreSQL caches for fast queries
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/campuscuts
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oncuts
       
       # Redis for caching blockchain queries (optional but recommended)
       REDIS_URL: redis://redis:6379
@@ -65,7 +65,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: campuscuts
+      POSTGRES_DB: oncuts
     ports:
       - "5432:5432"
     volumes:

@@ -1,6 +1,7 @@
 # OnCuts PostgreSQL Commands Reference
 
-> **Note:** The product is branded **OnCuts**. Local and production PostgreSQL databases may still use the legacy database name `campuscuts` until a dedicated migration is run.
+
+> **Production (EC2):** database `oncuts`, role `oncuts_user`, app repo `~/OnCuts`, static files `/var/www/oncuts/dist`, PM2 process `oncuts-backend`.
 
 Quick reference for accessing and managing all database tables.
 
@@ -9,7 +10,7 @@ Quick reference for accessing and managing all database tables.
 ## Connect to Database
 
 ```bash
-sudo -u postgres psql -d campuscuts
+sudo -u postgres psql -d oncuts
 ```
 
 ---
@@ -47,27 +48,27 @@ OnCuts uses a role-based permission system with the following hierarchy:
 
 ## Number of Users
 '''bash
-sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS total_users FROM users;"
+sudo -u postgres psql -d oncuts -c "SELECT COUNT(*) AS total_users FROM users;"
 '''
 
 ### Number of Users (By Role)
 '''bash
-sudo -u postgres psql -d campuscuts -c "SELECT role, COUNT(*) FROM users GROUP BY role ORDER BY COUNT(*) DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT role, COUNT(*) FROM users GROUP BY role ORDER BY COUNT(*) DESC;"
 '''
 
 ### View All Users (Table Format)
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, email_verified FROM users;"
+sudo -u postgres psql -d oncuts -c "SELECT email, first_name, last_name, role, email_verified FROM users;"
 ```
 
 ### View All Users (Expanded/Vertical Format)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "SELECT id, email, first_name, last_name, role, email_verified, \"createdAt\" FROM users;"
+sudo -u postgres psql -d oncuts -x -c "SELECT id, email, first_name, last_name, role, email_verified, \"createdAt\" FROM users;"
 ```
 
 ### View All Users (Formatted Table)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     SUBSTRING(email, 1, 30) AS email,
     first_name,
@@ -83,15 +84,15 @@ ORDER BY \"createdAt\" DESC;
 ```bash
 # Replace EMAIL with actual email address
 # Use -x for vertical format (easier to read)
-sudo -u postgres psql -d campuscuts -x -c "SELECT * FROM users WHERE email = 'EMAIL';"
+sudo -u postgres psql -d oncuts -x -c "SELECT * FROM users WHERE email = 'EMAIL';"
 
 # Example:
-sudo -u postgres psql -d campuscuts -x -c "SELECT * FROM users WHERE email = 'liam.mckeown38415@gmail.com';"
+sudo -u postgres psql -d oncuts -x -c "SELECT * FROM users WHERE email = 'liam.mckeown38415@gmail.com';"
 ```
 
 ### View User with All Details
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, last_name, \"displayName\", role, email_verified, \"isVerified\", \"avatarUrl\", \"instagramHandle\", phone_e164, \"createdAt\" FROM users WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT id, email, first_name, last_name, \"displayName\", role, email_verified, \"isVerified\", \"avatarUrl\", \"instagramHandle\", phone_e164, \"createdAt\" FROM users WHERE email = 'user@example.com';"
 ```
 
 ### View user phone numbers (SMS / sign-up)
@@ -100,7 +101,7 @@ Phone numbers are stored in **`users.phone_e164`** (E.164, e.g. `+14089219541`) 
 
 ```bash
 # All users who have a phone on file (admin review)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT id, email, first_name, last_name, role, phone_e164, email_verified, \"createdAt\"
 FROM users
 WHERE phone_e164 IS NOT NULL
@@ -108,7 +109,7 @@ ORDER BY \"createdAt\" DESC;
 "
 
 # Compact list: email + phone + role
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT email, phone_e164, role
 FROM users
 WHERE phone_e164 IS NOT NULL
@@ -116,10 +117,10 @@ ORDER BY email;
 "
 
 # Look up a user by phone (replace with full E.164 including +)
-sudo -u postgres psql -d campuscuts -x -c "SELECT id, email, first_name, last_name, role, phone_e164, email_verified FROM users WHERE phone_e164 = '+14085551234';"
+sudo -u postgres psql -d oncuts -x -c "SELECT id, email, first_name, last_name, role, phone_e164, email_verified FROM users WHERE phone_e164 = '+14085551234';"
 
 # Count users with vs without phone
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
   COUNT(*) FILTER (WHERE phone_e164 IS NOT NULL) AS with_phone,
   COUNT(*) FILTER (WHERE phone_e164 IS NULL) AS without_phone,
@@ -131,7 +132,7 @@ FROM users;
 **Pending email verification** may still carry a phone in **`pending_registrations.phone_e164`** before the account is finalized:
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT email, phone_e164, role, created_at
 FROM pending_registrations
 WHERE phone_e164 IS NOT NULL
@@ -149,85 +150,85 @@ LIMIT 50;
 # PROMOTE TO BARBER
 # ============================================================================
 # Step 1: Update user role
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # Step 2: Activate barber record (if exists) or create one
 # Check if barber record exists first:
-sudo -u postgres psql -d campuscuts -c "SELECT b.id, b.\"isActive\" FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT b.id, b.\"isActive\" FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'user@example.com';"
 
 # If barber record exists, activate it:
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
 
 # ============================================================================
 # PROMOTE TO CAMPUS_MANAGER
 # ============================================================================
 # Step 1: Update user role AND set their campusId
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CAMPUS_MANAGER', \"campusId\" = 'CAMPUS_UUID_HERE', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'CAMPUS_MANAGER', \"campusId\" = 'CAMPUS_UUID_HERE', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # Step 2: Set isCampusManager flag on barber record
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isCampusManager\" = true, \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isCampusManager\" = true, \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
 
 # ============================================================================
 # DEMOTE TO CONSUMER (from BARBER or CAMPUS_MANAGER)
 # ============================================================================
 # Step 1: Update user role
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CONSUMER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'CONSUMER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # Step 2: Deactivate barber record and remove campus manager flag
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = false, \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isActive\" = false, \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
 
 # Step 3: Delete any CM-barber direct conversations (optional cleanup)
-sudo -u postgres psql -d campuscuts -c "DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'))); DELETE FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'));"
+sudo -u postgres psql -d oncuts -c "DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'))); DELETE FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'));"
 
 # ============================================================================
 # PROMOTE TO ADMIN
 # ============================================================================
 # Admins have campus manager privileges at ALL campuses automatically
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'ADMIN', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'ADMIN', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # ============================================================================
 # REVOKE CAMPUS_MANAGER (keep as BARBER)
 # ============================================================================
 # Step 1: Change role to BARBER
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # Step 2: Remove isCampusManager flag but keep barber active
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
 
 # ============================================================================
 # QUICK REFERENCE: Get Campus IDs
 # ============================================================================
-sudo -u postgres psql -d campuscuts -c "SELECT id, name FROM campuses WHERE name ILIKE '%cal poly%' OR name ILIKE '%your campus%' LIMIT 10;"
+sudo -u postgres psql -d oncuts -c "SELECT id, name FROM campuses WHERE name ILIKE '%cal poly%' OR name ILIKE '%your campus%' LIMIT 10;"
 ```
 
 ### Update User Email Verification
 ```bash
 # Verify email
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET email_verified = true WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET email_verified = true WHERE email = 'user@example.com';"
 
 # Unverify email
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET email_verified = false WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET email_verified = false WHERE email = 'user@example.com';"
 ```
 
 ### Update User Profile
 ```bash
 # Update display name
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"displayName\" = 'New Name' WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"displayName\" = 'New Name' WHERE email = 'user@example.com';"
 
 # Update avatar
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"avatarUrl\" = 'https://example.com/image.jpg' WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"avatarUrl\" = 'https://example.com/image.jpg' WHERE email = 'user@example.com';"
 
 # Update Instagram
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"instagramHandle\" = '@username' WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"instagramHandle\" = '@username' WHERE email = 'user@example.com';"
 ```
 
 ### Block/Unblock User
 ```bash
 # Block user
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = true WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBlocked\" = true WHERE email = 'user@example.com';"
 
 # Unblock user
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = false WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBlocked\" = false WHERE email = 'user@example.com';"
 ```
 
 ### Platform ban (`isBanned`) — view, ban, unban
@@ -239,7 +240,7 @@ In `psql` output, booleans show as **`t`** / **`f`**.
 #### View all banned users
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT id, first_name, last_name, email, role, \"campusId\", \"isBanned\", \"updatedAt\"
 FROM users
 WHERE \"isBanned\" = true
@@ -250,13 +251,13 @@ ORDER BY \"updatedAt\" DESC NULLS LAST;
 #### Count banned users
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS banned_count FROM users WHERE \"isBanned\" = true;"
+sudo -u postgres psql -d oncuts -c "SELECT COUNT(*) AS banned_count FROM users WHERE \"isBanned\" = true;"
 ```
 
 #### View banned users with campus name
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.id, u.first_name, u.last_name, u.email, u.role,
        c.name AS campus_name, u.\"isBanned\", u.\"updatedAt\"
 FROM users u
@@ -270,7 +271,7 @@ ORDER BY u.\"updatedAt\" DESC NULLS LAST;
 
 ```bash
 # Replace user@example.com
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
 ```
 
 #### Ban a user (by UUID)
@@ -278,24 +279,24 @@ sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = true, \"
 Use **double-quoted** `-c "..."` in bash so the UUID stays inside **single quotes** in SQL. Replace the UUID.
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
 ```
 
 #### Unban a user (by email)
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
 ```
 
 #### Unban a user (by UUID)
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
 ```
 
 #### Using `DATABASE_URL` (app user / remote host)
 
-If you connect as `campuscuts_user` via URI (e.g. on EC2 from `backend/.env`):
+If you connect as `oncuts_user` via URI (e.g. on EC2 from `backend/.env`):
 
 ```bash
 URL=$(grep '^DATABASE_URL=' ~/OnCuts/backend/.env | cut -d= -f2- | tr -d '"' | sed 's/?schema=public//')
@@ -312,13 +313,13 @@ psql "$URL" -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHE
 #### Confirm table exists
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT to_regclass('public.user_blocks');"
+sudo -u postgres psql -d oncuts -c "SELECT to_regclass('public.user_blocks');"
 ```
 
 #### List all peer blocks (raw IDs)
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT blocker_user_id, blocked_user_id, created_at
 FROM user_blocks
 ORDER BY created_at DESC
@@ -329,7 +330,7 @@ LIMIT 200;
 #### Who blocked whom (with names and emails)
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
   ub.blocker_user_id,
   blocker.first_name || ' ' || blocker.last_name AS blocker_name,
@@ -351,7 +352,7 @@ LIMIT 200;
 Replace the UUID with the blocker’s `users.id`.
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT ub.blocked_user_id, u.first_name, u.last_name, u.email, ub.created_at
 FROM user_blocks ub
 JOIN users u ON u.id = ub.blocked_user_id
@@ -365,7 +366,7 @@ ORDER BY ub.created_at DESC;
 Replace the UUID with the target `users.id` (who might be a service provider).
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT ub.blocker_user_id, u.first_name, u.last_name, u.email, ub.created_at
 FROM user_blocks ub
 JOIN users u ON u.id = ub.blocker_user_id
@@ -379,7 +380,7 @@ ORDER BY ub.created_at DESC;
 Deletes the row **blocker** → **blocked** only (not the reverse, unless that row exists too).
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 DELETE FROM user_blocks
 WHERE blocker_user_id = '00000000-0000-0000-0000-000000000001'
   AND blocked_user_id = '00000000-0000-0000-0000-000000000002';
@@ -388,7 +389,7 @@ WHERE blocker_user_id = '00000000-0000-0000-0000-000000000001'
 
 ### Delete User (Simple)
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM users WHERE email = 'user@example.com';"
 ```
 
 ### Delete User Completely (Handles All Foreign Keys)
@@ -396,7 +397,7 @@ Use this when simple delete fails due to foreign key constraints. Deletes all re
 
 ```bash
 # Replace 'user@example.com' with the actual email
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 DO \$\$
 DECLARE
     target_id UUID;
@@ -484,7 +485,7 @@ Simpler version that ignores tables that may not exist:
 
 ```bash
 # Replace EMAIL with the actual email address
-EMAIL='user@example.com' && sudo -u postgres psql -d campuscuts -c "
+EMAIL='user@example.com' && sudo -u postgres psql -d oncuts -c "
 BEGIN;
 DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE \"consumerId\" = (SELECT id FROM users WHERE email = '$EMAIL'));
 DELETE FROM bookings WHERE \"consumerId\" = (SELECT id FROM users WHERE email = '$EMAIL');
@@ -504,31 +505,31 @@ This deletes the user AND all related records in other tables.
 
 ```bash
 # Step 1: Find the user ID
-sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, role FROM users WHERE email = 'test@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT id, email, first_name, role FROM users WHERE email = 'test@example.com';"
 
 # Step 2: Delete all related records (replace USER_ID with actual UUID)
 # Delete in order to avoid foreign key constraints
 
 # Delete notifications
-sudo -u postgres psql -d campuscuts -c "DELETE FROM notifications WHERE \"userId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM notifications WHERE \"userId\" = 'USER_ID';"
 
 # Delete bookings (as consumer or barber)
-sudo -u postgres psql -d campuscuts -c "DELETE FROM bookings WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM bookings WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
 
 # Delete messages
-sudo -u postgres psql -d campuscuts -c "DELETE FROM messages WHERE \"senderId\" = 'USER_ID' OR \"receiverId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM messages WHERE \"senderId\" = 'USER_ID' OR \"receiverId\" = 'USER_ID';"
 
 # Delete conversations
-sudo -u postgres psql -d campuscuts -c "DELETE FROM conversations WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM conversations WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
 
 # Delete barber application (if any)
-sudo -u postgres psql -d campuscuts -c "DELETE FROM barber_applications WHERE \"userId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM barber_applications WHERE \"userId\" = 'USER_ID';"
 
 # Delete barber profile (if any)
-sudo -u postgres psql -d campuscuts -c "DELETE FROM barbers WHERE \"userId\" = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM barbers WHERE \"userId\" = 'USER_ID';"
 
 # Delete the user
-sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE id = 'USER_ID';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM users WHERE id = 'USER_ID';"
 ```
 
 ### Delete Account by Email (One Command)
@@ -536,7 +537,7 @@ Deletes everything in the correct order using the email address directly.
 Replace `test@example.com` with the actual email.
 
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 DO \$\$
 DECLARE
     target_user_id UUID;
@@ -567,7 +568,7 @@ END \$\$;
 ### Quick Delete Test Account
 ```bash
 # Replace EMAIL with the test email address
-EMAIL='test@example.com' && sudo -u postgres psql -d campuscuts -c "
+EMAIL='test@example.com' && sudo -u postgres psql -d oncuts -c "
 DO \$\$
 DECLARE uid UUID;
 BEGIN
@@ -589,12 +590,12 @@ END \$\$;
 
 ### Count Users by Role
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT role, COUNT(*) FROM users GROUP BY role;"
+sudo -u postgres psql -d oncuts -c "SELECT role, COUNT(*) FROM users GROUP BY role;"
 ```
 
 ### Find User ID by Email
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id FROM users WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT id FROM users WHERE email = 'user@example.com';"
 ```
 
 ---
@@ -605,7 +606,7 @@ sudo -u postgres psql -d campuscuts -c "SELECT id FROM users WHERE email = 'user
 
 ### View All Consumers
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -619,7 +620,7 @@ ORDER BY u.\"createdAt\" DESC;
 
 ### View All Consumers (Detailed)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "
+sudo -u postgres psql -d oncuts -x -c "
 SELECT 
   u.id,
   u.first_name,
@@ -641,7 +642,7 @@ LIMIT 20;
 ### View Consumers by Signup Campus
 ```bash
 # Replace 'Cal Poly SLO' with campus name
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -658,7 +659,7 @@ ORDER BY u.\"createdAt\" DESC;
 ### View Demoted Barbers (Now Consumers)
 ```bash
 # Shows consumers who were previously barbers (have barber record with isActive=false)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -677,12 +678,12 @@ ORDER BY u.\"createdAt\" DESC;
 
 ### Count Consumers
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS total_consumers FROM users WHERE role = 'CONSUMER';"
+sudo -u postgres psql -d oncuts -c "SELECT COUNT(*) AS total_consumers FROM users WHERE role = 'CONSUMER';"
 ```
 
 ### Count Consumers by Signup Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   c.name AS campus,
   COUNT(*) AS consumer_count
@@ -700,7 +701,7 @@ ORDER BY consumer_count DESC;
 
 ### View Barber Info Requirements (NOT NULL columns)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT column_name, data_type, is_nullable, column_default 
 FROM information_schema.columns 
 WHERE table_name = 'barbers' AND is_nullable = 'NO'
@@ -712,7 +713,7 @@ ORDER BY ordinal_position;
 ```bash
 # Shows all active barbers. Consumers are not tied to any campus.
 # ADMIN = All Campuses, CAMPUS_MANAGER/BARBER = their specific campus
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -736,7 +737,7 @@ ORDER BY u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, c.name, u.first_
 ### View All Campus Managers (System-Wide)
 ```bash
 # Shows all campus managers and admins (who have CM privileges at all campuses)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -757,7 +758,7 @@ ORDER BY u.role = 'ADMIN' DESC, c.name, u.first_name;
 
 ### Count Campus Managers by Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   c.name AS campus,
   COUNT(*) AS manager_count
@@ -773,7 +774,7 @@ ORDER BY manager_count DESC, c.name;
 ```bash
 # Replace 'University of Florida' with the campus name
 # Note: ADMINs appear for ALL campuses since they have platform-wide privileges
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -798,7 +799,7 @@ ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPU
 ```bash
 # Replace the UUID with the actual campus ID
 # Note: ADMINs appear for ALL campuses since they have platform-wide privileges
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -822,7 +823,7 @@ ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPU
 ```bash
 # Replace 'University of Florida' with the campus name
 # Note: ADMINs appear for ALL campuses, Consumers show N/A
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -847,7 +848,7 @@ ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPU
 ```bash
 # Replace 'University of Florida' with the campus name
 # Note: ADMINs appear for ALL campuses (platform-wide privileges)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
@@ -864,41 +865,41 @@ ORDER BY u.role = 'ADMIN' DESC, u.first_name;
 
 ### View Specific Barber by Email
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT b.*, u.role, u.first_name, u.last_name FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT b.*, u.role, u.first_name, u.last_name FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
 ```
 
 ### View Barber Schedule
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT u.email, b.\"weeklySchedule\" FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT u.email, b.\"weeklySchedule\" FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
 ```
 
 ### View Barber Specialties
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT u.email, b.specialties FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "SELECT u.email, b.specialties FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
 ```
 
 ### Update Barber Bio
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET bio = 'New bio text here' FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET bio = 'New bio text here' FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
 ```
 
 ### Activate/Deactivate Barber
 ```bash
 # Deactivate
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = false FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isActive\" = false FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
 
 # Activate
-sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = true FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE barbers SET \"isActive\" = true FROM users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
 ```
 
 ### Delete Barber Profile
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM barbers USING users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM barbers USING users WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';"
 ```
 
 ### Describe Barbers Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d barbers"
+sudo -u postgres psql -d oncuts -c "\d barbers"
 ```
 
 ---
@@ -907,12 +908,12 @@ sudo -u postgres psql -d campuscuts -c "\d barbers"
 
 ### View All Applications (Table Format)
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT ba.id, u.email, u.first_name, ba.status, ba.years_experience, ba.created_at FROM barber_applications ba JOIN users u ON ba.user_id = u.id ORDER BY ba.created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT ba.id, u.email, u.first_name, ba.status, ba.years_experience, ba.created_at FROM barber_applications ba JOIN users u ON ba.user_id = u.id ORDER BY ba.created_at DESC;"
 ```
 
 ### View All Applications (Expanded/Readable Format)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "
+sudo -u postgres psql -d oncuts -x -c "
 SELECT 
     ba.id,
     u.first_name || ' ' || u.last_name as full_name,
@@ -936,12 +937,12 @@ ORDER BY ba.created_at DESC;
 
 ### View Pending Applications
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT ba.*, u.email FROM barber_applications ba JOIN users u ON ba.user_id = u.id WHERE ba.status = 'pending';"
+sudo -u postgres psql -d oncuts -c "SELECT ba.*, u.email FROM barber_applications ba JOIN users u ON ba.user_id = u.id WHERE ba.status = 'pending';"
 ```
 
 ### View Pending Applications (Expanded)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "
+sudo -u postgres psql -d oncuts -x -c "
 SELECT 
     ba.id,
     u.first_name || ' ' || u.last_name as full_name,
@@ -965,22 +966,22 @@ ORDER BY ba.created_at DESC;
 
 ### Approve Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE barber_applications SET status = 'approved', reviewed_at = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE barber_applications SET status = 'approved', reviewed_at = NOW() WHERE id = 'UUID_HERE';"
 ```
 
 ### Reject Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE barber_applications SET status = 'rejected', reviewed_at = NOW(), review_notes = 'Reason here' WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE barber_applications SET status = 'rejected', reviewed_at = NOW(), review_notes = 'Reason here' WHERE id = 'UUID_HERE';"
 ```
 
 ### Delete Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM barber_applications WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM barber_applications WHERE id = 'UUID_HERE';"
 ```
 
 ### Count Applications by Status
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT status, COUNT(*) FROM barber_applications GROUP BY status
 UNION ALL
 SELECT status || ' (guest)', COUNT(*) FROM guest_barber_applications GROUP BY status;
@@ -989,7 +990,7 @@ SELECT status || ' (guest)', COUNT(*) FROM guest_barber_applications GROUP BY st
 
 ### Describe Barber Applications Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d barber_applications"
+sudo -u postgres psql -d oncuts -c "\d barber_applications"
 ```
 
 ---
@@ -1000,7 +1001,7 @@ Guest applications are from unauthenticated users who want to become barbers. Th
 
 ### View All Guest Applications (Expanded)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "
+sudo -u postgres psql -d oncuts -x -c "
 SELECT 
     gba.id,
     gba.full_name,
@@ -1020,7 +1021,7 @@ ORDER BY gba.created_at DESC;
 
 ### View Pending Guest Applications
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "
+sudo -u postgres psql -d oncuts -x -c "
 SELECT 
     gba.id,
     gba.full_name,
@@ -1039,22 +1040,22 @@ ORDER BY gba.created_at DESC;
 
 ### Approve Guest Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE guest_barber_applications SET status = 'approved', reviewed_at = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE guest_barber_applications SET status = 'approved', reviewed_at = NOW() WHERE id = 'UUID_HERE';"
 ```
 
 ### Reject Guest Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE guest_barber_applications SET status = 'rejected', reviewed_at = NOW(), review_notes = 'Reason here' WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE guest_barber_applications SET status = 'rejected', reviewed_at = NOW(), review_notes = 'Reason here' WHERE id = 'UUID_HERE';"
 ```
 
 ### Delete Guest Application
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM guest_barber_applications WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM guest_barber_applications WHERE id = 'UUID_HERE';"
 ```
 
 ### Describe Guest Barber Applications Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d guest_barber_applications"
+sudo -u postgres psql -d oncuts -c "\d guest_barber_applications"
 ```
 
 ---
@@ -1063,12 +1064,12 @@ sudo -u postgres psql -d campuscuts -c "\d guest_barber_applications"
 
 ### View All Campuses
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, name, city, state, \"isActive\" FROM campuses ORDER BY name;"
+sudo -u postgres psql -d oncuts -c "SELECT id, name, city, state, \"isActive\" FROM campuses ORDER BY name;"
 ```
 
 ### View Campuses (Formatted)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     name,
     city,
@@ -1084,22 +1085,22 @@ ORDER BY state, city;
 
 ### View Campus Count
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) as total_campuses FROM campuses;"
+sudo -u postgres psql -d oncuts -c "SELECT COUNT(*) as total_campuses FROM campuses;"
 ```
 
 ### Find Campus by Name
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM campuses WHERE name ILIKE '%poly%';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM campuses WHERE name ILIKE '%poly%';"
 ```
 
 ### Find Campuses by State
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT name, city FROM campuses WHERE state = 'CA' ORDER BY name;"
+sudo -u postgres psql -d oncuts -c "SELECT name, city FROM campuses WHERE state = 'CA' ORDER BY name;"
 ```
 
 ### Add New Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 INSERT INTO campuses (id, slug, name, city, state, timezone, \"updatedAt\")
 VALUES (gen_random_uuid(), 'new-university', 'New University Name', 'City', 'ST', 'America/New_York', CURRENT_TIMESTAMP);
 "
@@ -1108,22 +1109,22 @@ VALUES (gen_random_uuid(), 'new-university', 'New University Name', 'City', 'ST'
 ### Update Campus
 ```bash
 # Activate/Deactivate campus
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"isActive\" = false WHERE slug = 'campus-slug';"
+sudo -u postgres psql -d oncuts -c "UPDATE campuses SET \"isActive\" = false WHERE slug = 'campus-slug';"
 
 # Update pricing
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"basePriceUsdCents\" = 2500, \"averagePriceUsdCents\" = 4000 WHERE slug = 'campus-slug';"
+sudo -u postgres psql -d oncuts -c "UPDATE campuses SET \"basePriceUsdCents\" = 2500, \"averagePriceUsdCents\" = 4000 WHERE slug = 'campus-slug';"
 ```
 
 ### Delete Invalid Campuses
 ```bash
 # Delete non-university entries (like GMAIL, ICLOUD)
-sudo -u postgres psql -d campuscuts -c "DELETE FROM campuses WHERE name IN ('GMAIL', 'ICLOUD');"
+sudo -u postgres psql -d oncuts -c "DELETE FROM campuses WHERE name IN ('GMAIL', 'ICLOUD');"
 ```
 
 ### View Campus Timezones
 ```bash
 # View timezones for all active campuses
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT name, city, state, timezone 
 FROM campuses 
 WHERE \"isActive\" = true 
@@ -1134,7 +1135,7 @@ ORDER BY timezone, state, name;
 ### Update Campus Timezone
 ```bash
 # Update timezone for a specific campus (e.g., fix a campus set to wrong timezone)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE campuses 
 SET timezone = 'America/Los_Angeles' 
 WHERE slug = 'cal-poly';
@@ -1154,25 +1155,25 @@ WHERE slug = 'cal-poly';
 ```bash
 # Run the seed script (after git pull)
 # Option 1: Pipe the file (recommended - avoids permission issues)
-cat ~/OnCuts/backend/src/database/seed_campuses.sql | sudo -u postgres psql -d campuscuts
+cat ~/OnCuts/backend/src/database/seed_campuses.sql | sudo -u postgres psql -d oncuts
 
 # Option 2: Copy to tmp first
 cp ~/OnCuts/backend/src/database/seed_campuses.sql /tmp/
-sudo -u postgres psql -d campuscuts -f /tmp/seed_campuses.sql
+sudo -u postgres psql -d oncuts -f /tmp/seed_campuses.sql
 
 # Option 3: Fix permissions then run directly
 chmod 644 ~/OnCuts/backend/src/database/seed_campuses.sql
-sudo -u postgres psql -d campuscuts -f ~/OnCuts/backend/src/database/seed_campuses.sql
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/seed_campuses.sql
 ```
 
 ### Describe Campuses Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d campuses"
+sudo -u postgres psql -d oncuts -c "\d campuses"
 ```
 
 ### View All Campus Coordinates
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT name, city, state, latitude, longitude 
 FROM campuses 
 WHERE latitude IS NOT NULL 
@@ -1182,7 +1183,7 @@ ORDER BY state, name;
 
 ### View Campus Coordinates by State
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT name, city, latitude, longitude 
 FROM campuses 
 WHERE state = 'CA' AND latitude IS NOT NULL 
@@ -1193,7 +1194,7 @@ ORDER BY name;
 ### Find Campuses Near Coordinates
 ```bash
 # Find campuses within ~50km of coordinates (approximate)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     name, 
     city, 
@@ -1216,7 +1217,7 @@ LIMIT 10;
 
 ### Update Campus Coordinates
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE campuses 
 SET latitude = 35.3050, longitude = -120.6625 
 WHERE slug = 'cal-poly';
@@ -1225,7 +1226,7 @@ WHERE slug = 'cal-poly';
 
 ### Add Coordinates Columns (if not exists)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 ALTER TABLE campuses ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 6);
 ALTER TABLE campuses ADD COLUMN IF NOT EXISTS longitude DECIMAL(10, 6);
 CREATE INDEX IF NOT EXISTS idx_campuses_coordinates ON campuses(latitude, longitude);
@@ -1238,7 +1239,7 @@ CREATE INDEX IF NOT EXISTS idx_campuses_coordinates ON campuses(latitude, longit
 
 ### View All Locations
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     l.id,
     l.name,
@@ -1253,7 +1254,7 @@ ORDER BY c.name, l.name;
 
 ### View Locations for Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT l.* FROM locations l
 JOIN campuses c ON l.\"campusId\" = c.id
 WHERE c.slug = 'cal-poly';
@@ -1262,7 +1263,7 @@ WHERE c.slug = 'cal-poly';
 
 ### Create Default Location for Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 INSERT INTO locations (id, \"campusId\", name, \"normalizedName\", type, cohort, \"usageCount\", confidence, \"isVerified\", \"updatedAt\")
 SELECT 
     gen_random_uuid(),
@@ -1282,7 +1283,7 @@ WHERE slug = 'cal-poly';
 
 ### Describe Locations Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d locations"
+sudo -u postgres psql -d oncuts -c "\d locations"
 ```
 
 ---
@@ -1293,7 +1294,7 @@ The new campus locations system allows campus managers to define predefined loca
 
 ### Create Campus Locations Tables (Run Once)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 -- Campus locations table: stores locations available at each campus
 CREATE TABLE IF NOT EXISTS campus_locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1328,7 +1329,7 @@ CREATE INDEX IF NOT EXISTS idx_barber_locations_location ON barber_locations(loc
 
 ### View All Campus Locations
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     cl.id,
     cl.name,
@@ -1344,7 +1345,7 @@ ORDER BY c.name, cl.name;
 
 ### View Locations for a Specific Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT cl.id, cl.name, cl.description, cl.is_active
 FROM campus_locations cl
 JOIN campuses c ON cl.campus_id = c.id
@@ -1355,7 +1356,7 @@ ORDER BY cl.name;
 
 ### Add a Location to a Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 INSERT INTO campus_locations (campus_id, name, description, address)
 SELECT id, 'Dexter Lawn', 'Popular outdoor meetup area', 'Near Kennedy Library'
 FROM campuses WHERE slug = 'cal-poly';
@@ -1364,7 +1365,7 @@ FROM campuses WHERE slug = 'cal-poly';
 
 ### View Barber Location Assignments
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name || ' ' || u.last_name as barber_name,
     cl.name as location_name,
@@ -1380,7 +1381,7 @@ ORDER BY barber_name, cl.name;
 
 ### Assign Location to a Barber
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 INSERT INTO barber_locations (barber_id, location_id, is_primary)
 SELECT b.id, cl.id, true
 FROM barbers b
@@ -1393,7 +1394,7 @@ AND cl.name = 'Dexter Lawn';
 
 ### Remove Location from a Barber
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 DELETE FROM barber_locations bl
 USING barbers b, users u, campus_locations cl
 WHERE bl.barber_id = b.id
@@ -1406,7 +1407,7 @@ AND cl.name = 'Dexter Lawn';
 
 ### Delete a Campus Location
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 DELETE FROM campus_locations
 WHERE name = 'Dexter Lawn'
 AND campus_id = (SELECT id FROM campuses WHERE slug = 'cal-poly');
@@ -1415,8 +1416,8 @@ AND campus_id = (SELECT id FROM campuses WHERE slug = 'cal-poly');
 
 ### Describe Campus Locations Tables
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d campus_locations"
-sudo -u postgres psql -d campuscuts -c "\d barber_locations"
+sudo -u postgres psql -d oncuts -c "\d campus_locations"
+sudo -u postgres psql -d oncuts -c "\d barber_locations"
 ```
 
 ---
@@ -1425,7 +1426,7 @@ sudo -u postgres psql -d campuscuts -c "\d barber_locations"
 
 ### View All Availability Slots
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     a.id,
     u.email as barber_email,
@@ -1443,17 +1444,17 @@ LIMIT 20;
 
 ### View Open Slots
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM availability WHERE status = 'OPEN' ORDER BY \"startTime\";"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM availability WHERE status = 'OPEN' ORDER BY \"startTime\";"
 ```
 
 ### View Booked Slots
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM availability WHERE status = 'BOOKED' ORDER BY \"startTime\" DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM availability WHERE status = 'BOOKED' ORDER BY \"startTime\" DESC;"
 ```
 
 ### Describe Availability Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d availability"
+sudo -u postgres psql -d oncuts -c "\d availability"
 ```
 
 ---
@@ -1462,22 +1463,22 @@ sudo -u postgres psql -d campuscuts -c "\d availability"
 
 ### View All Bookings
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, \"barberId\", \"consumerId\", \"serviceType\", status, \"requestedAt\" FROM bookings ORDER BY \"requestedAt\" DESC LIMIT 20;"
+sudo -u postgres psql -d oncuts -c "SELECT id, \"barberId\", \"consumerId\", \"serviceType\", status, \"requestedAt\" FROM bookings ORDER BY \"requestedAt\" DESC LIMIT 20;"
 ```
 
 ### View All Bookings (Expanded)
 ```bash
-sudo -u postgres psql -d campuscuts -x -c "SELECT * FROM bookings ORDER BY \"requestedAt\" DESC LIMIT 10;"
+sudo -u postgres psql -d oncuts -x -c "SELECT * FROM bookings ORDER BY \"requestedAt\" DESC LIMIT 10;"
 ```
 
 ### View Bookings by Status
 ```bash
 # Status values: PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'PENDING';"
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'ACCEPTED';"
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'REJECTED';"
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'COMPLETED';"
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'CANCELLED';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM bookings WHERE status = 'PENDING';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM bookings WHERE status = 'ACCEPTED';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM bookings WHERE status = 'REJECTED';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM bookings WHERE status = 'COMPLETED';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM bookings WHERE status = 'CANCELLED';"
 ```
 
 ### Booking Lifecycle Stages
@@ -1485,7 +1486,7 @@ sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'C
 #### Stage 1: PENDING (Consumer requested, waiting for barber response)
 ```bash
 # View all pending booking requests
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
@@ -1504,7 +1505,7 @@ ORDER BY b."requestedAt" DESC;
 #### Stage 2: ACCEPTED (Barber accepted the booking)
 ```bash
 # View all accepted bookings awaiting service
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
@@ -1523,7 +1524,7 @@ ORDER BY b."requestedAt" DESC;
 #### Stage 3: REJECTED (Barber declined the booking)
 ```bash
 # View all rejected bookings
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
@@ -1542,7 +1543,7 @@ ORDER BY b.\"updatedAt\" DESC;
 #### Stage 4: COMPLETED (Service finished)
 ```bash
 # View all completed bookings
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
@@ -1561,7 +1562,7 @@ ORDER BY b.\"completedAt\" DESC;
 #### Stage 5: CANCELLED (Booking was cancelled)
 ```bash
 # View all cancelled bookings
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
@@ -1580,7 +1581,7 @@ ORDER BY b.\"cancelledAt\" DESC;
 ### View Booking with Linked Conversation
 ```bash
 # See booking and its linked conversation status
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     b.id as booking_id,
     b.status as booking_status,
@@ -1598,7 +1599,7 @@ WHERE b.id = 'BOOKING_UUID_HERE';
 ### Booking Status Summary
 ```bash
 # Count bookings by status
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     status,
     COUNT(*) as count,
@@ -1612,7 +1613,7 @@ ORDER BY count DESC;
 ### View Barber's Booking Pipeline
 ```bash
 # See all booking stages for a specific barber
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     b.status,
     COUNT(*) as count,
@@ -1634,7 +1635,7 @@ ORDER BY
 
 ### View Bookings with User Details
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     b.id,
     b.\"serviceType\",
@@ -1651,24 +1652,24 @@ LIMIT 20;
 
 ### Update Booking Status
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE bookings SET status = 'ACCEPTED', \"acceptedAt\" = NOW() WHERE id = 'UUID_HERE';"
-sudo -u postgres psql -d campuscuts -c "UPDATE bookings SET status = 'COMPLETED', \"completedAt\" = NOW() WHERE id = 'UUID_HERE';"
-sudo -u postgres psql -d campuscuts -c "UPDATE bookings SET status = 'CANCELLED', \"cancelledAt\" = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE bookings SET status = 'ACCEPTED', \"acceptedAt\" = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE bookings SET status = 'COMPLETED', \"completedAt\" = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE bookings SET status = 'CANCELLED', \"cancelledAt\" = NOW() WHERE id = 'UUID_HERE';"
 ```
 
 ### Delete Booking
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM bookings WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM bookings WHERE id = 'UUID_HERE';"
 ```
 
 ### View BookingStatus Enum Values
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT unnest(enum_range(NULL::\"BookingStatus\"));"
+sudo -u postgres psql -d oncuts -c "SELECT unnest(enum_range(NULL::\"BookingStatus\"));"
 ```
 
 ### Describe Bookings Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d bookings"
+sudo -u postgres psql -d oncuts -c "\d bookings"
 ```
 
 ---
@@ -1677,22 +1678,22 @@ sudo -u postgres psql -d campuscuts -c "\d bookings"
 
 ### View All Conversations
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, user1_id, user2_id, service_name, booking_status, created_at, last_message_at FROM conversations ORDER BY last_message_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT id, user1_id, user2_id, service_name, booking_status, created_at, last_message_at FROM conversations ORDER BY last_message_at DESC;"
 ```
 
 ### View Conversations for a User
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM conversations WHERE user1_id = 'UUID_HERE' OR user2_id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM conversations WHERE user1_id = 'UUID_HERE' OR user2_id = 'UUID_HERE';"
 ```
 
 ### Delete Conversation
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM conversations WHERE id = 123;"
+sudo -u postgres psql -d oncuts -c "DELETE FROM conversations WHERE id = 123;"
 ```
 
 ### Describe Conversations Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d conversations"
+sudo -u postgres psql -d oncuts -c "\d conversations"
 ```
 
 ---
@@ -1701,27 +1702,27 @@ sudo -u postgres psql -d campuscuts -c "\d conversations"
 
 ### View Recent Messages
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, conversation_id, content, message_type, is_read, created_at FROM messages ORDER BY created_at DESC LIMIT 50;"
+sudo -u postgres psql -d oncuts -c "SELECT id, conversation_id, content, message_type, is_read, created_at FROM messages ORDER BY created_at DESC LIMIT 50;"
 ```
 
 ### View Messages in a Conversation
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT m.id, u.email as sender, m.content, m.is_read, m.created_at FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.conversation_id = 123 ORDER BY m.created_at;"
+sudo -u postgres psql -d oncuts -c "SELECT m.id, u.email as sender, m.content, m.is_read, m.created_at FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.conversation_id = 123 ORDER BY m.created_at;"
 ```
 
 ### Mark Messages as Read
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE messages SET is_read = true WHERE conversation_id = 123;"
+sudo -u postgres psql -d oncuts -c "UPDATE messages SET is_read = true WHERE conversation_id = 123;"
 ```
 
 ### Delete Message
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM messages WHERE id = 123;"
+sudo -u postgres psql -d oncuts -c "DELETE FROM messages WHERE id = 123;"
 ```
 
 ### Describe Messages Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d messages"
+sudo -u postgres psql -d oncuts -c "\d messages"
 ```
 
 ---
@@ -1730,7 +1731,7 @@ sudo -u postgres psql -d campuscuts -c "\d messages"
 
 ### View All Users with Location Data
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     email,
     first_name,
@@ -1748,7 +1749,7 @@ ORDER BY location_updated_at DESC;
 
 ### View Users Grouped by Approximate Location (Summary)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     ROUND(latitude::numeric, 2) as lat_zone,
     ROUND(longitude::numeric, 2) as lng_zone,
@@ -1764,7 +1765,7 @@ ORDER BY user_count DESC;
 
 ### View Users with Names/Emails Grouped by Location
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     email,
     first_name,
@@ -1782,7 +1783,7 @@ ORDER BY ROUND(latitude::numeric, 2), ROUND(longitude::numeric, 2), email;
 ### View All Users in a Specific Location Zone
 ```bash
 # Replace lat_zone and lng_zone with values from the summary query above
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     email,
     first_name,
@@ -1798,27 +1799,27 @@ WHERE ROUND(latitude::numeric, 2) = 35.31
 
 ### View Users Who Granted Location Permission
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'granted';"
+sudo -u postgres psql -d oncuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'granted';"
 ```
 
 ### View Users Who Denied Location Permission
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'denied';"
+sudo -u postgres psql -d oncuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'denied';"
 ```
 
 ### Update User Location (Manual)
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET latitude = 37.2395, longitude = -121.9251, location_updated_at = NOW(), location_permission = 'granted' WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET latitude = 37.2395, longitude = -121.9251, location_updated_at = NOW(), location_permission = 'granted' WHERE email = 'user@example.com';"
 ```
 
 ### Clear User Location
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET latitude = NULL, longitude = NULL, location_updated_at = NULL, location_permission = 'prompt' WHERE email = 'user@example.com';"
+sudo -u postgres psql -d oncuts -c "UPDATE users SET latitude = NULL, longitude = NULL, location_updated_at = NULL, location_permission = 'prompt' WHERE email = 'user@example.com';"
 ```
 
 ### View Barbers with Service Location Set
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -1834,7 +1835,7 @@ WHERE b.service_latitude IS NOT NULL;
 
 ### Update Barber Service Location
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE barbers 
 SET service_latitude = 37.2395, service_longitude = -121.9251, service_radius_km = 10.0
 FROM users 
@@ -1845,7 +1846,7 @@ WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';
 ### Find Users Within X km of a Location
 ```bash
 # Find users within 8km of coordinates (37.2395, -121.9251)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     email,
     first_name,
@@ -1867,7 +1868,7 @@ ORDER BY distance_km;
 
 ### Describe Users Table (Location Columns)
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d users" | grep -E "latitude|longitude|location"
+sudo -u postgres psql -d oncuts -c "\d users" | grep -E "latitude|longitude|location"
 ```
 
 ---
@@ -1876,22 +1877,22 @@ sudo -u postgres psql -d campuscuts -c "\d users" | grep -E "latitude|longitude|
 
 ### View User Notifications
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM notifications WHERE user_id = 'UUID_HERE' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM notifications WHERE user_id = 'UUID_HERE' ORDER BY created_at DESC;"
 ```
 
 ### Mark Notifications as Read
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE notifications SET is_read = true WHERE user_id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE notifications SET is_read = true WHERE user_id = 'UUID_HERE';"
 ```
 
 ### Delete Old Notifications
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '30 days';"
+sudo -u postgres psql -d oncuts -c "DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '30 days';"
 ```
 
 ### Describe Notifications Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d notifications"
+sudo -u postgres psql -d oncuts -c "\d notifications"
 ```
 
 ---
@@ -1942,7 +1943,7 @@ Restart PM2 after editing.
 
 **2. Clear test provider Connect IDs in Postgres**
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
@@ -1965,7 +1966,7 @@ npm run clear-stripe-connect -- --validate-stale
 **5. Verify**
 ```bash
 npm run sync-stripe-status
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
 FROM users WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gmail.com');
 "
@@ -1973,13 +1974,13 @@ FROM users WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gma
 
 ### Describe Stripe columns on users
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d users" | grep stripe
+sudo -u postgres psql -d oncuts -c "\d users" | grep stripe
 ```
 
 ### Add missing Stripe columns on EC2
 Run once if queries fail with `column ... does not exist` (safe to re-run — uses `IF NOT EXISTS`):
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_account_id VARCHAR(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_charges_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_payouts_enabled BOOLEAN DEFAULT FALSE;
@@ -1990,7 +1991,7 @@ CREATE INDEX IF NOT EXISTS idx_users_stripe_account_id ON users(stripe_account_i
 
 ### View All Barbers with Stripe Connect Status
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -2013,7 +2014,7 @@ ORDER BY connect_state, u.first_name;
 
 ### View Full Stripe Connect Profile for One User (by email)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     u.id,
     u.email,
@@ -2031,7 +2032,7 @@ WHERE u.email = 'barber@example.com';
 
 ### View Full Stripe Connect Profile (by user UUID)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     u.id,
     u.email,
@@ -2045,7 +2046,7 @@ WHERE u.id = 'USER_UUID_HERE';
 
 ### Check Specific Barber's Stripe Status (minimal)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     stripe_account_id,
     stripe_charges_enabled,
@@ -2057,7 +2058,7 @@ WHERE email = 'barber@example.com';
 
 ### View Barbers WITHOUT Stripe Connect
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.first_name, u.last_name, b.\"isActive\"
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
@@ -2067,7 +2068,7 @@ WHERE u.stripe_account_id IS NULL;
 
 ### View Barbers WITH Stripe Connect (any saved acct_*)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.first_name, u.last_name, b.\"isActive\", u.stripe_account_id,
        u.stripe_charges_enabled, u.stripe_payouts_enabled
 FROM barbers b
@@ -2078,7 +2079,7 @@ WHERE u.stripe_account_id IS NOT NULL;
 
 ### Barbers Ready to Receive Payouts
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.first_name, u.last_name, u.stripe_account_id
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
@@ -2091,7 +2092,7 @@ ORDER BY u.email;
 
 ### Barbers with Saved Account but NOT Ready (incomplete or restricted)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id,
        u.stripe_charges_enabled, u.stripe_payouts_enabled
 FROM barbers b
@@ -2105,7 +2106,7 @@ ORDER BY u.email;
 ### Find Suspected Stale Connect Accounts
 Accounts saved in Postgres but both capability flags false — common when onboarding failed, test/live keys changed, or the account was deleted in Stripe.
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id,
        u.stripe_charges_enabled, u.stripe_payouts_enabled,
        u.\"updatedAt\"
@@ -2121,7 +2122,7 @@ ORDER BY u.\"updatedAt\" DESC;
 ### Find Onboarded Flag Mismatch (only if `stripe_connect_onboarded` column exists)
 Skip this query if `\d users | grep stripe_connect_onboarded` returns nothing.
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id,
        u.stripe_connect_onboarded,
        u.stripe_charges_enabled, u.stripe_payouts_enabled
@@ -2134,7 +2135,7 @@ WHERE u.stripe_connect_onboarded = true
 
 ### Lookup User by Stripe Account ID
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.id, u.email, u.first_name, u.last_name,
        u.stripe_charges_enabled, u.stripe_payouts_enabled
 FROM users u
@@ -2144,7 +2145,7 @@ WHERE u.stripe_account_id = 'acct_XXXXXXXXXXXXX';
 
 ### Find Duplicate Stripe Account IDs (should be empty — column is UNIQUE)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT stripe_account_id, COUNT(*) AS user_count,
        array_agg(email ORDER BY email) AS emails
 FROM users
@@ -2156,7 +2157,7 @@ HAVING COUNT(*) > 1;
 
 ### Count Barbers by Connect State
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     CASE
         WHEN u.stripe_account_id IS NULL THEN 'no_account'
@@ -2183,7 +2184,7 @@ Postgres alone **cannot** tell if an `acct_*` belongs to the platform Stripe acc
 
 #### List all saved Connect account IDs (Postgres)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id, u.stripe_charges_enabled, u.stripe_payouts_enabled
 FROM users u
 WHERE u.stripe_account_id IS NOT NULL
@@ -2248,7 +2249,7 @@ set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 
 echo "email|connected_to_live_keys"
-sudo -u postgres psql -d campuscuts -t -A -c "
+sudo -u postgres psql -d oncuts -t -A -c "
 SELECT email || '|' || stripe_account_id
 FROM users
 WHERE stripe_account_id IS NOT NULL
@@ -2269,7 +2270,7 @@ set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 EMAIL='barber@example.com'
 
-ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+ACCT=$(sudo -u postgres psql -d oncuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
 if [ -z "$ACCT" ]; then echo "f"; exit 0; fi
 http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
@@ -2283,7 +2284,7 @@ Stripe Express auth fails when Postgres still holds an `acct_*` from **test** on
 
 **Step 1 — Postgres: saved account and capability flags**
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     u.email,
     u.stripe_account_id,
@@ -2302,7 +2303,7 @@ Typical auth-failure pattern: `stripe_account_id` is set, both flags are **`f`**
 
 **Step 2 — Postgres: barber row + saved `acct_*` (same user)**
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id, b.\"isActive\"
 FROM users u
 LEFT JOIN barbers b ON b.\"userId\" = u.id
@@ -2318,7 +2319,7 @@ set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
 EMAIL='liam.mckeown38415@gmail.com'
 
-ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+ACCT=$(sudo -u postgres psql -d oncuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
 if [ -z "$ACCT" ]; then echo "${EMAIL}|f (no stripe_account_id)"; exit 0; fi
 http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
@@ -2331,7 +2332,7 @@ Postgres stores the id only; this tells you if it is a **test** Connect account.
 ```bash
 cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
-ACCT=$(sudo -u postgres psql -d campuscuts -t -A -c \
+ACCT=$(sudo -u postgres psql -d oncuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = 'liam.mckeown38415@gmail.com' LIMIT 1;")
 
 echo "acct: ${ACCT}"
@@ -2347,7 +2348,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -u "${STRIPE_SECRET_KEY_TEST:-${STRIPE_
 
 **Step 5 — Postgres: clear stale account (then re-onboard in app)**
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
@@ -2360,7 +2361,7 @@ Provider should use **Continue with Stripe** on the sign-in step (not **Open Str
 
 **Step 6 — Postgres: confirm cleared**
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
 FROM users
 WHERE email = 'liam.mckeown38415@gmail.com';
@@ -2395,7 +2396,7 @@ npm run sync-stripe-status
 ### Clear Stale Stripe Connect Account (manual reset)
 Use when Stripe onboarding auth fails and the platform still holds an invalid `acct_*`. After this, the barber should use **Continue with Stripe** in the hub (creates a fresh live account).
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
@@ -2407,7 +2408,7 @@ RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabl
 
 If capability columns do not exist yet, clear only the account id:
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users SET stripe_account_id = NULL WHERE email = 'barber@example.com'
 RETURNING email, stripe_account_id;
 "
@@ -2415,7 +2416,7 @@ RETURNING email, stripe_account_id;
 
 ### Clear Stale Connect Account (by user UUID)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
@@ -2428,7 +2429,7 @@ RETURNING id, email, stripe_account_id;
 ### Manually Set Connect Capability Flags (after confirming in Stripe Dashboard)
 Only use when Stripe Dashboard shows charges/payouts enabled but Postgres is stale.
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_charges_enabled = true,
     stripe_payouts_enabled = true
@@ -2439,7 +2440,7 @@ RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabl
 
 ### Assign Stripe Account ID Manually (rare — prefer in-app onboarding)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users
 SET stripe_account_id = 'acct_XXXXXXXXXXXXX'
 WHERE email = 'barber@example.com'
@@ -2450,7 +2451,7 @@ RETURNING email, stripe_account_id;
 ### Barber Connect + Recent Payment Activity
 See whether a barber with a saved `acct_*` has successful charges.
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT
     u.email AS barber_email,
     u.stripe_account_id,
@@ -2469,7 +2470,7 @@ GROUP BY u.email, u.stripe_account_id, u.stripe_charges_enabled, u.stripe_payout
 
 ### Escrows Linked to Barber Stripe Account
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT e.id, e.booking_id, e.status, e.stripe_payment_intent_id,
        e.stripe_transfer_id, u.email AS barber_email, u.stripe_account_id
 FROM escrows e
@@ -2490,7 +2491,7 @@ LIMIT 20;
 
 ### View All Barbers' Availability Settings
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name,
     u.last_name,
@@ -2504,7 +2505,7 @@ ORDER BY u.first_name;
 
 ### View Barbers' Availability (Pretty Printed)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name || ' ' || u.last_name AS barber_name,
     jsonb_pretty(b.\"weeklySchedule\") AS schedule
@@ -2516,7 +2517,7 @@ ORDER BY u.first_name;
 
 ### View Specific Barber's Availability by Email
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT jsonb_pretty(b.\"weeklySchedule\") AS schedule
 FROM barbers b
 JOIN users u ON b.\"userId\" = u.id
@@ -2526,7 +2527,7 @@ WHERE u.email = 'barber@example.com';
 
 ### View Barbers WITH Availability Configured (At Least One Day Enabled)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name,
     u.last_name,
@@ -2548,7 +2549,7 @@ WHERE b.\"weeklySchedule\" IS NOT NULL
 
 ### View Barbers WITHOUT Availability (No Days Enabled or NULL Schedule)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name,
     u.last_name,
@@ -2570,7 +2571,7 @@ WHERE b.\"weeklySchedule\" IS NULL
 
 ### View Monday Availability for All Barbers
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.first_name || ' ' || u.last_name AS barber_name,
     b.\"weeklySchedule\"->'monday'->>'enabled' AS monday_enabled,
@@ -2590,7 +2591,7 @@ ORDER BY u.first_name;
 
 ### View All Payment Transactions (Stripe)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     pt.id,
     pt.stripe_payment_intent_id,
@@ -2615,18 +2616,18 @@ LIMIT 20;
 ### View Transactions by Status
 ```bash
 # Succeeded transactions
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'succeeded' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM payment_transactions WHERE status = 'succeeded' ORDER BY created_at DESC;"
 
 # Pending transactions
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'pending' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM payment_transactions WHERE status = 'pending' ORDER BY created_at DESC;"
 
 # Failed transactions
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'failed' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM payment_transactions WHERE status = 'failed' ORDER BY created_at DESC;"
 ```
 
 ### View Payment Summary
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     status,
     COUNT(*) as count,
@@ -2640,7 +2641,7 @@ GROUP BY status;
 
 ### View Barber Earnings
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email AS barber_email,
     u.first_name,
@@ -2659,12 +2660,12 @@ ORDER BY total_earned DESC;
 
 ### Describe Payment Transactions Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d payment_transactions"
+sudo -u postgres psql -d oncuts -c "\d payment_transactions"
 ```
 
 ### Lookup Payment by Stripe PaymentIntent ID
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT pt.*, u_c.email AS consumer_email, u_b.email AS barber_email, u_b.stripe_account_id
 FROM payment_transactions pt
 LEFT JOIN users u_c ON pt.client_id = u_c.id
@@ -2677,7 +2678,7 @@ WHERE pt.stripe_payment_intent_id = 'pi_XXXXXXXXXXXXX';
 ### Failed Payments with Barber Connect Context
 Useful when debugging "No such destination" or restricted Connect accounts.
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT pt.stripe_payment_intent_id, pt.status, pt.amount, pt.created_at,
        u_b.email AS barber_email, u_b.stripe_account_id,
        u_b.stripe_charges_enabled, u_b.stripe_payouts_enabled
@@ -2692,7 +2693,7 @@ LIMIT 25;
 
 ### Payments Table (alternate audit trail) by PaymentIntent
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT id, booking_id, payment_intent_id, status, failure_reason, amount_cents, created_at
 FROM payments
 WHERE payment_intent_id = 'pi_XXXXXXXXXXXXX';
@@ -2705,22 +2706,22 @@ WHERE payment_intent_id = 'pi_XXXXXXXXXXXXX';
 
 ### View All Escrows
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows ORDER BY created_at DESC LIMIT 20;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM escrows ORDER BY created_at DESC LIMIT 20;"
 ```
 
 ### View Active (Held) Escrows
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows WHERE status = 'held' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM escrows WHERE status = 'held' ORDER BY created_at DESC;"
 ```
 
 ### View Escrow by Booking
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows WHERE booking_id = 'BOOKING_ID_HERE';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM escrows WHERE booking_id = 'BOOKING_ID_HERE';"
 ```
 
 ### Describe Escrows Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d escrows"
+sudo -u postgres psql -d oncuts -c "\d escrows"
 ```
 
 ---
@@ -2729,17 +2730,17 @@ sudo -u postgres psql -d campuscuts -c "\d escrows"
 
 ### View User Ledger
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM ledger_entries WHERE user_id = 'UUID_HERE' ORDER BY created_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM ledger_entries WHERE user_id = 'UUID_HERE' ORDER BY created_at DESC;"
 ```
 
 ### View Recent Ledger Entries
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM ledger_entries ORDER BY created_at DESC LIMIT 50;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM ledger_entries ORDER BY created_at DESC LIMIT 50;"
 ```
 
 ### Describe Ledger Entries Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d ledger_entries"
+sudo -u postgres psql -d oncuts -c "\d ledger_entries"
 ```
 
 ---
@@ -2748,22 +2749,22 @@ sudo -u postgres psql -d campuscuts -c "\d ledger_entries"
 
 ### View All Withdrawals
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM withdrawal_requests ORDER BY requested_at DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM withdrawal_requests ORDER BY requested_at DESC;"
 ```
 
 ### View Pending Withdrawals
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM withdrawal_requests WHERE status = 'pending';"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM withdrawal_requests WHERE status = 'pending';"
 ```
 
 ### Update Withdrawal Status
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE withdrawal_requests SET status = 'completed', completed_at = NOW() WHERE id = 'UUID_HERE';"
+sudo -u postgres psql -d oncuts -c "UPDATE withdrawal_requests SET status = 'completed', completed_at = NOW() WHERE id = 'UUID_HERE';"
 ```
 
 ### Describe Withdrawal Requests Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d withdrawal_requests"
+sudo -u postgres psql -d oncuts -c "\d withdrawal_requests"
 ```
 
 ---
@@ -2772,17 +2773,17 @@ sudo -u postgres psql -d campuscuts -c "\d withdrawal_requests"
 
 ### View Recent Events
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT event_type, COUNT(*) FROM analytics_events WHERE timestamp > NOW() - INTERVAL '7 days' GROUP BY event_type ORDER BY COUNT(*) DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT event_type, COUNT(*) FROM analytics_events WHERE timestamp > NOW() - INTERVAL '7 days' GROUP BY event_type ORDER BY COUNT(*) DESC;"
 ```
 
 ### View User Activity
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM analytics_events WHERE user_id = 'UUID_HERE' ORDER BY timestamp DESC LIMIT 50;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM analytics_events WHERE user_id = 'UUID_HERE' ORDER BY timestamp DESC LIMIT 50;"
 ```
 
 ### Describe Analytics Events Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d analytics_events"
+sudo -u postgres psql -d oncuts -c "\d analytics_events"
 ```
 
 ---
@@ -2791,12 +2792,12 @@ sudo -u postgres psql -d campuscuts -c "\d analytics_events"
 
 ### View All Referrals
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM referrals;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM referrals;"
 ```
 
 ### Describe Referrals Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d referrals"
+sudo -u postgres psql -d oncuts -c "\d referrals"
 ```
 
 ---
@@ -2808,7 +2809,7 @@ sudo -u postgres psql -d campuscuts -c "\d referrals"
 
 ### View Recent Stripe Events
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     event_id,
     event_type,
@@ -2826,7 +2827,7 @@ LIMIT 20;
 
 ### View Stripe Connect / Account Webhook Events
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT event_id, event_type, barber_email, status, timestamp
 FROM stripe_events
 WHERE event_type LIKE 'account.%'
@@ -2838,7 +2839,7 @@ LIMIT 30;
 
 ### View Stripe Events for One Barber (by email)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT event_id, event_type, payment_intent_id, amount_usd, status, timestamp
 FROM stripe_events
 WHERE barber_email = 'barber@example.com'
@@ -2849,7 +2850,7 @@ LIMIT 30;
 
 ### View Stripe Events for One PaymentIntent
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT event_id, event_type, status, amount_usd, barber_email, student_email, timestamp
 FROM stripe_events
 WHERE payment_intent_id = 'pi_XXXXXXXXXXXXX'
@@ -2859,7 +2860,7 @@ ORDER BY timestamp ASC;
 
 ### View Failed Stripe Webhook Processing
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT event_id, event_type, processing_result, processed_at
 FROM stripe_webhook_events
 WHERE processing_result = 'failed'
@@ -2870,7 +2871,7 @@ LIMIT 30;
 
 ### View Recent Stripe Webhook Events (idempotency table)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT event_id, event_type, processing_result, processed_at
 FROM stripe_webhook_events
 ORDER BY processed_at DESC
@@ -2880,27 +2881,27 @@ LIMIT 30;
 
 ### Describe Stripe Webhook Events Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d stripe_webhook_events"
+sudo -u postgres psql -d oncuts -c "\d stripe_webhook_events"
 ```
 
 ### View Stripe Events by Type
 ```bash
 # Payment succeeded events
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.succeeded' ORDER BY timestamp DESC LIMIT 10;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.succeeded' ORDER BY timestamp DESC LIMIT 10;"
 
 # Payment failed events
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.payment_failed' ORDER BY timestamp DESC LIMIT 10;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.payment_failed' ORDER BY timestamp DESC LIMIT 10;"
 
 # Payout events
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type LIKE 'payout.%' ORDER BY timestamp DESC LIMIT 10;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM stripe_events WHERE event_type LIKE 'payout.%' ORDER BY timestamp DESC LIMIT 10;"
 
 # Connect account updated (onboarding progress)
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'account.updated' ORDER BY timestamp DESC LIMIT 10;"
+sudo -u postgres psql -d oncuts -c "SELECT * FROM stripe_events WHERE event_type = 'account.updated' ORDER BY timestamp DESC LIMIT 10;"
 ```
 
 ### View Stripe Event Summary
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     event_type,
     COUNT(*) as count,
@@ -2914,7 +2915,7 @@ ORDER BY count DESC;
 
 ### Describe Stripe Events Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d stripe_events"
+sudo -u postgres psql -d oncuts -c "\d stripe_events"
 ```
 
 ---
@@ -2923,17 +2924,17 @@ sudo -u postgres psql -d campuscuts -c "\d stripe_events"
 
 ### List All Tables
 ```bash
-sudo -u postgres psql -d campuscuts -c "\dt"
+sudo -u postgres psql -d oncuts -c "\dt"
 ```
 
 ### Describe Any Table
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d TABLE_NAME"
+sudo -u postgres psql -d oncuts -c "\d TABLE_NAME"
 ```
 
 ### Count Rows in All Key Tables
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 'users' as table_name, COUNT(*) FROM users
 UNION ALL SELECT 'barbers', COUNT(*) FROM barbers
 UNION ALL SELECT 'barber_applications', COUNT(*) FROM barber_applications
@@ -2946,17 +2947,17 @@ UNION ALL SELECT 'campuses', COUNT(*) FROM campuses;
 
 ### Check Database Size
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT pg_size_pretty(pg_database_size('campuscuts'));"
+sudo -u postgres psql -d oncuts -c "SELECT pg_size_pretty(pg_database_size('oncuts'));"
 ```
 
 ### Check Table Sizes
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT relname as table, pg_size_pretty(pg_total_relation_size(relid)) as size FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC;"
+sudo -u postgres psql -d oncuts -c "SELECT relname as table, pg_size_pretty(pg_total_relation_size(relid)) as size FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC;"
 ```
 
 ### View UserRole Enum Values
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT unnest(enum_range(NULL::\"UserRole\"));"
+sudo -u postgres psql -d oncuts -c "SELECT unnest(enum_range(NULL::\"UserRole\"));"
 ```
 
 ---
@@ -2965,18 +2966,18 @@ sudo -u postgres psql -d campuscuts -c "SELECT unnest(enum_range(NULL::\"UserRol
 
 ### Full Backup
 ```bash
-sudo -u postgres pg_dump campuscuts > ~/campuscuts_backup_$(date +%Y%m%d_%H%M%S).sql
+sudo -u postgres pg_dump oncuts > ~/oncuts_backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### Backup Specific Table
 ```bash
-sudo -u postgres pg_dump -t users campuscuts > ~/users_backup.sql
-sudo -u postgres pg_dump -t barbers campuscuts > ~/barbers_backup.sql
+sudo -u postgres pg_dump -t users oncuts > ~/users_backup.sql
+sudo -u postgres pg_dump -t barbers oncuts > ~/barbers_backup.sql
 ```
 
 ### Restore from Backup
 ```bash
-sudo -u postgres psql -d campuscuts < ~/campuscuts_backup.sql
+sudo -u postgres psql -d oncuts < ~/oncuts_backup.sql
 ```
 
 ---
@@ -2985,19 +2986,19 @@ sudo -u postgres psql -d campuscuts < ~/campuscuts_backup.sql
 
 ### Delete All Data from Table (Keep Structure)
 ```bash
-sudo -u postgres psql -d campuscuts -c "TRUNCATE TABLE messages CASCADE;"
-sudo -u postgres psql -d campuscuts -c "TRUNCATE TABLE conversations CASCADE;"
+sudo -u postgres psql -d oncuts -c "TRUNCATE TABLE messages CASCADE;"
+sudo -u postgres psql -d oncuts -c "TRUNCATE TABLE conversations CASCADE;"
 ```
 
 ### Drop Table Completely
 ```bash
-sudo -u postgres psql -d campuscuts -c "DROP TABLE IF EXISTS table_name CASCADE;"
+sudo -u postgres psql -d oncuts -c "DROP TABLE IF EXISTS table_name CASCADE;"
 ```
 
 ### Reset Auto-Increment Sequence
 ```bash
-sudo -u postgres psql -d campuscuts -c "ALTER SEQUENCE conversations_id_seq RESTART WITH 1;"
-sudo -u postgres psql -d campuscuts -c "ALTER SEQUENCE messages_id_seq RESTART WITH 1;"
+sudo -u postgres psql -d oncuts -c "ALTER SEQUENCE conversations_id_seq RESTART WITH 1;"
+sudo -u postgres psql -d oncuts -c "ALTER SEQUENCE messages_id_seq RESTART WITH 1;"
 ```
 
 ---
@@ -3006,13 +3007,13 @@ sudo -u postgres psql -d campuscuts -c "ALTER SEQUENCE messages_id_seq RESTART W
 
 ### View All ServiceType Enum Values
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT unnest(enum_range(NULL::\"ServiceType\"));"
+sudo -u postgres psql -d oncuts -c "SELECT unnest(enum_range(NULL::\"ServiceType\"));"
 ```
 
 ### Add New ServiceType to Enum
 ```bash
 # Example: Add TAPER to ServiceType enum
-sudo -u postgres psql -d campuscuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
+sudo -u postgres psql -d oncuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
 ```
 
 ---
@@ -3022,7 +3023,7 @@ sudo -u postgres psql -d campuscuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF 
 ### Check Why a Barber Isn't Showing to Consumers
 ```bash
 # Check barber record status (isActive, isOnboarded, campusId)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -3041,7 +3042,7 @@ WHERE u.email = 'barber@example.com';
 
 ### View All Active Barbers with Campus Info
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -3058,7 +3059,7 @@ WHERE b.\"isActive\" = true;
 
 ### View Barbers by Campus
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -3073,7 +3074,7 @@ WHERE b.\"campusId\" = 'CAMPUS_UUID_HERE';
 
 ### Activate a Barber Profile
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE barbers SET \"isActive\" = true 
 WHERE \"userId\" = (SELECT id FROM users WHERE email = 'barber@example.com');
 "
@@ -3085,7 +3086,7 @@ WHERE \"userId\" = (SELECT id FROM users WHERE email = 'barber@example.com');
 
 ### View All Barbers with Location Data
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -3102,7 +3103,7 @@ WHERE b.\"isActive\" = true;
 
 ### Check Location Auto-Update Status for Barbers
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     email, 
     first_name,
@@ -3120,7 +3121,7 @@ ORDER BY location_updated_at DESC NULLS LAST;
 ### Manually Update Barber's Location (When GPS Not Working)
 ```bash
 # Set to specific coordinates (e.g., Cal Poly SLO)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE users 
 SET latitude = 35.30500000, 
     longitude = -120.66250000,
@@ -3133,7 +3134,7 @@ WHERE email = 'barber@example.com';
 ### Find Barbers Within Distance of Coordinates
 ```bash
 # Find barbers within 8km of Cal Poly SLO (35.3050, -120.6625)
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     u.email,
     u.first_name,
@@ -3168,7 +3169,7 @@ This table is auto-created by the verification service on startup.
 
 ### View Pending Registrations
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT email, first_name, last_name, role, expires_at, created_at
 FROM pending_registrations
 ORDER BY created_at DESC;
@@ -3177,17 +3178,17 @@ ORDER BY created_at DESC;
 
 ### Delete Expired Pending Registrations
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM pending_registrations WHERE expires_at < NOW();"
+sudo -u postgres psql -d oncuts -c "DELETE FROM pending_registrations WHERE expires_at < NOW();"
 ```
 
 ### Clear All Pending Registrations (Testing Only)
 ```bash
-sudo -u postgres psql -d campuscuts -c "DELETE FROM pending_registrations;"
+sudo -u postgres psql -d oncuts -c "DELETE FROM pending_registrations;"
 ```
 
 ### Create Table Manually (if not auto-created)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 CREATE TABLE IF NOT EXISTS pending_registrations (
   email VARCHAR(255) PRIMARY KEY,
   password_hash TEXT NOT NULL,
@@ -3211,7 +3212,7 @@ Campus managers can also create locations directly. Locations can be **universal
 
 ### Create Service Locations Tables (Run this once)
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 -- New table for service locations with approval workflow
 CREATE TABLE IF NOT EXISTS service_locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3252,7 +3253,7 @@ CREATE INDEX IF NOT EXISTS idx_barber_service_locations_location ON barber_servi
 ### Add Approval Workflow Columns (Migration for existing tables)
 If the `service_locations` table already exists without the approval columns:
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'approved';
 ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS is_universal BOOLEAN DEFAULT true;
 ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS restricted_to_barber_id UUID REFERENCES barbers(id) ON DELETE SET NULL;
@@ -3264,7 +3265,7 @@ CREATE INDEX IF NOT EXISTS idx_service_locations_status ON service_locations(cam
 
 ### View All Service Locations
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     sl.id,
     sl.name,
@@ -3283,7 +3284,7 @@ ORDER BY c.name, sl.status, sl.name;
 
 ### View Pending Location Requests
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     sl.id,
     sl.name,
@@ -3302,7 +3303,7 @@ ORDER BY sl.created_at DESC;
 
 ### View Barber Location Assignments
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     bsl.id as assignment_id,
     u.first_name || ' ' || u.last_name as barber_name,
@@ -3321,7 +3322,7 @@ ORDER BY barber_name, bsl.is_primary DESC, location_name;
 ### Approve a Pending Location Request (Example)
 ```bash
 # Replace LOCATION_ID and REVIEWER_USER_ID with actual UUIDs
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 UPDATE service_locations 
 SET status = 'approved', 
     is_universal = true, 
@@ -3337,12 +3338,12 @@ WHERE id = 'LOCATION_ID';
 
 ### Add paymentRequestedAt column to bookings (Required for payment flow)
 ```bash
-sudo -u postgres psql -d campuscuts -c 'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "paymentRequestedAt" TIMESTAMPTZ;'
+sudo -u postgres psql -d oncuts -c 'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "paymentRequestedAt" TIMESTAMPTZ;'
 ```
 
 ### Add TAPER to ServiceType enum (Required for Taper service bookings)
 ```bash
-sudo -u postgres psql -d campuscuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
+sudo -u postgres psql -d oncuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
 ```
 
 ---

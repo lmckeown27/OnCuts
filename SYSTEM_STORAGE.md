@@ -210,12 +210,12 @@ pm2 logs --lines 100
 
 ### Check Database Size
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT pg_size_pretty(pg_database_size('campuscuts'));"
+sudo -u postgres psql -d oncuts -c "SELECT pg_size_pretty(pg_database_size('oncuts'));"
 ```
 
 ### Check Table Sizes
 ```bash
-sudo -u postgres psql -d campuscuts -c "
+sudo -u postgres psql -d oncuts -c "
 SELECT 
     relname as table_name, 
     pg_size_pretty(pg_total_relation_size(relid)) as size 
@@ -350,13 +350,13 @@ cd ~/OnCuts && git gc --prune=now
 
 ### Cleanup Script Location
 ```bash
-/usr/local/bin/campuscuts-cleanup.sh
+/usr/local/bin/oncuts-cleanup.sh
 ```
 
 ### View Cleanup Log
 ```bash
-cat /var/log/campuscuts-cleanup.log
-tail -50 /var/log/campuscuts-cleanup.log
+cat /var/log/oncuts-cleanup.log
+tail -50 /var/log/oncuts-cleanup.log
 ```
 
 ### View Scheduled Cron Jobs
@@ -366,7 +366,7 @@ sudo crontab -l
 
 ### Run Cleanup Manually
 ```bash
-sudo /usr/local/bin/campuscuts-cleanup.sh
+sudo /usr/local/bin/oncuts-cleanup.sh
 ```
 
 ### Edit Cleanup Schedule

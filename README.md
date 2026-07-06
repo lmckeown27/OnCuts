@@ -107,11 +107,11 @@ cd backend && pm2 start ecosystem.config.cjs --env production
 ```bash
 # Create PostgreSQL database
 sudo -u postgres psql
-CREATE DATABASE campuscuts;
-CREATE USER campuscuts_user WITH PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE campuscuts TO campuscuts_user;
-\c campuscuts
-GRANT ALL ON SCHEMA public TO campuscuts_user;
+CREATE DATABASE oncuts;
+CREATE USER oncuts_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE oncuts TO oncuts_user;
+\c oncuts
+GRANT ALL ON SCHEMA public TO oncuts_user;
 ```
 
 ### **2. Run Migrations**
@@ -120,11 +120,11 @@ GRANT ALL ON SCHEMA public TO campuscuts_user;
 cd backend
 # Run all migrations in order
 for f in src/database/migrations/*.sql; do
-  sudo -u postgres psql -d campuscuts -f "$f"
+  sudo -u postgres psql -d oncuts -f "$f"
 done
 
 # Seed campus data
-sudo -u postgres psql -d campuscuts -f src/database/seed_campuses.sql
+sudo -u postgres psql -d oncuts -f src/database/seed_campuses.sql
 ```
 
 ---
@@ -139,7 +139,7 @@ NODE_ENV=production
 PORT=3001
 
 # Database
-DATABASE_URL="postgresql://campuscuts_user:password@localhost:5432/campuscuts?schema=public"
+DATABASE_URL="postgresql://oncuts_user:password@localhost:5432/oncuts?schema=public"
 
 # JWT Authentication
 JWT_SECRET=your_64_character_secret_here
@@ -156,8 +156,8 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_16_char_app_password
-EMAIL_FROM="OnCuts <noreply@campuscuts.com>"
-FRONTEND_URL=https://campuscut.com
+EMAIL_FROM="OnCuts <support@oncuts.com>"
+FRONTEND_URL=https://oncuts.com
 AUTO_VERIFY_EMAILS=false
 
 # AWS S3 (Image Storage)
@@ -170,7 +170,7 @@ S3_BUCKET_NAME=campuscut-images
 ### **Frontend `.env`**
 
 ```bash
-VITE_API_URL=https://campuscut.com/api/v1
+VITE_API_URL=https://oncuts.com/api/v1
 ```
 
 ---
@@ -266,9 +266,11 @@ git clone https://github.com/lmckeown27/OnCuts.git
 cd OnCuts
 
 # 2. Setup database
-sudo -u postgres createdb campuscuts
+sudo -u postgres createdb oncuts
+sudo -u postgres psql -c "CREATE USER oncuts_user WITH PASSWORD 'your_secure_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE oncuts TO oncuts_user;"
 for f in backend/src/database/migrations/*.sql; do
-  sudo -u postgres psql -d campuscuts -f "$f"
+  sudo -u postgres psql -d oncuts -f "$f"
 done
 
 # 3. Configure environment
@@ -288,9 +290,26 @@ cd backend && pm2 start ecosystem.config.cjs --env production
 pm2 startup
 pm2 save
 
-# 7. Setup nginx reverse proxy
-sudo nano /etc/nginx/sites-available/campuscuts
+# 7. Deploy frontend static files for nginx
+cd ../web-app
+sudo mkdir -p /var/www/oncuts/dist
+sudo rsync -a --delete dist/ /var/www/oncuts/dist/
+sudo chown -R www-data:www-data /var/www/oncuts
+
+# 8. Setup nginx reverse proxy
+sudo cp server-nginx.conf /etc/nginx/sites-available/oncuts
+sudo ln -sf /etc/nginx/sites-available/oncuts /etc/nginx/sites-enabled/oncuts
 sudo nginx -t && sudo systemctl reload nginx
+```
+
+**After code updates on the server:**
+
+```bash
+cd ~/OnCuts
+git pull origin main
+cd backend && npm install && npm run build && pm2 restart oncuts-backend --update-env
+cd ../web-app && npm install && npm run build
+sudo rsync -a --delete dist/ /var/www/oncuts/dist/
 ```
 
 ---
@@ -405,7 +424,7 @@ npm run dev  # Start Vite dev server (port 5173)
 
 ```bash
 # Connect to database
-sudo -u postgres psql -d campuscuts
+sudo -u postgres psql -d oncuts
 
 # Check tables
 \dt
@@ -485,20 +504,20 @@ curl http://localhost:3001/api/v1/barbers?campusId=<campus-id>
 
 ```bash
 # Check logs
-pm2 logs campuscuts-backend --lines 50
+pm2 logs oncuts-backend --lines 50
 
 # Rebuild
 cd backend
 rm -rf dist
 npm run build
-pm2 restart campuscuts-backend
+pm2 restart oncuts-backend --update-env
 ```
 
 ### **Database connection failed**
 
 ```bash
 # Test connection
-sudo -u postgres psql -d campuscuts -c "SELECT 1;"
+sudo -u postgres psql -d oncuts -c "SELECT 1;"
 
 # Check .env
 grep DATABASE_URL backend/.env
@@ -641,8 +660,8 @@ OnCuts/
 ## 📞 Support
 
 - **Issues:** Open a GitHub issue
-- **Email:** support@campuscut.com
-- **Production URL:** https://campuscut.com
+- **Email:** support@oncuts.com
+- **Production URL:** https://oncuts.com
 
 ---
 
