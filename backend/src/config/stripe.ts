@@ -220,9 +220,9 @@ export function formatStripeSecretKeyForSafeLog(sk: string | undefined): string 
 }
 
 /**
- * Standard `pk_*` / `sk_*` keys from the same Dashboard row share the same suffix after
- * `pk_live_` / `sk_live_` (or test). If suffixes differ, keys are from different Stripe accounts
- * even when both are "live".
+ * Random portion after `pk_live_` / `sk_live_` (or test). Brand-new key pairs often share this
+ * string; after **secret rotation** Stripe keeps the publishable key and issues a new secret
+ * with a different suffix — that is still a valid pair on the same account.
  */
 export function stripeStandardKeyAccountSuffix(k: string | undefined): string | null {
   if (!k?.trim()) return null;
@@ -230,10 +230,19 @@ export function stripeStandardKeyAccountSuffix(k: string | undefined): string | 
   return m ? m[2] : null;
 }
 
+/** True when a newly minted standard key pair shares the same suffix (same Dashboard row). */
 export function stripePublishableKeyMatchesSecretKey(pk: string, sk: string): boolean {
   const a = stripeStandardKeyAccountSuffix(pk);
   const b = stripeStandardKeyAccountSuffix(sk);
   return !!a && !!b && a === b;
+}
+
+/** Live|test mode alignment — required; suffix equality is not (see secret rotation). */
+export function stripePublishableKeyModeMatchesSecretKey(pk: string, sk: string): boolean {
+  return (
+    (pk.startsWith('pk_live') && sk.startsWith('sk_live')) ||
+    (pk.startsWith('pk_test') && sk.startsWith('sk_test'))
+  );
 }
 
 /**
@@ -385,31 +394,19 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
     return suffixMatch.value;
   }
 
-  // Never return a pk_ whose account suffix differs from the active sk_ — Stripe rejects retrieve (401) and PaymentSheet 404s.
   if (sk.startsWith('sk_') && candidates.length > 0) {
-    lastResolvedPublishableKeyEnv = null;
-    logger.error(
-      '[stripe] Publishable key env vars are set but none match the active secret key Stripe account. pk_ and sk_ from the same Dashboard row share the same suffix after pk_test_/sk_test_. Set STRIPE_TEST_PUBLISHABLE_KEY to match STRIPE_TEST_SECRET_KEY (or remove stale STRIPE_PUBLISHABLE_KEY), then pm2 restart all.',
+    const chosen = candidates[0];
+    lastResolvedPublishableKeyEnv = chosen.envName;
+    logger.info(
+      '[stripe] Using publishable key whose suffix differs from the active secret key (expected after Stripe secret rotation). Require matching live|test mode only.',
       {
-        candidateEnvVars: candidates.map((c) => c.envName),
+        publishableKeyEnv: chosen.envName,
         secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8) ?? '(n/a)',
-        publishableKeySuffixTails: candidates.map((c) => ({
-          env: c.envName,
-          tail: stripeStandardKeyAccountSuffix(c.value)?.slice(-8) ?? '(n/a)',
-        })),
+        publishableKeySuffixTail: stripeStandardKeyAccountSuffix(chosen.value)?.slice(-8) ?? '(n/a)',
+        candidateEnvVars: candidates.map((c) => c.envName),
       }
     );
-    return undefined;
-  }
-
-  if (candidates.length > 1) {
-    logger.warn(
-      '[stripe] Multiple publishable keys configured; none share the same account suffix as the active secret key — using the first by priority. Remove stale STRIPE_PUBLISHABLE_KEY or set STRIPE_TEST_PUBLISHABLE_KEY to the pk_test row that matches STRIPE_TEST_SECRET_KEY.',
-      {
-        candidateEnvVars: candidates.map((c) => c.envName),
-        secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8) ?? '(n/a)',
-      }
-    );
+    return chosen.value;
   }
 
   lastResolvedPublishableKeyEnv = candidates[0]?.envName ?? null;
@@ -558,22 +555,35 @@ export function warnStripePublishableKeyMisconfiguredOnBoot(): void {
   );
 }
 
-/** Warn when pk_ and sk_ suffixes differ — PaymentSheet will fail even if both are pk_test/sk_test. */
+/** Warn on live|test mode mismatch; suffix-only drift is OK after secret rotation. */
 export function warnStripePublishableSecretKeyMismatchOnBoot(): void {
   if (!isAnyStripeSecretKeyConfigured()) return;
   const sk = getDefaultStripeSecretKey();
   const pk = getStripePublishableKeyForDefaultClient();
   if (!sk || !pk) return;
-  if (stripePublishableKeyMatchesSecretKey(pk, sk)) return;
 
-  logger.error(
-    '[stripe] Publishable key does not match the active secret key Stripe account. pk_ and sk_ from the same Dashboard row share the same suffix after pk_test_/sk_test_. Fix STRIPE_TEST_PUBLISHABLE_KEY (or remove stale STRIPE_PUBLISHABLE_KEY), then pm2 restart all.',
-    {
-      publishableKeyEnv: getResolvedPublishableKeyEnvName(),
-      secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8),
-      publishableKeySuffixTail: stripeStandardKeyAccountSuffix(pk)?.slice(-8),
-    }
-  );
+  if (!stripePublishableKeyModeMatchesSecretKey(pk, sk)) {
+    logger.error(
+      '[stripe] Publishable key mode does not match secret key (pk_live_ requires sk_live_, pk_test_ requires sk_test_). Fix STRIPE_PUBLISHABLE_KEY or STRIPE_SECRET_KEY, then pm2 restart.',
+      {
+        publishableKeyEnv: getResolvedPublishableKeyEnvName(),
+        publishableKeyPrefix: stripePublishableKeyPrefix(pk),
+        secretKeyFingerprint: formatStripeSecretKeyForSafeLog(sk),
+      }
+    );
+    return;
+  }
+
+  if (!stripePublishableKeyMatchesSecretKey(pk, sk)) {
+    logger.info(
+      '[stripe] Publishable and secret key suffixes differ (normal after Stripe secret rotation).',
+      {
+        publishableKeyEnv: getResolvedPublishableKeyEnvName(),
+        secretKeySuffixTail: stripeStandardKeyAccountSuffix(sk)?.slice(-8),
+        publishableKeySuffixTail: stripeStandardKeyAccountSuffix(pk)?.slice(-8),
+      }
+    );
+  }
 }
 
 /** One-line proof of which secret key the process uses for PaymentIntents (safe to log). */
