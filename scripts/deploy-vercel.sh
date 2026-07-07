@@ -26,7 +26,7 @@ echo "📤 Deploying to Vercel..."
 vercel --prod
 
 echo ""
-read -p "Backend API URL (e.g., https://api.campuscuts.com): " API_URL
+read -p "Backend API URL (e.g., https://oncuts.com/api/v1): " API_URL
 
 # Set environment variables
 echo "🔧 Setting environment variables..."
@@ -39,7 +39,7 @@ echo ""
 echo "Next steps:"
 echo "1. Setup custom domain in Vercel dashboard"
 echo "2. Visit https://vercel.com/dashboard to manage your project"
-echo "3. Test your app at: https://campuscuts.vercel.app"
+echo "3. Test your app at: https://oncuts.com"
 echo ""
 
 
