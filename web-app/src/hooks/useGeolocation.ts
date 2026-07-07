@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import locationService from '../services/location.service';
+import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storageMigration';
 
 export interface GeolocationState {
   latitude: number | null;
@@ -31,8 +32,15 @@ export interface UseGeolocationReturn extends GeolocationState {
   refreshLocation: () => void; // Force refresh location
 }
 
-const STORAGE_KEY = 'campuscut_user_location';
-const PERMISSION_KEY = 'campuscut_location_permission';
+const STORAGE_KEY = 'oncuts_user_location';
+const PERMISSION_KEY = 'oncuts_location_permission';
+const LEGACY_STORAGE_KEY = 'campuscut_user_location';
+const LEGACY_PERMISSION_KEY = 'campuscut_location_permission';
+
+function ensureGeolocationStorageMigrated(): void {
+  migrateLocalStorageKey(STORAGE_KEY, LEGACY_STORAGE_KEY);
+  migrateLocalStorageKey(PERMISSION_KEY, LEGACY_PERMISSION_KEY);
+}
 
 // Calculate distance between two points using Haversine formula (returns km)
 export function calculateDistance(
@@ -195,6 +203,8 @@ export function useGeolocation(): UseGeolocationReturn {
       return;
     }
 
+    ensureGeolocationStorageMigrated();
+
     // Check stored permission status
     const storedPermission = localStorage.getItem(PERMISSION_KEY);
     
@@ -241,8 +251,7 @@ export function useGeolocation(): UseGeolocationReturn {
   }, [fetchFreshLocation]);
 
   const clearLocation = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PERMISSION_KEY);
+    removeLocalStorageKeys(STORAGE_KEY, PERMISSION_KEY, LEGACY_STORAGE_KEY, LEGACY_PERMISSION_KEY);
     hasAutoRequestedRef.current = false;
     setState({
       latitude: null,

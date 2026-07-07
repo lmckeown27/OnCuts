@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 import userService from '../services/user.service';
 import { useAuthStore } from '../store/useAuthStore';
 import type { User } from '../types';
+import { removeLocalStorageKeys } from '../utils/storageMigration';
 
 // Detect if user is on a mobile device (for camera/gallery picker)
 const isMobileDevice = () => {
@@ -219,10 +220,17 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
       setIsDeleting(true);
       await userService.deleteAccount(userId, deletePassword);
       
-      // Clear all auth storage
-      localStorage.removeItem('avilaplatforms_access_token');
-      localStorage.removeItem('avilaplatforms_refresh_token');
-      localStorage.removeItem('avilaplatforms_user');
+      // Clear all auth storage (current + legacy brand keys)
+      removeLocalStorageKeys(
+        'user',
+        'accessToken',
+        'oncuts_access_token',
+        'oncuts_refresh_token',
+        'oncuts_user',
+        'avilaplatforms_access_token',
+        'avilaplatforms_refresh_token',
+        'avilaplatforms_user',
+      );
       
       toast.success('Account deleted successfully');
       

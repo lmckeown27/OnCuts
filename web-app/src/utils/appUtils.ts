@@ -5,6 +5,8 @@
  * Handles push notifications, background sync, and app installation
  */
 
+import { migrateLocalStorageKey, removeLocalStorageKeys } from './storageMigration';
+
 // ═══════════════════════════════════════════════════════════
 //  TYPE DEFINITIONS
 // ═══════════════════════════════════════════════════════════
@@ -161,20 +163,9 @@ export function getPlatform(): 'ios' | 'android' | 'desktop' | 'unknown' {
 const OFFLINE_ACTIONS_KEY = 'oncuts_offline_actions';
 const LEGACY_OFFLINE_ACTIONS_KEY = 'campuscuts_offline_actions';
 
-function migrateLegacyLocalStorageKey(newKey: string, legacyKey: string): void {
-  if (localStorage.getItem(newKey) != null) {
-    return;
-  }
-  const legacyValue = localStorage.getItem(legacyKey);
-  if (legacyValue != null) {
-    localStorage.setItem(newKey, legacyValue);
-    localStorage.removeItem(legacyKey);
-  }
-}
-
 export function saveOfflineAction(action: string, data: any): void {
   try {
-    migrateLegacyLocalStorageKey(OFFLINE_ACTIONS_KEY, LEGACY_OFFLINE_ACTIONS_KEY);
+    migrateLocalStorageKey(OFFLINE_ACTIONS_KEY, LEGACY_OFFLINE_ACTIONS_KEY);
     const offlineActions = getOfflineActions();
     offlineActions.push({
       id: Date.now().toString(),
@@ -195,7 +186,7 @@ export function getOfflineActions(): Array<{
   timestamp: string;
 }> {
   try {
-    migrateLegacyLocalStorageKey(OFFLINE_ACTIONS_KEY, LEGACY_OFFLINE_ACTIONS_KEY);
+    migrateLocalStorageKey(OFFLINE_ACTIONS_KEY, LEGACY_OFFLINE_ACTIONS_KEY);
     const actions = localStorage.getItem(OFFLINE_ACTIONS_KEY);
     return actions ? JSON.parse(actions) : [];
   } catch (error) {
@@ -206,8 +197,7 @@ export function getOfflineActions(): Array<{
 
 export function clearOfflineActions(): void {
   try {
-    localStorage.removeItem(OFFLINE_ACTIONS_KEY);
-    localStorage.removeItem(LEGACY_OFFLINE_ACTIONS_KEY);
+    removeLocalStorageKeys(OFFLINE_ACTIONS_KEY, LEGACY_OFFLINE_ACTIONS_KEY);
   } catch (error) {
     console.error('❌ Failed to clear offline actions:', error);
   }

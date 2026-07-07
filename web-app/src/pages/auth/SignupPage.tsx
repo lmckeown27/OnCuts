@@ -6,6 +6,12 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
 import { TivelaPlatformsLogo } from '../../assets';
 import { isValidE164Phone } from '../../utils/phoneE164';
+import {
+  LEGACY_PENDING_SIGNUP_PHONE_KEY,
+  PENDING_SIGNUP_PHONE_KEY,
+  readSessionStorageWithMigration,
+  removeSessionStorageKeys,
+} from '../../utils/storageMigration';
 
 interface SignupForm {
   firstName: string;
@@ -36,10 +42,12 @@ export default function SignupPage() {
 
   /** Prefill phone after phone OTP verified with no account yet (e.g. from AuthPage). */
   useEffect(() => {
-    const pending = sessionStorage.getItem('avilaplatforms_pending_signup_phone');
+    const pending = readSessionStorageWithMigration(PENDING_SIGNUP_PHONE_KEY, [
+      LEGACY_PENDING_SIGNUP_PHONE_KEY,
+    ]);
     if (pending?.trim()) {
       setFormData((prev) => ({ ...prev, phoneNumber: pending.trim() }));
-      sessionStorage.removeItem('avilaplatforms_pending_signup_phone');
+      removeSessionStorageKeys(PENDING_SIGNUP_PHONE_KEY, LEGACY_PENDING_SIGNUP_PHONE_KEY);
     }
   }, []);
   

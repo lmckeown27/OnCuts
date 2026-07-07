@@ -5,17 +5,27 @@ import { Mail, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-rea
 import { useAuthStore } from '../../store/useAuthStore';
 import authService from '../../services/auth.service';
 import { TivelaPlatformsLogo } from '../../assets';
+import { migrateLocalStorageKey, removeLocalStorageKeys } from '../../utils/storageMigration';
 
-const verifyGateStorageKey = (emailLower: string) => `avilaplatforms_verify_gate_ok:${emailLower}`;
+const verifyGateStorageKey = (emailLower: string) => `oncuts_verify_gate_ok:${emailLower}`;
 const verifyTermsLegacyKey = (emailLower: string) => `avilaplatforms_verify_terms_ok:${emailLower}`;
+const legacyVerifyGateStorageKey = (emailLower: string) => `avilaplatforms_verify_gate_ok:${emailLower}`;
+
+function ensureVerifyGateMigrated(emailLower: string): void {
+  migrateLocalStorageKey(verifyGateStorageKey(emailLower), legacyVerifyGateStorageKey(emailLower));
+}
 
 function clearVerifyGateLocal(emailLower: string): void {
-  localStorage.removeItem(verifyGateStorageKey(emailLower));
-  localStorage.removeItem(verifyTermsLegacyKey(emailLower));
+  removeLocalStorageKeys(
+    verifyGateStorageKey(emailLower),
+    legacyVerifyGateStorageKey(emailLower),
+    verifyTermsLegacyKey(emailLower),
+  );
 }
 
 function hasVerifyGateAccepted(email: string): boolean {
   const k = email.toLowerCase();
+  ensureVerifyGateMigrated(k);
   return (
     localStorage.getItem(verifyGateStorageKey(k)) === '1' ||
     localStorage.getItem(verifyTermsLegacyKey(k)) === '1'
@@ -24,7 +34,7 @@ function hasVerifyGateAccepted(email: string): boolean {
 
 function setVerifyGateAccepted(email: string): void {
   const k = email.toLowerCase();
-  localStorage.removeItem(verifyTermsLegacyKey(k));
+  removeLocalStorageKeys(verifyTermsLegacyKey(k), legacyVerifyGateStorageKey(k));
   localStorage.setItem(verifyGateStorageKey(k), '1');
 }
 

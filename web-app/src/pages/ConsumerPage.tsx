@@ -50,6 +50,7 @@ import {
   type BrowseProviderCategory,
 } from '../config/providerCategories';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
+import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {
@@ -59,7 +60,8 @@ const formatServiceName = (name: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
-const FILTER_STORAGE_KEY = 'avilaplatforms_filter_criteria';
+const FILTER_STORAGE_KEY = 'oncuts_filter_criteria';
+const LEGACY_FILTER_STORAGE_KEY = 'avilaplatforms_filter_criteria';
 
 // Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
 function formatTime(time24: string | undefined | null): string {
@@ -1416,14 +1418,16 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         setSelectedCollegeTown(savedTown);
       }
 
-      const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
+      const savedFilters = readLocalStorageWithMigration(FILTER_STORAGE_KEY, [
+        LEGACY_FILTER_STORAGE_KEY,
+      ]);
       if (savedFilters) {
         try {
           const parsed = JSON.parse(savedFilters);
           setFilterCriteria(parsed);
-          localStorage.removeItem(FILTER_STORAGE_KEY);
+          removeLocalStorageKeys(FILTER_STORAGE_KEY, LEGACY_FILTER_STORAGE_KEY);
         } catch (e) {
-          localStorage.removeItem(FILTER_STORAGE_KEY);
+          removeLocalStorageKeys(FILTER_STORAGE_KEY, LEGACY_FILTER_STORAGE_KEY);
         }
       }
 

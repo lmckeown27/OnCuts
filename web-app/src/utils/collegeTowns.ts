@@ -1,9 +1,15 @@
 import type { Campus, CollegeTown } from '../types';
 import campusService from '../services/campus.service';
 import { parseCoordinate } from './coordinates';
+import { migrateLocalStorageKey } from './storageMigration';
 
-export const COLLEGE_TOWN_STORAGE_KEY = 'campuscut_selected_college_town';
+export const COLLEGE_TOWN_STORAGE_KEY = 'oncuts_selected_college_town';
+const LEGACY_COLLEGE_TOWN_STORAGE_KEY = 'campuscut_selected_college_town';
 export const LEGACY_UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+
+function ensureCollegeTownStorageMigrated(): void {
+  migrateLocalStorageKey(COLLEGE_TOWN_STORAGE_KEY, LEGACY_COLLEGE_TOWN_STORAGE_KEY);
+}
 
 function slugifyCityState(city: string, state: string): string {
   return `${city}-${state}`
@@ -134,6 +140,7 @@ export function normalizeStoredCollegeTown(value: unknown): CollegeTown | null {
 }
 
 export function readStoredCollegeTown(): CollegeTown | null {
+  ensureCollegeTownStorageMigrated();
   const savedTown = localStorage.getItem(COLLEGE_TOWN_STORAGE_KEY);
   if (savedTown) {
     return normalizeStoredCollegeTown(parseStoredRecord(savedTown));
@@ -231,8 +238,10 @@ export async function resolveInitialCollegeTown(options?: {
 export function writeStoredCollegeTown(town: CollegeTown | null): void {
   if (town) {
     localStorage.setItem(COLLEGE_TOWN_STORAGE_KEY, JSON.stringify(town));
+    localStorage.removeItem(LEGACY_COLLEGE_TOWN_STORAGE_KEY);
   } else {
     localStorage.removeItem(COLLEGE_TOWN_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_COLLEGE_TOWN_STORAGE_KEY);
   }
 }
 

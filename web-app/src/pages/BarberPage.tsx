@@ -44,14 +44,27 @@ import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useDynamicViewportHeight } from '../hooks';
 import { useStripeOnboardingGate } from '../hooks/useStripeOnboardingGate';
 import toast from 'react-hot-toast';
+import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storageMigration';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
+const BARBER_HIDDEN_PAID_BOOKINGS_PREFIX = 'oncuts_barber_hidden_paid_bookings_';
+const LEGACY_BARBER_HIDDEN_PAID_BOOKINGS_PREFIX = 'avilaplatforms_barber_hidden_paid_bookings_';
+export const BARBER_HIDDEN_PAID_BOOKINGS_EVENT = 'oncuts-barber-hidden-paid-bookings';
+const LEGACY_BARBER_HIDDEN_PAID_BOOKINGS_EVENT = 'avilaplatforms-barber-hidden-paid-bookings';
+
 const BARBER_HIDDEN_PAID_BOOKINGS_KEY = (barberId: string) =>
-  `avilaplatforms_barber_hidden_paid_bookings_${barberId}`;
+  `${BARBER_HIDDEN_PAID_BOOKINGS_PREFIX}${barberId}`;
+
+const legacyBarberHiddenPaidBookingsKey = (barberId: string) =>
+  `${LEGACY_BARBER_HIDDEN_PAID_BOOKINGS_PREFIX}${barberId}`;
 
 function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
   if (typeof window === 'undefined') return [];
   try {
+    migrateLocalStorageKey(
+      BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId),
+      legacyBarberHiddenPaidBookingsKey(barberId),
+    );
     const raw = localStorage.getItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
@@ -64,8 +77,9 @@ function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
 function saveBarberHiddenPaidBookingIds(barberId: string, ids: string[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId), JSON.stringify(ids));
+  localStorage.removeItem(legacyBarberHiddenPaidBookingsKey(barberId));
   window.dispatchEvent(
-    new CustomEvent('avilaplatforms-barber-hidden-paid-bookings', { detail: { barberId } })
+    new CustomEvent(BARBER_HIDDEN_PAID_BOOKINGS_EVENT, { detail: { barberId } })
   );
 }
 
@@ -1521,14 +1535,21 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const sync = () => setHiddenPaidBookingIds(loadBarberHiddenPaidBookingIds(barberId));
     sync();
     const onStorage = (e: StorageEvent) => {
-      if (e.key === BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId)) sync();
+      if (
+        e.key === BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId) ||
+        e.key === legacyBarberHiddenPaidBookingsKey(barberId)
+      ) {
+        sync();
+      }
     };
     const onCustom: EventListener = () => sync();
     window.addEventListener('storage', onStorage);
-    window.addEventListener('avilaplatforms-barber-hidden-paid-bookings', onCustom);
+    window.addEventListener(BARBER_HIDDEN_PAID_BOOKINGS_EVENT, onCustom);
+    window.addEventListener(LEGACY_BARBER_HIDDEN_PAID_BOOKINGS_EVENT, onCustom);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('avilaplatforms-barber-hidden-paid-bookings', onCustom);
+      window.removeEventListener(BARBER_HIDDEN_PAID_BOOKINGS_EVENT, onCustom);
+      window.removeEventListener(LEGACY_BARBER_HIDDEN_PAID_BOOKINGS_EVENT, onCustom);
     };
   }, [barberId]);
 

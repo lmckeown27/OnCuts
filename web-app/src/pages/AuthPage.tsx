@@ -7,6 +7,12 @@ import authService from '../services/auth.service';
 import { TivelaPlatformsLogo } from '../assets';
 import { useViewport } from '../hooks/useViewport';
 import { isValidE164Phone, normalizeE164Phone } from '../utils/phoneE164';
+import {
+  LEGACY_PENDING_SIGNUP_PHONE_KEY,
+  PENDING_SIGNUP_PHONE_KEY,
+  readSessionStorageWithMigration,
+  removeSessionStorageKeys,
+} from '../utils/storageMigration';
 
 type AuthMode = 'login' | 'signup';
 type LoginChannel = 'email' | 'phone';
@@ -189,7 +195,9 @@ export default function AuthPage() {
         signupData.password === signupData.confirmPassword;
 
   useEffect(() => {
-    const pending = sessionStorage.getItem('avilaplatforms_pending_signup_phone');
+    const pending = readSessionStorageWithMigration(PENDING_SIGNUP_PHONE_KEY, [
+      LEGACY_PENDING_SIGNUP_PHONE_KEY,
+    ]);
     if (pending?.trim()) {
       const p = pending.trim();
       setSignupData((prev) => ({ ...prev, phoneNumber: p }));
@@ -197,7 +205,7 @@ export default function AuthPage() {
       setSignupPhoneVerified(true);
       setSignupPhoneCodeSent(false);
       setSignupPhoneOtp('');
-      sessionStorage.removeItem('avilaplatforms_pending_signup_phone');
+      removeSessionStorageKeys(PENDING_SIGNUP_PHONE_KEY, LEGACY_PENDING_SIGNUP_PHONE_KEY);
       setMode('signup');
     }
   }, []);
@@ -318,7 +326,8 @@ export default function AuthPage() {
     try {
       const result = await loginWithPhone(p, phoneOtp.trim());
       if (result.kind === 'no_account') {
-        sessionStorage.setItem('avilaplatforms_pending_signup_phone', result.phoneNumber);
+        sessionStorage.setItem(PENDING_SIGNUP_PHONE_KEY, result.phoneNumber);
+        sessionStorage.removeItem(LEGACY_PENDING_SIGNUP_PHONE_KEY);
         setSignupData((prev) => ({ ...prev, phoneNumber: result.phoneNumber }));
         setSignupChannel('phone');
         setSignupPhoneVerified(true);
