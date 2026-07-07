@@ -69,7 +69,7 @@ async function verifyIntegration() {
       name: 'Stripe webhook secret',
       status: 'warning',
       message:
-        'No STRIPE_WEBHOOK_SECRET* or STRIPE_LIVE_WEBHOOK_SECRET / STRIPE_TEST_WEBHOOK_SECRET — webhooks will not verify',
+        'No STRIPE_WEBHOOK_SECRET_ACCOUNT / STRIPE_WEBHOOK_SECRET_CONNECT (or legacy STRIPE_WEBHOOK_SECRET*) — webhooks will not verify',
       required: false,
     });
   }

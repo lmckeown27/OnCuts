@@ -63,14 +63,29 @@ function testStripeSecretFromEnv(): string | undefined {
   return trimStripeCredentialEnv('STRIPE_SECRET_KEY_TEST') || trimStripeCredentialEnv('STRIPE_TEST_SECRET_KEY');
 }
 
-/** Live webhook signing secret */
+/** Live webhook signing secret (legacy test/live split — not Connect scope). */
 function liveStripeWebhookFromEnv(): string | undefined {
   return trimEnv('STRIPE_WEBHOOK_SECRET_LIVE') || trimEnv('STRIPE_LIVE_WEBHOOK_SECRET');
 }
 
-/** Test webhook signing secret */
+/** Test webhook signing secret (legacy test/live split). */
 function testStripeWebhookFromEnv(): string | undefined {
   return trimEnv('STRIPE_WEBHOOK_SECRET_TEST') || trimEnv('STRIPE_TEST_WEBHOOK_SECRET');
+}
+
+/** Platform ("Your account") webhook destination signing secret. */
+export function getStripeWebhookSecretAccount(): string | undefined {
+  return (
+    trimEnv('STRIPE_WEBHOOK_SECRET_ACCOUNT') ||
+    trimEnv('STRIPE_WEBHOOK_SECRET') ||
+    liveStripeWebhookFromEnv() ||
+    testStripeWebhookFromEnv()
+  );
+}
+
+/** Connect ("Connected accounts") webhook destination signing secret. */
+export function getStripeWebhookSecretConnect(): string | undefined {
+  return trimEnv('STRIPE_WEBHOOK_SECRET_CONNECT');
 }
 
 /** True if any secret-key env var is set (generic or split live/test). */
@@ -93,19 +108,56 @@ function dedupeStrings(values: (string | undefined)[]): string[] {
 }
 
 /**
- * Webhook signing secrets to try in order (same HTTPS endpoint for test + live dashboards).
- * STRIPE_WEBHOOK_SECRET remains the primary / backward-compatible name.
+ * Webhook signing secrets to try when verifying POST /api/webhooks/stripe.
+ *
+ * Stripe Connect requires two Dashboard destinations (Your account vs Connected accounts),
+ * each with its own whsec_ — both may use the same URL; verification tries each secret.
+ *
+ * Preferred: STRIPE_WEBHOOK_SECRET_ACCOUNT + STRIPE_WEBHOOK_SECRET_CONNECT
+ * Legacy: STRIPE_WEBHOOK_SECRET, STRIPE_WEBHOOK_SECRET_LIVE / _TEST, etc.
  */
 export function getStripeWebhookSecrets(): string[] {
   return dedupeStrings([
-    trimEnv('STRIPE_WEBHOOK_SECRET'),
+    getStripeWebhookSecretAccount(),
+    getStripeWebhookSecretConnect(),
     trimEnv('STRIPE_WEBHOOK_SECRET_LIVE'),
     trimEnv('STRIPE_WEBHOOK_SECRET_TEST'),
+    trimEnv('STRIPE_LIVE_WEBHOOK_SECRET'),
+    trimEnv('STRIPE_TEST_WEBHOOK_SECRET'),
   ]);
+}
+
+export function hasStripeWebhookSecretAccountConfigured(): boolean {
+  return Boolean(getStripeWebhookSecretAccount());
+}
+
+export function hasStripeWebhookSecretConnectConfigured(): boolean {
+  return Boolean(getStripeWebhookSecretConnect());
 }
 
 export function hasStripeWebhookSecretConfigured(): boolean {
   return getStripeWebhookSecrets().length > 0;
+}
+
+/** Boot log: which Connect webhook destinations are configured (never logs secret values). */
+export function logStripeWebhookSecretsAtBoot(): void {
+  const account = hasStripeWebhookSecretAccountConfigured();
+  const connect = hasStripeWebhookSecretConnectConfigured();
+  logger.info('[stripe] Webhook signing secrets', {
+    accountDestination: account,
+    connectDestination: connect,
+    endpoint: 'POST /api/webhooks/stripe',
+  });
+  if (account && !connect) {
+    logger.warn(
+      '[stripe] STRIPE_WEBHOOK_SECRET_CONNECT is unset — Connected-account events (e.g. account.updated) will fail signature verification until configured.'
+    );
+  }
+  if (connect && !account) {
+    logger.warn(
+      '[stripe] STRIPE_WEBHOOK_SECRET_ACCOUNT is unset — platform events (e.g. payment_intent.succeeded) will fail signature verification until configured.'
+    );
+  }
 }
 
 /**
@@ -117,7 +169,9 @@ export function constructStripeWebhookEvent(
 ): Stripe.Event {
   const secrets = getStripeWebhookSecrets();
   if (secrets.length === 0) {
-    throw new Error('No STRIPE_WEBHOOK_SECRET* configured');
+    throw new Error(
+      'No Stripe webhook signing secret configured (set STRIPE_WEBHOOK_SECRET_ACCOUNT and STRIPE_WEBHOOK_SECRET_CONNECT)'
+    );
   }
   const parser = new Stripe('sk_test_000000000000000000000000', { apiVersion: STRIPE_API_VERSION });
   let lastErr: Error | undefined;

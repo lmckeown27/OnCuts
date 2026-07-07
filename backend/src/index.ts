@@ -14,6 +14,7 @@ if (hadExplicitNodeEnv) {
 import { applyAppNetworkModeDefaults } from './config/app-network';
 import {
   logStripeDefaultSecretKeyFingerprintAtBoot,
+  logStripeWebhookSecretsAtBoot,
   warnStripePublishableKeyMisconfiguredOnBoot,
   warnStripePublishableSecretKeyMismatchOnBoot,
 } from './config/stripe';
@@ -484,6 +485,7 @@ httpServer.listen(PORT, async () => {
   logger.info(`📊 NODE_ENV=${process.env.NODE_ENV ?? '(unset)'}`);
   logger.info(`💳 Payment Provider: Stripe (off-chain)`);
   logStripeDefaultSecretKeyFingerprintAtBoot();
+  logStripeWebhookSecretsAtBoot();
   warnStripePublishableKeyMisconfiguredOnBoot();
   warnStripePublishableSecretKeyMismatchOnBoot();
   logger.info(`💬 Socket.IO ready for real-time messaging`);

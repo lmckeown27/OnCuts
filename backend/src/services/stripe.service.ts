@@ -113,7 +113,7 @@ class StripeService {
           logger.error(`Stripe Connect live retry failed for ${accountId} (${operationLabel}):`, retryErr);
           throw new ApiError(
             503,
-            'This barber Connect account is live, but the server default Stripe key is test (sk_test). Production: set STRIPE_SECRET_KEY to your live secret (sk_live_…). Optional: STRIPE_SECRET_KEY_LIVE + STRIPE_MODE=live. Webhooks: STRIPE_WEBHOOK_SECRET must be the live endpoint signing secret.'
+            'This barber Connect account is live, but the server default Stripe key is test (sk_test). Production: set STRIPE_SECRET_KEY to your live secret (sk_live_…). Optional: STRIPE_SECRET_KEY_LIVE + STRIPE_MODE=live. Webhooks: STRIPE_WEBHOOK_SECRET_ACCOUNT + STRIPE_WEBHOOK_SECRET_CONNECT (live Dashboard destinations).'
           );
         }
       }

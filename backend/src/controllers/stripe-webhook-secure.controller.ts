@@ -266,7 +266,9 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
   }
 
   if (!hasStripeWebhookSecretConfigured()) {
-    logger.error('No STRIPE_WEBHOOK_SECRET / STRIPE_WEBHOOK_SECRET_LIVE / STRIPE_WEBHOOK_SECRET_TEST configured');
+    logger.error(
+      'No Stripe webhook signing secret configured (set STRIPE_WEBHOOK_SECRET_ACCOUNT and STRIPE_WEBHOOK_SECRET_CONNECT)'
+    );
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 

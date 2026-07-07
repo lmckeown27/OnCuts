@@ -36,7 +36,7 @@ export const handleStripeWebhook = async (
       throw new ApiError(400, 'No signature provided');
     }
 
-    // Tries STRIPE_WEBHOOK_SECRET*, STRIPE_*_WEBHOOK_SECRET (see config/stripe.ts)
+    // Tries STRIPE_WEBHOOK_SECRET_ACCOUNT, STRIPE_WEBHOOK_SECRET_CONNECT, then legacy names (see config/stripe.ts)
     const event = constructStripeWebhookEvent(req.body, signature);
 
     logger.info('Stripe webhook received', {
