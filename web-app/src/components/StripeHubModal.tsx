@@ -454,7 +454,7 @@ export default function StripeHubModal({
         funds from your customers to your <strong>bank account</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed">
-        Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Use
+        Stripe will ask for <strong>personal details</strong> (date of birth, address, bank account, and more). Interact with
         the button below to connect payouts with <strong>OnCuts</strong>.
       </p>
       <p className="text-base text-gray-600 leading-relaxed text-center">
