@@ -28,7 +28,7 @@ interface StripeHubModalProps {
 const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
-const ONCUTS_URL = 'www.oncuts.com';
+const ONCUTS_URL = 'https://oncuts.com';
 
 /** Matches Stripe Dashboard “Actions required” for Express individual providers on OnCuts. */
 const STRIPE_REQUIRED_ACTIONS = [
@@ -66,6 +66,12 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'website',
     label: 'Business website',
     input: ONCUTS_URL,
+    copyable: true,
+  },
+  {
+    id: 'link',
+    label: 'Continue with Link',
+    input: 'Not now',
     copyable: true,
   },
   {
@@ -338,7 +344,10 @@ export default function StripeHubModal({
       }
     } catch (err: unknown) {
       const { message: msg, code } = apiErrorDetails(err);
-      if (code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE') {
+      if (
+        code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE' ||
+        code === 'STRIPE_CONNECT_PLATFORM_NOT_ENABLED'
+      ) {
         setPlatformSetupBlocked(
           msg ||
             'OnCuts must finish Stripe Connect platform setup in the Stripe Dashboard before barbers can onboard.'

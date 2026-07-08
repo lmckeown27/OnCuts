@@ -20,6 +20,11 @@ function isStripeConnectPlatformProfileIncompleteError(error: unknown): boolean 
   return /complete your platform profile to use Connect/i.test(stripeErrorMessage(error));
 }
 
+/** Server secret key is from a Stripe account that is not a Connect platform. */
+function isStripeConnectPlatformNotEnabledError(error: unknown): boolean {
+  return /Only Stripe Connect platforms can work with other accounts/i.test(stripeErrorMessage(error));
+}
+
 function connectOperationalApiError(error: unknown, fallback: string): ApiError {
   if (error instanceof ApiError) return error;
   const msg = stripeErrorMessage(error);
@@ -30,6 +35,15 @@ function connectOperationalApiError(error: unknown, fallback: string): ApiError 
         'A platform admin needs to open https://dashboard.stripe.com/connect/accounts/overview (live mode), ' +
         'complete the Connect profile questionnaire, then try again.',
       'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE'
+    );
+  }
+  if (isStripeConnectPlatformNotEnabledError(error)) {
+    return new ApiError(
+      503,
+      'OnCuts must enable Stripe Connect on the platform Stripe account before barbers can onboard. ' +
+        'A platform admin needs to open https://dashboard.stripe.com/settings/connect (live mode), ' +
+        'enable Connect, then restart the backend and try again.',
+      'STRIPE_CONNECT_PLATFORM_NOT_ENABLED'
     );
   }
   if (isStripeTestKeyLiveAccountError(error) || isStripeLiveKeyTestAccountError(error)) {
@@ -63,6 +77,7 @@ export function isStaleConnectAccountError(error: unknown): boolean {
   const msg = stripeErrorMessage(error);
   return (
     /no such destination|resource_missing|does not exist/i.test(msg) ||
+    isStripeConnectPlatformNotEnabledError(error) ||
     isStripeTestKeyLiveAccountError(error) ||
     isStripeLiveKeyTestAccountError(error)
   );
