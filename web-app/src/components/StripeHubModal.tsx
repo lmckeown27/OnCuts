@@ -189,7 +189,6 @@ export default function StripeHubModal({
   onFullyConnected,
 }: StripeHubModalProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
-  const [connectStatusUnknown, setConnectStatusUnknown] = useState(false);
   const [busy, setBusy] = useState<'stripe' | 'dashboard' | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -205,7 +204,6 @@ export default function StripeHubModal({
 
   const load = useCallback(async () => {
     try {
-      setConnectStatusUnknown(false);
       const status = await fetchBarberConnectStatus();
       setConnectStatus(status);
       if (isBarberStripeFullyConnected(status)) {
@@ -215,7 +213,6 @@ export default function StripeHubModal({
     } catch (e) {
       console.error(e);
       setConnectStatus(null);
-      setConnectStatusUnknown(true);
       return null;
     }
   }, [onFullyConnected]);
@@ -417,9 +414,10 @@ export default function StripeHubModal({
           barbers can fix themselves.
         </p>
       )}
-      {connectStatusUnknown && (
+      {needsSetup && !needsReconnect && !platformSetupBlocked && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-          Could not verify Stripe status. You can still start connecting below.
+          You&apos;re seeing this because you still need to connect with Stripe to enable safe and secure
+          payments.
         </p>
       )}
       {needsReconnect && (
