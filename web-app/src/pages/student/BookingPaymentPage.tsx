@@ -20,10 +20,11 @@ import {
   Scissors,
   MessageCircle,
   Loader2,
-  Mail
+  Smartphone
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
+import { IOS_APP_STORE_LINKS } from '../../components/IosAppPromoSection';
 import messageService from '../../services/message.service';
 import api from '../../services/api.service';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -397,16 +398,25 @@ export default function BookingPaymentPage() {
           </div>
         </Card>
 
-        {/* Email Notification Info */}
+        {/* App notification info */}
         <div className="mb-6 p-4 bg-primary-50 border border-gray-200 rounded-lg flex items-start gap-3">
           <div className="flex-shrink-0 w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-            <Mail className="w-5 h-5 text-primary-600" />
+            <Smartphone className="w-5 h-5 text-primary-600" />
           </div>
           <div>
-            <p className="font-semibold text-primary-900 text-sm">Check Your Email</p>
+            <p className="font-semibold text-primary-900 text-sm">Check the app</p>
             <p className="text-primary-700 text-sm mt-1">
-              After booking, you'll receive service details and appointment information at your registered email. 
-              Your barber may also send updates about your appointment via email.
+              After booking, you&apos;ll receive service details and appointment updates in the OnCuts app.
+              Download{' '}
+              <a
+                href={IOS_APP_STORE_LINKS.consumer}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary-900 underline underline-offset-2 hover:text-primary-950"
+              >
+                OnCuts
+              </a>{' '}
+              on iPhone to stay on top of your appointment.
             </p>
           </div>
         </div>
