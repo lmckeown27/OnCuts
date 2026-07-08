@@ -72,7 +72,6 @@ const STRIPE_REQUIRED_ACTIONS = [
     id: 'link',
     label: 'Continue with Link',
     input: 'Not now',
-    copyable: true,
   },
   {
     id: 'bank',
