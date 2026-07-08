@@ -65,7 +65,6 @@ export default function ScheduleServicePage() {
     serviceType?: string;
     date?: string;
     time?: string;
-    location?: string;
   }>({});
   
 
@@ -102,9 +101,6 @@ export default function ScheduleServicePage() {
     }
     if (!time) {
       newErrors.time = 'Please select a time';
-    }
-    if (!locationDetails.trim()) {
-      newErrors.location = 'Please enter where the service will take place';
     }
     
     // If there are errors, set them and scroll to top
@@ -362,25 +358,16 @@ export default function ScheduleServicePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        Location *
+                        Location (Optional)
                       </div>
                     </label>
                     <input
                       type="text"
                       value={locationDetails}
-                      onChange={(e) => {
-                        setLocationDetails(e.target.value);
-                        if (e.target.value.trim()) setErrors(prev => ({ ...prev, location: undefined }));
-                      }}
+                      onChange={(e) => setLocationDetails(e.target.value)}
                       placeholder="e.g., Smith Hall, Room 204"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
-                        errors.location ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     />
-                    {errors.location && (
-                      <p className="text-red-500 text-sm mt-1">{errors.location}</p>
-                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       Where the service will take place
                     </p>
