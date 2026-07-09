@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import messageService from '../services/message.service';
+import messageService, { CONVERSATION_MESSAGING_ACCESS_SQL } from '../services/message.service';
 import imageService from '../services/image.service';
 import { authenticate, syncRequestUserRoleFromDb, AuthRequest } from '../middleware/auth';
 import { pool } from '../database/connection';
@@ -124,6 +124,27 @@ router.post('/conversations', authenticate, async (req, res, next) => {
 });
 
 /**
+ * GET /api/messages/conversations/:conversationId
+ * Get a single conversation in inbox shape (for mobile deep links).
+ */
+router.get('/conversations/:conversationId', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const conversationId = parseInt(req.params.conversationId, 10);
+
+    const result = await messageService.getConversationForInbox(conversationId, userId);
+
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/messages/conversations/:conversationId/messages
  * Get messages in a conversation
  */
@@ -201,8 +222,11 @@ router.post(
       }
 
       const convCheck = await pool.query(
-        `SELECT id FROM conversations
-         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2) AND is_active = true`,
+        `SELECT c.id FROM conversations c
+         LEFT JOIN bookings b ON c.booking_id = b.id
+         WHERE c.id = $1
+           AND (c.user1_id = $2 OR c.user2_id = $2)
+           AND ${CONVERSATION_MESSAGING_ACCESS_SQL}`,
         [conversationId, userId]
       );
 

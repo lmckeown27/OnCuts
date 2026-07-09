@@ -31,6 +31,140 @@ import {
 } from './booking-cancellation.service';
 import { sameUuid } from '../utils/uuid-compare';
 
+/** Threads that are active, or linked to a booking that is still open for messaging. */
+export const CONVERSATION_MESSAGING_ACCESS_SQL = `(
+  c.is_active = true
+  OR (
+    c.booking_id IS NOT NULL
+    AND COALESCE(b.status::text, '') NOT IN ('PAID', 'CANCELLED', 'REJECTED')
+  )
+)`;
+
+const INBOX_CONVERSATION_SELECT = `
+  c.id as conversation_id,
+  c.booking_id,
+  c.created_at as conversation_created,
+  c.last_message_at,
+  CASE
+    WHEN c.user1_id = $1 THEN c.user2_id
+    ELSE c.user1_id
+  END as other_user_id,
+  u.first_name as other_user_first_name,
+  u.last_name as other_user_last_name,
+  u."avatarUrl" as other_user_profile_picture,
+  u.role as other_user_type,
+  br.id as barber_id,
+  u.first_name || ' ' || u.last_name as barber_display_name,
+  br.specialties as barber_specialties,
+  br."avgRating" as barber_rating,
+  c.service_name as conv_service_name,
+  c.service_price as conv_service_price,
+  c.scheduled_time as conv_scheduled_time,
+  c.location as conv_location,
+  c.notes as conv_notes,
+  c.booking_status as conv_booking_status,
+  c.barber_name as conv_barber_name,
+  c.consumer_name as conv_consumer_name,
+  b.id as booking_id_ref,
+  b."barberId" as booking_barber_id,
+  b."serviceType" as booking_service_type,
+  b."priceUsdCents" as booking_price_cents,
+  b."requestedAt" as booking_scheduled_time,
+  b.status as linked_booking_status,
+  (
+    SELECT m.content
+    FROM messages m
+    WHERE m.conversation_id = c.id
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) as last_message,
+  (
+    SELECT m.sender_id
+    FROM messages m
+    WHERE m.conversation_id = c.id
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) as last_message_sender_id,
+  (
+    SELECT m.created_at
+    FROM messages m
+    WHERE m.conversation_id = c.id
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) as last_message_time,
+  (
+    SELECT COUNT(*)
+    FROM messages m
+    WHERE m.conversation_id = c.id
+    AND m.sender_id != $1
+    AND m.is_read = false
+  ) as unread_count`;
+
+const INBOX_CONVERSATION_JOINS = `
+  FROM conversations c
+  JOIN users u ON (
+    CASE
+      WHEN c.user1_id = $1 THEN c.user2_id
+      ELSE c.user1_id
+    END = u.id
+  )
+  LEFT JOIN barbers br ON u.id = br."userId"
+  LEFT JOIN bookings b ON c.booking_id = b.id`;
+
+function formatInboxConversation(conv: Record<string, unknown>) {
+  return {
+    id: conv.conversation_id,
+    bookingId: conv.booking_id,
+    booking: (conv.conv_service_name || conv.booking_id_ref)
+      ? {
+          id: conv.booking_id_ref || null,
+          barberId: conv.booking_barber_id || conv.barber_id || null,
+          serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
+          servicePrice: conv.conv_service_price
+            ? parseFloat(String(conv.conv_service_price))
+            : conv.booking_price_cents
+              ? Number(conv.booking_price_cents) / 100
+              : null,
+          scheduledTime:
+            conv.booking_scheduled_time || conv.conv_scheduled_time || conv.availability_start_time,
+          location: conv.conv_location || 'TBD',
+          notes: conv.conv_notes || null,
+          status: String(conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
+          barberName: conv.conv_barber_name,
+          consumerName: conv.conv_consumer_name,
+        }
+      : null,
+    otherUser: {
+      id: conv.other_user_id,
+      firstName: conv.other_user_first_name,
+      lastName: conv.other_user_last_name,
+      displayName:
+        conv.barber_display_name ||
+        `${conv.other_user_first_name} ${conv.other_user_last_name}`,
+      profilePicture: conv.other_user_profile_picture,
+      userType: String(conv.other_user_type || 'consumer').toLowerCase(),
+      barberInfo:
+        conv.other_user_type === 'BARBER' || conv.other_user_type === 'barber'
+          ? {
+              id: conv.barber_id,
+              displayName: conv.barber_display_name,
+              specialties: conv.barber_specialties,
+              rating: conv.barber_rating,
+            }
+          : null,
+    },
+    lastMessage: conv.last_message
+      ? {
+          content: conv.last_message,
+          senderId: conv.last_message_sender_id,
+          time: conv.last_message_time,
+        }
+      : null,
+    unreadCount: parseInt(String(conv.unread_count)) || 0,
+    createdAt: conv.conversation_created,
+  };
+}
+
 class MessageService {
   /**
    * Get user's conversations with pagination
@@ -56,149 +190,27 @@ class MessageService {
 
       // Get conversations with booking details
       const result = await pool.query(
-        `SELECT 
-          c.id as conversation_id,
-          c.booking_id,
-          c.created_at as conversation_created,
-          c.last_message_at,
-          
-          -- OTHER USER INFO
-          CASE 
-            WHEN c.user1_id = $1 THEN c.user2_id
-            ELSE c.user1_id
-          END as other_user_id,
-          u.first_name as other_user_first_name,
-          u.last_name as other_user_last_name,
-          u."avatarUrl" as other_user_profile_picture,
-          u.role as other_user_type,
-          
-          -- BARBER INFO (if other user is barber)
-          br.id as barber_id,
-          u.first_name || ' ' || u.last_name as barber_display_name,
-          br.specialties as barber_specialties,
-          br."avgRating" as barber_rating,
-          
-          -- BOOKING INFO (from conversation context or linked booking)
-          c.service_name as conv_service_name,
-          c.service_price as conv_service_price,
-          c.scheduled_time as conv_scheduled_time,
-          c.location as conv_location,
-          c.notes as conv_notes,
-          c.booking_status as conv_booking_status,
-          c.barber_name as conv_barber_name,
-          c.consumer_name as conv_consumer_name,
-          -- Fallback to linked booking if exists
-          b.id as booking_id_ref,
-          b."barberId" as booking_barber_id,
-          b."serviceType" as booking_service_type,
-          b."priceUsdCents" as booking_price_cents,
-          b."requestedAt" as booking_scheduled_time,
-          b.status as linked_booking_status,
-          
-          -- MESSAGE INFO
-          (
-            SELECT m.content 
-            FROM messages m 
-            WHERE m.conversation_id = c.id 
-            ORDER BY m.created_at DESC 
-            LIMIT 1
-          ) as last_message,
-          (
-            SELECT m.sender_id 
-            FROM messages m 
-            WHERE m.conversation_id = c.id 
-            ORDER BY m.created_at DESC 
-            LIMIT 1
-          ) as last_message_sender_id,
-          (
-            SELECT m.created_at 
-            FROM messages m 
-            WHERE m.conversation_id = c.id 
-            ORDER BY m.created_at DESC 
-            LIMIT 1
-          ) as last_message_time,
-          (
-            SELECT COUNT(*) 
-            FROM messages m 
-            WHERE m.conversation_id = c.id 
-            AND m.sender_id != $1 
-            AND m.is_read = false
-          ) as unread_count
-        FROM conversations c
-        JOIN users u ON (
-          CASE 
-            WHEN c.user1_id = $1 THEN c.user2_id
-            ELSE c.user1_id
-          END = u.id
-        )
-        LEFT JOIN barbers br ON u.id = br."userId"
-        LEFT JOIN bookings b ON c.booking_id = b.id
-        WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
+        `SELECT ${INBOX_CONVERSATION_SELECT}
+        ${INBOX_CONVERSATION_JOINS}
+        WHERE (c.user1_id = $1 OR c.user2_id = $1) AND ${CONVERSATION_MESSAGING_ACCESS_SQL}
         ${convBlockSql}
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
         [userId, limit, offset]
       );
 
-      // Get total count (only active conversations)
+      // Get total count using the same messaging access rule
       const countResult = await pool.query(
         `SELECT COUNT(*) as total FROM conversations c
-         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
+         LEFT JOIN bookings b ON c.booking_id = b.id
+         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND ${CONVERSATION_MESSAGING_ACCESS_SQL}
          ${convBlockSql}`,
         [userId]
       );
 
       const total = parseInt(countResult.rows[0].total);
 
-      // Format conversations
-      const conversations = result.rows.map((conv) => ({
-        id: conv.conversation_id,
-        bookingId: conv.booking_id,
-        // Booking details - prefer conversation context, fallback to linked booking
-        booking: (conv.conv_service_name || conv.booking_id_ref) ? {
-          id: conv.booking_id_ref || null,
-          // Use booking's barberId first (from bookings table), fallback to other user's barber profile
-          barberId: conv.booking_barber_id || conv.barber_id || null,
-          serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
-          servicePrice: conv.conv_service_price ? parseFloat(conv.conv_service_price) : 
-                       (conv.booking_price_cents ? (conv.booking_price_cents / 100) : null),
-          // Prefer booking's requestedAt (source of truth) over conversation's cached scheduled_time
-          scheduledTime: conv.booking_scheduled_time || conv.conv_scheduled_time || conv.availability_start_time,
-          // Prefer booking's location from conversation (updated on edit) or fallback
-          location: conv.conv_location || 'TBD',
-          notes: conv.conv_notes || null,
-          // Prefer linked booking status (source of truth) over cached conversation status
-          status: (conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
-          barberName: conv.conv_barber_name,
-          consumerName: conv.conv_consumer_name,
-        } : null,
-        // Other user info
-        otherUser: {
-          id: conv.other_user_id,
-          firstName: conv.other_user_first_name,
-          lastName: conv.other_user_last_name,
-          displayName: conv.barber_display_name || `${conv.other_user_first_name} ${conv.other_user_last_name}`,
-          profilePicture: conv.other_user_profile_picture,
-          userType: conv.other_user_type?.toLowerCase() || 'consumer',
-          barberInfo: (conv.other_user_type === 'BARBER' || conv.other_user_type === 'barber')
-            ? {
-                id: conv.barber_id, // Barber table ID for availability lookups
-                displayName: conv.barber_display_name,
-                specialties: conv.barber_specialties,
-                rating: conv.barber_rating,
-              }
-            : null,
-        },
-        lastMessage: conv.last_message
-          ? {
-              content: conv.last_message,
-              senderId: conv.last_message_sender_id,
-              time: conv.last_message_time,
-            }
-          : null,
-        unreadCount: parseInt(conv.unread_count) || 0,
-        createdAt: conv.conversation_created,
-      }));
+      const conversations = result.rows.map((conv) => formatInboxConversation(conv));
 
       return {
         success: true,
@@ -215,6 +227,45 @@ class MessageService {
     } catch (error: any) {
       console.error('Get conversations error:', error.message || error);
       throw new Error(`Failed to fetch conversations: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get a single conversation in the same shape as inbox list rows.
+   */
+  async getConversationForInbox(
+    conversationId: string | number,
+    userId: string | number
+  ): Promise<any> {
+    try {
+      const result = await pool.query(
+        `SELECT ${INBOX_CONVERSATION_SELECT}
+        ${INBOX_CONVERSATION_JOINS}
+        WHERE c.id = $2
+          AND (c.user1_id = $1 OR c.user2_id = $1)
+          AND ${CONVERSATION_MESSAGING_ACCESS_SQL}`,
+        [userId, conversationId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new ApiError(404, 'Conversation not found or has been deleted');
+      }
+
+      const row = result.rows[0];
+      await assertNoMessagingBlockBetween(
+        String(userId),
+        String(row.other_user_id)
+      );
+
+      return {
+        success: true,
+        data: {
+          conversation: formatInboxConversation(row),
+        },
+      };
+    } catch (error) {
+      console.error('Get inbox conversation error:', error);
+      throw error;
     }
   }
 
@@ -383,7 +434,7 @@ class MessageService {
           } else {
             console.log('✅ Returning existing conversation for booking_id:', bookingId, 'conversation:', existingId);
           }
-          return await this.getConversationById(existingId, userId);
+          return await this.getConversationForInbox(existingId, userId);
         }
       }
 
@@ -402,7 +453,7 @@ class MessageService {
 
           if (conv.is_active && conv.booking_status === 'pending') {
             console.log('✅ Found existing pending conversation for same time slot:', conv.id);
-            return await this.getConversationById(conv.id, userId);
+            return await this.getConversationForInbox(conv.id, userId);
           }
           console.log('📌 Previous conversation exists but was ' + conv.booking_status + ', creating new one');
         }
@@ -475,7 +526,10 @@ class MessageService {
           c.booking_id,
           c.created_at
         FROM conversations c
-        WHERE c.id = $1 AND (c.user1_id = $2 OR c.user2_id = $2) AND c.is_active = true`,
+        LEFT JOIN bookings b ON c.booking_id = b.id
+        WHERE c.id = $1
+          AND (c.user1_id = $2 OR c.user2_id = $2)
+          AND ${CONVERSATION_MESSAGING_ACCESS_SQL}`,
         [conversationId, userId]
       );
 
@@ -513,8 +567,12 @@ class MessageService {
     try {
       // Check access - only allow sending to active conversations
       const convCheck = await pool.query(
-        `SELECT user1_id, user2_id FROM conversations 
-         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2) AND is_active = true`,
+        `SELECT c.user1_id, c.user2_id
+         FROM conversations c
+         LEFT JOIN bookings b ON c.booking_id = b.id
+         WHERE c.id = $1
+           AND (c.user1_id = $2 OR c.user2_id = $2)
+           AND ${CONVERSATION_MESSAGING_ACCESS_SQL}`,
         [conversationId, senderId]
       );
 
@@ -969,7 +1027,9 @@ class MessageService {
         : '';
       const stats = await pool.query(
         `SELECT
-          (SELECT COUNT(*) FROM conversations c WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true${peerBlockConv}) as total_conversations,
+          (SELECT COUNT(*) FROM conversations c
+           LEFT JOIN bookings b ON c.booking_id = b.id
+           WHERE (c.user1_id = $1 OR c.user2_id = $1) AND ${CONVERSATION_MESSAGING_ACCESS_SQL}${peerBlockConv}) as total_conversations,
           (SELECT COUNT(*) FROM messages WHERE sender_id = $1 AND is_deleted = false) as total_messages_sent,
           (SELECT COUNT(*) FROM messages m 
            JOIN conversations c ON m.conversation_id = c.id 
