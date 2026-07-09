@@ -13,9 +13,10 @@ export function getFrontendBaseUrl(): string {
   return DEFAULT_PRODUCTION_APP_URL;
 }
 
-export function getGoogleCalendarRedirectUri(): string {
-  return (
-    process.env.GOOGLE_CALENDAR_REDIRECT_URI?.trim() ||
-    `${getFrontendBaseUrl()}/api/v1/auth/google-calendar/callback`
-  );
-}
+// Google Calendar integration disabled
+// export function getGoogleCalendarRedirectUri(): string {
+//   return (
+//     process.env.GOOGLE_CALENDAR_REDIRECT_URI?.trim() ||
+//     `${getFrontendBaseUrl()}/api/v1/auth/google-calendar/callback`
+//   );
+// }

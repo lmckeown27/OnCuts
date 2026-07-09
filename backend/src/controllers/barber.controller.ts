@@ -1284,57 +1284,17 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         [id, date]
       );
 
-      // Get Google Calendar busy times if connected
-      let googleCalendarSlots: Array<{ start: string; end: string }> = [];
-      try {
-        const googleCalendarService = require('../services/google-calendar.service');
-        const isConnected = await googleCalendarService.isCalendarConnected(id);
-        
-        console.log(`[Availability] Google Calendar connected for barber ${id}:`, isConnected);
-        
-        if (isConnected) {
-          // Create start and end of day in campus timezone
-          // The date parameter is YYYY-MM-DD in campus local time
-          // We construct ISO strings with the timezone and let Date parse them
-          // For simplicity, we'll query a full day in UTC that covers the campus day
-          const [year, month, day] = date.split('-').map(Number);
-          
-          // Create dates at start and end of day, accounting for potential timezone offset
-          // Query a wider range to ensure we capture all events for the campus day
-          const dayStartUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-          const dayEndUTC = new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0)); // Go into next day to catch late events
-          
-          console.log(`[Availability] Querying Google Calendar for ${date} (timezone: ${campusTimezone}), UTC range: ${dayStartUTC.toISOString()} to ${dayEndUTC.toISOString()}`);
-          
-          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStartUTC, dayEndUTC);
-          
-          console.log(`[Availability] Google Calendar returned ${busyTimes.length} busy times:`, busyTimes);
-          
-          // Convert busy times to HH:MM format in campus timezone
-          googleCalendarSlots = busyTimes.map((bt: { start: Date; end: Date }) => {
-            const startTime = new Date(bt.start);
-            const endTime = new Date(bt.end);
-            
-            // Convert to campus timezone for display
-            const startLocal = startTime.toLocaleString('en-US', { timeZone: campusTimezone, hour: '2-digit', minute: '2-digit', hour12: false });
-            const endLocal = endTime.toLocaleString('en-US', { timeZone: campusTimezone, hour: '2-digit', minute: '2-digit', hour12: false });
-            
-            console.log(`[Availability] Busy time in ${campusTimezone}: ${startLocal} - ${endLocal}`);
-            
-            return {
-              start: startLocal,
-              end: endLocal
-            };
-          });
-          
-          console.log(`[Availability] Converted Google Calendar slots:`, googleCalendarSlots);
-        }
-      } catch (error) {
-        // Google Calendar integration is optional - silently continue
-        console.log('[Availability] Google Calendar check failed, continuing without:', error);
-      }
+      // Google Calendar integration disabled
+      // const googleCalendarSlots: Array<{ start: string; end: string }> = [];
+      // try {
+      //   const googleCalendarService = require('../services/google-calendar.service');
+      //   const isConnected = await googleCalendarService.isCalendarConnected(id);
+      //   ...
+      // } catch (error) {
+      //   console.log('[Availability] Google Calendar check failed, continuing without:', error);
+      // }
 
-      // Combine booked slots with time blocks and Google Calendar busy times
+      // Combine booked slots with time blocks (Google Calendar busy times disabled)
       const bookedSlots = [
         ...bookingsResult.rows.map(row => ({
           start: row.start_time,
@@ -1344,10 +1304,10 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
           start: row.start_time,
           end: row.end_time
         })),
-        ...googleCalendarSlots
+        // ...googleCalendarSlots
       ];
 
-      console.log(`[Availability] Found ${bookingsResult.rows.length} booked, ${timeBlocksResult.rows.length} time blocks, ${googleCalendarSlots.length} Google Calendar for ${date}:`, bookedSlots);
+      console.log(`[Availability] Found ${bookingsResult.rows.length} booked, ${timeBlocksResult.rows.length} time blocks for ${date}:`, bookedSlots);
 
       // Check if the selected date is today (to filter out past times)
       // Use the campus timezone for accurate local time

@@ -79,7 +79,9 @@ export default function GDPRPage() {
                 <li>Communications data (messages, photos, support requests)</li>
                 <li>Technical data (device, logs, IP address, cookies)</li>
                 <li>Moderation and safety data (blocks, reports, enforcement actions)</li>
+                {/* Google Calendar integration (disabled)
                 <li>Optional calendar data when barbers connect Google Calendar</li>
+                */}
                 <li>Authentication data from Sign in with Apple when used</li>
               </ul>
             </section>
@@ -102,8 +104,9 @@ export default function GDPRPage() {
 
               <p className="font-semibold mt-4 mb-1">4.3 Consent</p>
               <p>
-                Processing based on your explicit consent: marketing communications, optional Google Calendar
-                connection, and non-essential cookies where applicable.
+                Processing based on your explicit consent: marketing communications
+                {/* , optional Google Calendar connection */}
+                , and non-essential cookies where applicable.
               </p>
 
               <p className="font-semibold mt-4 mb-1">4.4 Legal Obligation</p>

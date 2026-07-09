@@ -42,15 +42,16 @@ interface ProviderWeeklyScheduleGridProps {
   weeklySchedule: WeeklyScheduleMap | null;
   timeBlocks: TimeBlock[];
   bookings: ScheduleBooking[];
-  googleCalendarBusyTimes: Array<{ start: Date; end: Date }>;
+  // Google Calendar integration (disabled)
+  // googleCalendarBusyTimes: Array<{ start: Date; end: Date }>;
   isLoading?: boolean;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void;
   onUnblockTime?: (blockId: string) => void;
   onViewBooking?: (booking: ScheduleBooking) => void;
-  googleCalendarConnected?: boolean | null;
-  googleCalendarLoading?: boolean;
-  onConnectGoogleCalendar?: () => void;
-  onDisconnectGoogleCalendar?: () => void;
+  // googleCalendarConnected?: boolean | null;
+  // googleCalendarLoading?: boolean;
+  // onConnectGoogleCalendar?: () => void;
+  // onDisconnectGoogleCalendar?: () => void;
 }
 
 const timeToMinutes = (time: string): number => {
@@ -106,13 +107,7 @@ export function buildWeekDays(startOfWeek: Date) {
   });
 }
 
-type SlotStatus = 'unavailable' | 'open' | 'booked' | 'blocked' | 'google';
-
-interface GoogleBusySegment {
-  start: Date;
-  end: Date;
-  key: string;
-}
+type SlotStatus = 'unavailable' | 'open' | 'booked' | 'blocked';
 
 const getMinutesFromDate = (date: Date) => date.getHours() * 60 + date.getMinutes();
 
@@ -120,28 +115,6 @@ const getTimeRangeLayout = (startMin: number, endMin: number, gridStartMin: numb
   const top = ((startMin - gridStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
   const height = ((endMin - startMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
   return { top, height: Math.max(height, ROW_HEIGHT_PX) };
-};
-
-const getDayGoogleBusySegments = (
-  dayDate: Date,
-  busyTimes: Array<{ start: Date; end: Date }>
-): GoogleBusySegment[] => {
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayDate);
-  dayEnd.setHours(23, 59, 59, 999);
-
-  return busyTimes
-    .filter(busy => busy.start < dayEnd && busy.end > dayStart)
-    .map(busy => {
-      const start = busy.start < dayStart ? dayStart : busy.start;
-      const end = busy.end > dayEnd ? dayEnd : busy.end;
-      return {
-        start,
-        end,
-        key: `${start.toISOString()}-${end.toISOString()}`,
-      };
-    });
 };
 
 const COMPLETED_BOOKING_STATUSES = new Set(['COMPLETED', 'PAID']);
@@ -180,16 +153,8 @@ const getBookingBlockStyles = (status: string) => {
   };
 };
 
-function GoogleCalendarIcon() {
-  return (
-    <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-    </svg>
-  );
-}
+// Google Calendar icon (disabled)
+// function GoogleCalendarIcon() { ... }
 
 export default function ProviderWeeklyScheduleGrid({
   weekOffset,
@@ -197,15 +162,10 @@ export default function ProviderWeeklyScheduleGrid({
   weeklySchedule,
   timeBlocks,
   bookings,
-  googleCalendarBusyTimes,
   isLoading = false,
   onBlockTime,
   onUnblockTime,
   onViewBooking,
-  googleCalendarConnected,
-  googleCalendarLoading,
-  onConnectGoogleCalendar,
-  onDisconnectGoogleCalendar,
 }: ProviderWeeklyScheduleGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = getToday();
@@ -309,12 +269,8 @@ export default function ProviderWeeklyScheduleGrid({
           return { status: 'blocked' as SlotStatus, block };
         }
 
-        const googleBlock = googleCalendarBusyTimes.find(busy =>
-          busy.start < slotEndDate && busy.end > slotStartDate
-        );
-        if (googleBlock) {
-          return { status: 'google' as SlotStatus };
-        }
+        // Google Calendar busy slots (disabled)
+        // const googleBlock = googleCalendarBusyTimes.find(...)
 
         return {
           status: 'open' as SlotStatus,
@@ -324,7 +280,7 @@ export default function ProviderWeeklyScheduleGrid({
         };
       });
     });
-  }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings, googleCalendarBusyTimes]);
+  }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings]);
 
   /* Stats footer hidden — slot counts and color legend commented out per product request.
   const stats = useMemo(() => {
@@ -480,9 +436,8 @@ export default function ProviderWeeklyScheduleGrid({
                       );
                     }
 
-                    if (cell.status === 'google') {
-                      return null;
-                    }
+                    // Google Calendar slot status (disabled)
+                    // if (cell.status === 'google') { return null; }
 
                     return (
                       <button
@@ -498,33 +453,9 @@ export default function ProviderWeeklyScheduleGrid({
                     );
                   })}
 
-                  {getDayGoogleBusySegments(day.date, googleCalendarBusyTimes).map(segment => {
-                    const startMin = getMinutesFromDate(segment.start);
-                    const endMin = getMinutesFromDate(segment.end);
-                    const { top, height } = getTimeRangeLayout(startMin, endMin, gridStartMin);
-                    const startTime = formatTime12(minutesToTime(startMin));
-                    const endTime = formatTime12(minutesToTime(endMin));
-
-                    return (
-                      <button
-                        key={segment.key}
-                        type="button"
-                        title={`Google Calendar · ${startTime} – ${endTime}`}
-                        aria-label={`Google Calendar busy time, ${startTime} to ${endTime}`}
-                        className="absolute inset-x-0.5 z-[9] flex items-start gap-0.5 overflow-hidden rounded-sm border border-[#4285F4]/45 bg-[#E8F0FE] px-0.5 text-left shadow-sm transition-colors hover:border-[#4285F4]/70 hover:bg-[#D2E3FC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] focus-visible:ring-offset-1"
-                        style={{ top, height }}
-                      >
-                        {height >= 16 && (
-                          <>
-                            <GoogleCalendarIcon />
-                            <span className="truncate py-0.5 text-[10px] font-semibold leading-tight text-[#1A4480]">
-                              Google Calendar
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })}
+                  {/* Google Calendar busy segments (disabled)
+                  {getDayGoogleBusySegments(day.date, googleCalendarBusyTimes).map(segment => { ... })}
+                  */}
 
                   {getDayBookings(day.date).map(booking => {
                     const aptStart = new Date(booking.scheduledTime);
@@ -596,28 +527,9 @@ export default function ProviderWeeklyScheduleGrid({
           </span>
         </div>
         */}
-        <div className="flex justify-center">
-          {googleCalendarConnected === null ? (
-            <span className="text-xs text-gray-400">Checking Google Calendar…</span>
-          ) : googleCalendarConnected ? (
-            <button
-              type="button"
-              onClick={() => onDisconnectGoogleCalendar?.()}
-              className="text-xs text-primary-600 hover:text-black hover:underline"
-            >
-              Google Calendar connected. Disconnect
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onConnectGoogleCalendar?.()}
-              disabled={googleCalendarLoading}
-              className="text-xs text-primary-600 hover:text-black hover:underline disabled:opacity-50"
-            >
-              {googleCalendarLoading ? 'Connecting Google Calendar…' : 'Connect Google Calendar'}
-            </button>
-          )}
-        </div>
+        {/* Google Calendar connect/disconnect (disabled)
+        <div className="flex justify-center">...</div>
+        */}
       </div>
     </div>
   );

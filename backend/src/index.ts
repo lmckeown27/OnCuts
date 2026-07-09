@@ -106,8 +106,8 @@ import barberApplicationRoutes from './routes/barber-application.routes';
 import bookingSimpleRoutes from './routes/booking-simple.routes';
 import publicStripeRoutes from './routes/public-stripe.routes';
 
-// Google Calendar Integration
-import googleCalendarRoutes from './routes/google-calendar.routes';
+// Google Calendar Integration (disabled)
+// import googleCalendarRoutes from './routes/google-calendar.routes';
 
 // Environment variables already loaded at top of file
 
@@ -377,9 +377,9 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/wallet', walletRoutes);
 
-// Google Calendar OAuth Routes
-app.use('/api/v1/auth/google-calendar', googleCalendarRoutes);
-app.use('/api/auth/google-calendar', googleCalendarRoutes);  // Legacy route
+// Google Calendar OAuth Routes (disabled)
+// app.use('/api/v1/auth/google-calendar', googleCalendarRoutes);
+// app.use('/api/auth/google-calendar', googleCalendarRoutes);  // Legacy route
 
 // Legacy routes (backward compatibility - no /v1 prefix)
 app.use('/api/auth', authRoutes);

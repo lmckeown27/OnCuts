@@ -119,9 +119,9 @@ export default function BarberPage() {
   const [showStripeHub, setShowStripeHub] = useState(false);
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
-  // Google Calendar integration state
-  const [googleCalendarConnected, setGoogleCalendarConnected] = useState<boolean | null>(null);
-  const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false);
+  // Google Calendar integration (disabled)
+  // const [googleCalendarConnected, setGoogleCalendarConnected] = useState<boolean | null>(null);
+  // const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false);
   const [blockTimeInitialValues, setBlockTimeInitialValues] = useState<{
     date?: string;
     startTime?: string;
@@ -277,67 +277,24 @@ export default function BarberPage() {
       window.history.replaceState({}, '', location.pathname);
     }
     
-    // Handle Google Calendar OAuth callback
-    const googleCalendarStatus = searchParams.get('googleCalendar');
-    if (googleCalendarStatus === 'success') {
-      toast.success('Google Calendar connected successfully!');
-      setGoogleCalendarConnected(true);
-      window.history.replaceState({}, '', location.pathname);
-    } else if (googleCalendarStatus === 'error') {
-      const message = searchParams.get('message') || 'Failed to connect';
-      toast.error(`Google Calendar: ${message}`);
-      window.history.replaceState({}, '', location.pathname);
-    }
+    // Google Calendar OAuth callback (disabled)
+    // const googleCalendarStatus = searchParams.get('googleCalendar');
+    // if (googleCalendarStatus === 'success') {
+    //   toast.success('Google Calendar connected successfully!');
+    //   setGoogleCalendarConnected(true);
+    //   window.history.replaceState({}, '', location.pathname);
+    // } else if (googleCalendarStatus === 'error') {
+    //   const message = searchParams.get('message') || 'Failed to connect';
+    //   toast.error(`Google Calendar: ${message}`);
+    //   window.history.replaceState({}, '', location.pathname);
+    // }
   }, [location]);
   
-  // Check Google Calendar connection status
-  const checkGoogleCalendarStatus = async () => {
-    try {
-      // api.get() unwraps the response, so result IS the data directly
-      const data = await api.get<{ connected: boolean }>('/auth/google-calendar/status');
-      setGoogleCalendarConnected(data?.connected ?? false);
-    } catch (error) {
-      setGoogleCalendarConnected(false);
-    }
-  };
-  
-  // Connect Google Calendar
-  const connectGoogleCalendar = async () => {
-    try {
-      setGoogleCalendarLoading(true);
-      // Add timestamp to prevent caching
-      // api.get() unwraps the response, so result IS the data directly
-      const data = await api.get<{ authUrl: string }>(`/auth/google-calendar/connect?_t=${Date.now()}`);
-      
-      if (data?.authUrl) {
-        // Redirect to Google OAuth
-        window.location.href = data.authUrl;
-      } else {
-        toast.error('Failed to get Google Calendar URL');
-        setGoogleCalendarLoading(false);
-      }
-    } catch (error: any) {
-      toast.error('Failed to connect Google Calendar');
-      setGoogleCalendarLoading(false);
-    }
-  };
-  
-  // Disconnect Google Calendar
-  const disconnectGoogleCalendar = async () => {
-    try {
-      await api.delete('/auth/google-calendar/disconnect');
-      setGoogleCalendarConnected(false);
-      toast.success('Google Calendar disconnected');
-    } catch (error) {
-      console.error('Failed to disconnect Google Calendar:', error);
-      toast.error('Failed to disconnect Google Calendar');
-    }
-  };
-  
-  // Load Google Calendar status on mount
-  useEffect(() => {
-    checkGoogleCalendarStatus();
-  }, []);
+  // Google Calendar integration (disabled)
+  // const checkGoogleCalendarStatus = async () => { ... };
+  // const connectGoogleCalendar = async () => { ... };
+  // const disconnectGoogleCalendar = async () => { ... };
+  // useEffect(() => { checkGoogleCalendarStatus(); }, []);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -858,10 +815,12 @@ export default function BarberPage() {
               toast.error('Failed to unblock time');
             }
           }}
+          {/* Google Calendar integration (disabled)
           googleCalendarConnected={googleCalendarConnected}
           googleCalendarLoading={googleCalendarLoading}
           onConnectGoogleCalendar={connectGoogleCalendar}
           onDisconnectGoogleCalendar={disconnectGoogleCalendar}
+          */}
         />
       </div>
 
@@ -1383,11 +1342,11 @@ interface DashboardViewProps {
     longitude: number;
   }) => void;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
-  // Google Calendar integration
-  googleCalendarConnected?: boolean | null;
-  googleCalendarLoading?: boolean;
-  onConnectGoogleCalendar?: () => void;
-  onDisconnectGoogleCalendar?: () => void;
+  // Google Calendar integration (disabled)
+  // googleCalendarConnected?: boolean | null;
+  // googleCalendarLoading?: boolean;
+  // onConnectGoogleCalendar?: () => void;
+  // onDisconnectGoogleCalendar?: () => void;
 }
 
 // Type for confirmed bookings
@@ -1421,7 +1380,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, onServiceLocationUpdated, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1507,7 +1466,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
   const [isLoadingWeeklySchedule, setIsLoadingWeeklySchedule] = useState(true); // Loading state for availability
-  const [googleCalendarBusyTimes, setGoogleCalendarBusyTimes] = useState<Array<{ start: Date; end: Date }>>([]); // Google Calendar busy times
+  // const [googleCalendarBusyTimes, setGoogleCalendarBusyTimes] = useState<Array<{ start: Date; end: Date }>>([]);
   const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0); // Trigger refresh when availability changes
   const modalRef = useRef<HTMLDivElement>(null);
   
@@ -1618,40 +1577,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     fetchWeeklyTimeBlocks();
   }, [barberProfileId, weekOffset]);
 
-  // Fetch Google Calendar busy times when connected
-  useEffect(() => {
-    const fetchGoogleCalendarBusyTimes = async () => {
-      // Only fetch if Google Calendar is connected
-      if (!googleCalendarConnected) {
-        setGoogleCalendarBusyTimes([]);
-        return;
-      }
-      
-      try {
-        // Get busy times for current week + next 2 weeks
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 21); // 3 weeks ahead
-        
-        const data = await api.get<{ busyTimes: Array<{ start: string; end: string }> }>(
-          `/auth/google-calendar/busy-times?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-        );
-        
-        if (data?.busyTimes) {
-          setGoogleCalendarBusyTimes(data.busyTimes.map(bt => ({
-            start: new Date(bt.start),
-            end: new Date(bt.end)
-          })));
-        }
-      } catch (error) {
-        // Silently fail - Google Calendar is optional
-        setGoogleCalendarBusyTimes([]);
-      }
-    };
-    
-    fetchGoogleCalendarBusyTimes();
-  }, [googleCalendarConnected, weekOffset]);
+  // Google Calendar busy times fetch (disabled)
+  // useEffect(() => { ... fetchGoogleCalendarBusyTimes ... }, [googleCalendarConnected, weekOffset]);
 
   // Fetch barber's weekly availability schedule
   useEffect(() => {
@@ -2219,15 +2146,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           weeklySchedule={weeklySchedule}
           timeBlocks={weeklyTimeBlocks}
           bookings={visibleConfirmedBookings}
-          googleCalendarBusyTimes={googleCalendarBusyTimes}
           isLoading={isLoadingBookings || isLoadingWeeklySchedule}
           onBlockTime={onBlockTime}
           onUnblockTime={onUnblockTime}
           onViewBooking={onViewDetails}
-          googleCalendarConnected={googleCalendarConnected}
-          googleCalendarLoading={googleCalendarLoading}
-          onConnectGoogleCalendar={onConnectGoogleCalendar}
-          onDisconnectGoogleCalendar={onDisconnectGoogleCalendar}
         />
         </div>
       </Card>
@@ -2818,59 +2740,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       });
                     };
                     
-                    // Helper to check if slot is blocked by Google Calendar
-                    const getGoogleCalendarBlockForSlotModal = (slot: { start: string; end: string }) => {
-                      const slotStart = timeToMinutes(slot.start);
-                      const slotEnd = timeToMinutes(slot.end);
-                      
-                      // Convert slot times to full Date for the selected day
-                      const slotStartDate = new Date(selectedDate);
-                      slotStartDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
-                      const slotEndDate = new Date(selectedDate);
-                      slotEndDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
-                      
-                      return googleCalendarBusyTimes.find(busy => {
-                        return (busy.start < slotEndDate && busy.end > slotStartDate);
-                      });
-                    };
+                    // Google Calendar slot blocking (disabled)
+                    // const getGoogleCalendarBlockForSlotModal = (slot: { start: string; end: string }) => { ... };
                     
-                    const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getGoogleCalendarBlockForSlotModal(slot) && !getAppointmentForSlot(slot)).length;
+                    const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
                     const bookedCount = hourlySlots.filter(slot => getAppointmentForSlot(slot)).length;
-                    const blockedCount = hourlySlots.filter(slot => (getBlockForSlot(slot) || getGoogleCalendarBlockForSlotModal(slot)) && !getAppointmentForSlot(slot)).length;
+                    const blockedCount = hourlySlots.filter(slot => getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
                     
                     return (
                       <div>
-                        {/* Google Calendar Integration Button */}
-                        <div className="flex justify-center mb-3">
-                          {googleCalendarConnected === null ? (
-                            <div className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">
-                              Checking Google Calendar...
-                            </div>
-                          ) : googleCalendarConnected ? (
-                            <button
-                              onClick={() => onDisconnectGoogleCalendar?.()}
-                              className="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex flex-col items-center"
-                            >
-                              <span>Google Calendar Connected</span>
-                              <span className="text-xs text-primary-500 sm:hidden">(Tap to Disconnect)</span>
-                              <span className="text-xs text-primary-500 hidden sm:inline">(Click to Disconnect)</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => onConnectGoogleCalendar?.()}
-                              disabled={googleCalendarLoading}
-                              className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex items-center gap-2 shadow-sm disabled:opacity-50"
-                            >
-                              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                              </svg>
-                              {googleCalendarLoading ? 'Connecting...' : 'Connect Google Calendar'}
-                            </button>
-                          )}
-                        </div>
+                        {/* Google Calendar integration (disabled)
+                        <div className="flex justify-center mb-3">...</div>
+                        */}
                         <div className="flex justify-center mb-3">
                           <button
                             onClick={() => {
@@ -2942,27 +2823,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Google Calendar blocked slot - not unblockable from OnCuts
-                            const googleBlockModal = getGoogleCalendarBlockForSlotModal(slot);
-                            if (googleBlockModal) {
-                              return (
-                                <div 
-                                  key={idx}
-                                  className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-200 flex items-center justify-between"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                                    </svg>
-                                    <span className="font-medium">{formatTime(slot.start)} - {formatTime(slot.end)}</span>
-                                  </div>
-                                  <span className="text-xs text-blue-500">Google Calendar</span>
-                                </div>
-                              );
-                            }
+                            // Google Calendar blocked slot UI (disabled)
+                            // const googleBlockModal = getGoogleCalendarBlockForSlotModal(slot);
                             
                             // Available slot - clickable to block
                             return (

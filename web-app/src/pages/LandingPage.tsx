@@ -449,26 +449,19 @@ export default function LandingPage() {
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>Set your weekly hours in OnCuts Provider or your barber dashboard.</li>
                         <li>Block specific dates or times when needed.</li>
+                        {/* Google Calendar integration (disabled)
                         <li>Optionally connect Google Calendar to auto-block busy times.</li>
+                        */}
                       </ol>
                     </div>
                   </div>
                 </div>
 
+                {/* Google Calendar FAQ (disabled)
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
-                  <button 
-                    onClick={() => toggleFaq('b6')}
-                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
-                  >
-                    <h4 className="font-medium text-gray-900">Why connect Google Calendar?</h4>
-                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b6' ? 'rotate-180' : ''}`} />
-                  </button>
-                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                    <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Google Calendar sync blocks busy times so customers cannot double-book you. We only see when you are busy, not event details. Disconnect anytime in OnCuts Provider or your dashboard.</p>
-                    </div>
-                  </div>
+                  ...
                 </div>
+                */}
 
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
                   <button 

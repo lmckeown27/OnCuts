@@ -84,7 +84,9 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc pl-6 space-y-1">
                 <li>Stripe: Payment status, transaction confirmations, payout data</li>
                 <li>Apple: Sign in with Apple identity token, email, and name when you choose Apple authentication</li>
+                {/* Google Calendar integration (disabled)
                 <li>Google: Calendar busy/free data when you connect Google Calendar (barbers only)</li>
+                */}
                 <li>Social Media: Public profile or portfolio links you choose to display (e.g., Instagram)</li>
               </ul>
             </section>
@@ -222,32 +224,12 @@ export default function PrivacyPolicyPage() {
               </p>
             </section>
 
+            {/* Google Calendar integration (disabled)
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">11. Google API Services</h2>
-              <p>
-                OnCuts offers optional Google Calendar integration for barbers. When you connect your Google
-                Calendar:
-              </p>
-              <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>We read busy/free times to prevent double-booking</li>
-                <li>We may create calendar events for OnCuts appointments with your permission</li>
-                <li>We store a secure OAuth refresh token to maintain the connection</li>
-                <li>You can disconnect Google Calendar at any time from OnCuts Provider or your barber dashboard</li>
-              </ul>
-              <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                <strong>Limited Use Disclosure:</strong> OnCuts&apos; use and transfer of information received from
-                Google APIs will adhere to the{' '}
-                <a
-                  href="https://developers.google.com/terms/api-services-user-data-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-600 hover:text-black underline"
-                >
-                  Google API Services User Data Policy
-                </a>
-                , including the Limited Use requirements.
-              </p>
+              ...
             </section>
+            */}
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">12. Children&apos;s Privacy</h2>
