@@ -69,7 +69,7 @@ const INBOX_CONVERSATION_SELECT = `
   b."barberId" as booking_barber_id,
   b."serviceType" as booking_service_type,
   b."priceUsdCents" as booking_price_cents,
-  b."requestedAt" as booking_scheduled_time,
+  COALESCE(b."requestedAt", c.scheduled_time) as booking_scheduled_time,
   b.status as linked_booking_status,
   (
     SELECT m.content
@@ -125,8 +125,7 @@ function formatInboxConversation(conv: Record<string, unknown>) {
             : conv.booking_price_cents
               ? Number(conv.booking_price_cents) / 100
               : null,
-          scheduledTime:
-            conv.booking_scheduled_time || conv.conv_scheduled_time || conv.availability_start_time,
+          scheduledTime: conv.booking_scheduled_time || conv.conv_scheduled_time,
           location: conv.conv_location || 'TBD',
           notes: conv.conv_notes || null,
           status: String(conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
@@ -514,7 +513,8 @@ class MessageService {
   }
 
   /**
-   * Get conversation by ID
+   * Minimal conversation row for Socket.IO recipient lookup after send.
+   * For inbox UI payloads, use getConversationForInbox() instead.
    */
   async getConversationById(conversationId: string | number, userId: string | number): Promise<any> {
     try {
@@ -565,7 +565,7 @@ class MessageService {
     mediaUrl: string | null = null
   ): Promise<any> {
     try {
-      // Check access - only allow sending to active conversations
+      // Check access using messaging access rule (active thread or open booking)
       const convCheck = await pool.query(
         `SELECT c.user1_id, c.user2_id
          FROM conversations c
