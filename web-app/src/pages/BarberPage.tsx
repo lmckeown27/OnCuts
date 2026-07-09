@@ -815,12 +815,6 @@ export default function BarberPage() {
               toast.error('Failed to unblock time');
             }
           }}
-          {/* Google Calendar integration (disabled)
-          googleCalendarConnected={googleCalendarConnected}
-          googleCalendarLoading={googleCalendarLoading}
-          onConnectGoogleCalendar={connectGoogleCalendar}
-          onDisconnectGoogleCalendar={disconnectGoogleCalendar}
-          */}
         />
       </div>
 
