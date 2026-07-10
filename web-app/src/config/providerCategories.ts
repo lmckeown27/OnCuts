@@ -18,7 +18,7 @@ export const BROWSE_PROVIDER_CATEGORIES: BrowseProviderCategoryOption[] = [
   {
     id: 'Haircuts',
     label: 'Haircuts',
-    description: 'Barbers and hair stylists',
+    description: 'Barbers',
   },
   {
     id: 'Beauty',

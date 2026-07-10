@@ -1,5 +1,5 @@
 /** Coarse browse buckets aligned with Intera ServiceCategory. */
-export type ServiceProviderCategory = 'Haircuts' | 'Beauty' | 'Wellness' | 'Fitness';
+export type ServiceProviderCategory = 'Haircuts' | 'Beauty';
 
 export type ServiceProviderService = {
   name: string;

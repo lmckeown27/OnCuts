@@ -9,30 +9,21 @@ type BarberLikeRecord = Record<string, unknown>;
 
 const PROVIDER_TYPE_CATEGORY: Record<string, ServiceProviderCategory> = {
   barber: 'Haircuts',
-  hair: 'Haircuts',
   braids: 'Beauty',
   makeup: 'Beauty',
   nails: 'Beauty',
   lashes: 'Beauty',
   tanning: 'Beauty',
-  massage: 'Wellness',
-  wellness: 'Wellness',
-  fitness: 'Fitness',
-  trainer: 'Fitness',
 };
 
 export const SERVICE_PROVIDER_CATEGORIES: ServiceProviderCategory[] = [
   'Haircuts',
   'Beauty',
-  'Wellness',
-  'Fitness',
 ];
 
 const CATEGORY_PROVIDER_TYPES: Record<ServiceProviderCategory, string[]> = {
   Haircuts: [],
   Beauty: [],
-  Wellness: [],
-  Fitness: [],
 };
 
 for (const [providerType, category] of Object.entries(PROVIDER_TYPE_CATEGORY)) {
@@ -49,16 +40,11 @@ export function providerTypesForCategory(category: ServiceProviderCategory): str
 
 const PROVIDER_TYPE_SPECIALTY: Record<string, string> = {
   barber: 'Barber',
-  hair: 'Hair',
   braids: 'Braids',
   makeup: 'Makeup',
   nails: 'Nails',
   lashes: 'Lashes',
   tanning: 'Tanning',
-  massage: 'Massage',
-  wellness: 'Wellness',
-  fitness: 'Fitness',
-  trainer: 'Personal Trainer',
 };
 
 function asString(value: unknown): string | null {

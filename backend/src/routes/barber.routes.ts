@@ -42,7 +42,7 @@ router.get(
     query('maxPrice').optional().isInt(),
     query('specialty').optional().isString(),
     query('providerType').optional().isString(),
-    query('category').optional().isIn(['Haircuts', 'Beauty', 'Wellness', 'Fitness']),
+    query('category').optional().isIn(['Haircuts', 'Beauty']),
     validate,
   ],
   getAllBarbers
