@@ -779,18 +779,42 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
  * GET check-email?email=
  *
  * Mobile clients use this to branch between sign-in (account exists) and sign-up / pending verification.
+ * Provider app also reads `isOperator` — front-facing label for Provider/Barber accounts (not CONSUMER).
  * Note: reveals whether an address has an OnCuts account (common tradeoff for this UX).
  */
 export const checkEmail = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const email = String(req.query.email ?? '').trim();
 
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1))',
+    const existingUser = await pool.query<{
+      role: string;
+      has_active_barber_profile: boolean;
+    }>(
+      `SELECT
+         u.role,
+         EXISTS (
+           SELECT 1 FROM barbers b
+           WHERE b."userId" = u.id AND b."isActive" = true
+         ) AS has_active_barber_profile
+       FROM users u
+       WHERE LOWER(TRIM(u.email)) = LOWER(TRIM($1))`,
       [email]
     );
+
     const exists = existingUser.rows.length > 0;
     const hasPendingRegistrationFlag = exists ? false : await hasPendingRegistration(email);
+
+    let isOperator = false;
+    if (exists) {
+      const row = existingUser.rows[0];
+      const role = String(row.role ?? '').toUpperCase();
+      const hasActiveBarberProfile = row.has_active_barber_profile === true;
+      isOperator =
+        hasActiveBarberProfile ||
+        role === 'BARBER' ||
+        role === 'ADMIN' ||
+        role === 'CAMPUS_MANAGER';
+    }
 
     res.json({
       success: true,
@@ -798,6 +822,7 @@ export const checkEmail = async (req: AuthRequest, res: Response, next: NextFunc
         exists,
         registered: exists,
         hasPendingRegistration: hasPendingRegistrationFlag,
+        isOperator,
       },
     });
   } catch (error) {
