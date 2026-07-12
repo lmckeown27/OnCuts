@@ -141,9 +141,9 @@ export default function IosAppPromoSection() {
             }}
           />
           <AppColumn
-            heading="For Barbers"
+            heading="For Operators"
             card={{
-              title: 'OnCuts Provider',
+              title: 'OnCuts Operator',
               appLogo: interaProviderAppLogo,
               appLogoAlt: 'OnCuts Provider app icon',
               storeHref: IOS_APP_STORE_LINKS.interaProvider,
