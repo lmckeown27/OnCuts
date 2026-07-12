@@ -26,7 +26,7 @@ export async function warnIfBarberProviderTypeMissing(): Promise<void> {
   if (!exists && !missingColumnWarned) {
     missingColumnWarned = true;
     logger.warn(
-      'service_providers.provider_type missing — run migration 036_barber_provider_type.sql'
+      'service_providers.provider_type missing — run migrations 036_barber_provider_type.sql and 040_provider_types.sql'
     );
   }
 }
@@ -35,14 +35,14 @@ export async function warnIfBarberProviderTypeMissing(): Promise<void> {
 export async function barberProviderTypeSelectSql(): Promise<string> {
   const exists = await barberProviderTypeColumnExists();
   return exists
-    ? ',\n        b.provider_type'
+    ? ",\n        COALESCE(b.provider_type, 'barber') as provider_type"
     : ",\n        'barber'::text as provider_type";
 }
 
 /** SQL expression for filtering by provider kind. */
 export async function barberProviderTypeExpr(): Promise<string> {
   const exists = await barberProviderTypeColumnExists();
-  return exists ? 'b.provider_type' : "'barber'";
+  return exists ? "COALESCE(b.provider_type, 'barber')" : "'barber'";
 }
 
 /** INSERT fragments for provider_type (empty when migration 036 is not applied). */

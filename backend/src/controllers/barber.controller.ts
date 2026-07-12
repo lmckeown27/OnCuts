@@ -344,6 +344,25 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       });
     }
 
+    const defaultProviderTypes = [
+      { provider_type: 'barber', label: 'Barber' },
+      { provider_type: 'beauty', label: 'Beauty' },
+    ];
+    let providerTypes = defaultProviderTypes;
+    try {
+      const providerTypesResult = await pool.query(
+        `SELECT provider_type, label FROM provider_types ORDER BY label ASC`
+      );
+      if (providerTypesResult.rows.length > 0) {
+        providerTypes = providerTypesResult.rows;
+      }
+    } catch (err) {
+      logger.warn(
+        'provider_types lookup failed (run migration 040_provider_types.sql); using Barber/Beauty fallback',
+        err
+      );
+    }
+
     res.json({
       success: true,
       data: filteredBarbers,
@@ -363,6 +382,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         total_before_distance_filter: shouldApplyDistanceFilter ? result.rows.length : filteredBarbers.length,
         showing_closest_fallback: showingClosestFallback,
         constrain_list_by_distance: constrainByDistance,
+        provider_types: providerTypes,
       },
     });
   } catch (error) {
