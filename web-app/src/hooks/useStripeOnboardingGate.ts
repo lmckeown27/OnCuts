@@ -15,11 +15,15 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
   const [status, setStatus] = useState<BarberConnectStatus | null>(null);
   const [isLoading, setIsLoading] = useState(enabled);
   const [loadError, setLoadError] = useState(false);
+  /** True after at least one successful status fetch while enabled. */
+  const [hasResolvedStatus, setHasResolvedStatus] = useState(false);
 
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
     if (!enabled) {
       setIsLoading(false);
+      setHasResolvedStatus(false);
+      setStatus(null);
       return null;
     }
     try {
@@ -27,10 +31,16 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
       setLoadError(false);
       const next = await fetchBarberConnectStatus();
       setStatus(next);
+      setHasResolvedStatus(true);
       return next;
     } catch {
       setLoadError(true);
-      setStatus(null);
+      // Keep prior status on silent refresh failure so a connected user isn't
+      // briefly treated as unresolved / a blocked user isn't flicked off.
+      if (!silent) {
+        setStatus(null);
+        setHasResolvedStatus(false);
+      }
       return null;
     } finally {
       if (!silent) setIsLoading(false);
@@ -57,13 +67,17 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
   }, [enabled, refresh]);
 
   const isFullyConnected = isBarberStripeFullyConnected(status);
-  /** Block dashboard until Connect is complete (includes initial status fetch). */
-  const isBlocking = enabled && !isFullyConnected;
+  /**
+   * Only surface the onboarding guide after Connect status is known and incomplete.
+   * While the check runs in the background (or fails), do not block or show the modal.
+   */
+  const isBlocking = enabled && hasResolvedStatus && !isFullyConnected;
 
   return {
     status,
     isLoading,
     loadError,
+    hasResolvedStatus,
     isFullyConnected,
     isBlocking,
     refresh,

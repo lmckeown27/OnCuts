@@ -403,7 +403,6 @@ export default function BarberPage() {
     setShowBookingDetailsModal(false);
     setShowPayoutSettings(false);
     setShowBlockTimeModal(false);
-    setShowStripeHub(true);
   }, [stripeGate.isBlocking]);
 
   // State for booking details modal
