@@ -41,8 +41,8 @@ router.get(
     query('minRating').optional().isFloat({ min: 0, max: 5 }),
     query('maxPrice').optional().isInt(),
     query('specialty').optional().isString(),
-    query('providerType').optional().isString(),
-    query('category').optional().isIn(['Haircuts', 'Beauty']),
+    query('providerType').optional().isIn(['barber', 'beauty']),
+    query('category').optional().isIn(['Barber', 'Beauty', 'Haircuts']),
     validate,
   ],
   getAllBarbers

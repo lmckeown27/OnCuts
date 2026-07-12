@@ -24,10 +24,9 @@ import {
   barberProviderTypeSelectSql,
 } from '../services/barber-provider-schema.service';
 import {
-  isServiceProviderCategory,
-  providerTypesForCategory,
+  normalizeProviderType,
+  providerTypeSlugFromCategoryOrType,
 } from '../utils/service-provider.mapper';
-import type { ServiceProviderCategory } from '../types/service-provider.types';
 import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -173,15 +172,16 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     if (providerType) {
       const providerTypeExpr = await barberProviderTypeExpr();
+      const slug = normalizeProviderType(String(providerType));
       query += ` AND LOWER(${providerTypeExpr}) = LOWER($${paramIndex})`;
-      params.push(String(providerType));
+      params.push(slug);
       paramIndex++;
-    } else if (category && isServiceProviderCategory(String(category))) {
-      const types = providerTypesForCategory(String(category) as ServiceProviderCategory);
-      if (types.length > 0) {
+    } else if (category) {
+      const slug = providerTypeSlugFromCategoryOrType(String(category));
+      if (slug) {
         const providerTypeExpr = await barberProviderTypeExpr();
-        query += ` AND LOWER(${providerTypeExpr}) = ANY($${paramIndex}::text[])`;
-        params.push(types.map((type) => type.toLowerCase()));
+        query += ` AND LOWER(${providerTypeExpr}) = LOWER($${paramIndex})`;
+        params.push(slug);
         paramIndex++;
       }
     }

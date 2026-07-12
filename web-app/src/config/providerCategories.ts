@@ -8,7 +8,7 @@ export type BrowseProviderCategoryOption = {
   description: string;
 };
 
-/** Consumer browse category chips — aligned with Intera ServiceProviderCategory. */
+/** Consumer browse chips — All / Barber / Beauty (provider_type buckets). */
 export const BROWSE_PROVIDER_CATEGORIES: BrowseProviderCategoryOption[] = [
   {
     id: 'all',
@@ -16,9 +16,9 @@ export const BROWSE_PROVIDER_CATEGORIES: BrowseProviderCategoryOption[] = [
     description: 'Every provider type',
   },
   {
-    id: 'Haircuts',
-    label: 'Haircuts',
-    description: 'Barbers',
+    id: 'Barber',
+    label: 'Barber',
+    description: 'Barbers and haircuts',
   },
   {
     id: 'Beauty',
@@ -27,9 +27,12 @@ export const BROWSE_PROVIDER_CATEGORIES: BrowseProviderCategoryOption[] = [
   },
 ];
 
+/** Map browse chip to list API filters (prefer providerType slug). */
 export function browseCategoryApiParam(
   category: BrowseProviderCategory,
-): { category?: ServiceProviderCategory } {
+): { providerType?: 'barber' | 'beauty'; category?: ServiceProviderCategory } {
   if (category === 'all') return {};
-  return { category };
+  if (category === 'Barber') return { providerType: 'barber', category: 'Barber' };
+  if (category === 'Beauty') return { providerType: 'beauty', category: 'Beauty' };
+  return {};
 }

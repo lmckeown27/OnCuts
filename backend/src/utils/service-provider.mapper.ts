@@ -7,44 +7,31 @@ import type {
 
 type BarberLikeRecord = Record<string, unknown>;
 
-const PROVIDER_TYPE_CATEGORY: Record<string, ServiceProviderCategory> = {
-  barber: 'Haircuts',
-  braids: 'Beauty',
-  makeup: 'Beauty',
-  nails: 'Beauty',
-  lashes: 'Beauty',
-  tanning: 'Beauty',
-};
+/** Canonical provider_type slugs stored in Postgres. */
+export type ProviderTypeSlug = 'barber' | 'beauty';
 
-export const SERVICE_PROVIDER_CATEGORIES: ServiceProviderCategory[] = [
-  'Haircuts',
-  'Beauty',
-];
+export const SERVICE_PROVIDER_CATEGORIES: ServiceProviderCategory[] = ['Barber', 'Beauty'];
 
-const CATEGORY_PROVIDER_TYPES: Record<ServiceProviderCategory, string[]> = {
-  Haircuts: [],
-  Beauty: [],
-};
+export const PROVIDER_TYPE_SLUGS: ProviderTypeSlug[] = ['barber', 'beauty'];
 
-for (const [providerType, category] of Object.entries(PROVIDER_TYPE_CATEGORY)) {
-  CATEGORY_PROVIDER_TYPES[category].push(providerType);
-}
-
-export function isServiceProviderCategory(value: string): value is ServiceProviderCategory {
-  return SERVICE_PROVIDER_CATEGORIES.includes(value as ServiceProviderCategory);
-}
-
-export function providerTypesForCategory(category: ServiceProviderCategory): string[] {
-  return CATEGORY_PROVIDER_TYPES[category];
-}
-
-const PROVIDER_TYPE_SPECIALTY: Record<string, string> = {
+const SLUG_TO_CATEGORY: Record<ProviderTypeSlug, ServiceProviderCategory> = {
   barber: 'Barber',
-  braids: 'Braids',
-  makeup: 'Makeup',
-  nails: 'Nails',
-  lashes: 'Lashes',
-  tanning: 'Tanning',
+  beauty: 'Beauty',
+};
+
+const CATEGORY_TO_SLUG: Record<string, ProviderTypeSlug> = {
+  Barber: 'barber',
+  Beauty: 'beauty',
+  // Legacy browse / API alias
+  Haircuts: 'barber',
+  haircuts: 'barber',
+  barber: 'barber',
+  beauty: 'beauty',
+};
+
+const PROVIDER_TYPE_LABEL: Record<ProviderTypeSlug, string> = {
+  barber: 'Barber',
+  beauty: 'Beauty',
 };
 
 function asString(value: unknown): string | null {
@@ -60,24 +47,62 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
-export function normalizeProviderType(raw: unknown): string {
+/** Normalize DB / query value to `barber` | `beauty` (default barber). */
+export function normalizeProviderType(raw: unknown): ProviderTypeSlug {
   const value = asString(raw)?.toLowerCase();
-  return value || 'barber';
+  if (value === 'beauty') return 'beauty';
+  // Legacy fine-grained beauty slugs (if any remain in DB)
+  if (
+    value === 'braids' ||
+    value === 'makeup' ||
+    value === 'nails' ||
+    value === 'lashes' ||
+    value === 'tanning'
+  ) {
+    return 'beauty';
+  }
+  return 'barber';
+}
+
+export function isServiceProviderCategory(value: string): value is ServiceProviderCategory {
+  return SERVICE_PROVIDER_CATEGORIES.includes(value as ServiceProviderCategory);
+}
+
+/** Resolve category / legacy Haircuts / slug to a provider_type slug for filtering. */
+export function providerTypeSlugFromCategoryOrType(
+  categoryOrType: string | undefined | null
+): ProviderTypeSlug | null {
+  if (!categoryOrType?.trim()) return null;
+  const key = categoryOrType.trim();
+  const fromMap = CATEGORY_TO_SLUG[key] ?? CATEGORY_TO_SLUG[key.toLowerCase()];
+  if (fromMap) return fromMap;
+  if (isServiceProviderCategory(key)) return CATEGORY_TO_SLUG[key] ?? null;
+  return null;
 }
 
 export function categoryForProviderType(providerType: string): ServiceProviderCategory {
-  return PROVIDER_TYPE_CATEGORY[providerType] ?? 'Haircuts';
+  const slug = normalizeProviderType(providerType);
+  return SLUG_TO_CATEGORY[slug];
+}
+
+/** @deprecated Prefer filtering by providerType slug; returns single slug for a category label. */
+export function providerTypesForCategory(category: ServiceProviderCategory | string): string[] {
+  const slug = providerTypeSlugFromCategoryOrType(category);
+  return slug ? [slug] : [];
 }
 
 export function specialtyForProviderType(providerType: string): string {
-  if (PROVIDER_TYPE_SPECIALTY[providerType]) {
-    return PROVIDER_TYPE_SPECIALTY[providerType];
+  const slug = normalizeProviderType(providerType);
+  return PROVIDER_TYPE_LABEL[slug];
+}
+
+function firstSpecialtyFromRecord(record: BarberLikeRecord): string | null {
+  const specialties = record.specialties;
+  if (Array.isArray(specialties) && specialties.length > 0) {
+    const first = asString(specialties[0]);
+    if (first) return first;
   }
-  return providerType
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  return null;
 }
 
 function mapServices(pricing: unknown): ServiceProviderService[] | null {
@@ -158,10 +183,15 @@ export function mapBarberToServiceProvider(record: BarberLikeRecord): ServicePro
   const displayName =
     asString(record.name) ??
     asString(record.display_name) ??
-    (([firstName, lastName].filter(Boolean).join(' ').trim()) || 'Provider');
+    ([firstName, lastName].filter(Boolean).join(' ').trim() || 'Provider');
 
   const id = asString(record.id) ?? '';
   const userId = asString(record.user_id ?? record.userId) ?? '';
+
+  const specialty =
+    firstSpecialtyFromRecord(record) ??
+    services?.[0]?.name ??
+    specialtyForProviderType(providerType);
 
   return {
     id,
@@ -176,7 +206,7 @@ export function mapBarberToServiceProvider(record: BarberLikeRecord): ServicePro
     isAvailableNow: typeof record.is_active === 'boolean' ? record.is_active : null,
     priceRange: mapPriceRange(services),
     category: categoryForProviderType(providerType),
-    specialty: specialtyForProviderType(providerType),
+    specialty,
     providerType,
     services,
     availability: record.weekly_schedule ?? record.weeklySchedule ?? null,

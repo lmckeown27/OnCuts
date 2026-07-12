@@ -27,6 +27,11 @@ const SERVICE_BASE_PRICES: Record<string, number> = {
   // "Women's Cut": 40,
   'Color Treatment': 45,
   'Perm': 45,
+  'Braids': 45,
+  'Makeup': 40,
+  'Nails': 35,
+  'Lashes': 40,
+  'Tanning': 30,
 };
 
 /**

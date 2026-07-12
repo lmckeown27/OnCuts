@@ -586,6 +586,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         'Buzz Cut': 23, 'Line Up': 23, 'Beard Trim': 23, 'Haircut': 28, 'Taper': 28,
         'Hot Shave': 28, 'Kids Cut': 28, 'Fade': 35, /* 'Haircut & Fade': 35, */ 'Mullet': 35,
         'Design/Art': 38, 'Afro Textures': 38, /* "Women's Cut": 40, */ 'Color Treatment': 45, 'Perm': 45,
+        'Braids': 45, 'Makeup': 40, 'Nails': 35, 'Lashes': 40, 'Tanning': 30,
       };
       const pricing = specialties.map((specialty: string) => ({
         name: specialty,

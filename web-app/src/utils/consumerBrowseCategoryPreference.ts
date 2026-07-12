@@ -9,11 +9,26 @@ const VALID_IDS = new Set<BrowseProviderCategory>(
   BROWSE_PROVIDER_CATEGORIES.map((option) => option.id),
 );
 
+/** Map legacy stored ids (Haircuts) to current browse ids. */
+function normalizeStoredBrowseCategory(raw: string): BrowseProviderCategory | null {
+  if (raw === 'Haircuts' || raw === 'haircuts') return 'Barber';
+  if (VALID_IDS.has(raw as BrowseProviderCategory)) {
+    return raw as BrowseProviderCategory;
+  }
+  return null;
+}
+
 export function getBrowseProviderCategory(): BrowseProviderCategory {
   try {
     const raw = localStorage.getItem(BROWSE_CATEGORY_KEY);
-    if (raw && VALID_IDS.has(raw as BrowseProviderCategory)) {
-      return raw as BrowseProviderCategory;
+    if (raw) {
+      const normalized = normalizeStoredBrowseCategory(raw);
+      if (normalized) {
+        if (raw !== normalized) {
+          localStorage.setItem(BROWSE_CATEGORY_KEY, normalized);
+        }
+        return normalized;
+      }
     }
   } catch {
     // ignore

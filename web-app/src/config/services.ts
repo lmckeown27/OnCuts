@@ -49,6 +49,12 @@ export const SERVICE_TYPES: ServiceType[] = [
   // { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women', basePrice: 40 },
   { id: 'color', name: 'Color Treatment', description: 'Hair coloring services', basePrice: 45 },
   { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45 },
+  // Beauty provider services
+  { id: 'braids', name: 'Braids', description: 'Braiding and protective styles', basePrice: 45 },
+  { id: 'makeup', name: 'Makeup', description: 'Makeup application', basePrice: 40 },
+  { id: 'nails', name: 'Nails', description: 'Manicure, pedicure, nail art', basePrice: 35 },
+  { id: 'lashes', name: 'Lashes', description: 'Lash extensions and lifts', basePrice: 40 },
+  { id: 'tanning', name: 'Tanning', description: 'Spray tan / tanning services', basePrice: 30 },
 ];
 
 /**

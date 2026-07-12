@@ -159,7 +159,7 @@ export interface Barber {
   average_rating?: number; // Average rating from submitted reviews
   review_count?: number; // Total number of submitted reviews
   reviews?: Review[]; // Recent reviews
-  /** Service kind discriminator (Intera providerType parity). */
+  /** Provider kind: `barber` | `beauty` (browse buckets). */
   provider_type?: string;
 }
 
