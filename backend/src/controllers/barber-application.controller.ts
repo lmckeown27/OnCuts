@@ -831,7 +831,7 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
         applicantName,
         applicantEmail: email,
         applicantPhone: phoneNumber || undefined,
-        campusName,
+        campusName: campusName || 'Not specified',
         yearsExperience,
         hasLicense: hasLicense || false,
         licenseNumber: licenseNumber || undefined,
