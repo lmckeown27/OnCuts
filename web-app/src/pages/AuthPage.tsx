@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X /*, Phone */ } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
 import { TivelaPlatformsLogo } from '../assets';
@@ -581,6 +581,7 @@ export default function AuthPage() {
           {/* Login: email/password or phone SMS code */}
           {mode === 'login' && (
             <>
+              {/* Phone sign-in temporarily disabled — email only
               <div className="flex mb-4 bg-gray-50 rounded-lg p-1 border border-gray-200">
                 <button
                   type="button"
@@ -611,6 +612,7 @@ export default function AuthPage() {
                   Phone
                 </button>
               </div>
+              */}
 
               {loginChannel === 'email' && (
             <form onSubmit={handleLoginSubmit} className="space-y-5">
@@ -823,6 +825,7 @@ export default function AuthPage() {
           {/* Signup: email or phone (SMS) then email + password */}
           {mode === 'signup' && (
             <>
+              {/* Phone sign-up temporarily disabled — email only
               <div className="flex mb-4 bg-gray-50 rounded-lg p-1 border border-gray-200">
                 <button
                   type="button"
@@ -858,6 +861,7 @@ export default function AuthPage() {
                   Phone
                 </button>
               </div>
+              */}
 
               {signupChannel === 'email' && (
                 <form onSubmit={handleSignupSubmit} className="space-y-4">
