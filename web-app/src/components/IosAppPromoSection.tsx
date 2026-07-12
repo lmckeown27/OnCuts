@@ -131,7 +131,7 @@ export default function IosAppPromoSection() {
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 md:gap-8">
           <AppColumn
-            heading="For Customers"
+            heading="For Clients"
             card={{
               title: 'OnCuts',
               appLogo: onCutsAppLogo,
