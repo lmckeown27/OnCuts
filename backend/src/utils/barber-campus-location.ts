@@ -1,5 +1,6 @@
 /**
- * Default barber service pin to the campus centroid when they join vian OnCuts.
+ * Default service pin to the campus centroid when an admin-assigned campus has coords.
+ * Campus is optional for providers; null campusId yields null lat/lng.
  * Requires campuses.latitude / campuses.longitude (see add_campus_coordinates.sql).
  */
 

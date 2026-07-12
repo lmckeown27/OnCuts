@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Scissors, Clock, Award, Check, MapPin, ChevronDown, Search, Mail, UserX, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Clock, Award, Check, Mail, UserX, User as UserIcon, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
-import campusService from '../services/campus.service';
 import barberService from '../services/barber.service';
-import type { Campus } from '../types';
 import toast from 'react-hot-toast';
 
 interface BarberApplicationModalProps {
@@ -21,7 +19,6 @@ interface ApplicationForm {
   lastName: string; // Added for guest mode
   email: string; // Added for guest mode
   phoneNumber: string; // Required for contact
-  campusId: string;
   yearsExperience: string;
   /** '' until user completes license verification step */
   licenseDeclared: 'yes' | 'no' | '';
@@ -43,7 +40,6 @@ const emptyApplicationForm = (): ApplicationForm => ({
   lastName: '',
   email: '',
   phoneNumber: '',
-  campusId: '',
   yearsExperience: '',
   licenseDeclared: '',
   licenseNumber: '',
@@ -69,11 +65,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [shouldRender, setShouldRender] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successPopupVisible, setSuccessPopupVisible] = useState(false);
-  const [campuses, setCampuses] = useState<Campus[]>([]);
-  const [loadingCampuses, setLoadingCampuses] = useState(true);
-  const [campusSearchQuery, setCampusSearchQuery] = useState('');
-  const [showCampusDropdown, setShowCampusDropdown] = useState(false);
-  const campusSelectorRef = useRef<HTMLDivElement>(null);
   const [existingApplication, setExistingApplication] = useState<BarberApplication | null>(null);
   const [checkingExistingApplication, setCheckingExistingApplication] = useState(true);
   const [isDemotedBarber, setIsDemotedBarber] = useState(false);
@@ -111,7 +102,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setTimeout(onClose, 150);
   };
 
-  // Check for existing application, demoted status, and load campuses on mount
+  // Check for existing application / demoted status on mount
   useEffect(() => {
     const checkExistingApplicationAndDemotedStatus = async () => {
       try {
@@ -142,24 +133,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         setCheckingExistingApplication(false);
       }
     };
-
-    const loadCampuses = async () => {
-      try {
-        setLoadingCampuses(true);
-        const campusList = await campusService.getCampuses();
-        setCampuses(campusList);
-      } catch (error) {
-        console.error('Failed to load campuses:', error);
-        toast.error('Failed to load campuses');
-      } finally {
-        setLoadingCampuses(false);
-      }
-    };
     
     if (isOpen) {
       setStep(1);
       setForm(emptyApplicationForm());
-      setCampusSearchQuery('');
       // Skip existing application check for guest mode (no user to check)
       if (!guestMode) {
         checkExistingApplicationAndDemotedStatus();
@@ -167,7 +144,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         setCheckingExistingApplication(false);
         setExistingApplication(null);
       }
-      loadCampuses();
     }
   }, [isOpen, user?.id, guestMode]);
 
@@ -198,7 +174,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           lastName: form.lastName,
           email: form.email,
           phoneNumber: form.phoneNumber,
-          campusId: form.campusId,
           yearsExperience: form.yearsExperience,
           hasLicense,
           licenseNumber,
@@ -214,7 +189,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       } else {
         // Authenticated mode - use regular endpoint
         result = await barberApplicationService.submit({
-          campusId: form.campusId,
           phoneNumber: form.phoneNumber,
           yearsExperience: form.yearsExperience,
           hasLicense,
@@ -317,8 +291,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     form.licenseAttestation &&
     (form.licenseDeclared === 'no' || form.licenseNumber.trim().length >= 2);
 
-  // Step 3: Campus selection + About You
-  const canProceedStep3 = form.campusId && form.whyBeBarber.trim().length > 0 && form.availableHours;
+  // Step 3: About You
+  const canProceedStep3 = form.whyBeBarber.trim().length > 0 && Boolean(form.availableHours);
 
   const canSubmit = canProceedStep1 && canProceedStep2 && canProceedStep3;
 
@@ -617,7 +591,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
             <h2 className="text-xl font-bold text-white">Become an OnCuts Barber</h2>
-            <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
+            <p className="text-primary-100 text-sm">Apply to join the OnCuts provider network</p>
             <p className="text-primary-100/90 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
           </div>
           <button
@@ -903,102 +877,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </label>
             </div>
           ) : step === 3 ? (
-            /* Step 3: Campus & About You */
+            /* Step 3: About You */
             <div className="space-y-6">
-              {/* Campus Selection */}
-              <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Which campus do you want to cut at? *
-                </label>
-                <p className="text-xs text-gray-600 mb-3">
-                  Your application will be sent to the OnCuts team at this location.
-                </p>
-                {loadingCampuses ? (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                    Loading campuses...
-                  </div>
-                ) : (
-                  <div className="relative" ref={campusSelectorRef}>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={campusSearchQuery}
-                        onChange={(e) => {
-                          setCampusSearchQuery(e.target.value);
-                          setShowCampusDropdown(true);
-                        }}
-                        onFocus={() => setShowCampusDropdown(true)}
-                        onBlur={(e) => {
-                          // Delay to allow click on dropdown items to register first
-                          setTimeout(() => {
-                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
-                              setShowCampusDropdown(false);
-                              // Revert to selected campus name if no new selection
-                              if (form.campusId) {
-                                const selectedCampus = campuses.find(c => c.id === form.campusId);
-                                setCampusSearchQuery(selectedCampus?.name || '');
-                              } else {
-                                setCampusSearchQuery('');
-                              }
-                            }
-                          }, 150);
-                        }}
-                        placeholder="Search and select your campus..."
-                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white"
-                      />
-                      <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
-                    </div>
-                    
-                    {/* Campus Dropdown */}
-                    {showCampusDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[250px] overflow-y-auto overscroll-contain">
-                        {campusSearchQuery.trim() === '' ? (
-                          <div className="p-4 text-center text-gray-500">
-                            <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                            <p>Start typing to search</p>
-                            <p className="text-xs mt-1 text-gray-400">{campuses.length} universities available</p>
-                          </div>
-                        ) : (
-                        <div className="p-1">
-                          {campuses
-                            .filter(campus => 
-                              campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                            )
-                            .map(campus => (
-                              <button
-                                key={campus.id}
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault(); // Prevent blur from firing
-                                  setForm({ ...form, campusId: campus.id });
-                                  setCampusSearchQuery(campus.name);
-                                  setShowCampusDropdown(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
-                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
-                                }`}
-                              >
-                                {campus.name}
-                              </button>
-                            ))
-                          }
-                          {campuses.filter(campus => 
-                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                          ).length === 0 && (
-                            <div className="px-3 py-2 text-gray-500 text-sm">
-                              No campuses found
-                            </div>
-                          )}
-                        </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Why do you want to be an OnCuts barber? *
@@ -1071,13 +951,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
                   <p className="font-medium">{form.phoneNumber || 'Not provided'}</p>
-                </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
-                  <p className="font-medium">
-                    {(campuses || []).find(c => c.id === form.campusId)?.name || 'Not selected'}
-                  </p>
                 </div>
 
                 <div className="border-t pt-4">

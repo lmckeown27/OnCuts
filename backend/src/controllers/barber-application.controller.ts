@@ -503,8 +503,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
           // User exists - promote them to barber now
           const userId = existingUser.rows[0].id;
           await pool.query(
-            `UPDATE users SET role = 'BARBER', "campusId" = $2, "updatedAt" = NOW() WHERE id = $1`,
-            [userId, applicationData.campus_id]
+            `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
+            [userId]
           );
 
           // Link the guest application to the user
@@ -513,11 +513,12 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
             [userId, id]
           );
 
-          // Create barber profile (default service pin = campus centroid when coords exist)
+          // Create barber profile (service pin from campus centroid only if campus assigned)
           const specialties = applicationData.specialties || [];
           const pricing = generatePricingFromSpecialties(specialties);
           const ccGuest = campusCoordsValueExprs(2);
           const providerTypeInsert = await barberProviderTypeInsertFragments('$5');
+          const guestCampusId = applicationData.campus_id ?? null;
 
           await pool.query(
             `INSERT INTO barbers (
@@ -540,10 +541,10 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                specialties = EXCLUDED.specialties,
                pricing = EXCLUDED.pricing,
                "isActive" = true,
-               "campusId" = EXCLUDED."campusId",
+               "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
                ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
                "updatedAt" = NOW()`,
-            [userId, applicationData.campus_id, specialties, JSON.stringify(pricing), 'barber']
+            [userId, guestCampusId, specialties, JSON.stringify(pricing), 'barber']
           );
 
           logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
@@ -583,13 +584,13 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       );
       updatedApplication = result.rows[0];
 
-      // If approved, update user role to BARBER
+      // If approved, update user role to BARBER (campus is admin-assigned later, not from application)
       if (status === 'approved') {
         const appCampusId =
-          updatedApplication.campus_id ?? applicationData.campus_id ?? updatedApplication.campusId;
+          updatedApplication.campus_id ?? applicationData.campus_id ?? updatedApplication.campusId ?? null;
         await pool.query(
-          `UPDATE users SET role = 'BARBER', "campusId" = $2, "updatedAt" = NOW() WHERE id = $1`,
-          [updatedApplication.user_id, appCampusId]
+          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
+          [updatedApplication.user_id]
         );
 
         const specialties = applicationData.specialties || [];
@@ -618,7 +619,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              specialties = EXCLUDED.specialties,
              pricing = EXCLUDED.pricing,
              "isActive" = true,
-             "campusId" = EXCLUDED."campusId",
+             "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
              ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
              "updatedAt" = NOW()`,
           [updatedApplication.user_id, appCampusId, specialties, JSON.stringify(pricing), 'barber']
@@ -699,8 +700,8 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       throw new ApiError(400, 'Phone number is required');
     }
 
-    if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
-      throw new ApiError(400, 'Missing required fields: campusId, yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    if (!yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
+      throw new ApiError(400, 'Missing required fields: yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
     if (typeof hasLicense !== 'boolean') {
@@ -710,13 +711,17 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       throw new ApiError(400, 'License number is required when you have a barber or cosmetology license');
     }
 
-    // Verify the campus exists
-    const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId]);
-    if (campusCheck.rows.length === 0) {
-      throw new ApiError(400, 'Invalid campus selected');
+    // Optional campus (admin organization only). Validate if provided.
+    let campusName: string | undefined;
+    let resolvedCampusId: string | null = null;
+    if (typeof campusId === 'string' && campusId.trim()) {
+      const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId.trim()]);
+      if (campusCheck.rows.length === 0) {
+        throw new ApiError(400, 'Invalid campus selected');
+      }
+      resolvedCampusId = campusCheck.rows[0].id;
+      campusName = campusCheck.rows[0].name;
     }
-
-    const campusName = campusCheck.rows[0].name;
 
     // Check if email already has a user account
     const existingUser = await pool.query('SELECT id, role FROM users WHERE email = $1', [email.toLowerCase()]);
@@ -749,7 +754,7 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         phone_number VARCHAR(50),
-        campus_id UUID NOT NULL REFERENCES campuses(id),
+        campus_id UUID REFERENCES campuses(id),
         years_experience VARCHAR(50) NOT NULL,
         has_license BOOLEAN DEFAULT FALSE,
         license_number VARCHAR(100),
@@ -773,6 +778,14 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50)
     `);
 
+    // Ensure guest campus_id is nullable on existing tables
+    await pool.query(`
+      ALTER TABLE guest_barber_applications
+      ALTER COLUMN campus_id DROP NOT NULL
+    `).catch(() => {
+      /* already nullable or table just created */
+    });
+
     // Insert the guest application
     const result = await pool.query(
       `INSERT INTO guest_barber_applications (
@@ -786,7 +799,7 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
         firstName || null,
         lastName || null,
         phoneNumber || null,
-        campusId,
+        resolvedCampusId,
         yearsExperience,
         hasLicense || false,
         licenseNumber || null,

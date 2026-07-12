@@ -531,18 +531,14 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
     }
 
-    // Use campus from approved application if available, otherwise use the one from registration
-    const campusId = hasApprovedApplication 
-      ? approvedGuestApp.rows[0].campus_id 
-      : pendingReg.campusId;
+    // Campus is admin-organization only for providers — never required to create an account.
+    // Prefer application campus if present (legacy), otherwise registration campus, else null.
+    const campusId = hasApprovedApplication
+      ? approvedGuestApp.rows[0].campus_id ?? pendingReg.campusId ?? null
+      : pendingReg.campusId ?? null;
 
-    // Log if user is registering without a campus (consumers can do this, barbers cannot)
     if (!campusId) {
-      if (dbRole === 'BARBER') {
-        logger.error(`Barber ${email} attempting to register without a campusId - this should not happen`);
-        throw new ApiError(400, 'Campus selection is required for barber accounts. Please contact support.');
-      }
-      logger.info(`Consumer ${email} registering without campus affiliation`);
+      logger.info(`${dbRole} ${email} registering without campus affiliation`);
     }
 
     const { firstName: resolvedFirst, lastName: resolvedLast } = resolveNamesForUser(
@@ -572,12 +568,14 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     // If user had an approved guest application, create their barber profile
     if (hasApprovedApplication) {
       const guestApp = approvedGuestApp.rows[0];
-      // Tie account to the university from the application (not only the signup form campus)
-      await pool.query(
-        `UPDATE users SET "campusId" = $1, "updatedAt" = NOW() WHERE id = $2`,
-        [guestApp.campus_id, user.id]
-      );
-      user.campusId = guestApp.campus_id;
+      // Only copy campus from application when present (admin may assign later otherwise)
+      if (guestApp.campus_id) {
+        await pool.query(
+          `UPDATE users SET "campusId" = $1, "updatedAt" = NOW() WHERE id = $2`,
+          [guestApp.campus_id, user.id]
+        );
+        user.campusId = guestApp.campus_id;
+      }
 
       const specialties = guestApp.specialties || [];
       
@@ -616,7 +614,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            specialties = EXCLUDED.specialties,
            pricing = EXCLUDED.pricing,
            "isActive" = true,
-           "campusId" = EXCLUDED."campusId",
+           "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
            ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
            "updatedAt" = NOW()`,
         [user.id, guestApp.campus_id, specialties, JSON.stringify(pricing)]

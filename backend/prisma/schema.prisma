@@ -143,7 +143,8 @@ model User {
   suiAddress      String?  @unique @map("sui_address") @db.VarChar(66)
   zkLoginSalt     String?  @map("zk_login_salt") @db.Text
   role            UserRole
-  campusId        String   @db.Uuid
+  /** Optional; admin may assign for provider organization. Not required to practice. */
+  campusId        String?  @db.Uuid
   
   // Profile (optional)
   displayName     String?  @db.VarChar(100)
@@ -161,7 +162,7 @@ model User {
   lastActiveAt    DateTime @default(now()) @db.Timestamptz
   
   // Relations
-  campus          Campus   @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  campus          Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   barberProfile   Barber?
   consumerBookings Booking[] @relation("ConsumerBookings")
   consumerReviews  Review[]  @relation("ConsumerReviews")
@@ -179,7 +180,8 @@ model User {
 model Barber {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @unique @db.Uuid
-  campusId    String   @db.Uuid
+  /** Optional admin organization tag; not set by the provider. */
+  campusId    String?  @db.Uuid
   
   // Identity
   bio         String?  @db.Text
@@ -218,7 +220,7 @@ model Barber {
   
   // Relations
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campus      Campus   @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  campus      Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   availability Availability[]
   bookings    Booking[]
   reviews     Review[]

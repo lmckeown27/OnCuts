@@ -604,7 +604,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
-          user.campus_id,
+          user.campus_id ?? null,
           JSON.stringify(defaultSchedule),
         ]
       );

@@ -109,9 +109,9 @@ model Barber {
   userId            String   @unique
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Campus relation (Required)
-  campusId          String
-  campus            Campus   @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  // Campus relation (optional — admin organization only)
+  campusId          String?
+  campus            Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   
   // Campus Manager role (Optional)
   isCampusManager   Boolean  @default(false)
