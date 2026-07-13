@@ -38,6 +38,8 @@ type BarberView = 'performance' | 'clients';
 interface BarberAnalyticsPanelProps {
   performance: BarberPerformance;
   isLoadingPerformance: boolean;
+  /** Human-readable Stripe payout timing copy (from connect status). */
+  payoutScheduleClarity?: string;
 }
 
 function formatCurrencyFromCents(cents: number): string {
@@ -115,6 +117,7 @@ function statusBadgeClass(status: string): string {
 export default function BarberAnalyticsPanel({
   performance,
   isLoadingPerformance,
+  payoutScheduleClarity,
 }: BarberAnalyticsPanelProps) {
   const [barberView, setBarberView] = useState<BarberView>('performance');
   const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('weekly');
@@ -552,7 +555,8 @@ export default function BarberAnalyticsPanel({
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 italic pt-1">
-                      Payouts settle through your Stripe Connect account, not an OnCuts balance.
+                      {payoutScheduleClarity ||
+                        'Payouts settle through your Stripe Connect account, not an OnCuts balance. Card payments are not instant.'}
                     </p>
                   </div>
                 </div>

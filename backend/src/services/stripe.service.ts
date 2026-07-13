@@ -469,6 +469,12 @@ class StripeService {
     detailsSubmitted: boolean;
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
+    payoutSchedule?: {
+      interval: string;
+      delayDays: number | null;
+      weeklyAnchor: string | null;
+      monthlyAnchor: number | null;
+    };
     requirements?: {
       currently_due: string[];
       eventually_due: string[];
@@ -489,10 +495,23 @@ class StripeService {
         });
       }
 
+      const schedule = account.settings?.payouts?.schedule;
+      const payoutSchedule = schedule
+        ? {
+            interval: schedule.interval || 'daily',
+            delayDays:
+              typeof schedule.delay_days === 'number' ? schedule.delay_days : null,
+            weeklyAnchor: schedule.weekly_anchor || null,
+            monthlyAnchor:
+              typeof schedule.monthly_anchor === 'number' ? schedule.monthly_anchor : null,
+          }
+        : undefined;
+
       return {
         detailsSubmitted: account.details_submitted || false,
         chargesEnabled: account.charges_enabled || false,
         payoutsEnabled: account.payouts_enabled || false,
+        payoutSchedule,
         requirements: account.requirements ? {
           currently_due: account.requirements.currently_due || [],
           eventually_due: account.requirements.eventually_due || [],

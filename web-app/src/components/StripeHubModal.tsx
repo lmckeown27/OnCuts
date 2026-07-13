@@ -12,6 +12,7 @@ import {
   refreshBarberConnectOnboarding,
   resetBarberConnect,
   fetchBarberStripeDashboardUrl,
+  formatPayoutScheduleClarity,
   type BarberConnectStatus,
 } from '../services/barber-connect.service';
 import { isBarberStripeFullyConnected } from '../utils/stripe-connect-status';
@@ -615,11 +616,18 @@ export default function StripeHubModal({
                   Manage bank account & payouts in Stripe
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                Stripe is connected. Payouts flow directly to your bank.
+              <div className="space-y-2 text-sm text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <span className="relative flex h-2 w-2 shrink-0 mt-1.5">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <p className="font-medium leading-snug">
+                    Stripe is connected. Funds go to your bank via Stripe — not as instant transfers.
+                  </p>
+                </div>
+                <p className="text-emerald-800/90 leading-relaxed pl-4">
+                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+                </p>
               </div>
             </>
           )}
