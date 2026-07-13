@@ -542,7 +542,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         void toggleService(service.serviceId);
                       }
                     }}
-                    className={`rounded-[14px] border-2 px-4 py-4 transition-opacity ${
+                    className={`rounded-[14px] border-2 px-3 py-3 transition-opacity ${
                       saving ? 'opacity-70' : ''
                     } ${!service.isOffered ? 'cursor-pointer' : ''}`}
                     style={{
@@ -550,8 +550,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                       borderColor: `${olive}b8`,
                     }}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <button
                           type="button"
                           aria-label={
@@ -564,7 +564,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                             e.stopPropagation();
                             if (!saving) void toggleService(service.serviceId);
                           }}
-                          className="mt-0.5 shrink-0 text-left"
+                          className="shrink-0 text-left"
                         >
                           {service.isOffered ? (
                             <span
@@ -577,19 +577,19 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                             <Square className="w-5 h-5 text-gray-500" strokeWidth={2} />
                           )}
                         </button>
-                        <h4 className="font-bold text-gray-900 text-[15px] leading-snug line-clamp-2">
+                        <h4 className="font-bold text-gray-900 text-[15px] leading-snug line-clamp-2 min-w-0">
                           {service.serviceName}
                         </h4>
                       </div>
 
                       <div
-                        className={`shrink-0 space-y-2 min-w-[10.5rem] ${
+                        className={`shrink-0 space-y-1.5 ${
                           service.isOffered ? '' : 'opacity-40 pointer-events-none'
                         }`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-gray-600 w-12 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium text-gray-600 w-10 shrink-0">
                             Price:
                           </span>
                           <span className="text-sm text-gray-700">$</span>
@@ -603,7 +603,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                               const val = e.target.value.replace(/[^0-9]/g, '');
                               updatePrice(service.serviceId, val ? Number(val) : 0);
                             }}
-                            className={`w-[3.25rem] text-sm font-semibold text-gray-900 rounded-md px-1.5 py-1 border focus:outline-none ${
+                            className={`w-12 text-sm font-semibold text-gray-900 rounded-md px-1 py-0.5 border focus:outline-none ${
                               service.priceDirty
                                 ? 'border-2 bg-white'
                                 : 'border bg-white/70 border-stone-300'
@@ -616,8 +616,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                           />
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-gray-600 w-12 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium text-gray-600 w-10 shrink-0">
                             Time:
                           </span>
                           <input
@@ -630,7 +630,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                               const val = e.target.value.replace(/[^0-9]/g, '');
                               updateDuration(service.serviceId, val ? Number(val) : 0);
                             }}
-                            className={`w-[3.25rem] text-sm font-semibold text-gray-900 rounded-md px-1.5 py-1 border focus:outline-none ${
+                            className={`w-12 text-sm font-semibold text-gray-900 rounded-md px-1 py-0.5 border focus:outline-none ${
                               service.durationDirty
                                 ? 'border-2 bg-white'
                                 : 'border bg-white/70 border-stone-300'
@@ -643,7 +643,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                           />
                           <span className="text-xs text-gray-500">min</span>
                           {hasChanges && (
-                            <div className="flex items-center gap-0.5 ml-auto">
+                            <div className="flex items-center gap-0.5 pl-0.5">
                               <button
                                 type="button"
                                 aria-label="Confirm changes"

@@ -767,7 +767,7 @@ export default function BarberPage() {
           onClick={closeServiceSpecialties}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
