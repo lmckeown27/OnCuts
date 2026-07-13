@@ -20,6 +20,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import api from '../services/api.service';
 import barberApplicationService, { BarberApplication } from '../services/barber-application.service';
+import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import {
@@ -334,6 +335,8 @@ export function AdminDashboard({
   const [ugcReportsError, setUgcReportsError] = useState<string | null>(null);
   const [ugcResolveLoadingId, setUgcResolveLoadingId] = useState<string | null>(null);
   const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
+  const [banningUserId, setBanningUserId] = useState<string | null>(null);
+  const [demotingBarberId, setDemotingBarberId] = useState<string | null>(null);
   const [bannedUsers, setBannedUsers] = useState<BannedPlatformUser[]>([]);
   const [isLoadingBannedUsers, setIsLoadingBannedUsers] = useState(false);
   const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
@@ -849,6 +852,7 @@ export function AdminDashboard({
     try {
       await api.post(`/admin/users/${barber.id}/unban`, {});
       toast.success('User unbanned');
+      setSelectedBarber((prev) => (prev && prev.id === barber.id ? { ...prev, isBanned: false } : prev));
       await reloadBarberList();
       void loadBannedUsers();
     } catch (err: unknown) {
@@ -859,6 +863,64 @@ export function AdminDashboard({
       toast.error(msg);
     } finally {
       setUnbanningUserId(null);
+    }
+  };
+
+  const handleBanBarber = async (barber: Barber) => {
+    if (
+      !window.confirm(
+        `Ban ${barber.firstName} ${barber.lastName}? They will not be able to sign in.`
+      )
+    ) {
+      return;
+    }
+    setBanningUserId(barber.id);
+    try {
+      await api.post(`/admin/users/${barber.id}/ban`, {});
+      toast.success('User banned');
+      setSelectedBarber((prev) => (prev && prev.id === barber.id ? { ...prev, isBanned: true } : prev));
+      await reloadBarberList();
+      void loadBannedUsers();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to ban user';
+      toast.error(msg);
+    } finally {
+      setBanningUserId(null);
+    }
+  };
+
+  const handleDemoteBarber = async (barber: Barber) => {
+    if (!barber.barberRecordId) {
+      toast.error('Missing provider profile id');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Revoke operator status for ${barber.firstName} ${barber.lastName}? They will become a consumer and can no longer offer services.`
+      )
+    ) {
+      return;
+    }
+    setDemotingBarberId(barber.barberRecordId);
+    try {
+      await barberService.removeBarber(barber.barberRecordId);
+      toast.success('Operator demoted to consumer');
+      setSelectedBarber(null);
+      setBarberBookings([]);
+      setSelectedBookingId(null);
+      setSelectedBookingMessages([]);
+      await reloadBarberList();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to demote operator';
+      toast.error(msg);
+    } finally {
+      setDemotingBarberId(null);
     }
   };
   
@@ -1690,21 +1752,55 @@ export function AdminDashboard({
                 </p>
                 <p className="text-xs text-gray-500">{selectedBarber.email}</p>
               </div>
-              {selectedBarber.isBanned ? (
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={unbanningUserId === selectedBarber.id}
-                  onClick={() => handleUnbanBarber(selectedBarber)}
+                  disabled={
+                    demotingBarberId === selectedBarber.barberRecordId ||
+                    banningUserId === selectedBarber.id ||
+                    unbanningUserId === selectedBarber.id
+                  }
+                  onClick={() => handleDemoteBarber(selectedBarber)}
                 >
-                  {unbanningUserId === selectedBarber.id ? (
+                  {demotingBarberId === selectedBarber.barberRecordId ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    'Unban'
+                    'Demote to consumer'
                   )}
                 </Button>
-              ) : null}
+                {selectedBarber.isBanned ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={unbanningUserId === selectedBarber.id}
+                    onClick={() => handleUnbanBarber(selectedBarber)}
+                  >
+                    {unbanningUserId === selectedBarber.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Unban'
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-700 border-red-200 hover:bg-red-50"
+                    disabled={banningUserId === selectedBarber.id}
+                    onClick={() => handleBanBarber(selectedBarber)}
+                  >
+                    {banningUserId === selectedBarber.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Ban'
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
             
             {/* Bookings list */}

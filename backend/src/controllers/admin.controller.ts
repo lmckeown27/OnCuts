@@ -2440,6 +2440,46 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
+ * POST /api/admin/users/:userId/ban
+ * Platform ban — blocks sign-in (same flag as UGC moderation ban).
+ */
+export const banUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const { userId } = req.params;
+    const check = await pool.query(
+      `SELECT id, "isBanned", role FROM users WHERE id = $1::uuid`,
+      [userId]
+    );
+    if (check.rows.length === 0) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (check.rows[0].isBanned === true) {
+      res.json({ success: true, data: { ok: true, wasBanned: true }, message: 'User was already banned' });
+      return;
+    }
+    await pool.query(`UPDATE users SET "isBanned" = true, "updatedAt" = NOW() WHERE id = $1::uuid`, [
+      userId,
+    ]);
+    try {
+      await applyAffiliationCleanupForBannedUser(userId);
+    } catch (cleanupErr) {
+      logger.warn('admin_ban_affiliation_cleanup_failed', {
+        userId,
+        err: cleanupErr instanceof Error ? cleanupErr.message : cleanupErr,
+      });
+    }
+    logger.info('admin_ban_user', { userId, adminId: req.user!.userId });
+    res.json({ success: true, data: { ok: true, wasBanned: false }, message: 'User banned' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/admin/users/:userId/unban
  * Clears platform ban (login / app access) set via moderation or otherwise.
  */
