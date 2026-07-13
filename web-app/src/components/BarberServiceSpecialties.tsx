@@ -48,7 +48,7 @@ function normalizeProviderKind(raw: unknown): ProviderKind {
 
 /** Resolve catalog row type (API providerType, local config, or name heuristics). */
 function resolveCatalogProviderType(service: {
-  id?: string;
+  id?: string | number;
   slug?: string;
   name: string;
   providerType?: string | null;
@@ -56,7 +56,7 @@ function resolveCatalogProviderType(service: {
   if (service.providerType === 'beauty' || service.providerType === 'barber') {
     return service.providerType;
   }
-  const found = findService(service.slug || service.id || service.name);
+  const found = findService(service.slug || String(service.id ?? '') || service.name);
   if (found?.providerType === 'beauty') return 'beauty';
   if (found?.providerType === 'barber') return 'barber';
   return 'barber';
