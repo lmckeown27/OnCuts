@@ -525,6 +525,7 @@ async function handlePaymentIntentSucceeded(
     await client.query('BEGIN');
 
     // 1. Update booking to COMPLETED status (with payment info)
+    // Stamp paymentMethod as card when unset so Stripe settlements aren't null for analytics
     const updateBookingResult = await client.query(
       `UPDATE bookings 
        SET status = 'COMPLETED',
@@ -534,6 +535,7 @@ async function handlePaymentIntentSucceeded(
            tip_amount_cents = $2,
            "tipAmountCents" = $2,
            "totalPaidCents" = $3,
+           "paymentMethod" = COALESCE("paymentMethod", 'card'),
            "updatedAt" = NOW()
        WHERE id = $4
        RETURNING *`,

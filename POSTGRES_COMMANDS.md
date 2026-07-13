@@ -3336,6 +3336,14 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 051 — Backfill paymentMethod = card for settled Stripe bookings
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/051_backfill_payment_method_card.sql
+pm2 restart oncuts-backend
+```
+
+Sets `"paymentMethod" = 'card'` where method was NULL but the booking was settled (`paidAt` / `totalPaidCents`). Leaves explicit `'cash'` alone.
+
 ### 050 — Clear per-provider commission rate overrides
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/050_clear_provider_fee_overrides.sql
