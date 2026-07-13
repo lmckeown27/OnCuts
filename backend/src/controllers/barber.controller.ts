@@ -29,6 +29,12 @@ import {
   normalizeProviderType,
   providerTypeSlugFromCategoryOrType,
 } from '../utils/service-provider.mapper';
+import {
+  inferServiceProviderType,
+  serviceDurationColumnsExist,
+  serviceProviderTypeColumnExist,
+  serviceSelectSql,
+} from '../services/service-schema.service';
 import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -492,6 +498,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
     const { userId } = req.params;
     const labelSelect = await barberServiceLocationLabelSelectSql();
     const sourceSelect = await barberServiceLocationSourceSelectSql();
+    const providerTypeSelect = await barberProviderTypeSelectSql();
 
     let barberResult = await pool.query(
       `SELECT 
@@ -508,7 +515,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect}${sourceSelect},
+        b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
         u.email,
         u.first_name,
         u.last_name,
@@ -871,6 +878,48 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       throw new ApiError(403, 'Not authorized to update this profile');
     }
 
+    // Restrict specialties/pricing to services for this provider's type (barber | beauty)
+    let specialtiesInput = specialties;
+    let pricingInput = pricing;
+    if (specialties !== undefined || pricing !== undefined) {
+      const providerTypeExpr = await barberProviderTypeExpr();
+      const typeResult = await pool.query(
+        `SELECT LOWER(${providerTypeExpr}) AS provider_type FROM barbers b WHERE b.id = $1`,
+        [id]
+      );
+      const providerKind =
+        String(typeResult.rows[0]?.provider_type || 'barber').toLowerCase() === 'beauty'
+          ? 'beauty'
+          : 'barber';
+
+      const hasDurationCols = await serviceDurationColumnsExist();
+      const hasProviderTypeCol = await serviceProviderTypeColumnExist();
+      const catalogResult = await pool.query(
+        `SELECT ${serviceSelectSql(hasDurationCols, hasProviderTypeCol)}
+         FROM services
+         WHERE is_active = true`
+      );
+      const allowedNames = new Set(
+        catalogResult.rows
+          .filter(
+            (row: Record<string, unknown>) =>
+              inferServiceProviderType(row.slug, row.name, row.provider_type) === providerKind
+          )
+          .map((row: Record<string, unknown>) => String(row.name).toLowerCase())
+      );
+
+      if (specialties !== undefined && Array.isArray(specialties)) {
+        specialtiesInput = specialties.filter(
+          (name: unknown) => allowedNames.has(String(name).toLowerCase())
+        );
+      }
+      if (pricing !== undefined && Array.isArray(pricing)) {
+        pricingInput = pricing.filter((entry: { name?: string }) =>
+          allowedNames.has(String(entry?.name || '').toLowerCase())
+        );
+      }
+    }
+
     // Build dynamic update query for barbers table
     const barberUpdateFields: string[] = [];
     const barberValues: any[] = [];
@@ -881,9 +930,9 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       barberValues.push(bio);
       paramIndex++;
     }
-    if (specialties !== undefined) {
+    if (specialtiesInput !== undefined) {
       barberUpdateFields.push(`specialties = $${paramIndex}`);
-      barberValues.push(specialties);
+      barberValues.push(specialtiesInput);
       paramIndex++;
     }
     if (yearsExperience !== undefined) {
@@ -903,9 +952,9 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     }
 
     let normalizedPricing: ReturnType<typeof normalizePricingEntries> | undefined;
-    if (pricing !== undefined) {
+    if (pricingInput !== undefined) {
       try {
-        normalizedPricing = normalizePricingEntries(pricing);
+        normalizedPricing = normalizePricingEntries(pricingInput);
         barberUpdateFields.push(`pricing = $${paramIndex}`);
         barberValues.push(JSON.stringify(normalizedPricing));
       } catch (pricingError: any) {

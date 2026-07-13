@@ -15,6 +15,7 @@ import {
   getDefaultDurationMinutes,
   MAX_SERVICE_DURATION_MINUTES,
   MIN_SERVICE_DURATION_MINUTES,
+  findService,
 } from '../config/services';
 import barberService from '../services/barber.service';
 
@@ -39,6 +40,28 @@ interface Props {
   barberId: string;
 }
 
+type ProviderKind = 'barber' | 'beauty';
+
+function normalizeProviderKind(raw: unknown): ProviderKind {
+  return String(raw ?? 'barber').trim().toLowerCase() === 'beauty' ? 'beauty' : 'barber';
+}
+
+/** Resolve catalog row type (API providerType, local config, or name heuristics). */
+function resolveCatalogProviderType(service: {
+  id?: string;
+  slug?: string;
+  name: string;
+  providerType?: string | null;
+}): ProviderKind {
+  if (service.providerType === 'beauty' || service.providerType === 'barber') {
+    return service.providerType;
+  }
+  const found = findService(service.slug || service.id || service.name);
+  if (found?.providerType === 'beauty') return 'beauty';
+  if (found?.providerType === 'barber') return 'barber';
+  return 'barber';
+}
+
 const FALLBACK_SERVICES = SERVICE_TYPES;
 
 interface ApiService {
@@ -51,6 +74,7 @@ interface ApiService {
   maxPriceCents: number;
   minDurationMinutes: number;
   maxDurationMinutes: number;
+  providerType?: string;
   isActive: boolean;
 }
 
@@ -58,6 +82,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [barberServices, setBarberServices] = useState<BarberService[]>([]);
+  const [providerKind, setProviderKind] = useState<ProviderKind>('barber');
   const barberServicesRef = useRef(barberServices);
 
   useEffect(() => {
@@ -77,6 +102,12 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       const barberData = await barberService.getBarberByUserId(barberId, {
         cacheBust: options?.cacheBust,
       });
+      const kind = normalizeProviderKind(
+        (barberData as { provider_type?: string; providerType?: string } | null)?.provider_type ??
+          (barberData as { providerType?: string } | null)?.providerType
+      );
+      setProviderKind(kind);
+
       const currentSpecialties: string[] = barberData?.specialties || [];
       const currentPricing: { name: string; price: number; duration_minutes?: number }[] =
         barberData?.pricing || [];
@@ -90,12 +121,16 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         maxPrice: number;
         minDurationMinutes: number;
         maxDurationMinutes: number;
+        providerType: ProviderKind;
       }[] = [];
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL || ''}/admin/services?providerType=${kind}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const data = await response.json();
         if (data.success && data.data) {
           availableServices = data.data
@@ -109,23 +144,28 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
               maxPrice: Math.round((s.maxPriceCents ?? s.basePriceCents) / 100),
               minDurationMinutes: s.minDurationMinutes ?? MIN_SERVICE_DURATION_MINUTES,
               maxDurationMinutes: s.maxDurationMinutes ?? MAX_SERVICE_DURATION_MINUTES,
-            }));
+              providerType: resolveCatalogProviderType(s),
+            }))
+            .filter((s: { providerType: ProviderKind }) => s.providerType === kind);
         }
       } catch {
         console.log('Using fallback services from config');
       }
 
       if (availableServices.length === 0) {
-        availableServices = FALLBACK_SERVICES.map((s) => ({
-          id: s.id,
-          name: s.name,
-          description: s.description || '',
-          basePrice: s.basePrice || 25,
-          minPrice: Math.max(5, Math.round((s.basePrice || 25) * 0.8)),
-          maxPrice: Math.round((s.basePrice || 25) * 1.5),
-          minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
-          maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
-        }));
+        availableServices = FALLBACK_SERVICES.filter((s) => (s.providerType || 'barber') === kind).map(
+          (s) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description || '',
+            basePrice: s.basePrice || 25,
+            minPrice: Math.max(5, Math.round((s.basePrice || 25) * 0.8)),
+            maxPrice: Math.round((s.basePrice || 25) * 1.5),
+            minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
+            maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
+            providerType: (s.providerType || 'barber') as ProviderKind,
+          })
+        );
       }
 
       const services: BarberService[] = availableServices.map((service) => {
@@ -163,7 +203,9 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       console.error('Failed to fetch barber services:', error);
       toast.error('Failed to load services');
 
-      const defaultServices: BarberService[] = FALLBACK_SERVICES.map((service) => ({
+      const defaultServices: BarberService[] = FALLBACK_SERVICES.filter(
+        (s) => (s.providerType || 'barber') === providerKind
+      ).map((service) => ({
         serviceId: service.id,
         serviceName: service.name,
         description: service.description || '',
@@ -327,6 +369,9 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       <Card>
         <p className="text-sm text-gray-600 mb-4">
           Select services and set your price and duration for each one.
+          {providerKind === 'beauty'
+            ? ' Showing Beauty services for your provider type.'
+            : ' Showing Barber services for your provider type.'}
         </p>
 
         <div
