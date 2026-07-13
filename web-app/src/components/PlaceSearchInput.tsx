@@ -86,7 +86,7 @@ export default function PlaceSearchInput({
         )
         .slice(0, 5)
         .map((c) => ({
-          label: c.city ? `${c.name}, ${c.city}` : c.name,
+          label: c.name,
           latitude: c.latitude as number,
           longitude: c.longitude as number,
           placeType: 'campus',

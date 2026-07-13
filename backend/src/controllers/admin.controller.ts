@@ -39,6 +39,7 @@ import {
   barberNearCampusByPinSql,
   servicePinDistanceToCampusSql,
 } from '../utils/admin-campus-proximity';
+import { coarsenPublicLocationLabel } from '../services/geocode.service';
 
 /**
  * Withdraw platform fees
@@ -1920,7 +1921,9 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         isActive: row.is_active,
         campusId: row.campus_id?.toString(),
         campusName: row.campus_name,
-        serviceLocationLabel: row.service_location_label || null,
+        serviceLocationLabel: row.service_location_label
+          ? coarsenPublicLocationLabel(String(row.service_location_label))
+          : null,
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
@@ -2418,7 +2421,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         isActive: row.is_active,
         campusId: row.campus_id?.toString() || null,
         campusName: row.campus_name || null,
-        serviceLocationLabel: row.service_location_label || null,
+        serviceLocationLabel: row.service_location_label
+          ? coarsenPublicLocationLabel(String(row.service_location_label))
+          : null,
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,

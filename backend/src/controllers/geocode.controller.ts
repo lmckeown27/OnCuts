@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { ApiError } from '../middleware/errorHandler';
 import {
   GeocodeUpstreamError,
-  reverseGeocode,
+  reverseGeocodeCoarse,
   sanitizeGeocodeQuery,
   searchPlaces,
 } from '../services/geocode.service';
@@ -45,7 +45,8 @@ export const reverseGeocodePlace = async (
       throw new ApiError(400, 'Coordinates out of range');
     }
 
-    const place = await reverseGeocode(latitude, longitude);
+    // Public-facing reverse: city/town only (no street address)
+    const place = await reverseGeocodeCoarse(latitude, longitude);
     if (!place) {
       throw new ApiError(404, 'Could not resolve a place name for those coordinates');
     }

@@ -19,7 +19,7 @@ import {
   warnIfBarberServiceLocationSourceMissing,
   warnIfBarberServiceLocationWebOnlyMissing,
 } from '../services/barber-location-schema.service';
-import { reverseGeocodeCoarse } from '../services/geocode.service';
+import { reverseGeocodeCoarse, coarsenPublicLocationLabel } from '../services/geocode.service';
 
 interface UpdateLocationBody {
   latitude: number;
@@ -172,7 +172,11 @@ function mapServiceLocationRow(
     service_longitude: row.service_longitude ?? null,
     service_radius_km: row.service_radius_km ?? null,
     service_location_label: opts.hasLabelColumn
-      ? (row.service_location_label as string | null | undefined)
+      ? (() => {
+          const raw = row.service_location_label;
+          if (raw == null || raw === '') return raw as string | null | undefined;
+          return coarsenPublicLocationLabel(String(raw));
+        })()
       : undefined,
     service_location_source: opts.hasSourceColumn
       ? (row.service_location_source as string | null | undefined)
@@ -297,7 +301,7 @@ export const updateBarberServiceLocation = async (
         throw new ApiError(400, 'label must be a string');
       }
       if (typeof label === 'string') {
-        label = label.trim();
+        label = coarsenPublicLocationLabel(label.trim());
         if (label.length === 0) {
           throw new ApiError(400, 'label cannot be empty');
         }

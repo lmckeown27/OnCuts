@@ -48,55 +48,55 @@ export function sanitizeGeocodeQuery(raw: string): string {
 }
 
 /**
- * Coarse public label for device GPS pins (city/region — not street address).
- * Aligns with “set location as broadly as possible for safety.”
+ * City/town only for public labels (no street / house number).
+ * e.g. "San Luis Obispo" — not "1144 Chorro St, San Luis Obispo".
  */
 export function formatCoarsePublicLabel(item: Record<string, unknown>): string {
   const address = item.address as Record<string, string> | undefined;
   if (address) {
-    const parts: string[] = [];
+    const campus = address.university || address.college;
+    if (campus) return campus;
+
     const city =
       address.city ||
       address.town ||
       address.village ||
       address.municipality ||
       address.county;
-    if (city) parts.push(city);
-    const state = address.state;
-    if (state && !parts.includes(state)) parts.push(state);
-    if (parts.length > 0) return parts.join(', ');
+    if (city) return city;
   }
-  const display = String(item.display_name || '');
-  const segments = display.split(',').map((s) => s.trim()).filter(Boolean);
-  // Prefer last meaningful segments (often city, state, country) without house number/road
-  if (segments.length >= 3) {
-    return segments.slice(-3, -1).join(', ') || segments.slice(0, 2).join(', ');
-  }
-  return segments.slice(0, 2).join(', ') || display;
+  return coarsenPublicLocationLabel(String(item.display_name || ''));
 }
 
-function formatShortLabel(item: Record<string, unknown>): string {
-  const address = item.address as Record<string, string> | undefined;
-  if (address) {
-    const parts: string[] = [];
-    const name =
-      address.university ||
-      address.college ||
-      address.building ||
-      address.amenity ||
-      address.road ||
-      address.neighbourhood ||
-      address.suburb;
-    if (name) parts.push(name);
-    const city = address.city || address.town || address.village || address.county;
-    if (city && !parts.includes(city)) parts.push(city);
-    const state = address.state;
-    if (state) parts.push(state);
-    if (parts.length > 0) return parts.join(', ');
+/**
+ * Strip street-level detail from a stored or display_name label.
+ * Preserves campus/city names; turns "1144 Chorro St, San Luis Obispo, CA" → "San Luis Obispo".
+ */
+export function coarsenPublicLocationLabel(raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return trimmed;
+
+  const segments = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  if (segments.length === 0) return trimmed;
+
+  const streetLike =
+    /^\d/.test(segments[0]) ||
+    /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|way|ct|court|hwy|highway|pkwy|parkway)\.?$/i.test(
+      segments[0]
+    );
+
+  if (streetLike && segments.length >= 2) {
+    // Next segment is usually the city/town
+    return segments[1];
   }
-  const display = String(item.display_name || '');
-  const segments = display.split(',').map((s) => s.trim()).filter(Boolean);
-  return segments.slice(0, 3).join(', ') || display;
+
+  // Already a place/city (optionally with state) — use the primary place name only
+  return segments[0];
+}
+
+/** @deprecated Prefer formatCoarsePublicLabel for public-facing place names. */
+function formatShortLabel(item: Record<string, unknown>): string {
+  return formatCoarsePublicLabel(item);
 }
 
 async function waitForNominatimSlot(): Promise<void> {
@@ -171,7 +171,7 @@ export async function searchPlaces(query: string, limit = 8): Promise<GeocodePla
   const trimmed = sanitizeGeocodeQuery(query);
   if (trimmed.length < 2) return [];
 
-  const cacheKey = `search:${trimmed.toLowerCase()}:${limit}`;
+  const cacheKey = `search:v2:${trimmed.toLowerCase()}:${limit}`;
   const cached = searchCache.get<GeocodePlace[]>(cacheKey);
   if (cached) {
     logger.debug('Geocode search cache hit', { query: trimmed });
@@ -195,7 +195,7 @@ export async function searchPlaces(query: string, limit = 8): Promise<GeocodePla
 export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodePlace | null> {
   const latKey = latitude.toFixed(5);
   const lngKey = longitude.toFixed(5);
-  const cacheKey = `reverse:${latKey},${lngKey}`;
+  const cacheKey = `reverse:v2:${latKey},${lngKey}`;
 
   const cached = reverseCache.get<GeocodePlace>(cacheKey);
   if (cached) return cached;
@@ -215,7 +215,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
   const place: GeocodePlace = {
-    label: formatShortLabel(item),
+    label: formatCoarsePublicLabel(item),
     latitude: lat,
     longitude: lng,
     placeType: item.type ? String(item.type) : undefined,

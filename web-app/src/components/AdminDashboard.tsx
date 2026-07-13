@@ -752,8 +752,18 @@ export function AdminDashboard({
   }, [barbers, allBarberSearchQuery, barberLocationFilter]);
 
   const barberLocationSubtitle = (barber: Barber) => {
-    // Exact public label as chosen (UCSB, Santa Barbara, California, etc.) — never substitute nearest campus name
-    if (barber.serviceLocationLabel?.trim()) return barber.serviceLocationLabel.trim();
+    // City/town (or campus name) only — never street address
+    const raw = barber.serviceLocationLabel?.trim();
+    if (raw) {
+      const segments = raw.split(',').map((s) => s.trim()).filter(Boolean);
+      const streetLike =
+        /^\d/.test(segments[0] || '') ||
+        /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|way|ct|court)\.?$/i.test(
+          segments[0] || ''
+        );
+      if (streetLike && segments.length >= 2) return segments[1];
+      return segments[0] || raw;
+    }
     if (!barber.hasServiceLocation) return 'No public location';
     return 'Location set';
   };
