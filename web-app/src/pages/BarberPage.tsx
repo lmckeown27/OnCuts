@@ -1603,6 +1603,20 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     [confirmedBookings, hiddenPaidBookingIds]
   );
 
+  /** Statuses that occupy schedule slots (PAID / COMPLETED do not). Matches backend busy list. */
+  const SCHEDULE_OCCUPYING_STATUSES = useMemo(
+    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS']),
+    []
+  );
+
+  const scheduleBookings = useMemo(
+    () =>
+      visibleConfirmedBookings.filter(b =>
+        SCHEDULE_OCCUPYING_STATUSES.has(String(b.status || '').toUpperCase())
+      ),
+    [visibleConfirmedBookings, SCHEDULE_OCCUPYING_STATUSES]
+  );
+
   const awaitingPaymentBookings = useMemo(
     () => visibleConfirmedBookings.filter(b => b.status === 'COMPLETED'),
     [visibleConfirmedBookings]
@@ -1617,7 +1631,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     startOfWeek.setHours(0, 0, 0, 0);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
-    const count = visibleConfirmedBookings.filter(b => {
+    const count = scheduleBookings.filter(b => {
       const bookingDate = new Date(b.scheduledTime);
       return bookingDate >= startOfWeek && bookingDate < endOfWeek;
     }).length;
@@ -1721,10 +1735,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        // Fetch ACCEPTED, COMPLETED, and PAID bookings for the barber's schedule
+        // PENDING + ACCEPTED occupy the schedule; COMPLETED kept for awaiting-payment UI; PAID excluded from schedule
         const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
           role: 'barber',
-          status: 'ACCEPTED,COMPLETED,PAID',
+          status: 'PENDING,ACCEPTED,COMPLETED,PAID',
         });
         
         setConfirmedBookings(response.bookings || []);
@@ -2125,7 +2139,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
     
-    return visibleConfirmedBookings
+    return scheduleBookings
       .filter(booking => {
         const bookingDate = new Date(booking.scheduledTime);
         return bookingDate >= targetDate && bookingDate < nextDay;
@@ -2231,7 +2245,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           campusTimezone={campusTimezone}
           weeklySchedule={weeklySchedule}
           timeBlocks={weeklyTimeBlocks}
-          bookings={visibleConfirmedBookings}
+          bookings={scheduleBookings}
           isLoading={isLoadingBookings || isLoadingWeeklySchedule}
           onBlockTime={onBlockTime}
           onUnblockTime={onUnblockTime}
@@ -2970,9 +2984,13 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
       const response = await api.get(`/bookings-simple?role=barber`);
       // api.get already extracts data, so response is { bookings: [...] }
       const bookingsArray = response.bookings || response.data?.bookings || [];
-      // Filter to only show ACCEPTED, COMPLETED, and PAID bookings
+      // Filter to active + history lists (PENDING occupies calendar; PAID stays in history only)
       const relevantBookings = bookingsArray.filter(
-        (b: any) => b.status === 'ACCEPTED' || b.status === 'COMPLETED' || b.status === 'PAID'
+        (b: any) =>
+          b.status === 'PENDING' ||
+          b.status === 'ACCEPTED' ||
+          b.status === 'COMPLETED' ||
+          b.status === 'PAID'
       );
       setBookings(relevantBookings);
     } catch (error) {

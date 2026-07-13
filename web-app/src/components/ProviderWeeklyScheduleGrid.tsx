@@ -117,7 +117,7 @@ const getTimeRangeLayout = (startMin: number, endMin: number, gridStartMin: numb
   return { top, height: Math.max(height, ROW_HEIGHT_PX) };
 };
 
-const COMPLETED_BOOKING_STATUSES = new Set(['COMPLETED', 'PAID']);
+const PAID_OR_COMPLETED_STATUSES = new Set(['COMPLETED', 'PAID']);
 
 const formatBookingStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
@@ -133,10 +133,20 @@ const formatBookingStatusLabel = (status: string): string => {
   return labels[status] ?? status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 };
 
-const isCompletedBookingStatus = (status: string) => COMPLETED_BOOKING_STATUSES.has(status);
+const isPaidOrCompletedBookingStatus = (status: string) =>
+  PAID_OR_COMPLETED_STATUSES.has(status);
 
 const getBookingBlockStyles = (status: string) => {
-  if (isCompletedBookingStatus(status)) {
+  const normalized = status.toUpperCase();
+  if (normalized === 'PENDING') {
+    return {
+      button:
+        'border-amber-300/80 bg-amber-100 hover:border-amber-400 hover:bg-amber-200 focus-visible:ring-amber-500',
+      nameText: 'text-amber-950',
+      statusText: 'text-amber-800',
+    };
+  }
+  if (isPaidOrCompletedBookingStatus(normalized)) {
     return {
       button:
         'border-green-300/70 bg-green-100 hover:border-green-400/80 hover:bg-green-200 focus-visible:ring-green-500',
