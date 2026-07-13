@@ -3336,6 +3336,14 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 052 — Instant Payout tracking columns on payments
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/052_instant_payout_columns.sql
+pm2 restart oncuts-backend
+```
+
+Adds `payments.instant_payout_id` and `payments.instant_payout_status` for auto Instant Payout attempts after eligible Connect card charges. Enable with `STRIPE_INSTANT_PAYOUTS_ENABLED=true` after Instant is turned on for Connect in the Stripe Dashboard.
+
 ### 051 — Backfill paymentMethod = card for settled Stripe bookings
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/051_backfill_payment_method_card.sql

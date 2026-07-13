@@ -16,6 +16,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import type { AuthRequest } from '../middleware/auth';
+import { isInstantPayoutsEnabled } from '../services/instant-payout.service';
 
 async function getBarberUserRecord(userId: string) {
   const userResult = await pool.query(
@@ -232,6 +233,7 @@ export const getConnectStatus = async (
           details_submitted: false,
           charges_enabled: false,
           payouts_enabled: false,
+          instantPayoutsEnabled: isInstantPayoutsEnabled(),
         },
       });
     }
@@ -248,6 +250,7 @@ export const getConnectStatus = async (
           detailsSubmitted: false,
           chargesEnabled: false,
           payoutsEnabled: false,
+          instantPayoutsEnabled: isInstantPayoutsEnabled(),
         },
       });
     }
@@ -268,6 +271,7 @@ export const getConnectStatus = async (
         has_account: true,
         account_id: resolvedAccountId,
         needs_reconnect: false,
+        instantPayoutsEnabled: isInstantPayoutsEnabled(),
         ...status,
       },
     });

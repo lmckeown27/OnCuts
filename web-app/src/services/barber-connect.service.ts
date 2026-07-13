@@ -15,6 +15,8 @@ export interface BarberConnectStatus {
   detailsSubmitted?: boolean;
   chargesEnabled?: boolean;
   payoutsEnabled?: boolean;
+  /** Platform auto Instant Payouts after eligible card bookings (env-gated). */
+  instantPayoutsEnabled?: boolean;
   payoutSchedule?: StripePayoutSchedule;
 }
 
@@ -44,13 +46,61 @@ function ordinalDay(n: number): string {
 }
 
 /**
- * Plain-language explanation of why Stripe Connect funds are not instant.
+ * Plain-language payout timing. When Instant is enabled on the platform,
+ * lead with minutes-after-card copy and treat the Express schedule as fallback.
  */
 export function formatPayoutScheduleClarity(
-  schedule?: StripePayoutSchedule | null
+  schedule?: StripePayoutSchedule | null,
+  options?: { instantPayoutsEnabled?: boolean }
 ): string {
   const fallback =
     'Payouts are not instant. Card payments settle in Stripe first, then go to your bank on Stripe’s schedule. Open Stripe Express for exact timing.';
+
+  const scheduleDetail = (() => {
+    if (!schedule?.interval) return null;
+
+    const interval = schedule.interval.toLowerCase();
+    const delay =
+      typeof schedule.delayDays === 'number' && schedule.delayDays >= 0
+        ? schedule.delayDays
+        : null;
+
+    if (interval === 'manual') {
+      return 'When Instant isn’t available, open Stripe Express to send funds to your bank manually.';
+    }
+
+    if (interval === 'daily') {
+      if (delay != null && delay > 0) {
+        return `When Instant isn’t available, Stripe usually pays your bank on a daily schedule (about ${delay} business day${delay === 1 ? '' : 's'} after funds clear).`;
+      }
+      return 'When Instant isn’t available, Stripe usually pays available funds to your bank on a daily schedule after card payments clear.';
+    }
+
+    if (interval === 'weekly') {
+      const dayKey = (schedule.weeklyAnchor || '').toLowerCase();
+      const dayLabel = WEEKDAY_LABELS[dayKey];
+      if (dayLabel) {
+        return `When Instant isn’t available, Stripe pays out to your bank weekly (${dayLabel}) after card payments clear.`;
+      }
+      return 'When Instant isn’t available, Stripe pays out to your bank weekly after card payments clear.';
+    }
+
+    if (interval === 'monthly') {
+      const anchor = schedule.monthlyAnchor;
+      if (typeof anchor === 'number' && anchor >= 1 && anchor <= 31) {
+        return `When Instant isn’t available, Stripe pays out to your bank monthly (on the ${ordinalDay(anchor)}) after card payments clear.`;
+      }
+      return 'When Instant isn’t available, Stripe pays out to your bank monthly after card payments clear.';
+    }
+
+    return null;
+  })();
+
+  if (options?.instantPayoutsEnabled) {
+    const intro =
+      'Eligible card payments can reach your bank in minutes via Stripe Instant Payouts.';
+    return scheduleDetail ? `${intro} ${scheduleDetail}` : `${intro} Otherwise Stripe uses its regular Express schedule.`;
+  }
 
   if (!schedule?.interval) {
     return fallback;

@@ -190,7 +190,9 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
           <BarberAnalyticsPanel
             performance={performance}
             isLoadingPerformance={isLoading}
-            payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+            payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+              instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+            })}
             refreshSignal={refreshSignal}
             onRefresh={handleRefresh}
           />

@@ -23,6 +23,51 @@ import {
   loadProviderCommissionSettings,
   releaseCommissionFreeBooking,
 } from '../utils/platform-commission';
+import {
+  attemptInstantPayout,
+  isInstantPayoutsEnabled,
+  persistInstantPayoutOutcome,
+} from '../services/instant-payout.service';
+
+/**
+ * Soft Instant Payout of Connect take-home after funds are on the Express balance.
+ * Never throws into the booking webhook transaction.
+ */
+async function maybeAttemptInstantPayout(
+  client: any,
+  params: {
+    connectedAccountId: string;
+    amountCents: number;
+    bookingId: string;
+    paymentIntentId: string;
+    livemode: boolean;
+  }
+): Promise<void> {
+  if (!isInstantPayoutsEnabled()) return;
+
+  try {
+    const existing = await client.query(
+      `SELECT instant_payout_id, instant_payout_status
+       FROM payments
+       WHERE payment_intent_id = $1`,
+      [params.paymentIntentId]
+    );
+    const row = existing.rows[0];
+    if (row?.instant_payout_status === 'instant' && row?.instant_payout_id) {
+      return;
+    }
+  } catch {
+    // Columns may be missing pre-migration; still attempt Instant and log.
+  }
+
+  const result = await attemptInstantPayout({
+    connectedAccountId: params.connectedAccountId,
+    amountCents: params.amountCents,
+    bookingId: params.bookingId,
+    livemode: params.livemode,
+  });
+  await persistInstantPayoutOutcome(client, params.paymentIntentId, result);
+}
 
 /**
  * Archive messages for a booking before deletion
@@ -132,7 +177,21 @@ async function initiateBarberPayout(
          WHERE payment_intent_id = $3`,
         [platformFeeCents, barberEarnings, paymentIntentId]
       );
-      
+
+      const destinationAccountId =
+        typeof paymentIntent.transfer_data.destination === 'string'
+          ? paymentIntent.transfer_data.destination
+          : paymentIntent.transfer_data.destination?.id;
+      if (destinationAccountId && barberEarnings > 0) {
+        await maybeAttemptInstantPayout(client, {
+          connectedAccountId: destinationAccountId,
+          amountCents: barberEarnings,
+          bookingId: booking.id,
+          paymentIntentId,
+          livemode,
+        });
+      }
+
       return;
     }
 
@@ -216,6 +275,14 @@ async function initiateBarberPayout(
     );
 
     logger.info(`✅ Barber payout complete for booking ${booking.id}: $${barberTotalEarnings / 100} (service: $${barberServiceEarnings / 100}, tip: $${tipAmountCents / 100})`);
+
+    await maybeAttemptInstantPayout(client, {
+      connectedAccountId: stripeAccountId,
+      amountCents: barberTotalEarnings,
+      bookingId: booking.id,
+      paymentIntentId,
+      livemode,
+    });
 
   } catch (error: any) {
     // Log error but don't fail the entire transaction - we can retry payouts
@@ -456,6 +523,53 @@ async function handleCheckoutSessionCompleted(
        ON CONFLICT (event_id) DO NOTHING`,
       [eventId, 'checkout.session.completed', JSON.stringify(session.metadata || {}), 'success']
     );
+
+    // Instant for Checkout-owned card flows (PI.succeeded is skipped for those)
+    if (paymentIntentId && isInstantPayoutsEnabled()) {
+      try {
+        const stripe = getStripeClientForLivemode(!!session.livemode);
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        const destinationRaw = paymentIntent.transfer_data?.destination;
+        const destinationAccountId =
+          typeof destinationRaw === 'string'
+            ? destinationRaw
+            : destinationRaw?.id;
+        if (destinationAccountId) {
+          const tipCents = parseInt(paymentIntent.metadata?.tip_amount_cents || '0', 10) || 0;
+          const platformFeeCents =
+            paymentIntent.application_fee_amount != null
+              ? paymentIntent.application_fee_amount
+              : paymentIntent.metadata?.platform_fee_cents != null
+                ? parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0
+                : Math.round(
+                    Math.max(0, amountCents - tipCents) * DEFAULT_PLATFORM_FEE_RATE
+                  );
+          const barberEarnings = Math.max(0, amountCents - platformFeeCents);
+          await client.query(
+            `UPDATE payments
+             SET platform_fee_cents = COALESCE(platform_fee_cents, $1),
+                 barber_earnings_cents = COALESCE(barber_earnings_cents, $2),
+                 transfer_status = 'completed',
+                 transferred_at = COALESCE(transferred_at, NOW())
+             WHERE payment_intent_id = $3`,
+            [platformFeeCents, barberEarnings, paymentIntentId]
+          );
+          if (barberEarnings > 0) {
+            await maybeAttemptInstantPayout(client, {
+              connectedAccountId: destinationAccountId,
+              amountCents: barberEarnings,
+              bookingId: booking_id,
+              paymentIntentId,
+              livemode: !!session.livemode,
+            });
+          }
+        }
+      } catch (instantError: unknown) {
+        const message =
+          instantError instanceof Error ? instantError.message : String(instantError);
+        logger.warn(`Checkout Instant payout soft-failed for ${booking_id}: ${message}`);
+      }
+    }
 
     await client.query('COMMIT');
     logger.info(`✅ Checkout complete for booking ${booking_id}`);

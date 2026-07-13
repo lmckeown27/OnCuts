@@ -412,7 +412,9 @@ export default function PayoutSettingsScreen({
                   OnCuts operator account.
                 </p>
                 <p className="text-xs text-emerald-900/80 leading-relaxed">
-                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+                    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+                  })}
                 </p>
               </section>
 
@@ -504,8 +506,11 @@ export default function PayoutSettingsScreen({
                   .
                 </p>
                 <p className="text-base text-gray-600 leading-relaxed">
-                  When a client pays you, Stripe securely moves funds to your bank account. Stripe
-                  will ask for personal details — open Checklist if you get stuck.
+                  When a client pays by card, Stripe moves your take-home toward your bank
+                  {connectStatus?.instantPayoutsEnabled
+                    ? ' — eligible Instant Payouts can arrive in minutes'
+                    : ''}
+                  . Stripe will ask for personal details — open Checklist if you get stuck.
                 </p>
 
                 {platformSetupBlocked && (

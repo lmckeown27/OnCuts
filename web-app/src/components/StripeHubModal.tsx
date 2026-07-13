@@ -622,11 +622,15 @@ export default function StripeHubModal({
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
                   <p className="font-medium leading-snug">
-                    Stripe is connected. Funds go to your bank via Stripe — not as instant transfers.
+                    {connectStatus?.instantPayoutsEnabled
+                      ? 'Stripe is connected. Eligible card payouts can reach your bank in minutes when Instant is available.'
+                      : 'Stripe is connected. Funds go to your bank via Stripe — not as instant transfers.'}
                   </p>
                 </div>
                 <p className="text-emerald-800/90 leading-relaxed pl-4">
-                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+                    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+                  })}
                 </p>
               </div>
             </>
