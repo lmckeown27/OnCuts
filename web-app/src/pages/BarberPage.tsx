@@ -2077,10 +2077,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </button>
           )}
 
-          <p className="text-sm sm:text-base text-gray-700 font-medium text-center px-2">
-            {getScheduleSummaryText()}
-          </p>
-
           {weekOffset !== 0 ? (
             <button
               onClick={() => setWeekOffset(0)}
@@ -2145,6 +2141,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               Services Offered
             </button>
           </div>
+
+          <p className="text-sm sm:text-base text-gray-700 font-medium text-center px-2">
+            {getScheduleSummaryText()}
+          </p>
         </div>
 
         <ProviderWeeklyScheduleGrid
