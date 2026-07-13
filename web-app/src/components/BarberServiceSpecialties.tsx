@@ -1,14 +1,10 @@
 /**
- * Barber Service Specialties Component
- *
- * Allows barbers to select which services they provide and set price + duration.
+ * Services Offered — ledger UI matching iOS ProviderBarberServicesView.
+ * Catalog filtered by provider profession (barber / beauty).
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { Check, Clock, DollarSign } from 'lucide-react';
-import Card from './Card';
-import Loading from './Loading';
-import Button from './Button';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Check, CheckCircle2, Square, XCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   SERVICE_TYPES,
@@ -18,6 +14,7 @@ import {
   findService,
 } from '../config/services';
 import barberService from '../services/barber.service';
+import { colors } from '../utils/colors';
 
 interface BarberService {
   serviceId: string;
@@ -33,7 +30,8 @@ interface BarberService {
   originalDurationMinutes: number;
   minDurationMinutes: number;
   maxDurationMinutes: number;
-  isEditing: boolean;
+  priceDirty: boolean;
+  durationDirty: boolean;
 }
 
 interface Props {
@@ -42,11 +40,76 @@ interface Props {
 
 type ProviderKind = 'barber' | 'beauty';
 
+type LedgerCategory =
+  | 'haircuts'
+  | 'beardAndGrooming'
+  | 'textureAndDesign'
+  | 'colorAndTreatments'
+  | 'beauty';
+
+const LEDGER_SECTIONS: { id: LedgerCategory; title: string }[] = [
+  { id: 'haircuts', title: 'Haircuts' },
+  { id: 'beardAndGrooming', title: 'Beard & Grooming' },
+  { id: 'textureAndDesign', title: 'Texture & Design' },
+  { id: 'colorAndTreatments', title: 'Color & Treatments' },
+  { id: 'beauty', title: 'Beauty' },
+];
+
+/** Match iOS ServiceLedgerCategorizer keyword order (first match wins). */
+function ledgerCategoryForService(slug: string, name: string): LedgerCategory {
+  const hay = `${slug} ${name}`.toLowerCase();
+  if (
+    hay.includes('beard') ||
+    hay.includes('shave') ||
+    hay.includes('lineup') ||
+    hay.includes('line-up') ||
+    hay.includes('line up')
+  ) {
+    return 'beardAndGrooming';
+  }
+  if (
+    hay.includes('color') ||
+    hay.includes('perm') ||
+    hay.includes('treatment') ||
+    hay.includes('dye')
+  ) {
+    return 'colorAndTreatments';
+  }
+  if (
+    hay.includes('design') ||
+    hay.includes('afro') ||
+    hay.includes('texture') ||
+    hay.includes('art')
+  ) {
+    return 'textureAndDesign';
+  }
+  if (
+    hay.includes('hair') ||
+    hay.includes('fade') ||
+    hay.includes('cut') ||
+    hay.includes('buzz') ||
+    hay.includes('taper') ||
+    hay.includes('mullet') ||
+    hay.includes('kids') ||
+    hay.includes('women')
+  ) {
+    return 'haircuts';
+  }
+  return 'beauty';
+}
+
+function sortServicesInSection(a: BarberService, b: BarberService): number {
+  const aName = a.serviceName.toLowerCase();
+  const bName = b.serviceName.toLowerCase();
+  if (aName === 'haircut' && bName === 'buzz cut') return -1;
+  if (aName === 'buzz cut' && bName === 'haircut') return 1;
+  return a.serviceName.localeCompare(b.serviceName);
+}
+
 function normalizeProviderKind(raw: unknown): ProviderKind {
   return String(raw ?? 'barber').trim().toLowerCase() === 'beauty' ? 'beauty' : 'barber';
 }
 
-/** Resolve catalog row type (API providerType, local config, or name heuristics). */
 function resolveCatalogProviderType(service: {
   id?: string | number;
   slug?: string;
@@ -63,6 +126,8 @@ function resolveCatalogProviderType(service: {
 }
 
 const FALLBACK_SERVICES = SERVICE_TYPES;
+const olive = colors.olive.DEFAULT;
+const oliveMuted = `${colors.olive.DEFAULT}24`; // ~14% opacity hex
 
 interface ApiService {
   id: number;
@@ -81,21 +146,34 @@ interface ApiService {
 export default function BarberServiceSpecialties({ barberId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [barberServices, setBarberServices] = useState<BarberService[]>([]);
   const [providerKind, setProviderKind] = useState<ProviderKind>('barber');
+  const [inlineToast, setInlineToast] = useState<string | null>(null);
   const barberServicesRef = useRef(barberServices);
+  const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     barberServicesRef.current = barberServices;
   }, [barberServices]);
 
   useEffect(() => {
-    fetchBarberServices();
+    void fetchBarberServices();
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
   }, [barberId]);
+
+  const showInlineToast = (message: string) => {
+    setInlineToast(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setInlineToast(null), 2800);
+  };
 
   const fetchBarberServices = async (options?: { cacheBust?: boolean; silent?: boolean }) => {
     if (!options?.silent) {
       setLoading(true);
+      setLoadError(null);
     }
 
     try {
@@ -121,15 +199,13 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         maxPrice: number;
         minDurationMinutes: number;
         maxDurationMinutes: number;
-        providerType: ProviderKind;
       }[] = [];
+
       try {
         const token = localStorage.getItem('accessToken');
         const response = await fetch(
           `${import.meta.env.VITE_API_URL || ''}/admin/services?providerType=${kind}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();
         if (data.success && data.data) {
@@ -146,26 +222,27 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
               maxDurationMinutes: s.maxDurationMinutes ?? MAX_SERVICE_DURATION_MINUTES,
               providerType: resolveCatalogProviderType(s),
             }))
-            .filter((s: { providerType: ProviderKind }) => s.providerType === kind);
+            .filter(
+              (s: { providerType: ProviderKind }) => s.providerType === kind
+            );
         }
       } catch {
-        console.log('Using fallback services from config');
+        // fall through to config
       }
 
       if (availableServices.length === 0) {
-        availableServices = FALLBACK_SERVICES.filter((s) => (s.providerType || 'barber') === kind).map(
-          (s) => ({
-            id: s.id,
-            name: s.name,
-            description: s.description || '',
-            basePrice: s.basePrice || 25,
-            minPrice: Math.max(5, Math.round((s.basePrice || 25) * 0.8)),
-            maxPrice: Math.round((s.basePrice || 25) * 1.5),
-            minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
-            maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
-            providerType: (s.providerType || 'barber') as ProviderKind,
-          })
-        );
+        availableServices = FALLBACK_SERVICES.filter(
+          (s) => (s.providerType || 'barber') === kind
+        ).map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description || '',
+          basePrice: s.basePrice || 25,
+          minPrice: Math.max(5, Math.round((s.basePrice || 25) * 0.8)),
+          maxPrice: Math.round((s.basePrice || 25) * 1.5),
+          minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
+          maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
+        }));
       }
 
       const services: BarberService[] = availableServices.map((service) => {
@@ -193,35 +270,20 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           originalDurationMinutes: durationMinutes,
           minDurationMinutes: service.minDurationMinutes,
           maxDurationMinutes: service.maxDurationMinutes,
-          isEditing: false,
+          priceDirty: false,
+          durationDirty: false,
         };
       });
 
       setBarberServices(services);
       barberServicesRef.current = services;
+      setLoadError(null);
     } catch (error) {
       console.error('Failed to fetch barber services:', error);
-      toast.error('Failed to load services');
-
-      const defaultServices: BarberService[] = FALLBACK_SERVICES.filter(
-        (s) => (s.providerType || 'barber') === providerKind
-      ).map((service) => ({
-        serviceId: service.id,
-        serviceName: service.name,
-        description: service.description || '',
-        isOffered: false,
-        price: service.basePrice || 25,
-        suggestedPrice: service.basePrice || 25,
-        originalPrice: service.basePrice || 25,
-        minPrice: Math.max(5, Math.round((service.basePrice || 25) * 0.8)),
-        maxPrice: Math.round((service.basePrice || 25) * 1.5),
-        durationMinutes: getDefaultDurationMinutes(service.name),
-        originalDurationMinutes: getDefaultDurationMinutes(service.name),
-        minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
-        maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
-        isEditing: false,
-      }));
-      setBarberServices(defaultServices);
+      setLoadError('Could not load services.');
+      if (!options?.silent) {
+        toast.error('Failed to load services');
+      }
     } finally {
       if (!options?.silent) {
         setLoading(false);
@@ -229,17 +291,32 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     }
   };
 
+  const groupedSections = useMemo(() => {
+    return LEDGER_SECTIONS.map((section) => {
+      const rows = barberServices
+        .filter((s) => ledgerCategoryForService(s.serviceId, s.serviceName) === section.id)
+        .sort(sortServicesInSection);
+      return { ...section, rows };
+    }).filter((section) => section.rows.length > 0);
+  }, [barberServices]);
+
   const toggleService = async (serviceId: string) => {
     if (saving) return;
-
     const serviceToToggle = barberServicesRef.current.find((s) => s.serviceId === serviceId);
     if (!serviceToToggle) return;
 
-    const newIsOffered = !serviceToToggle.isOffered;
     const updatedServices = barberServicesRef.current.map((s) =>
-      s.serviceId === serviceId ? { ...s, isOffered: newIsOffered } : s
+      s.serviceId === serviceId
+        ? {
+            ...s,
+            isOffered: !s.isOffered,
+            priceDirty: false,
+            durationDirty: false,
+            price: s.originalPrice,
+            durationMinutes: s.originalDurationMinutes,
+          }
+        : s
     );
-
     setBarberServices(updatedServices);
     await saveServices(updatedServices);
   };
@@ -248,7 +325,11 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     setBarberServices((prev) => {
       const next = prev.map((service) =>
         service.serviceId === serviceId
-          ? { ...service, price: newPrice, isEditing: true }
+          ? {
+              ...service,
+              price: newPrice,
+              priceDirty: newPrice !== service.originalPrice,
+            }
           : service
       );
       barberServicesRef.current = next;
@@ -260,7 +341,11 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     setBarberServices((prev) => {
       const next = prev.map((service) =>
         service.serviceId === serviceId
-          ? { ...service, durationMinutes: newDuration, isEditing: true }
+          ? {
+              ...service,
+              durationMinutes: newDuration,
+              durationDirty: newDuration !== service.originalDurationMinutes,
+            }
           : service
       );
       barberServicesRef.current = next;
@@ -273,21 +358,33 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     if (!service || !service.isOffered) return;
 
     let validatedPrice = service.price;
+    let priceClamped = false;
     if (service.price < service.minPrice) {
-      toast.error(`Minimum price is $${service.minPrice}`);
       validatedPrice = service.minPrice;
+      priceClamped = true;
     } else if (service.price > service.maxPrice) {
-      toast.error(`Maximum price is $${service.maxPrice}`);
       validatedPrice = service.maxPrice;
+      priceClamped = true;
     }
 
     let validatedDuration = service.durationMinutes;
+    let durationClamped = false;
     if (validatedDuration < service.minDurationMinutes) {
-      toast.error(`Minimum duration is ${service.minDurationMinutes} minutes`);
       validatedDuration = service.minDurationMinutes;
+      durationClamped = true;
     } else if (validatedDuration > service.maxDurationMinutes) {
-      toast.error(`Maximum duration is ${service.maxDurationMinutes} minutes`);
       validatedDuration = service.maxDurationMinutes;
+      durationClamped = true;
+    }
+
+    if (priceClamped) {
+      showInlineToast(
+        `Price must be $${service.minPrice}–$${service.maxPrice}; saved $${validatedPrice}.`
+      );
+    } else if (durationClamped) {
+      showInlineToast(
+        `Duration must be ${service.minDurationMinutes}–${service.maxDurationMinutes} minutes; saved ${validatedDuration} min.`
+      );
     }
 
     const updatedServices = barberServicesRef.current.map((s) =>
@@ -298,7 +395,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
             originalPrice: validatedPrice,
             durationMinutes: validatedDuration,
             originalDurationMinutes: validatedDuration,
-            isEditing: false,
+            priceDirty: false,
+            durationDirty: false,
           }
         : s
     );
@@ -309,27 +407,29 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
   };
 
   const cancelServiceEdit = (serviceId: string) => {
-    setBarberServices((prev) =>
-      prev.map((service) =>
+    setBarberServices((prev) => {
+      const next = prev.map((service) =>
         service.serviceId === serviceId
           ? {
               ...service,
               price: service.originalPrice,
               durationMinutes: service.originalDurationMinutes,
-              isEditing: false,
+              priceDirty: false,
+              durationDirty: false,
             }
           : service
-      )
-    );
+      );
+      barberServicesRef.current = next;
+      return next;
+    });
   };
 
   const saveServices = async (services: BarberService[]) => {
     setSaving(true);
-
     try {
       const barberData = await barberService.getBarberByUserId(barberId);
       if (!barberData?.id) {
-        throw new Error('Barber profile not found');
+        throw new Error('Could not determine your barber profile. Pull to refresh.');
       }
 
       const specialties = services.filter((s) => s.isOffered).map((s) => s.serviceName);
@@ -347,10 +447,13 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       });
 
       await fetchBarberServices({ cacheBust: true, silent: true });
-      toast.success('Services saved');
+      showInlineToast('Saved.');
     } catch (error) {
       console.error('Failed to save services:', error);
-      toast.error('Failed to save services');
+      const msg =
+        error instanceof Error ? error.message : 'Failed to save services';
+      toast.error(msg);
+      await fetchBarberServices({ cacheBust: true, silent: true });
     } finally {
       setSaving(false);
     }
@@ -358,149 +461,223 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Loading />
+      <div className="flex justify-center items-center min-h-[280px]">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: olive }} />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <p className="text-sm text-gray-600 mb-4">
-          Select services and set your price and duration for each one.
-          {providerKind === 'beauty'
-            ? ' Showing Beauty services for your provider type.'
-            : ' Showing Barber services for your provider type.'}
-        </p>
-
-        <div
-          className="grid gap-3"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
+  if (loadError && barberServices.length === 0) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <p className="text-sm text-red-700">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => void fetchBarberServices()}
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ backgroundColor: olive }}
         >
-          {barberServices.map((service) => {
-            const hasChanges =
-              service.isEditing &&
-              (service.price !== service.originalPrice ||
-                service.durationMinutes !== service.originalDurationMinutes);
+          Try again
+        </button>
+      </div>
+    );
+  }
 
-            return (
-              <div
-                key={service.serviceId}
-                onClick={() => {
-                  if (!service.isOffered && !saving) {
-                    toggleService(service.serviceId);
-                  }
-                }}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  service.isOffered
-                    ? 'border-gray-400 bg-primary-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
-                } ${saving ? 'opacity-70' : ''}`}
-              >
-                <div className="flex items-start gap-2 mb-2">
+  if (barberServices.length === 0) {
+    return (
+      <p className="text-sm text-gray-600 text-center py-12 px-4 leading-relaxed">
+        No campus services are configured yet. An Admin can add services in the Admin dashboard.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4 relative">
+      {inlineToast && (
+        <div className="sticky top-0 z-10 flex justify-center pointer-events-none">
+          <div
+            className="pointer-events-auto px-4 py-2 rounded-full text-sm font-medium text-white shadow-md"
+            style={{ backgroundColor: colors.olive[600] }}
+          >
+            {inlineToast}
+          </div>
+        </div>
+      )}
+
+      <p className="text-sm text-gray-600 leading-relaxed">
+        Choose the services you offer, then set a price and duration within each service&apos;s
+        allowed range.
+      </p>
+
+      <div className="space-y-6">
+        {groupedSections.map((section, sectionIndex) => (
+          <section key={section.id}>
+            <h3
+              className={`text-[11px] font-bold uppercase tracking-[0.06em] text-gray-500 mb-2 ${
+                sectionIndex === 0 ? '' : 'pt-2'
+              }`}
+            >
+              {section.title}
+            </h3>
+            <div className="space-y-2.5">
+              {section.rows.map((service) => {
+                const hasChanges = service.priceDirty || service.durationDirty;
+                return (
                   <div
-                    onClick={(e) => {
-                      if (service.isOffered && !saving) {
-                        e.stopPropagation();
-                        toggleService(service.serviceId);
+                    key={service.serviceId}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!service.isOffered && !saving) {
+                        void toggleService(service.serviceId);
                       }
                     }}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 mt-0.5 ${
-                      service.isOffered
-                        ? 'bg-primary-400 border-gray-400 cursor-pointer hover:bg-gray-500'
-                        : 'border-gray-300'
-                    }`}
+                    onKeyDown={(e) => {
+                      if (
+                        (e.key === 'Enter' || e.key === ' ') &&
+                        !service.isOffered &&
+                        !saving
+                      ) {
+                        e.preventDefault();
+                        void toggleService(service.serviceId);
+                      }
+                    }}
+                    className={`rounded-[14px] border-2 px-4 py-4 transition-opacity ${
+                      saving ? 'opacity-70' : ''
+                    } ${!service.isOffered ? 'cursor-pointer' : ''}`}
+                    style={{
+                      backgroundColor: oliveMuted,
+                      borderColor: `${olive}b8`,
+                    }}
                   >
-                    {service.isOffered && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                      {service.serviceName}
-                    </h4>
-                  </div>
-                </div>
-
-                {service.isOffered ? (
-                  <div className="mt-2 space-y-2">
-                    <div className="flex items-center gap-0.5">
-                      <DollarSign className="w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={service.price}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          updatePrice(service.serviceId, val ? Number(val) : 0);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`w-14 text-lg font-bold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
-                          hasChanges
-                            ? 'border-orange-400'
-                            : 'border-gray-300 focus:border-gray-900'
-                        }`}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={service.durationMinutes}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          updateDuration(service.serviceId, val ? Number(val) : 0);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`w-12 text-sm font-semibold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
-                          hasChanges
-                            ? 'border-orange-400'
-                            : 'border-gray-300 focus:border-gray-900'
-                        }`}
-                      />
-                      <span className="text-xs text-gray-500">min</span>
-                    </div>
-
-                    {hasChanges && (
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          size="sm"
-                          variant="primary"
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <button
+                          type="button"
+                          aria-label={
+                            service.isOffered
+                              ? `Remove ${service.serviceName}`
+                              : `Offer ${service.serviceName}`
+                          }
+                          disabled={saving}
                           onClick={(e) => {
                             e.stopPropagation();
-                            confirmServiceChanges(service.serviceId);
+                            if (!saving) void toggleService(service.serviceId);
                           }}
-                          disabled={saving}
-                          className="text-xs py-1"
+                          className="mt-0.5 shrink-0 text-left"
                         >
-                          Confirm
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cancelServiceEdit(service.serviceId);
-                          }}
-                          disabled={saving}
-                          className="text-xs py-1"
-                        >
-                          Cancel
-                        </Button>
+                          {service.isOffered ? (
+                            <span
+                              className="inline-flex w-5 h-5 items-center justify-center rounded-[3px]"
+                              style={{ backgroundColor: olive }}
+                            >
+                              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                            </span>
+                          ) : (
+                            <Square className="w-5 h-5 text-gray-500" strokeWidth={2} />
+                          )}
+                        </button>
+                        <h4 className="font-bold text-gray-900 text-[15px] leading-snug line-clamp-2">
+                          {service.serviceName}
+                        </h4>
                       </div>
-                    )}
+
+                      <div
+                        className={`shrink-0 space-y-2 min-w-[10.5rem] ${
+                          service.isOffered ? '' : 'opacity-40 pointer-events-none'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-gray-600 w-12 shrink-0">
+                            Price:
+                          </span>
+                          <span className="text-sm text-gray-700">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            disabled={!service.isOffered || saving}
+                            value={service.isOffered ? service.price : ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              updatePrice(service.serviceId, val ? Number(val) : 0);
+                            }}
+                            className={`w-[3.25rem] text-sm font-semibold text-gray-900 rounded-md px-1.5 py-1 border focus:outline-none ${
+                              service.priceDirty
+                                ? 'border-2 bg-white'
+                                : 'border bg-white/70 border-stone-300'
+                            }`}
+                            style={
+                              service.priceDirty
+                                ? { borderColor: olive, backgroundColor: '#fff' }
+                                : undefined
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-gray-600 w-12 shrink-0">
+                            Time:
+                          </span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            disabled={!service.isOffered || saving}
+                            value={service.isOffered ? service.durationMinutes : ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              updateDuration(service.serviceId, val ? Number(val) : 0);
+                            }}
+                            className={`w-[3.25rem] text-sm font-semibold text-gray-900 rounded-md px-1.5 py-1 border focus:outline-none ${
+                              service.durationDirty
+                                ? 'border-2 bg-white'
+                                : 'border bg-white/70 border-stone-300'
+                            }`}
+                            style={
+                              service.durationDirty
+                                ? { borderColor: olive, backgroundColor: '#fff' }
+                                : undefined
+                            }
+                          />
+                          <span className="text-xs text-gray-500">min</span>
+                          {hasChanges && (
+                            <div className="flex items-center gap-0.5 ml-auto">
+                              <button
+                                type="button"
+                                aria-label="Confirm changes"
+                                disabled={saving}
+                                onClick={() => void confirmServiceChanges(service.serviceId)}
+                                className="p-0.5"
+                              >
+                                <CheckCircle2 className="w-5 h-5" style={{ color: olive }} />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Cancel changes"
+                                disabled={saving}
+                                onClick={() => cancelServiceEdit(service.serviceId)}
+                                className="p-0.5 text-gray-400 hover:text-gray-600"
+                              >
+                                <XCircle className="w-5 h-5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-xs text-primary-500 mt-1">+ Add</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <p className="text-[11px] text-gray-400 pt-1">
+        Showing {providerKind === 'beauty' ? 'Beauty' : 'Barber'} services for your provider type.
+      </p>
     </div>
   );
 }

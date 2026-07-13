@@ -774,7 +774,6 @@ export default function BarberPage() {
             <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Services Offered</h2>
-                <p className="text-white/80 text-sm">Catalog, price, and duration</p>
               </div>
               <button
                 onClick={closeServiceSpecialties}
