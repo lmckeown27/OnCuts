@@ -1909,7 +1909,7 @@ export function AdminDashboard({
                     className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
                   />
                   <span className="mt-0.5 block text-[10px] text-gray-500">
-                    Next N card bookings take $0 platform fee, then the rate above applies
+                    Next N card bookings take $0 platform fee (default 5 for every provider), then the rate above applies
                   </span>
                 </label>
               </div>
@@ -1938,7 +1938,7 @@ export function AdminDashboard({
                   disabled={isSavingCommission}
                   onClick={() => {
                     setCommissionFeePercentInput('');
-                    setCommissionFreeRemainingInput('0');
+                    setCommissionFreeRemainingInput('5');
                   }}
                 >
                   Reset to default

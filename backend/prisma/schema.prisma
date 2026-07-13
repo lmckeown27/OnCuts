@@ -216,7 +216,7 @@ model Barber {
 
   // Admin payment controls (NULL fee % = platform default 15%)
   platformFeePercent                 Decimal? @map("platform_fee_percent") @db.Decimal(5,2)
-  commissionFreeBookingsRemaining    Int      @default(0) @map("commission_free_bookings_remaining")
+  commissionFreeBookingsRemaining    Int      @default(5) @map("commission_free_bookings_remaining")
 
   // Timestamps
   createdAt   DateTime @default(now()) @db.Timestamptz

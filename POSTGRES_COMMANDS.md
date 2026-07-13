@@ -3336,6 +3336,14 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 049 — Default 5 commission-free bookings per provider
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/049_default_commission_free_bookings.sql
+pm2 restart oncuts-backend
+```
+
+Sets `commission_free_bookings_remaining` default to **5** for new providers, and grants **5** to existing providers still at `0`.
+
 ### 048 — Retag Beauty services (if badges still say Barber)
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/048_retarget_beauty_services.sql

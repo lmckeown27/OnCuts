@@ -9,6 +9,8 @@ import { logger } from './logger';
 
 export const DEFAULT_PLATFORM_FEE_RATE = 0.15;
 export const DEFAULT_PLATFORM_FEE_PERCENT = 15;
+/** Default commission-free card bookings granted to every new provider. */
+export const DEFAULT_COMMISSION_FREE_BOOKINGS = 5;
 
 export type DbClient = PoolClient | typeof pool;
 

@@ -35,7 +35,7 @@ BEGIN
     EXECUTE format(
       'ALTER TABLE %I
          ADD COLUMN IF NOT EXISTS platform_fee_percent NUMERIC(5,2),
-         ADD COLUMN IF NOT EXISTS commission_free_bookings_remaining INTEGER NOT NULL DEFAULT 0',
+         ADD COLUMN IF NOT EXISTS commission_free_bookings_remaining INTEGER NOT NULL DEFAULT 5',
       base_table
     );
 
@@ -78,7 +78,7 @@ BEGIN
     EXECUTE format(
       'COMMENT ON COLUMN %I.commission_free_bookings_remaining IS %L',
       base_table,
-      'Number of remaining card bookings with $0 platform commission (set by admin).'
+      'Number of remaining card bookings with $0 platform commission. Defaults to 5 for every provider; admin can adjust.'
     );
 
     IF base_table = 'service_providers'
