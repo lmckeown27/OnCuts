@@ -48,11 +48,19 @@ export default function BarberEarningsPage() {
                 <button
                   type="button"
                   className="text-primary-600 font-medium underline"
-                  onClick={() => navigate('/web/barber?showPayoutSettings=true')}
+                  onClick={() => navigate('/web/barber?showStripe=true')}
                 >
                   Payout Settings
                 </button>{' '}
-                for booking estimates on your dashboard.
+                for Connect status, or{' '}
+                <button
+                  type="button"
+                  className="text-primary-600 font-medium underline"
+                  onClick={() => navigate('/web/barber?showPayoutSettings=true')}
+                >
+                  Business Analytics
+                </button>{' '}
+                for booking estimates.
               </p>
             </div>
           </div>

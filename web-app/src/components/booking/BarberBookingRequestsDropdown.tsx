@@ -306,8 +306,11 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     <div className="relative" ref={dropdownRef}>
       {/* Inbox Button */}
       <button
+        type="button"
         onClick={toggleDropdown}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        aria-label="Bookings"
+        title="Bookings"
       >
         <Inbox className="w-6 h-6 text-gray-600" />
         {requests.length > 0 && (
@@ -344,7 +347,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg flex items-center justify-between z-10">
-              <h3 className="font-bold text-gray-900">Booking Requests ({requests.length})</h3>
+              <h3 className="font-bold text-gray-900">Bookings</h3>
               {showBackdrop && (
                 <button 
                   onClick={closeDropdown}

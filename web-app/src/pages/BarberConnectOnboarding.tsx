@@ -24,14 +24,15 @@ export const BarberConnectOnboarding = () => {
           Complete Connect onboarding (bank account) when prompted from your barber dashboard or Stripe.
         </p>
         <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2 mb-6">
-          <li>Open Payout Settings from your barber dashboard for booking estimates.</li>
+          <li>Open Payout Settings from your barber dashboard to finish Stripe Connect.</li>
+          <li>Use Business Analytics for booking estimates and client insights.</li>
           <li>Use your Stripe Express / Connect dashboard for payouts to your bank.</li>
         </ul>
         <Button
           variant="primary"
           size="lg"
           className="w-full"
-          onClick={() => navigate('/web/barber?showPayoutSettings=true')}
+          onClick={() => navigate('/web/barber?showStripe=true')}
         >
           Open Payout Settings
           <ArrowRight className="w-4 h-4 ml-2 inline" />

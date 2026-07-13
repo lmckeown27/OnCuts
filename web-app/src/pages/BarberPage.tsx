@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
@@ -35,7 +35,6 @@ import PullToRefresh from '../components/PullToRefresh';
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
-import { TivelaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
 import barberService, { TimeBlock } from '../services/barber.service';
@@ -544,17 +543,17 @@ export default function BarberPage() {
     <>
     <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
-      {/* Header */}
+      {/* Header — match iOS: Chats · Admin · Bookings · Account */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between relative">
-            {/* Left section - Messages */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Consumer Chat Button */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
+                type="button"
                 onClick={() => navigate(`${platformPrefix}/barber/messages`)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary-50 hover:bg-primary-100 border border-gray-200 transition-colors relative"
-                title="Consumer Chat"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary-50 hover:bg-primary-100 border border-gray-200 transition-colors relative shrink-0"
+                title="Chats"
+                aria-label="Chats"
               >
                 <Send className="w-5 h-5 text-primary-600" />
                 <span className="text-xs sm:text-sm font-semibold text-primary-700">Chats</span>
@@ -564,210 +563,104 @@ export default function BarberPage() {
                   </span>
                 )}
               </button>
-              
+
               {isAdmin && (
-                <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-600">Admin</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={openAdminDashboard}
+                  className="flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+                  aria-label="Admin"
+                >
+                  <span className="text-xs font-semibold text-gray-700">Admin</span>
+                </button>
               )}
-              </div>
-            
-            {/* Center section - Logo always centered */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
             </div>
-            
-            {/* Right section - Booking Requests + Profile */}
-            <div className="flex items-center gap-1.5 sm:gap-4">
-              {/* Booking Requests Inbox */}
+
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <BarberBookingRequestsDropdown barberId={barberId} />
 
-              {/* Profile Dropdown */}
               <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'Barber'} size="md" />
-                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Account menu"
+                >
+                  <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'Barber'} size="md" />
+                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                </button>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
-                  <button
-                    onClick={() => {
-                      navigate(`${platformPrefix}/consumer`);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50"
-                  >
-                    Switch to Consumer
-                  </button>
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <button
-                    onClick={() => {
-                      openProfileEditor();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Settings className="w-4 h-4 text-gray-500" />
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      openServiceSpecialties();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Scissors className="w-4 h-4 text-gray-500" />
-                    Services
-                  </button>
-                  <button
-                    onClick={() => {
-                      openLocations();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    Service Location
-                  </button>
-                  <button
-                    onClick={() => {
-                      openBookings();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    Bookings
-                  </button>
-                  <button
-                    onClick={() => {
-                      openAvailability();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    Availability
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowBlockTimeModal(true);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <AlertTriangle className="w-4 h-4 text-gray-500" />
-                    Block Time
-                  </button>
-                  <button
-                    onClick={() => {
-                      openNotifications();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Bell className="w-4 h-4 text-gray-500" />
-                    Notifications
-                    {unreadNotifications > 0 && (
-                      <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                        {unreadNotifications}
-                      </span>
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
+                    {(user?.first_name || user?.last_name) && (
+                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 truncate">
+                        {[user?.first_name, user?.last_name].filter(Boolean).join(' ')}
+                      </div>
                     )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPayoutSettings(true);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Landmark className="w-4 h-4 text-gray-500" />
-                    Analytics
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowStripeHub(true);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <CreditCard className="w-4 h-4 text-gray-500" />
-                    Stripe
-                  </button>
-                  {!isAdmin && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={() => {
-                          setShowProfileDropdown(false);
-                          openBarberChats();
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Barber Chats
-                      </button>
-                    </>
-                  )}
-                  {isAdmin && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={() => {
-                          openAdminDashboard();
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Admin Dashboard
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowProfileDropdown(false);
-                          openBarberChats();
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Barber Chats
-                      </button>
-                    </>
-                  )}
-                  
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <Link
-                    to="/privacy"
-                    onClick={() => setShowProfileDropdown(false)}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <FileText className="w-4 h-4 text-gray-500" />
-                    Privacy Policy
-                  </Link>
-                  <Link
-                    to="/terms"
-                    onClick={() => setShowProfileDropdown(false)}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <FileText className="w-4 h-4 text-gray-500" />
-                    Terms of Service
-                  </Link>
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <button
-                    onClick={() => {
-                      useAuthStore.getState().logout();
-                      navigate('/web');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
-                  >
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    Sign Out
-                  </button>
-                </div>
-              )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openProfileEditor();
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    >
+                      <User className="w-4 h-4 text-gray-500" />
+                      Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPayoutSettings(true);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    >
+                      <Landmark className="w-4 h-4 text-gray-500" />
+                      Business Analytics
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowStripeHub(true);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    >
+                      <CreditCard className="w-4 h-4 text-gray-500" />
+                      Payout Settings
+                    </button>
+                    {isAdmin && (
+                      <>
+                        <div className="border-t border-gray-200 my-1" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openAdminDashboard();
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <Shield className="w-4 h-4 text-gray-500" />
+                          Admin dashboard
+                        </button>
+                      </>
+                    )}
+                    <div className="border-t border-gray-200 my-1" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        useAuthStore.getState().logout();
+                        navigate('/web');
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                    >
+                      <LogOut className="w-4 h-4 text-red-500" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -794,6 +687,7 @@ export default function BarberPage() {
           }}
           onOpenBookings={openBookings}
           onEditAvailability={openAvailability}
+          onOpenServicesOffered={openServiceSpecialties}
           onEditServiceLocation={openLocations}
           serviceLocationLabel={barberProfile?.serviceLocationLabel}
           serviceLatitude={barberProfile?.serviceLatitude}
@@ -848,8 +742,8 @@ export default function BarberPage() {
           >
             <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <h2 className="text-2xl font-bold">Edit Profile</h2>
-                <p className="text-white/80 text-sm">Update your barber profile</p>
+                <h2 className="text-2xl font-bold">Account</h2>
+                <p className="text-white/80 text-sm">Photo, about, Instagram, specialties, visibility</p>
               </div>
               <button
                 onClick={closeProfileEditor}
@@ -878,8 +772,8 @@ export default function BarberPage() {
           >
             <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <h2 className="text-2xl font-bold">Services & Pricing</h2>
-                <p className="text-white/80 text-sm">Manage your service offerings</p>
+                <h2 className="text-2xl font-bold">Services Offered</h2>
+                <p className="text-white/80 text-sm">Catalog, price, and duration</p>
               </div>
               <button
                 onClick={closeServiceSpecialties}
@@ -1343,6 +1237,7 @@ interface DashboardViewProps {
   onOpenBlockTime?: () => void; // Open block time modal without prefilled slot
   onOpenBookings?: () => void; // Open bookings list (e.g. awaiting payment)
   onEditAvailability?: () => void; // Open weekly availability modal
+  onOpenServicesOffered?: () => void; // Open services catalog / pricing
   onEditServiceLocation?: () => void; // Open service location modal
   serviceLocationLabel?: string;
   serviceLatitude?: number | null;
@@ -1396,7 +1291,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -2221,7 +2116,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2 w-full max-w-md">
+          <div className="flex flex-wrap justify-center gap-2 w-full max-w-lg">
             <button
               type="button"
               onClick={() => onEditAvailability?.()}
@@ -2235,6 +2130,13 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
             >
               Block Time
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenServicesOffered?.()}
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+            >
+              Services Offered
             </button>
           </div>
         </div>
@@ -3673,7 +3575,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         {/* Header */}
         <div className="flex-shrink-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-white">Set Your Availability</h2>
+            <h2 className="text-xl font-bold text-white">Edit Schedule</h2>
             <p className="text-white/80 text-sm">Add multiple time slots per day</p>
           </div>
           <button 
