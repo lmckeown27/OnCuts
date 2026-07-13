@@ -31,11 +31,12 @@ COMMENT ON COLUMN services.provider_type IS
 UPDATE services
 SET provider_type = 'beauty',
     updated_at = NOW()
-WHERE provider_type IS DISTINCT FROM 'beauty'
-  AND (
-    LOWER(slug) IN ('braids', 'makeup', 'nails', 'lashes', 'tanning')
-    OR LOWER(name) IN ('braids', 'makeup', 'nails', 'lashes', 'tanning')
-  );
+WHERE LOWER(regexp_replace(COALESCE(slug, ''), '[^a-z0-9]+', '', 'g')) IN (
+        'braids', 'makeup', 'nails', 'lashes', 'tanning'
+      )
+   OR LOWER(regexp_replace(COALESCE(name, ''), '[^a-z0-9]+', '', 'g')) IN (
+        'braids', 'makeup', 'nails', 'lashes', 'tanning'
+      );
 
 -- Ensure Beauty catalog rows exist (reactivate if previously soft-deleted).
 DO $$

@@ -32,6 +32,7 @@ import {
   serviceDurationColumnsExist,
   serviceProviderTypeColumnExist,
   serviceSelectSql,
+  inferServiceProviderType,
   DEFAULT_MIN_DURATION_MINUTES,
   DEFAULT_MAX_DURATION_MINUTES,
 } from '../services/service-schema.service';
@@ -476,8 +477,7 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
 // ═══════════════════════════════════════════════════════════════
 
 function mapServiceRow(row: Record<string, unknown>) {
-  const providerTypeRaw = row.provider_type != null ? String(row.provider_type).toLowerCase() : 'barber';
-  const providerType = providerTypeRaw === 'beauty' ? 'beauty' : 'barber';
+  const providerType = inferServiceProviderType(row.slug, row.name, row.provider_type);
   return {
     id: row.id,
     slug: row.slug,
@@ -544,33 +544,28 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
         ? normalizeServiceProviderType(providerTypeFilterRaw)
         : null;
     
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-
-    if (!includeInactive) {
-      conditions.push('is_active = true');
-    }
-    if (providerTypeFilter && hasProviderTypeColumn) {
-      params.push(providerTypeFilter);
-      conditions.push(`provider_type = $${params.length}`);
-    }
-    
     let query = `
       SELECT ${serviceSelectSql(hasDurationColumns, hasProviderTypeColumn)}
       FROM services
     `;
     
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
+    if (!includeInactive) {
+      query += ' WHERE is_active = true';
     }
     
     query += ' ORDER BY name ASC';
     
-    const result = await pool.query(query, params);
+    const result = await pool.query(query);
+    let data = result.rows.map((row) => mapServiceRow(row));
+
+    // Filter after map so name/slug inference tags Beauty even if DB defaulted to barber
+    if (providerTypeFilter) {
+      data = data.filter((s) => s.providerType === providerTypeFilter);
+    }
 
     res.json({
       success: true,
-      data: result.rows.map((row) => mapServiceRow(row)),
+      data,
     });
   } catch (error) {
     next(error);

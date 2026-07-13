@@ -3336,6 +3336,14 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 048 — Retag Beauty services (if badges still say Barber)
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/048_retarget_beauty_services.sql
+pm2 restart oncuts-backend
+```
+
+Re-applies `provider_type = 'beauty'` for Braids, Makeup, Nails, Lashes, Tanning by slug/name.
+
 ### 047 — Services Barber / Beauty provider type
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/047_services_provider_type.sql

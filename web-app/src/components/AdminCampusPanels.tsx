@@ -35,6 +35,7 @@ import {
 import Card from './Card';
 import Button from './Button';
 import toast from 'react-hot-toast';
+import { SERVICE_TYPES } from '../config/services';
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -2421,6 +2422,25 @@ interface Service {
 
 type ServiceProviderTypeFilter = 'all' | 'barber' | 'beauty';
 
+const KNOWN_BEAUTY_KEYS = new Set(
+  SERVICE_TYPES.filter((s) => s.providerType === 'beauty').flatMap((s) => [
+    s.id.replace(/[^a-z0-9]+/gi, '').toLowerCase(),
+    s.name.replace(/[^a-z0-9]+/gi, '').toLowerCase(),
+  ])
+);
+
+function resolveServiceProviderType(service: Pick<Service, 'slug' | 'name' | 'providerType'>): 'barber' | 'beauty' {
+  if (service.providerType === 'beauty') return 'beauty';
+  const slugKey = String(service.slug || '')
+    .replace(/[^a-z0-9]+/gi, '')
+    .toLowerCase();
+  const nameKey = String(service.name || '')
+    .replace(/[^a-z0-9]+/gi, '')
+    .toLowerCase();
+  if (KNOWN_BEAUTY_KEYS.has(slugKey) || KNOWN_BEAUTY_KEYS.has(nameKey)) return 'beauty';
+  return service.providerType === 'barber' ? 'barber' : 'barber';
+}
+
 interface ServiceBoundsForm {
   basePrice: string;
   minPrice: string;
@@ -2445,7 +2465,7 @@ const boundsFormFromService = (service: Service): ServiceBoundsForm => ({
   maxPrice: Math.round(service.maxPriceCents / 100).toString(),
   minDuration: String(service.minDurationMinutes),
   maxDuration: String(service.maxDurationMinutes),
-  providerType: service.providerType === 'beauty' ? 'beauty' : 'barber',
+  providerType: resolveServiceProviderType(service),
 });
 
 export const ServicesManagementPanel: React.FC = () => {
@@ -2842,6 +2862,7 @@ export const ServicesManagementPanel: React.FC = () => {
         
         {services.map((service) => {
           const isEditing = editingServiceId === service.id;
+          const providerType = resolveServiceProviderType(service);
           
           return (
             <div
@@ -2860,12 +2881,12 @@ export const ServicesManagementPanel: React.FC = () => {
                   </h4>
                   <span
                     className={`mt-1 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                      service.providerType === 'beauty'
+                      providerType === 'beauty'
                         ? 'bg-violet-100 text-violet-800'
                         : 'bg-sky-100 text-sky-800'
                     }`}
                   >
-                    {service.providerType === 'beauty' ? 'Beauty' : 'Barber'}
+                    {providerType === 'beauty' ? 'Beauty' : 'Barber'}
                   </span>
                 </div>
                 <div className="flex items-center gap-0.5 flex-shrink-0">

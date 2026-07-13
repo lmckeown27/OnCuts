@@ -27,9 +27,11 @@ export async function serviceDurationColumnsExist(): Promise<boolean> {
   return durationColumnsCached;
 }
 
-/** Whether migration 047 `services.provider_type` exists. */
+/** Whether migration 047 `services.provider_type` exists.
+ * Only caches a positive result so a post-start migration is picked up without restart.
+ */
 export async function serviceProviderTypeColumnExist(): Promise<boolean> {
-  if (providerTypeColumnCached !== null) return providerTypeColumnCached;
+  if (providerTypeColumnCached === true) return true;
 
   const result = await pool.query(
     `SELECT 1
@@ -39,8 +41,40 @@ export async function serviceProviderTypeColumnExist(): Promise<boolean> {
        AND column_name = 'provider_type'
      LIMIT 1`
   );
-  providerTypeColumnCached = result.rows.length > 0;
-  return providerTypeColumnCached;
+  const exists = result.rows.length > 0;
+  if (exists) providerTypeColumnCached = true;
+  return exists;
+}
+
+/** Known beauty catalog slugs/names used to backfill tags if DB was left at default barber. */
+export const KNOWN_BEAUTY_SERVICE_KEYS = new Set([
+  'braids',
+  'makeup',
+  'nails',
+  'lashes',
+  'tanning',
+]);
+
+export function inferServiceProviderType(
+  slug: unknown,
+  name: unknown,
+  stored?: unknown
+): 'barber' | 'beauty' {
+  const storedNorm = stored != null ? String(stored).trim().toLowerCase() : '';
+  if (storedNorm === 'beauty') return 'beauty';
+  if (storedNorm === 'barber') {
+    // Fall through to name/slug inference for mis-tagged defaults.
+  }
+  const key = String(slug ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  const nameKey = String(name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  if (KNOWN_BEAUTY_SERVICE_KEYS.has(key) || KNOWN_BEAUTY_SERVICE_KEYS.has(nameKey)) {
+    return 'beauty';
+  }
+  return storedNorm === 'barber' ? 'barber' : 'barber';
 }
 
 /** Log once at startup when columns are missing (requires table owner to run migration 033). */
