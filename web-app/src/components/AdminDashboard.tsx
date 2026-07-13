@@ -1295,8 +1295,8 @@ export function AdminDashboard({
       {/* Performance Chart & Summary */}
       {adminView === 'performance' && (
       <>
-      {/* Platform / campus totals — 2×2 */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Platform totals */}
+      <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
           <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
           <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
@@ -1315,18 +1315,6 @@ export function AdminDashboard({
           <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Operators</p>
           <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
             {isLoadingPerformance ? '…' : performance?.totalBarbers ?? 0}
-          </p>
-        </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
-          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
-            {selectedCampus ? 'Consumers' : 'Campuses'}
-          </p>
-          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {selectedCampus
-              ? isLoadingUsers
-                ? '…'
-                : totalUsersCount
-              : campuses.length}
           </p>
         </div>
       </div>
