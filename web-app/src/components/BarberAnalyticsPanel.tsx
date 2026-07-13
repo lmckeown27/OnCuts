@@ -11,6 +11,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { ChevronRight, X } from 'lucide-react';
 import {
   fetchBarberMetrics,
   fetchBarberClients,
@@ -21,6 +22,8 @@ import {
   type BarberClientSummary,
   type BarberClientBooking,
 } from '../services/barber-payout.service';
+import { colors } from '../utils/colors';
+import PullToRefresh from './PullToRefresh';
 
 ChartJS.register(
   CategoryScale,
@@ -40,46 +43,45 @@ interface BarberAnalyticsPanelProps {
   isLoadingPerformance: boolean;
   /** Human-readable Stripe payout timing copy (from connect status). */
   payoutScheduleClarity?: string;
+  /** Increment to force metrics/clients reload (pull-to-refresh). */
+  refreshSignal?: number;
+  onRefresh?: () => Promise<void> | void;
 }
 
 function formatCurrencyFromCents(cents: number): string {
   return `$${((Number.isFinite(cents) ? cents : 0) / 100).toFixed(2)}`;
 }
 
-function formatPct(value: number): string {
-  return `${Number.isFinite(value) ? value.toFixed(1) : '0.0'}%`;
-}
-
-function periodLabel(period: BarberMetricsPeriod): string {
+function chartTitle(period: BarberMetricsPeriod): string {
   switch (period) {
     case 'daily':
-      return 'Past Week';
+      return 'Daily Revenue';
     case 'weekly':
-      return 'Past Month';
+      return 'Weekly Revenue';
     case 'monthly':
-      return 'Past Year';
+      return 'Monthly Revenue';
   }
 }
 
-function periodDescription(period: BarberMetricsPeriod): string {
+function bucketNoun(period: BarberMetricsPeriod): string {
   switch (period) {
     case 'daily':
-      return 'Each day for the past week';
+      return 'day';
     case 'weekly':
-      return 'Each week for the past month';
+      return 'week';
     case 'monthly':
-      return 'Each month for the past year';
+      return 'month';
   }
 }
 
 function tabClass(active: boolean): string {
-  return `px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+  return `flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
     active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
   }`;
 }
 
 function periodBtnClass(active: boolean): string {
-  return `px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+  return `flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-colors ${
     active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
   }`;
 }
@@ -90,7 +92,7 @@ function formatServiceType(service: string): string {
 }
 
 function formatDateTime(value: string | null): string {
-  if (!value) return '-';
+  if (!value) return '—';
   return new Date(value).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -100,10 +102,19 @@ function formatDateTime(value: string | null): string {
   });
 }
 
+function formatShortDate(value: string | null): string {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 function statusBadgeClass(status: string): string {
   const normalized = status.toUpperCase();
   if (normalized === 'COMPLETED' || normalized === 'PAID') {
-    return 'bg-green-100 text-green-700';
+    return 'bg-emerald-100 text-emerald-800';
   }
   if (normalized === 'CANCELLED' || normalized === 'REJECTED') {
     return 'bg-red-100 text-red-700';
@@ -111,16 +122,19 @@ function statusBadgeClass(status: string): string {
   if (normalized === 'PENDING') {
     return 'bg-amber-100 text-amber-800';
   }
-  return 'bg-gray-100 text-gray-700';
+  return 'bg-stone-100 text-stone-700';
 }
 
 export default function BarberAnalyticsPanel({
   performance,
   isLoadingPerformance,
   payoutScheduleClarity,
+  refreshSignal = 0,
+  onRefresh,
 }: BarberAnalyticsPanelProps) {
+  const olive = colors.olive.DEFAULT;
   const [barberView, setBarberView] = useState<BarberView>('performance');
-  const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('weekly');
+  const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('daily');
   const [metrics, setMetrics] = useState<BarberMetricsDataPoint[]>([]);
   const [metricsTotalClients, setMetricsTotalClients] = useState(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -136,6 +150,7 @@ export default function BarberAnalyticsPanel({
   const [selectedClient, setSelectedClient] = useState<BarberClientSummary | null>(null);
   const [clientBookings, setClientBookings] = useState<BarberClientBooking[]>([]);
   const [isLoadingClientBookings, setIsLoadingClientBookings] = useState(false);
+  const [clientSheetVisible, setClientSheetVisible] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,6 +162,7 @@ export default function BarberAnalyticsPanel({
         if (!cancelled) {
           setMetrics(res.data || []);
           setMetricsTotalClients(res.totalClients || 0);
+          setHoveredDataPoint(null);
         }
       } catch {
         if (!cancelled) {
@@ -158,15 +174,13 @@ export default function BarberAnalyticsPanel({
       }
     };
     void load(true);
-    const intervalId = setInterval(() => void load(false), 30000);
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
     };
-  }, [metricsPeriod]);
+  }, [metricsPeriod, refreshSignal]);
 
   useEffect(() => {
-    if (barberView !== 'clients' || selectedClient) return;
+    if (barberView !== 'clients') return;
     let cancelled = false;
     const loadClients = async () => {
       setIsLoadingClients(true);
@@ -187,17 +201,19 @@ export default function BarberAnalyticsPanel({
     return () => {
       cancelled = true;
     };
-  }, [barberView, selectedClient]);
+  }, [barberView, refreshSignal]);
 
   useEffect(() => {
     if (barberView !== 'clients') {
       setSelectedClient(null);
       setClientBookings([]);
+      setClientSheetVisible(false);
     }
   }, [barberView]);
 
   const openClientDetail = async (client: BarberClientSummary) => {
     setSelectedClient(client);
+    setClientSheetVisible(true);
     setClientBookings([]);
     setIsLoadingClientBookings(true);
     try {
@@ -211,6 +227,7 @@ export default function BarberAnalyticsPanel({
   };
 
   const closeClientDetail = () => {
+    setClientSheetVisible(false);
     setSelectedClient(null);
     setClientBookings([]);
   };
@@ -223,16 +240,16 @@ export default function BarberAnalyticsPanel({
       const day = date.getUTCDate();
       const year = String(date.getUTCFullYear()).slice(-2);
       if (metricsPeriod === 'daily') return `${month} ${day}`;
-      if (metricsPeriod === 'weekly') return `Week of ${month} ${day}`;
+      if (metricsPeriod === 'weekly') return `Wk ${month} ${day}`;
       return `${month} '${year}`;
     });
     return {
       labels,
       datasets: [
         {
-          label: 'Volume ($)',
+          label: 'Revenue ($)',
           data: metrics.map((m) => m.revenue / 100),
-          borderColor: '#708d81',
+          borderColor: olive,
           backgroundColor: 'rgba(112, 141, 129, 0.15)',
           fill: true,
           tension: 0.3,
@@ -241,7 +258,7 @@ export default function BarberAnalyticsPanel({
         },
       ],
     };
-  }, [metrics, metricsPeriod]);
+  }, [metrics, metricsPeriod, olive]);
 
   const crosshairPlugin = useMemo(
     () => ({
@@ -294,8 +311,6 @@ export default function BarberAnalyticsPanel({
               clients: m.clients || 0,
             });
           }
-        } else {
-          setHoveredDataPoint(null);
         }
       },
     }),
@@ -304,98 +319,90 @@ export default function BarberAnalyticsPanel({
 
   const periodVolume = metrics.reduce((sum, m) => sum + m.revenue, 0);
   const periodBookings = metrics.reduce((sum, m) => sum + m.bookings, 0);
-  const periodClients = hoveredDataPoint ? hoveredDataPoint.clients : metricsTotalClients;
+  const periodClients = metricsTotalClients;
 
-  const avgBookingsLabel = metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Wk' : 'Mo';
-  const avgBookingsValue =
-    metricsPeriod === 'daily'
-      ? performance.averageBookingsPerDay
-      : metricsPeriod === 'weekly'
-        ? performance.averageBookingsPerWeek
-        : performance.averageBookingsPerMonth;
-  const avgRevValue =
-    metricsPeriod === 'daily'
-      ? performance.averageRevenuePerDay
-      : metricsPeriod === 'weekly'
-        ? performance.averageRevenuePerWeek
-        : performance.averageRevenuePerMonth;
+  const displayVolume = hoveredDataPoint ? hoveredDataPoint.revenue : periodVolume;
+  const displayBookings = hoveredDataPoint ? hoveredDataPoint.bookings : periodBookings;
+  const displayClients = hoveredDataPoint ? hoveredDataPoint.clients : periodClients;
+
+  const avgRevenueCents =
+    metrics.length > 0 ? Math.round(periodVolume / metrics.length) : 0;
+  const avgBookings =
+    metrics.length > 0 ? periodBookings / metrics.length : 0;
+  const bestBucket = metrics.reduce<BarberMetricsDataPoint | null>((best, m) => {
+    if (!best || m.revenue > best.revenue) return m;
+    return best;
+  }, null);
+  const bestBookingsBucket = metrics.reduce<BarberMetricsDataPoint | null>((best, m) => {
+    if (!best || m.bookings > best.bookings) return m;
+    return best;
+  }, null);
+
+  // Platform fees apply to card; cash take-home is full cash volume.
+  const cashTakeHome = performance.cashRevenue;
+  const cardTakeHome = Math.max(0, performance.totalBarberEarnings - cashTakeHome);
+
+  const handlePanelRefresh = async () => {
+    await onRefresh?.();
+  };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1">
-        <button type="button" onClick={() => setBarberView('performance')} className={tabClass(barberView === 'performance')}>
-          Performance
-        </button>
-        <button type="button" onClick={() => setBarberView('clients')} className={tabClass(barberView === 'clients')}>
-          Clients
-        </button>
+    <div className="relative flex flex-col min-h-0 flex-1">
+      <div className="px-4 sm:px-5 pt-1 pb-3 shrink-0">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+          <button
+            type="button"
+            onClick={() => setBarberView('performance')}
+            className={tabClass(barberView === 'performance')}
+          >
+            Performance
+          </button>
+          <button
+            type="button"
+            onClick={() => setBarberView('clients')}
+            className={tabClass(barberView === 'clients')}
+          >
+            Clients
+          </button>
+        </div>
       </div>
 
-      {barberView === 'performance' && (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-            <div>
-              <p className="text-gray-500 text-xs">Volume</p>
-              <p className="font-semibold text-gray-900">
-                {isLoadingPerformance ? '...' : formatCurrencyFromCents(performance.totalRevenue)}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs">Take-home</p>
-              <p className="font-semibold text-primary-600">
-                {isLoadingPerformance ? '...' : formatCurrencyFromCents(performance.totalBarberEarnings)}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs">Clients</p>
-              <p className="font-semibold text-gray-900">
-                {isLoadingPerformance ? '...' : performance.uniqueClients}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs">Bookings</p>
-              <p className="font-semibold text-gray-900">
-                {isLoadingPerformance ? '...' : performance.completedBookings}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs">Tips</p>
-              <p className="font-semibold text-gray-900">
-                {isLoadingPerformance ? '...' : formatCurrencyFromCents(performance.totalTips)}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-center gap-4 sm:gap-6 mb-3">
-              <div className="text-center">
-                <p className="text-gray-500 text-xs">{hoveredDataPoint ? 'Date' : 'Period'}</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {hoveredDataPoint ? hoveredDataPoint.label : periodLabel(metricsPeriod)}
+      <PullToRefresh
+        scoped
+        onRefresh={handlePanelRefresh}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 pb-6"
+      >
+        {barberView === 'performance' && (
+          <div className="space-y-4">
+            {/* Summary strip — scoped to chart timeline (or selected bucket) */}
+            <div className="grid grid-cols-3 divide-x divide-stone-200 rounded-2xl border border-stone-200 bg-white overflow-hidden">
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Volume</p>
+                <p className="mt-1 text-base sm:text-lg font-semibold text-gray-900 tabular-nums">
+                  {isLoadingMetrics ? '…' : formatCurrencyFromCents(displayVolume)}
                 </p>
               </div>
-              <div className="text-center">
-                <p className="text-gray-500 text-xs">Volume</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {hoveredDataPoint
-                    ? formatCurrencyFromCents(hoveredDataPoint.revenue)
-                    : formatCurrencyFromCents(periodVolume)}
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Bookings</p>
+                <p className="mt-1 text-base sm:text-lg font-semibold text-gray-900 tabular-nums">
+                  {isLoadingMetrics ? '…' : displayBookings}
                 </p>
               </div>
-              <div className="text-center">
-                <p className="text-gray-500 text-xs">Bookings</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {hoveredDataPoint ? hoveredDataPoint.bookings : periodBookings}
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Clients</p>
+                <p className="mt-1 text-base sm:text-lg font-semibold text-gray-900 tabular-nums">
+                  {isLoadingMetrics ? '…' : displayClients}
                 </p>
-              </div>
-              <div className="text-center">
-                <p className="text-gray-500 text-xs">Clients</p>
-                <p className="text-base font-semibold text-gray-900">{periodClients}</p>
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-1.5 mb-4">
-              <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
+            {/* Timeline chart card */}
+            <section className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
+              <h3 className="text-center text-base font-semibold text-gray-900">
+                {chartTitle(metricsPeriod)}
+              </h3>
+
+              <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
                 {(
                   [
                     { key: 'daily', label: 'Daily' },
@@ -413,346 +420,319 @@ export default function BarberAnalyticsPanel({
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-gray-400">{periodDescription(metricsPeriod)}</p>
-            </div>
 
-            {isLoadingMetrics ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
-              </div>
-            ) : metrics.length > 0 ? (
-              <div
-                ref={chartContainerRef}
-                className="h-40 sm:h-48 mb-4 max-w-2xl mx-auto"
-                onMouseLeave={() => setHoveredDataPoint(null)}
-                onTouchEnd={() => setHoveredDataPoint(null)}
-              >
-                <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12 text-gray-500 text-sm mb-4">
-                No data available for this period
-              </div>
-            )}
-
-            {!isLoadingPerformance && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                {(performance.cardCount > 0 || performance.cashCount > 0) && (
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 sm:col-span-2">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Payment Methods (All Time)</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                      <div>
-                        <p className="text-[10px] text-gray-500">Card Volume</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.cardRevenue)}</p>
-                        {performance.cardTips > 0 && (
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            incl. {formatCurrencyFromCents(performance.cardTips)} tips
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500">Card Bookings</p>
-                        <p className="text-sm font-semibold text-gray-900">{performance.cardCount}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500">Cash Volume</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.cashRevenue)}</p>
-                        {performance.cashTips > 0 && (
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            incl. {formatCurrencyFromCents(performance.cashTips)} tips
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500">Cash Bookings</p>
-                        <p className="text-sm font-semibold text-gray-900">{performance.cashCount}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Earnings Breakdown</p>
-                  <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Gross Volume</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.totalRevenue)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Platform (15%)</p>
-                      <p className="text-sm font-semibold text-red-600">-{formatCurrencyFromCents(performance.totalPlatformFees)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Take-home</p>
-                      <p className="text-sm font-semibold text-green-600">{formatCurrencyFromCents(performance.totalBarberEarnings)}</p>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <p className="text-[10px] font-medium text-gray-600 mb-2">Tip Summary</p>
-                    <div className="space-y-1 text-[10px]">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Total tips collected</span>
-                        <span className="text-gray-700">{formatCurrencyFromCents(performance.totalTips)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Avg tip per paid booking</span>
-                        <span className="text-gray-700">
-                          {performance.completedBookings > 0
-                            ? formatCurrencyFromCents(Math.round(performance.totalTips / performance.completedBookings))
-                            : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              {isLoadingMetrics ? (
+                <div className="flex items-center justify-center py-12">
+                  <div
+                    className="animate-spin rounded-full h-7 w-7 border-2 border-stone-200 border-t-transparent"
+                    style={{ borderTopColor: olive }}
+                  />
                 </div>
-
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Booking Pipeline</p>
-                  <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Pending</p>
-                      <p className="text-sm font-semibold text-gray-900">{performance.pendingRequests}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Upcoming</p>
-                      <p className="text-sm font-semibold text-gray-900">{performance.acceptedUpcoming}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Completion</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatPct(performance.completionRatePct)}</p>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <p className="text-[10px] font-medium text-gray-600 mb-2">Status Breakdown</p>
-                    <div className="space-y-1 text-[10px]">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Completed / paid</span>
-                        <span className="text-gray-700">{performance.completedBookings}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Cancelled</span>
-                        <span className="text-gray-700">{performance.cancelledBookings}</span>
-                      </div>
-                    </div>
-                  </div>
+              ) : metrics.length > 0 ? (
+                <div
+                  ref={chartContainerRef}
+                  className="h-44 sm:h-52"
+                  onMouseLeave={() => setHoveredDataPoint(null)}
+                  onTouchEnd={() => setHoveredDataPoint(null)}
+                >
+                  <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
                 </div>
+              ) : (
+                <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+                  No revenue in this window yet
+                </div>
+              )}
 
-                <div className="p-3 rounded-lg border-2 bg-primary-50 border-gray-300 sm:col-span-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Take-home Summary</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gross checkout volume</span>
-                      <span className="text-gray-900 font-medium">{formatCurrencyFromCents(performance.totalRevenue)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">− Platform fee (15%)</span>
-                      <span className="text-red-600 font-medium">-{formatCurrencyFromCents(performance.totalPlatformFees)}</span>
-                    </div>
-                    <div className="flex justify-between border-t-2 pt-2 border-gray-400">
-                      <span className="font-bold text-gray-900">= Estimated take-home</span>
-                      <span className="font-bold text-lg text-primary-600">
-                        {formatCurrencyFromCents(performance.totalBarberEarnings)}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 italic pt-1">
-                      {payoutScheduleClarity ||
-                        'Payouts settle through your Stripe Connect account, not an OnCuts balance. Card payments are not instant.'}
+              {!hoveredDataPoint && metrics.length > 0 && (
+                <p className="text-center text-xs text-gray-400">
+                  Press and drag on the chart to inspect a {bucketNoun(metricsPeriod)}.
+                </p>
+              )}
+              {hoveredDataPoint && (
+                <p className="text-center text-xs font-medium text-gray-600">
+                  {hoveredDataPoint.label}: {formatCurrencyFromCents(hoveredDataPoint.revenue)} ·{' '}
+                  {hoveredDataPoint.bookings} booking{hoveredDataPoint.bookings === 1 ? '' : 's'} ·{' '}
+                  {hoveredDataPoint.clients} client{hoveredDataPoint.clients === 1 ? '' : 's'}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+                  <p className="text-[11px] text-gray-500">Avg / {bucketNoun(metricsPeriod)}</p>
+                  <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                    {formatCurrencyFromCents(avgRevenueCents)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+                  <p className="text-[11px] text-gray-500">Best {bucketNoun(metricsPeriod)}</p>
+                  <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                    {bestBucket ? formatCurrencyFromCents(bestBucket.revenue) : '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+                  <p className="text-[11px] text-gray-500">Avg bookings</p>
+                  <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                    {avgBookings.toFixed(1)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+                  <p className="text-[11px] text-gray-500">Peak bookings</p>
+                  <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                    {bestBookingsBucket ? bestBookingsBucket.bookings : '—'}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Card vs cash — All time */}
+            <section className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Card vs cash</h3>
+                <p className="text-sm text-gray-500">All time</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-gray-900">Card</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Volume</p>
+                    <p className="font-semibold text-gray-900 tabular-nums">
+                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(performance.cardRevenue)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Paid bookings</p>
+                    <p className="font-semibold text-gray-900 tabular-nums">
+                      {isLoadingPerformance ? '…' : performance.cardCount}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Platform fee</p>
+                    <p className="font-semibold text-red-600 tabular-nums">
+                      {isLoadingPerformance
+                        ? '…'
+                        : `−${formatCurrencyFromCents(performance.totalPlatformFees)}`}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Take-home</p>
+                    <p className="font-semibold tabular-nums" style={{ color: olive }}>
+                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(cardTakeHome)}
                     </p>
                   </div>
                 </div>
+              </div>
 
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 sm:col-span-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Averages</p>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Per Cut</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.averageCostPerAppointment)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Cuts/{avgBookingsLabel}</p>
-                      <p className="text-sm font-semibold text-gray-900">{avgBookingsValue.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Rev/{avgBookingsLabel}</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(avgRevValue)}</p>
-                    </div>
+              <div className="border-t border-stone-200" />
+
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-gray-900">Cash</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Volume</p>
+                    <p className="font-semibold text-gray-900 tabular-nums">
+                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(performance.cashRevenue)}
+                    </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center mt-2 pt-2 border-t border-gray-200">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Avg Star Rating</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Completion</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatPct(performance.completionRatePct)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Avg Tip</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {performance.completedBookings > 0
-                          ? formatCurrencyFromCents(Math.round(performance.totalTips / performance.completedBookings))
-                          : '-'}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Paid bookings</p>
+                    <p className="font-semibold text-gray-900 tabular-nums">
+                      {isLoadingPerformance ? '…' : performance.cashCount}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500">Take-home</p>
+                    <p className="font-semibold tabular-nums" style={{ color: olive }}>
+                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(cashTakeHome)}
+                    </p>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Estimated net take-home hero */}
+            <section
+              className="rounded-2xl p-4 text-white shadow-sm"
+              style={{
+                background: `linear-gradient(135deg, ${colors.olive[500]} 0%, ${colors.olive.DEFAULT} 45%, ${colors.olive[700]} 100%)`,
+              }}
+            >
+              <p className="text-sm font-semibold text-white/90 text-center mb-3">
+                Estimated net take-home
+              </p>
+              <div className="grid grid-cols-2 divide-x divide-white/25">
+                <div className="px-3 text-center">
+                  <p className="text-xs font-medium text-white/75 uppercase tracking-wide">Card</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums">
+                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(cardTakeHome)}
+                  </p>
+                </div>
+                <div className="px-3 text-center">
+                  <p className="text-xs font-medium text-white/75 uppercase tracking-wide">Cash</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums">
+                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(cashTakeHome)}
+                  </p>
+                </div>
+              </div>
+              {payoutScheduleClarity && (
+                <p className="mt-3 text-[11px] text-white/70 text-center leading-snug">
+                  {payoutScheduleClarity}
+                </p>
+              )}
+            </section>
+          </div>
+        )}
+
+        {barberView === 'clients' && (
+          <div className="space-y-4">
+            <p className="text-center text-sm font-medium text-gray-600">
+              {isLoadingClients
+                ? 'Loading clients…'
+                : `${clients.length} client${clients.length === 1 ? '' : 's'}`}
+            </p>
+
+            {isLoadingClients ? (
+              <div className="flex items-center justify-center py-12">
+                <div
+                  className="animate-spin rounded-full h-7 w-7 border-2 border-stone-200 border-t-transparent"
+                  style={{ borderTopColor: olive }}
+                />
+              </div>
+            ) : clientsError ? (
+              <p className="text-sm text-red-600 text-center py-8">{clientsError}</p>
+            ) : clients.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-4 py-10 text-center">
+                <p className="text-sm font-medium text-gray-700">No clients yet</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Clients with completed or paid bookings will show up here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {clients.map((client) => (
+                  <button
+                    key={client.consumer_id}
+                    type="button"
+                    onClick={() => void openClientDetail(client)}
+                    className="w-full text-left rounded-2xl border border-stone-200 bg-white px-3.5 py-3 hover:bg-stone-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {client.first_name} {client.last_name}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                          <span>
+                            {client.paid_booking_count || client.total_booking_count} booking
+                            {(client.paid_booking_count || client.total_booking_count) === 1
+                              ? ''
+                              : 's'}
+                          </span>
+                          <span>{formatCurrencyFromCents(client.total_paid_cents)} lifetime</span>
+                          <span>Last {formatShortDate(client.last_booking_at)}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" aria-hidden />
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
-        </>
-      )}
+        )}
+      </PullToRefresh>
 
-      {barberView === 'clients' && (
-        <div className="space-y-4 text-sm">
-          {!selectedClient ? (
-            <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-gray-900">Your clients</h3>
-                <span className="text-xs text-gray-500">{clients.length} unique</span>
+      {/* Nested client bookings sheet */}
+      {clientSheetVisible && selectedClient && (
+        <div className="absolute inset-0 z-20 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            aria-label="Dismiss client sheet"
+            onClick={closeClientDetail}
+          />
+          <div
+            className="relative z-10 flex flex-col w-full sm:max-w-md max-h-[88%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Client bookings"
+          >
+            <div className="flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="px-4 py-3 flex items-start justify-between gap-3 border-b border-stone-200 shrink-0">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-gray-900 truncate">
+                  {selectedClient.first_name} {selectedClient.last_name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedClient.paid_booking_count} paid ·{' '}
+                  {formatCurrencyFromCents(selectedClient.total_paid_cents)} lifetime · Last{' '}
+                  {formatShortDate(selectedClient.last_booking_at)}
+                </p>
               </div>
-
-              {isLoadingClients ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
-                </div>
-              ) : clientsError ? (
-                <p className="text-sm text-red-600 text-center py-8">{clientsError}</p>
-              ) : clients.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No clients with completed or paid bookings yet.</p>
-              ) : (
-                <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-                  {clients.map((client) => (
-                    <button
-                      key={client.consumer_id}
-                      type="button"
-                      onClick={() => void openClientDetail(client)}
-                      className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                          {client.avatar_url ? (
-                            <img src={client.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xs font-bold text-gray-500">
-                              {client.first_name.charAt(0)}
-                              {client.last_name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-gray-900">
-                              {client.first_name} {client.last_name}
-                            </p>
-                            {client.is_repeat && (
-                              <span className="text-[10px] font-medium uppercase tracking-wide text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
-                                Repeat
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{client.email}</p>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
-                            <span>{client.paid_booking_count} paid booking{client.paid_booking_count === 1 ? '' : 's'}</span>
-                            <span>{client.total_booking_count} total</span>
-                            <span>{formatCurrencyFromCents(client.total_paid_cents)} volume</span>
-                            {client.avg_review_rating > 0 && (
-                              <span>{client.avg_review_rating.toFixed(1)} ★ avg</span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-gray-400 mt-1">
-                            Last booking {formatDateTime(client.last_booking_at)}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div>
               <button
                 type="button"
                 onClick={closeClientDetail}
-                className="text-sm text-gray-600 hover:text-gray-900 mb-3"
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors shrink-0"
+                aria-label="Close client detail"
               >
-                ← Back to clients
+                <X className="w-5 h-5 text-gray-600" />
               </button>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                  {selectedClient.avatar_url ? (
-                    <img src={selectedClient.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm font-bold text-gray-500">
-                      {selectedClient.first_name.charAt(0)}
-                      {selectedClient.last_name.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-gray-900">
-                    {selectedClient.first_name} {selectedClient.last_name}
-                  </p>
-                  <p className="text-xs text-gray-500">{selectedClient.email}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedClient.paid_booking_count} paid · {selectedClient.total_booking_count} total ·{' '}
-                    {formatCurrencyFromCents(selectedClient.total_paid_cents)} volume
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold text-gray-900">Booking history</h3>
-                <span className="text-xs text-gray-500">{clientBookings.length} bookings</span>
-              </div>
-
+            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-2.5">
               {isLoadingClientBookings ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin w-5 h-5 border-2 border-gray-200 border-t-gray-900 rounded-full" />
+                  <div
+                    className="animate-spin rounded-full h-7 w-7 border-2 border-stone-200 border-t-transparent"
+                    style={{ borderTopColor: olive }}
+                  />
                 </div>
               ) : clientBookings.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No bookings found for this client.</p>
+                <p className="text-sm text-gray-500 text-center py-8">No bookings for this client.</p>
               ) : (
-                <div className="space-y-3 max-h-[28rem] overflow-y-auto">
-                  {clientBookings.map((booking) => (
-                    <div key={booking.id} className="p-3 rounded-lg border border-gray-200 bg-white">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadgeClass(booking.status)}`}>
-                            {booking.status}
-                          </span>
-                          {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-900 text-white">
-                              {booking.payment_method === 'card' ? 'Card' : 'Cash'}
-                            </span>
-                          )}
-                          {booking.review_rating != null && (
-                            <span className="text-xs text-amber-600">{booking.review_rating} ★</span>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500 shrink-0">
-                          {formatCurrencyFromCents(booking.total_paid_cents ?? booking.price_cents + (booking.tip_cents || 0))}
-                        </span>
+                clientBookings.map((booking) => {
+                  const amount =
+                    booking.total_paid_cents ?? booking.price_cents + (booking.tip_cents || 0);
+                  const paidStatuses = booking.status === 'COMPLETED' || booking.status === 'PAID';
+                  return (
+                    <div
+                      key={booking.id}
+                      className="rounded-xl border border-stone-200 bg-stone-50/80 px-3.5 py-3 space-y-1.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm text-gray-900">
+                          {formatServiceType(booking.service_type)}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+                          {formatCurrencyFromCents(amount)}
+                        </p>
                       </div>
-                      <p className="font-medium text-sm text-gray-900">{formatServiceType(booking.service_type)}</p>
-                      <p className="text-xs text-gray-500 mt-1">Scheduled {formatDateTime(booking.scheduled_time)}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusBadgeClass(booking.status)}`}
+                        >
+                          {booking.status}
+                        </span>
+                        {paidStatuses && booking.payment_method && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-stone-800 text-white">
+                            {booking.payment_method === 'card' ? 'Card' : 'Cash'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Scheduled {formatDateTime(booking.scheduled_time)}
+                      </p>
                       {booking.paid_at && (
                         <p className="text-xs text-gray-500">Paid {formatDateTime(booking.paid_at)}</p>
                       )}
-                      {booking.review_text && (
-                        <p className="text-xs text-gray-600 mt-2 italic border-t border-gray-100 pt-2">
-                          &ldquo;{booking.review_text}&rdquo;
-                        </p>
-                      )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

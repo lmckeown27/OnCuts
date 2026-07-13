@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RefreshCw, RotateCcw, EyeOff, Plus } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -3645,31 +3645,16 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex-shrink-0 bg-white border-b border-stone-200 px-5 py-3.5 flex items-center justify-between gap-2">
+        <div className="flex-shrink-0 bg-white border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Edit Schedule</h2>
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                skipAutosaveRef.current = true;
-                void loadSchedule();
-              }}
-              className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
-              aria-label="Refresh schedule"
-              title="Refresh"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-[18px] h-[18px] ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <PullToRefresh

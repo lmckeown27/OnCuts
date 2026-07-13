@@ -1,8 +1,10 @@
 /**
- * Business Analytics & Core Operations — Stripe Connect payouts and barber performance metrics.
+ * Business Analytics — bottom sheet from Account menu (iOS-style), drag indicator.
+ * Connected providers see Performance | Clients analytics; others get Connect onboarding.
  */
 
 import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import BarberAnalyticsPanel from './BarberAnalyticsPanel';
@@ -66,6 +68,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
   const [connectBusy, setConnectBusy] = useState<'dashboard' | 'onboarding' | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   const load = async () => {
     try {
@@ -91,6 +94,11 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    await load();
+    setRefreshSignal((n) => n + 1);
   };
 
   const openStripeDashboard = async () => {
@@ -145,86 +153,95 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
 
   return (
     <div
-      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 z-50 min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
         isAnimating ? 'bg-black/50' : 'bg-black/0'
       }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
-          isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+        className={`bg-stone-50 w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+          isAnimating
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
         }`}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Business Analytics"
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold">Business Analytics</h2>
-          </div>
+        {/* Drag indicator */}
+        <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
+          <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+        </div>
+
+        <div className="px-4 sm:px-5 pt-1 pb-3 flex items-center justify-between border-b border-stone-200/80 shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900">Business Analytics</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            className="p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+            aria-label="Close"
           >
-            Close
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
-          {isLoading ? (
-            <div className="text-center py-16">
-              <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4" />
-              <p className="text-gray-500">Loading business analytics…</p>
-            </div>
-          ) : connected ? (
-            <BarberAnalyticsPanel
-              performance={performance}
-              isLoadingPerformance={false}
-              payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
-            />
-          ) : (
-            <div className="py-6 sm:py-10">
-              <div className="max-w-md mx-auto text-center">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {hasPartialAccount ? 'Finish payout setup' : 'Connect your banking data'}
-                </h3>
-                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                  {hasPartialAccount
-                    ? 'Your Stripe account exists but payouts are not active yet. Complete onboarding to unlock business analytics and receive deposits.'
-                    : 'Link Stripe Connect to track earnings, view performance analytics, and receive payouts directly to your bank. OnCuts does not hold barber funds.'}
+        {connected ? (
+          <BarberAnalyticsPanel
+            performance={performance}
+            isLoadingPerformance={isLoading}
+            payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+            refreshSignal={refreshSignal}
+            onRefresh={handleRefresh}
+          />
+        ) : isLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-16 px-4">
+            <div className="animate-spin w-8 h-8 border-2 border-stone-200 border-t-[#708d81] rounded-full mb-3" />
+            <p className="text-sm text-gray-500">Loading business analytics…</p>
+          </div>
+        ) : (
+          <div className="overflow-y-auto flex-1 px-5 py-6">
+            <div className="max-w-md mx-auto text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {hasPartialAccount ? 'Finish payout setup' : 'Connect your banking data'}
+              </h3>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                {hasPartialAccount
+                  ? 'Your Stripe account exists but payouts are not active yet. Complete onboarding to unlock business analytics and receive deposits.'
+                  : 'Link Stripe Connect to track earnings, view performance analytics, and receive payouts directly to your bank. OnCuts does not hold barber funds.'}
+              </p>
+              {connectStatusUnknown && (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                  Could not verify Connect status. You can still start or continue setup below.
                 </p>
-                {connectStatusUnknown && (
-                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-                    Could not verify Connect status. You can still start or continue setup below.
-                  </p>
-                )}
-                <Button
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto min-w-[240px]"
+                onClick={() => void startStripeOnboarding()}
+                disabled={connectBusy !== null}
+              >
+                {connectBusy === 'onboarding'
+                  ? 'Redirecting to Stripe…'
+                  : hasPartialAccount
+                    ? 'Complete Stripe Connect setup'
+                    : 'Connect Stripe Connect'}
+              </Button>
+              {connectStatus?.has_account && (
+                <button
                   type="button"
-                  variant="primary"
-                  size="lg"
-                  className="w-full sm:w-auto min-w-[240px]"
-                  onClick={() => void startStripeOnboarding()}
+                  onClick={() => void openStripeDashboard()}
                   disabled={connectBusy !== null}
+                  className="mt-4 text-sm text-[#708d81] hover:text-black font-medium"
                 >
-                  {connectBusy === 'onboarding'
-                    ? 'Redirecting to Stripe…'
-                    : hasPartialAccount
-                      ? 'Complete Stripe Connect setup'
-                      : 'Connect Stripe Connect'}
-                </Button>
-                {connectStatus?.has_account && (
-                  <button
-                    type="button"
-                    onClick={() => void openStripeDashboard()}
-                    disabled={connectBusy !== null}
-                    className="mt-4 text-sm text-primary-600 hover:text-black font-medium"
-                  >
-                    Open Stripe dashboard
-                  </button>
-                )}
-              </div>
+                  Open Stripe dashboard
+                </button>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
