@@ -36,7 +36,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mapFocusVersion, setMapFocusVersion] = useState(0);
-  const [locationSource, setLocationSource] = useState<string | null>(null);
   const [webOnly, setWebOnly] = useState(false);
   const [webOnlySaving, setWebOnlySaving] = useState(false);
   const reverseGeocodeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,7 +89,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         setPlaceLabel('');
       }
 
-      setLocationSource(profile?.service_location_source ?? null);
       setWebOnly(profile?.service_location_web_only === true);
 
       if (profile?.service_radius_km != null) {
@@ -130,11 +128,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         service_location_label: label,
         source: 'manual',
       });
-      toast.success(
-        locationSource === 'device' && !webOnly
-          ? 'Public location updated (replaces device location until the Operator app syncs again)'
-          : 'Service location saved'
-      );
+      toast.success('Service location saved');
       onClose();
     } catch {
       toast.error('Failed to save service location');
@@ -149,11 +143,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
       setWebOnlySaving(true);
       await locationService.updateBarberServiceLocation({ web_only: next });
       setWebOnly(next);
-      toast.success(
-        next
-          ? 'Web-only location on — Operator app GPS will not update your public pin'
-          : 'Device location priority restored for the Operator app'
-      );
+      toast.success(next ? 'Manual location on' : 'Manual location off');
     } catch {
       toast.error('Failed to update location preference');
     } finally {
@@ -162,7 +152,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   };
 
   const locationReady = latitude != null && longitude != null && placeLabel.trim().length > 0;
-  const usingDeviceLocation = locationSource === 'device' && !webOnly;
 
   return (
     <div
@@ -193,53 +182,48 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
             <p className="text-sm text-gray-500 text-center py-4">Loading saved location…</p>
           ) : (
             <>
-              {usingDeviceLocation && (
-                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  Your public pin currently comes from the Operator app device location. Saving here
-                  replaces it until the app syncs again.
-                </p>
-              )}
-              <PlaceSearchInput
-                value={placeLabel}
-                onChange={setPlaceLabel}
-                onSelectPlace={applyPlace}
-                disabled={saving || webOnlySaving}
-              />
-              <p className="text-xs text-gray-500">
-                {webOnly
-                  ? 'Web location is your public pin. Prefer a broad area for safety.'
-                  : 'Web backup when device location isn’t available. Prefer a broad area for safety; on iOS the Operator app device location is primary.'}
-              </p>
-              <label className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={webOnly}
-                  disabled={webOnlySaving || saving}
-                  onChange={handleWebOnlyToggle}
+              <div>
+                <p className="text-sm font-medium text-gray-900 mb-1.5">Set manual location</p>
+                <PlaceSearchInput
+                  value={placeLabel}
+                  onChange={setPlaceLabel}
+                  onSelectPlace={applyPlace}
+                  disabled={saving || webOnlySaving}
+                  showLabel={false}
                 />
-                <span
-                  aria-hidden
-                  className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
-                    webOnly ? 'bg-gray-900' : 'bg-gray-300'
-                  } ${webOnlySaving || saving ? 'opacity-50' : ''}`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
-                      webOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-                    }`}
+                <p className="text-xs text-gray-500 mt-1.5">Prefer a broad area for safety.</p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-gray-900">Use manual location</p>
+                <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
+                  <span className={`text-xs font-medium ${webOnly ? 'text-gray-400' : 'text-gray-900'}`}>
+                    No
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={webOnly}
+                    disabled={webOnlySaving || saving}
+                    onChange={handleWebOnlyToggle}
                   />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm text-gray-900">
-                    I only use the web app (no Operator iOS app)
+                  <span
+                    aria-hidden
+                    className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                      webOnly ? 'bg-gray-900' : 'bg-gray-300'
+                    } ${webOnlySaving || saving ? 'opacity-50' : ''}`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                        webOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+                      }`}
+                    />
                   </span>
-                  <span className="block text-xs text-gray-500 mt-0.5">
-                    Turn this on so your public pin stays the location you set here, and device GPS
-                    will not override it.
+                  <span className={`text-xs font-medium ${webOnly ? 'text-gray-900' : 'text-gray-400'}`}>
+                    Yes
                   </span>
-                </span>
-              </label>
+                </label>
+              </div>
               {latitude != null && longitude != null && (
                 <ServiceAreaMap
                   latitude={latitude}

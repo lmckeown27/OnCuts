@@ -1396,7 +1396,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationSource, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1420,17 +1420,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [locationSaving, setLocationSaving] = useState(false);
   const [webOnlySaving, setWebOnlySaving] = useState(false);
   const [locationDraft, setLocationDraft] = useState(serviceLocationLabel || '');
-  const [showManualLocationOverride, setShowManualLocationOverride] = useState(false);
 
   useEffect(() => {
     setLocationDraft(serviceLocationLabel || '');
   }, [serviceLocationLabel]);
-
-  useEffect(() => {
-    if (serviceLocationSource !== 'device' || serviceLocationWebOnly) {
-      setShowManualLocationOverride(false);
-    }
-  }, [serviceLocationSource, serviceLocationWebOnly]);
 
   const handleInlinePlaceSelect = async (place: GeocodePlace) => {
     try {
@@ -1449,12 +1442,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         longitude: place.longitude,
         source: 'manual',
       });
-      setShowManualLocationOverride(false);
-      toast.success(
-        serviceLocationSource === 'device' && !serviceLocationWebOnly
-          ? 'Public location updated (replaces device location until the Operator app syncs again)'
-          : 'Service location saved'
-      );
+      toast.success('Service location saved');
     } catch {
       toast.error('Failed to save service location');
     } finally {
@@ -1468,14 +1456,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       setWebOnlySaving(true);
       await locationService.updateBarberServiceLocation({ web_only: next });
       onServiceLocationWebOnlyChanged?.(next);
-      if (next) {
-        setShowManualLocationOverride(false);
-      }
-      toast.success(
-        next
-          ? 'Web-only location on — Operator app GPS will not update your public pin'
-          : 'Device location priority restored for the Operator app'
-      );
+      toast.success(next ? 'Manual location on' : 'Manual location off');
     } catch {
       toast.error('Failed to update location preference');
     } finally {
@@ -1490,106 +1471,60 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     locationDraft.trim() === serviceLocationLabel.trim()
   );
 
-  const usingDeviceLocation =
-    serviceLocationSource === 'device' && !serviceLocationWebOnly;
-
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
-      <div className="w-full max-w-md">
-        {usingDeviceLocation && !showManualLocationOverride ? (
-          <>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900 truncate">
-                  {serviceLocationLabel?.trim() || 'Operator app device location'}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Using your Operator app device location
-                </p>
-              </div>
-              {hasSavedServiceLocation && (
-                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
-              )}
+      <div className="w-full max-w-md space-y-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900 mb-1.5">Set manual location</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <PlaceSearchInput
+                value={locationDraft}
+                onChange={setLocationDraft}
+                onSelectPlace={handleInlinePlaceSelect}
+                disabled={locationSaving || webOnlySaving}
+                showLabel={false}
+                showSearchIcon={false}
+                placeholder="City or area so clients can find you"
+              />
             </div>
-            <button
-              type="button"
-              className="text-xs text-gray-600 underline mt-1.5 hover:text-gray-900"
-              onClick={() => setShowManualLocationOverride(true)}
-            >
-              Change public location
-            </button>
-            <p className="text-xs text-gray-500 mt-1">
-              Changing here replaces device location until the Operator app updates again.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <PlaceSearchInput
-                  value={locationDraft}
-                  onChange={setLocationDraft}
-                  onSelectPlace={handleInlinePlaceSelect}
-                  disabled={locationSaving || webOnlySaving}
-                  showLabel={false}
-                  showSearchIcon={false}
-                  placeholder="Set public location so clients can best find you"
-                />
-              </div>
-              {hasSavedServiceLocation && !locationSaving && (
-                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
-              )}
-            </div>
-            {usingDeviceLocation && showManualLocationOverride && (
-              <button
-                type="button"
-                className="text-xs text-gray-600 underline mt-1.5 hover:text-gray-900"
-                onClick={() => {
-                  setShowManualLocationOverride(false);
-                  setLocationDraft(serviceLocationLabel || '');
-                }}
-              >
-                Keep device location
-              </button>
+            {hasSavedServiceLocation && !locationSaving && (
+              <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
             )}
-            <p className="text-xs text-gray-500 mt-1.5">
-              {serviceLocationWebOnly
-                ? 'Web location is your public pin. Prefer a broad area for safety.'
-                : usingDeviceLocation
-                  ? 'This replaces your Operator app device location until the app syncs again. Prefer a broad area for safety.'
-                  : 'For web use when device location isn’t available. Prefer a broad area for safety; on iOS the Operator app device location is primary.'}
-            </p>
-          </>
-        )}
-        <label className="mt-3 flex items-start gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            className="sr-only"
-            checked={serviceLocationWebOnly}
-            disabled={webOnlySaving || locationSaving}
-            onChange={handleWebOnlyToggle}
-          />
-          <span
-            aria-hidden
-            className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
-              serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
-            } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
-                serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-              }`}
+          </div>
+          <p className="text-xs text-gray-500 mt-1.5">Prefer a broad area for safety.</p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-gray-900">Use manual location</p>
+          <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
+            <span className={`text-xs font-medium ${serviceLocationWebOnly ? 'text-gray-400' : 'text-gray-900'}`}>
+              No
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={serviceLocationWebOnly}
+              disabled={webOnlySaving || locationSaving}
+              onChange={handleWebOnlyToggle}
             />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm text-gray-900">
-              I only use the web app (no Operator iOS app)
+            <span
+              aria-hidden
+              className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
+              } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                  serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+                }`}
+              />
             </span>
-            <span className="block text-xs text-gray-500 mt-0.5">
-              Turn this on so your public pin stays the location you set here, and device GPS will not override it.
+            <span className={`text-xs font-medium ${serviceLocationWebOnly ? 'text-gray-900' : 'text-gray-400'}`}>
+              Yes
             </span>
-          </span>
-        </label>
+          </label>
+        </div>
       </div>
     </div>
   );
