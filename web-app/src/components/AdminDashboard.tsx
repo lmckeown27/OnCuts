@@ -314,8 +314,6 @@ export function AdminDashboard({
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
   
-  const [campusSearchQuery, setCampusSearchQuery] = useState('');
-  const [showCampusDropdown, setShowCampusDropdown] = useState(false);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
   const [adminView, setAdminView] = useState<AdminView>('performance');
   
@@ -374,7 +372,6 @@ export function AdminDashboard({
   const [showContactModal, setShowContactModal] = useState<BarberApplication | null>(null);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
   
-  const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   
   // Lock scroll when actively hovering chart
@@ -394,17 +391,6 @@ export function AdminDashboard({
       document.removeEventListener('touchmove', preventScroll);
     };
   }, [isChartHovered]);
-  
-  // Close campus dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (campusDropdownRef.current && !campusDropdownRef.current.contains(event.target as Node)) {
-        setShowCampusDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
   
   // Fetch all campuses
   const fetchCampuses = async () => {
@@ -764,16 +750,6 @@ export function AdminDashboard({
       .filter((c) => idsWithBarbers.has(c.id))
       .map((c) => ({ id: c.id, name: c.name }));
   }, [campuses, barbers]);
-  
-  const filteredCampuses = useMemo(() => {
-    if (!campusSearchQuery) return campuses;
-    const query = campusSearchQuery.toLowerCase();
-    return campuses.filter(c => 
-      c.name.toLowerCase().includes(query) || 
-      (c.city || '').toLowerCase().includes(query) ||
-      (c.state || '').toLowerCase().includes(query)
-    );
-  }, [campuses, campusSearchQuery]);
   
   const filteredBarbers = useMemo(() => {
     if (!barberSearchQuery) return barbers;
@@ -1275,84 +1251,8 @@ export function AdminDashboard({
 
   return (
     <div className="relative flex flex-col min-h-0 flex-1 overflow-hidden">
-      {/* Shared chrome: campus scope + tabs */}
+      {/* Shared chrome: tabs */}
       <div className="shrink-0 px-3 sm:px-4 pt-2 pb-2 space-y-2 border-b border-stone-200/80 bg-stone-50">
-        {/* Centered campus menu */}
-        <div className="flex justify-center">
-          {isLoadingCampuses ? (
-            <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
-          ) : (
-            <div className="relative w-full max-w-xs" ref={campusDropdownRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCampusDropdown((o) => !o);
-                  setCampusSearchQuery('');
-                }}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-sm font-semibold text-gray-900 hover:bg-stone-50"
-              >
-                <span className="truncate">
-                  {selectedCampus ? formatCampusName(selectedCampus.name) : 'All Campuses'}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              {showCampusDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 max-h-64 overflow-hidden flex flex-col">
-                  <div className="p-2 border-b border-stone-100">
-                    <input
-                      type="text"
-                      value={campusSearchQuery}
-                      onChange={(e) => setCampusSearchQuery(e.target.value)}
-                      placeholder="Search campuses…"
-                      className="w-full text-sm px-2.5 py-1.5 rounded-lg bg-stone-100 border-0 outline-none focus:ring-2 focus:ring-gray-300"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="overflow-y-auto">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCampusId(null);
-                        setShowCampusDropdown(false);
-                        setCampusSearchQuery('');
-                        setSelectedBarber(null);
-                        setBarberBookings([]);
-                      }}
-                      className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                        !selectedCampusId ? 'bg-primary-50 font-semibold text-primary-800' : 'text-gray-800'
-                      }`}
-                    >
-                      All Campuses
-                    </button>
-                    {filteredCampuses.map((campus) => (
-                      <button
-                        key={campus.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCampusId(campus.id);
-                          setShowCampusDropdown(false);
-                          setCampusSearchQuery('');
-                        }}
-                        className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                          campus.id === selectedCampusId ? 'bg-primary-50' : ''
-                        }`}
-                      >
-                        <p className="font-medium text-gray-900">{formatCampusName(campus.name)}</p>
-                        <p className="text-xs text-gray-500">
-                          {campus.city}, {campus.state}
-                        </p>
-                      </button>
-                    ))}
-                    {campusSearchQuery.trim() && filteredCampuses.length === 0 && (
-                      <p className="px-3 py-3 text-sm text-gray-500 text-center">No campuses found</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {campusLoadError && (
           <p className="text-center text-xs text-red-600">{campusLoadError}</p>
         )}
