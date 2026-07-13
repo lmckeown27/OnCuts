@@ -121,7 +121,6 @@ import {
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
-import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import {
   resolveNamesForUser,
   isApplePrivateRelayEmail,
@@ -241,12 +240,16 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, 'Please provide a valid email address');
     }
 
-    // Campus assignment: Use user-provided campusId if valid, otherwise leave as null
-    // Consumers don't need to be tied to a university - they can browse barbers at any campus
+    // Campus is optional for consumers (college-town preference). Operators never get a campus org tag.
     let campusId: string | null = null;
+    const registeringAsOperator =
+      typeof role === 'string' && ['barber', 'BARBER'].includes(role);
 
     const requestedCampusId =
-      rawCampusId === undefined || rawCampusId === null || rawCampusId === ''
+      registeringAsOperator ||
+      rawCampusId === undefined ||
+      rawCampusId === null ||
+      rawCampusId === ''
         ? null
         : String(rawCampusId).trim();
 
@@ -531,11 +534,14 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
     }
 
-    // Campus is admin-organization only for providers — never required to create an account.
-    // Prefer application campus if present (legacy), otherwise registration campus, else null.
-    const campusId = hasApprovedApplication
-      ? approvedGuestApp.rows[0].campus_id ?? pendingReg.campusId ?? null
-      : pendingReg.campusId ?? null;
+    // Operators: never attribute campusId (location is the public service pin only).
+    // Consumers: optional campus preference for college-town UX.
+    const campusId =
+      dbRole === 'BARBER'
+        ? null
+        : hasApprovedApplication
+          ? approvedGuestApp.rows[0].campus_id ?? pendingReg.campusId ?? null
+          : pendingReg.campusId ?? null;
 
     if (!campusId) {
       logger.info(`${dbRole} ${email} registering without campus affiliation`);
@@ -568,14 +574,6 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     // If user had an approved guest application, create their barber profile
     if (hasApprovedApplication) {
       const guestApp = approvedGuestApp.rows[0];
-      // Only copy campus from application when present (admin may assign later otherwise)
-      if (guestApp.campus_id) {
-        await pool.query(
-          `UPDATE users SET "campusId" = $1, "updatedAt" = NOW() WHERE id = $2`,
-          [guestApp.campus_id, user.id]
-        );
-        user.campusId = guestApp.campus_id;
-      }
 
       const specialties = guestApp.specialties || [];
       
@@ -591,8 +589,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         price: SERVICE_BASE_PRICES[specialty] || 25,
       }));
 
-      // Create barber profile (default service pin = campus centroid when coords exist)
-      const cc = campusCoordsValueExprs(2);
+      // Public pin comes from device/manual location later — do not seed from campus FK
       await pool.query(
         `INSERT INTO barbers (
            id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
@@ -603,22 +600,19 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            "createdAt", "updatedAt"
          )
          VALUES (
-           gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+           gen_random_uuid(), $1, NULL, $2, $3, true, '{}',
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
-           ${cc.lat}, ${cc.lng}, ${cc.source},
-           CASE WHEN (${cc.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
+           NULL, NULL, NULL, NULL,
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 
            specialties = EXCLUDED.specialties,
            pricing = EXCLUDED.pricing,
            "isActive" = true,
-           "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
-           ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
            "updatedAt" = NOW()`,
-        [user.id, guestApp.campus_id, specialties, JSON.stringify(pricing)]
+        [user.id, specialties, JSON.stringify(pricing)]
       );
 
       // Link the guest application to the new user

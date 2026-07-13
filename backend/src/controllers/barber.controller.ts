@@ -6,7 +6,6 @@ import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
-import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { assertNoMessagingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/service-duration.utils';
 import {
@@ -581,8 +580,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       
       // Use upsert pattern - explicitly generate UUID for id since table lacks default
       // Include ALL required NOT NULL columns from barbers table schema
-      const ccAuto = campusCoordsValueExprs(2);
-
+      // No campus org tag; public pin is set later via device/manual location
       const createResult = await pool.query(
         `INSERT INTO barbers (
            id, "userId", "campusId", specialties, "isActive", "weeklySchedule",
@@ -593,25 +591,21 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
            "createdAt", "updatedAt"
          )
          VALUES (
-           gen_random_uuid(), $1, $2, ARRAY[]::text[], true, $3,
+           gen_random_uuid(), $1, NULL, ARRAY[]::text[], true, $2,
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
-           ${ccAuto.lat}, ${ccAuto.lng}, ${ccAuto.source},
-           CASE WHEN (${ccAuto.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
+           NULL, NULL, NULL, NULL,
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 
            "isActive" = true,
            "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
-           "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
-           ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
            "updatedAt" = NOW()
          RETURNING id, "userId" as user_id, bio, specialties, 
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
-          user.campus_id ?? null,
           JSON.stringify(defaultSchedule),
         ]
       );

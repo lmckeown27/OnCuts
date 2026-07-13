@@ -375,6 +375,37 @@ export const updateBarberServiceLocation = async (
       });
     }
 
+    // Privacy estimate: update public display label only (keep coords/source for device tracking)
+    if (
+      label !== undefined &&
+      !coordsProvided &&
+      service_radius_km === undefined &&
+      webOnlyUpdate === undefined
+    ) {
+      if (!hasLabelColumn) {
+        throw new ApiError(503, 'service_location_label is not available; run migration 035');
+      }
+      const labelResult = await pool.query(
+        `UPDATE barbers
+         SET service_location_label = $1,
+             "updatedAt" = NOW()
+         WHERE id = $2
+         RETURNING id, service_latitude, service_longitude, service_radius_km,
+                   service_location_label, service_location_source, service_location_updated_at
+                   ${hasWebOnlyColumn ? ', service_location_web_only' : ''}`,
+        [label, barberId]
+      );
+      return res.json({
+        success: true,
+        message: 'Public location label updated',
+        data: mapServiceLocationRow(labelResult.rows[0], {
+          hasLabelColumn,
+          hasSourceColumn,
+          hasWebOnlyColumn,
+        }),
+      });
+    }
+
     const effectiveWebOnly =
       webOnlyUpdate !== undefined ? webOnlyUpdate : currentWebOnly;
 
@@ -399,6 +430,7 @@ export const updateBarberServiceLocation = async (
       });
     }
 
+    // Device GPS: keep an existing manual privacy label; only coarse reverse-geocode if none set
     if (
       source === 'device' &&
       hasLabelColumn &&
@@ -406,16 +438,26 @@ export const updateBarberServiceLocation = async (
       typeof latitude === 'number' &&
       typeof longitude === 'number'
     ) {
-      try {
-        const place = await reverseGeocodeCoarse(latitude, longitude);
-        if (place?.label) {
-          label = place.label;
+      const existingLabel = await pool.query(
+        `SELECT service_location_label FROM barbers WHERE id = $1`,
+        [barberId]
+      );
+      const currentLabel = existingLabel.rows[0]?.service_location_label;
+      if (typeof currentLabel === 'string' && currentLabel.trim().length > 0) {
+        // Preserve operator-chosen estimate (e.g. UCSB / Santa Barbara) — do not overwrite
+        label = undefined;
+      } else {
+        try {
+          const place = await reverseGeocodeCoarse(latitude, longitude);
+          if (place?.label) {
+            label = place.label;
+          }
+        } catch (geoErr) {
+          logger.warn('Device service-location reverse geocode failed; saving coords without label', {
+            barberId,
+            err: geoErr instanceof Error ? geoErr.message : geoErr,
+          });
         }
-      } catch (geoErr) {
-        logger.warn('Device service-location reverse geocode failed; saving coords without label', {
-          barberId,
-          err: geoErr instanceof Error ? geoErr.message : geoErr,
-        });
       }
     }
 

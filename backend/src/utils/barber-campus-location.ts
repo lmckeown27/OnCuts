@@ -1,13 +1,10 @@
 /**
- * Default service pin to the campus centroid when an admin-assigned campus has coords.
- * Campus is optional for providers; null campusId yields null lat/lng.
- * Requires campuses.latitude / campuses.longitude (see add_campus_coordinates.sql).
- *
- * When seeding from campus, also set service_location_source = 'campus_default'
- * (migration 042). Device GPS (source=device) is primary; web PlaceSearch is manual backup.
+ * @deprecated Campus FK is no longer used to organize operators or seed service pins.
+ * Public discovery uses service_latitude/longitude from device or manual PlaceSearch.
+ * Helpers kept only for any legacy one-off scripts; new code should not call these.
  */
 
-/** Scalar subqueries for INSERT ... VALUES (..., lat, lng, source) — same param index for campus id. */
+/** @deprecated Do not seed operator pins from campus. */
 export function campusCoordsValueExprs(campusParamIndex: number): {
   lat: string;
   lng: string;
@@ -22,7 +19,7 @@ export function campusCoordsValueExprs(campusParamIndex: number): {
   };
 }
 
-/** ON CONFLICT: keep an existing custom pin; otherwise copy from campus row. */
+/** @deprecated Do not seed operator pins from campus. */
 export const ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS = `
   service_latitude = COALESCE(barbers.service_latitude, (SELECT c.latitude FROM campuses c WHERE c.id = EXCLUDED."campusId" LIMIT 1)),
   service_longitude = COALESCE(barbers.service_longitude, (SELECT c.longitude FROM campuses c WHERE c.id = EXCLUDED."campusId" LIMIT 1)),

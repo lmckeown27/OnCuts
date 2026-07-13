@@ -169,8 +169,10 @@ interface Barber {
   email: string;
   profileImageUrl?: string;
   isActive: boolean;
-  campusId?: string;
-  campusName?: string;
+  campusId?: string | null;
+  campusName?: string | null;
+  serviceLocationLabel?: string | null;
+  hasServiceLocation?: boolean;
   hasStripeSetup?: boolean; // Stripe fully complete (visible to consumers)
   hasStripeAccountOnly?: boolean; // Stripe account created but payouts not enabled (NOT visible to consumers)
   createdAt?: string;
@@ -346,6 +348,8 @@ export function AdminDashboard({
   const [barberViewTab, setBarberViewTab] = useState<'barbers' | 'applications' | 'availability'>('barbers');
   const [barberVisibilityFilter, setBarberVisibilityFilter] = useState<'visible' | 'hidden'>('visible');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
+  /** All-universities only: filter by whether operator has a public service pin near a campus */
+  const [barberLocationFilter, setBarberLocationFilter] = useState<'all' | 'near-campus' | 'unassigned'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
   // Barber applications state
@@ -730,15 +734,29 @@ export function AdminDashboard({
   
   // Filtered barbers for the "all barbers" view (when no campus selected)
   const filteredAllBarbers = useMemo(() => {
-    if (!allBarberSearchQuery) return barbers;
+    let list = barbers;
+    if (barberLocationFilter === 'near-campus') {
+      list = list.filter((b) => Boolean(b.campusId));
+    } else if (barberLocationFilter === 'unassigned') {
+      list = list.filter((b) => !b.hasServiceLocation || !b.campusId);
+    }
+    if (!allBarberSearchQuery) return list;
     const query = allBarberSearchQuery.toLowerCase();
-    return barbers.filter(b => 
+    return list.filter(b => 
       b.firstName.toLowerCase().includes(query) || 
       b.lastName.toLowerCase().includes(query) ||
       b.email.toLowerCase().includes(query) ||
-      (b.campusName && b.campusName.toLowerCase().includes(query))
+      (b.campusName && b.campusName.toLowerCase().includes(query)) ||
+      (b.serviceLocationLabel && b.serviceLocationLabel.toLowerCase().includes(query))
     );
-  }, [barbers, allBarberSearchQuery]);
+  }, [barbers, allBarberSearchQuery, barberLocationFilter]);
+
+  const barberLocationSubtitle = (barber: Barber) => {
+    // Exact public label as chosen (UCSB, Santa Barbara, California, etc.) — never substitute nearest campus name
+    if (barber.serviceLocationLabel?.trim()) return barber.serviceLocationLabel.trim();
+    if (!barber.hasServiceLocation) return 'No public location';
+    return 'Location set';
+  };
   
   const filteredUsers = useMemo(() => {
     if (!userSearchQuery) return users;
@@ -1900,6 +1918,43 @@ export function AdminDashboard({
                     </button>
                   </div>
                 )}
+
+                {/* Location org filter — nearest campus by public pin */}
+                <div className="flex rounded-lg bg-gray-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setBarberLocationFilter('all')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      barberLocationFilter === 'all'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    All ({barbers.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBarberLocationFilter('near-campus')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      barberLocationFilter === 'near-campus'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Near campus ({barbers.filter((b) => Boolean(b.campusId)).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBarberLocationFilter('unassigned')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      barberLocationFilter === 'unassigned'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Unassigned ({barbers.filter((b) => !b.hasServiceLocation || !b.campusId).length})
+                  </button>
+                </div>
               </div>
             )}
             
@@ -1958,7 +2013,7 @@ export function AdminDashboard({
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-1">
                             <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
-                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
+                            <p className="text-[10px] text-gray-400">{barberLocationSubtitle(barber)}</p>
                           </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
                         </div>
@@ -2005,7 +2060,7 @@ export function AdminDashboard({
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-1">
                             <p className="text-[10px] text-gray-400">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
-                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
+                            <p className="text-[10px] text-gray-400">{barberLocationSubtitle(barber)}</p>
                           </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
                         </div>
@@ -2462,6 +2517,11 @@ export function AdminDashboard({
               <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                 <Users className="w-10 h-10 text-gray-300 mb-2" />
                 <p className="text-sm">No barbers found</p>
+                {selectedCampusId ? (
+                  <p className="text-xs text-gray-400 mt-1 text-center max-w-xs">
+                    No operators with a public location near this campus. Operators appear here when their service pin is within ~5 miles.
+                  </p>
+                ) : null}
               </div>
             )}
               </>

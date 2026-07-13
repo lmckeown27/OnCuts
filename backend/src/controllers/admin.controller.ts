@@ -34,6 +34,11 @@ import {
   DEFAULT_MIN_DURATION_MINUTES,
   DEFAULT_MAX_DURATION_MINUTES,
 } from '../services/service-schema.service';
+import {
+  barberIdsNearCampusSubquery,
+  barberNearCampusByPinSql,
+  servicePinDistanceToCampusSql,
+} from '../utils/admin-campus-proximity';
 
 /**
  * Withdraw platform fees
@@ -927,6 +932,10 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const { campusId } = req.params;
     await assertCampusMetricsAccess(req, campusId);
 
+    // Operators near this campus by public service pin (not users.campusId)
+    const nearCampus = barberNearCampusByPinSql('b', '$1');
+    const nearCampusIds = barberIdsNearCampusSubquery('$1');
+
     // Get barber counts - use simpler query
     const barbersResult = await pool.query(`
       SELECT 
@@ -934,7 +943,8 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1::uuid AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+        AND ${nearCampus}
     `, [campusId]);
 
     const totalConsumers = await countCampusConsumers(campusId);
@@ -947,11 +957,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as completed,
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled
       FROM bookings
-      WHERE "barberId" IN (
-        SELECT b.id FROM barbers b
-        JOIN users u ON b."userId" = u.id
-        WHERE u."campusId" = $1::uuid
-      )
+      WHERE "barberId" IN (${nearCampusIds})
     `, [campusId]);
 
     // Get total revenue, platform fees, and transaction count for Stripe fee calculation
@@ -971,11 +977,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
-      AND "barberId" IN (
-        SELECT b.id FROM barbers b
-        JOIN users u ON b."userId" = u.id
-        WHERE u."campusId" = $1::uuid
-      )
+      AND "barberId" IN (${nearCampusIds})
     `, [campusId]);
 
     // Get average rating and review count
@@ -985,11 +987,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT("reviewRating") as total_reviews
       FROM bookings
       WHERE "reviewRating" IS NOT NULL
-      AND "barberId" IN (
-        SELECT b.id FROM barbers b
-        JOIN users u ON b."userId" = u.id
-        WHERE u."campusId" = $1::uuid
-      )
+      AND "barberId" IN (${nearCampusIds})
     `, [campusId]);
 
     // Get average bookings per day (last 30 days)
@@ -1000,11 +998,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '30 days'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('day', "createdAt")
       ) daily_counts
     `, [campusId]);
@@ -1017,11 +1011,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 weeks'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('week', "createdAt")
       ) weekly_counts
     `, [campusId]);
@@ -1034,11 +1024,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 months'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('month', "createdAt")
       ) monthly_counts
     `, [campusId]);
@@ -1051,11 +1037,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '30 days'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('day', "createdAt")
       ) daily_revenues
     `, [campusId]);
@@ -1068,11 +1050,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 weeks'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('week', "createdAt")
       ) weekly_revenues
     `, [campusId]);
@@ -1085,11 +1063,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 months'
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
+        AND "barberId" IN (${nearCampusIds})
         GROUP BY DATE_TRUNC('month', "createdAt")
       ) monthly_revenues
     `, [campusId]);
@@ -1132,11 +1106,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
           AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
-          AND "barberId" IN (
-            SELECT b.id FROM barbers b
-            JOIN users u ON b."userId" = u.id
-            WHERE u."campusId" = $1::uuid
-          )
+          AND "barberId" IN (${nearCampusIds})
       ) as barber_weeks
     `, [campusId]);
     const estimatedPayouts = parseInt(payoutCountResult.rows[0]?.estimated_payouts || '0');
@@ -1273,14 +1243,16 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         interval = '28 days'; // Default to 4 weeks
     }
 
-    // Get campus timezone and barber IDs
+    // Get campus timezone and barber IDs (operators near campus by service pin)
     const campusResult = await pool.query(`
-      SELECT c.timezone, array_agg(b.id) as barber_ids
+      SELECT c.timezone,
+             (
+               SELECT COALESCE(array_agg(b.id), ARRAY[]::uuid[])
+               FROM barbers b
+               WHERE ${barberNearCampusByPinSql('b', '$1')}
+             ) as barber_ids
       FROM campuses c
-      LEFT JOIN users u ON u."campusId" = c.id
-      LEFT JOIN barbers b ON b."userId" = u.id
       WHERE c.id = $1::uuid
-      GROUP BY c.id
     `, [campusId]);
 
     if (campusResult.rows.length === 0) {
@@ -1883,7 +1855,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
 };
 
 /**
- * Get barbers for a campus
+ * Get barbers for a campus (operators whose public service pin is near the campus)
  * GET /api/admin/campuses/:campusId/barbers
  */
 export const getCampusBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1892,7 +1864,10 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
 
     await assertCampusMetricsAccess(req, campusId);
 
-    // Get barbers for this campus
+    const nearCampus = barberNearCampusByPinSql('b', '$1');
+    const distSql = servicePinDistanceToCampusSql('b', 'c');
+
+    // Get barbers near this campus by service pin
     // Include legacy CAMPUS_MANAGER DB role as barbers
     // Include stripe fields to check Stripe setup status
     // Include booking stats (completed bookings count and total volume)
@@ -1905,7 +1880,11 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u.email,
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
-        u."campusId" as campus_id,
+        c.id as campus_id,
+        c.name as campus_name,
+        b.service_location_label,
+        b.service_latitude,
+        b.service_longitude,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -1914,6 +1893,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         COALESCE(stats.total_volume_cents, 0) as total_volume_cents
       FROM users u
       JOIN barbers b ON b."userId" = u.id
+      JOIN campuses c ON c.id = $1::uuid
       LEFT JOIN (
         SELECT 
           "barberId",
@@ -1923,9 +1903,9 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         WHERE status IN ('COMPLETED', 'PAID')
         GROUP BY "barberId"
       ) stats ON stats."barberId" = b.id
-      WHERE u."campusId" = $1
-        AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
-      ORDER BY u.first_name, u.last_name
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+        AND ${nearCampus}
+      ORDER BY ${distSql} ASC NULLS LAST, u.first_name, u.last_name
     `, [campusId]);
 
     res.json({
@@ -1939,6 +1919,9 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
         campusId: row.campus_id?.toString(),
+        campusName: row.campus_name,
+        serviceLocationLabel: row.service_location_label || null,
+        hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
         completedBookings: parseInt(row.completed_bookings) || 0,
@@ -2374,10 +2357,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get all barbers with campus info, stripe status, and booking stats
-    // Include stripe_payouts_enabled to distinguish between:
-    // - Stripe account created but onboarding incomplete
-    // - Stripe fully set up and visible to consumers
+    // Nearest campus by public service pin (admin geo org — not users.campusId)
+    const nearestDist = servicePinDistanceToCampusSql('b', 'nc');
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -2387,8 +2368,11 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.email,
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
-        u."campusId" as campus_id,
-        c.name as campus_name,
+        nearest.id as campus_id,
+        nearest.name as campus_name,
+        b.service_location_label,
+        b.service_latitude,
+        b.service_longitude,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -2398,7 +2382,17 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         COALESCE(stats.total_volume_cents, 0) as total_volume_cents
       FROM users u
       JOIN barbers b ON b."userId" = u.id
-      LEFT JOIN campuses c ON u."campusId" = c.id
+      LEFT JOIN LATERAL (
+        SELECT nc.id, nc.name
+        FROM campuses nc
+        WHERE nc.latitude IS NOT NULL
+          AND nc.longitude IS NOT NULL
+          AND b.service_latitude IS NOT NULL
+          AND b.service_longitude IS NOT NULL
+          AND ${nearestDist} <= 8
+        ORDER BY ${nearestDist} ASC
+        LIMIT 1
+      ) nearest ON true
       LEFT JOIN (
         SELECT 
           "barberId",
@@ -2409,7 +2403,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         GROUP BY "barberId"
       ) stats ON stats."barberId" = b.id
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
-      ORDER BY c.name, u.first_name, u.last_name
+      ORDER BY nearest.name NULLS LAST, u.first_name, u.last_name
     `);
 
     res.json({
@@ -2422,8 +2416,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
-        campusId: row.campus_id?.toString(),
-        campusName: row.campus_name,
+        campusId: row.campus_id?.toString() || null,
+        campusName: row.campus_name || null,
+        serviceLocationLabel: row.service_location_label || null,
+        hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
         isBanned: row.is_banned === true,

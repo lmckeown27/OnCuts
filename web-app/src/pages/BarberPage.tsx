@@ -1428,21 +1428,37 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const handleInlinePlaceSelect = async (place: GeocodePlace) => {
     try {
       setLocationSaving(true);
-      await locationService.updateBarberServiceLocation({
-        latitude: place.latitude,
-        longitude: place.longitude,
-        service_radius_km: radiusKmFromPreset('campus'),
-        service_location_label: place.label,
-        source: 'manual',
-      });
-      setLocationDraft(place.label);
-      onServiceLocationUpdated?.({
-        label: place.label,
-        latitude: place.latitude,
-        longitude: place.longitude,
-        source: 'manual',
-      });
-      toast.success('Service location saved');
+      if (serviceLocationWebOnly) {
+        // Manual mode: public pin + exact selected label (e.g. UCSB or Santa Barbara, California)
+        await locationService.updateBarberServiceLocation({
+          latitude: place.latitude,
+          longitude: place.longitude,
+          service_radius_km: radiusKmFromPreset('campus'),
+          service_location_label: place.label,
+          source: 'manual',
+        });
+        setLocationDraft(place.label);
+        onServiceLocationUpdated?.({
+          label: place.label,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          source: 'manual',
+        });
+        toast.success('Service location saved');
+      } else {
+        // Device tracking: store selected place as privacy estimate label only (exact wording preserved)
+        const response = await locationService.updateBarberServiceLocation({
+          service_location_label: place.label,
+        });
+        setLocationDraft(place.label);
+        onServiceLocationUpdated?.({
+          label: place.label,
+          latitude: response.service_latitude ?? serviceLatitude ?? place.latitude,
+          longitude: response.service_longitude ?? serviceLongitude ?? place.longitude,
+          source: response.service_location_source ?? 'device',
+        });
+        toast.success('Privacy location saved');
+      }
     } catch {
       toast.error('Failed to save service location');
     } finally {
@@ -1466,9 +1482,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const hasSavedServiceLocation = Boolean(
     serviceLocationLabel?.trim() &&
-    serviceLatitude != null &&
-    serviceLongitude != null &&
-    locationDraft.trim() === serviceLocationLabel.trim()
+    locationDraft.trim() === serviceLocationLabel.trim() &&
+    (serviceLocationWebOnly
+      ? serviceLatitude != null && serviceLongitude != null
+      : true)
   );
 
   const serviceLocationField = (
@@ -1485,14 +1502,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 disabled={locationSaving || webOnlySaving}
                 showLabel={false}
                 showSearchIcon={false}
-                placeholder="City or area so clients can find you"
+                placeholder="Campus, city, or area so clients can find you"
               />
             </div>
             {hasSavedServiceLocation && !locationSaving && (
               <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1.5">Prefer a broad area for safety.</p>
+          <p className="text-xs text-gray-500 mt-1.5">
+            {serviceLocationWebOnly
+              ? 'Shown exactly as selected (e.g. UCSB or Santa Barbara, California). Prefer a broad area for safety.'
+              : 'Privacy estimate while device location is on — clients and admins see this label, not your exact GPS.'}
+          </p>
         </div>
 
         <div className="flex items-center justify-between gap-3">

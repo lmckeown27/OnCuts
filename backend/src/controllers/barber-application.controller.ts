@@ -4,7 +4,6 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
-import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { barberProviderTypeInsertFragments } from '../services/barber-provider-schema.service';
 
 /**
@@ -513,12 +512,10 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
             [userId, id]
           );
 
-          // Create barber profile (service pin from campus centroid only if campus assigned)
+          // Create barber profile — no campus org tag; public pin set later via device/manual
           const specialties = applicationData.specialties || [];
           const pricing = generatePricingFromSpecialties(specialties);
-          const ccGuest = campusCoordsValueExprs(2);
-          const providerTypeInsert = await barberProviderTypeInsertFragments('$5');
-          const guestCampusId = applicationData.campus_id ?? null;
+          const providerTypeInsert = await barberProviderTypeInsertFragments('$4');
 
           await pool.query(
             `INSERT INTO barbers (
@@ -530,22 +527,19 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                "createdAt", "updatedAt"${providerTypeInsert.columns}
              )
              VALUES (
-               gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+               gen_random_uuid(), $1, NULL, $2, $3, true, '{}',
                0, 0,
                0, 0, 0, 0,
                1.00, false, false,
-               ${ccGuest.lat}, ${ccGuest.lng}, ${ccGuest.source},
-               CASE WHEN (${ccGuest.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
+               NULL, NULL, NULL, NULL,
                NOW(), NOW()${providerTypeInsert.values}
              )
              ON CONFLICT ("userId") DO UPDATE SET 
                specialties = EXCLUDED.specialties,
                pricing = EXCLUDED.pricing,
                "isActive" = true,
-               "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
-               ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
-               "updatedAt" = NOW()`,
-            [userId, guestCampusId, specialties, JSON.stringify(pricing), 'barber']
+               "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
+            [userId, specialties, JSON.stringify(pricing), 'barber']
           );
 
           logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
@@ -585,10 +579,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       );
       updatedApplication = result.rows[0];
 
-      // If approved, update user role to BARBER (campus is admin-assigned later, not from application)
+      // If approved, promote to BARBER — no campus org tag; public pin set later
       if (status === 'approved') {
-        const appCampusId =
-          updatedApplication.campus_id ?? applicationData.campus_id ?? updatedApplication.campusId ?? null;
         await pool.query(
           `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
           [updatedApplication.user_id]
@@ -596,8 +588,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
 
         const specialties = applicationData.specialties || [];
         const pricing = generatePricingFromSpecialties(specialties);
-        const ccApp = campusCoordsValueExprs(2);
-        const providerTypeInsert = await barberProviderTypeInsertFragments('$5');
+        const providerTypeInsert = await barberProviderTypeInsertFragments('$4');
 
         await pool.query(
           `INSERT INTO barbers (
@@ -609,22 +600,19 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              "createdAt", "updatedAt"${providerTypeInsert.columns}
            )
            VALUES (
-             gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+             gen_random_uuid(), $1, NULL, $2, $3, true, '{}',
              0, 0,
              0, 0, 0, 0,
              1.00, false, false,
-             ${ccApp.lat}, ${ccApp.lng}, ${ccApp.source},
-             CASE WHEN (${ccApp.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
+             NULL, NULL, NULL, NULL,
              NOW(), NOW()${providerTypeInsert.values}
            )
            ON CONFLICT ("userId") DO UPDATE SET 
              specialties = EXCLUDED.specialties,
              pricing = EXCLUDED.pricing,
              "isActive" = true,
-             "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
-             ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
-             "updatedAt" = NOW()`,
-          [updatedApplication.user_id, appCampusId, specialties, JSON.stringify(pricing), 'barber']
+             "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
+          [updatedApplication.user_id, specialties, JSON.stringify(pricing), 'barber']
         );
 
         logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);

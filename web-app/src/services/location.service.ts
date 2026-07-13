@@ -60,7 +60,16 @@ class LocationService {
     ignored_device_update?: boolean;
   }> {
     const body: Record<string, unknown> = { ...data };
-    if (data.source === undefined && data.web_only === undefined) {
+    const labelOnly =
+      data.service_location_label !== undefined &&
+      data.latitude === undefined &&
+      data.longitude === undefined &&
+      data.web_only === undefined &&
+      data.service_radius_km === undefined;
+    if (labelOnly) {
+      // Privacy estimate: label only — do not force source=manual
+      delete body.source;
+    } else if (data.source === undefined && data.web_only === undefined) {
       body.source = 'manual';
     } else if (data.source !== undefined) {
       body.source = data.source;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent }
 import debounce from 'lodash.debounce';
 import { Search, Loader2, MapPin } from 'lucide-react';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
+import campusService from '../services/campus.service';
 
 interface PlaceSearchInputProps {
   value: string;
@@ -17,6 +18,15 @@ interface PlaceSearchInputProps {
 }
 
 const SEARCH_DEBOUNCE_MS = 800;
+
+function campusMatchesQuery(name: string, city: string | undefined, query: string): boolean {
+  const q = query.toLowerCase();
+  return (
+    name.toLowerCase().includes(q) ||
+    (city ? city.toLowerCase().includes(q) : false) ||
+    name.toLowerCase().replace(/\s+/g, '-').includes(q.replace(/\s+/g, '-'))
+  );
+}
 
 export default function PlaceSearchInput({
   value,
@@ -61,10 +71,41 @@ export default function PlaceSearchInput({
     try {
       setLoading(true);
       setSearchError(null);
-      const places = await geocodeService.searchPlaces(trimmed);
-      setResults(places);
-      setOpen(places.length > 0);
-      if (places.length === 0) {
+
+      const [places, campuses] = await Promise.all([
+        geocodeService.searchPlaces(trimmed).catch(() => [] as GeocodePlace[]),
+        campusService.getCampuses().catch(() => [] as Awaited<ReturnType<typeof campusService.getCampuses>>),
+      ]);
+
+      const campusPlaces: GeocodePlace[] = campuses
+        .filter(
+          (c) =>
+            c.latitude != null &&
+            c.longitude != null &&
+            campusMatchesQuery(c.name, c.city, trimmed)
+        )
+        .slice(0, 5)
+        .map((c) => ({
+          label: c.city ? `${c.name}, ${c.city}` : c.name,
+          latitude: c.latitude as number,
+          longitude: c.longitude as number,
+          placeType: 'campus',
+        }));
+
+      // Prefer OnCuts campuses at the top; dedupe by similar lat/lng
+      const merged: GeocodePlace[] = [...campusPlaces];
+      for (const place of places) {
+        const duplicate = merged.some(
+          (m) =>
+            Math.abs(m.latitude - place.latitude) < 0.01 &&
+            Math.abs(m.longitude - place.longitude) < 0.01
+        );
+        if (!duplicate) merged.push(place);
+      }
+
+      setResults(merged);
+      setOpen(merged.length > 0);
+      if (merged.length === 0) {
         setSearchError('No places found. Try a nearby city or campus name.');
       }
     } catch {

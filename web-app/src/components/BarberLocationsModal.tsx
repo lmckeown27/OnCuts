@@ -109,10 +109,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   }, [isVisible, loadSavedLocation]);
 
   const handleSave = async () => {
-    if (latitude == null || longitude == null) {
-      toast.error('Choose a location by searching or using the map');
-      return;
-    }
     const label = placeLabel.trim();
     if (!label) {
       toast.error('Enter or select a place name');
@@ -121,14 +117,26 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
 
     try {
       setSaving(true);
-      await locationService.updateBarberServiceLocation({
-        latitude,
-        longitude,
-        service_radius_km: serviceRadiusKm,
-        service_location_label: label,
-        source: 'manual',
-      });
-      toast.success('Service location saved');
+      if (webOnly) {
+        if (latitude == null || longitude == null) {
+          toast.error('Choose a location by searching or using the map');
+          return;
+        }
+        await locationService.updateBarberServiceLocation({
+          latitude,
+          longitude,
+          service_radius_km: serviceRadiusKm,
+          service_location_label: label,
+          source: 'manual',
+        });
+        toast.success('Service location saved');
+      } else {
+        // Device tracking on: label is a privacy estimate only
+        await locationService.updateBarberServiceLocation({
+          service_location_label: label,
+        });
+        toast.success('Privacy location saved');
+      }
       onClose();
     } catch {
       toast.error('Failed to save service location');
@@ -151,7 +159,9 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
     }
   };
 
-  const locationReady = latitude != null && longitude != null && placeLabel.trim().length > 0;
+  const locationReady = webOnly
+    ? latitude != null && longitude != null && placeLabel.trim().length > 0
+    : placeLabel.trim().length > 0;
 
   return (
     <div
@@ -191,7 +201,11 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                   disabled={saving || webOnlySaving}
                   showLabel={false}
                 />
-                <p className="text-xs text-gray-500 mt-1.5">Prefer a broad area for safety.</p>
+                <p className="text-xs text-gray-500 mt-1.5">
+                  {webOnly
+                    ? 'Shown exactly as selected. Prefer a broad area for safety.'
+                    : 'Privacy estimate while device location is on — this label is shown instead of exact GPS.'}
+                </p>
               </div>
 
               <div className="flex items-center justify-between gap-3">
