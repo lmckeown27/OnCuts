@@ -2420,7 +2420,48 @@ interface Service {
   isActive: boolean;
 }
 
-type ServiceProviderTypeFilter = 'all' | 'barber' | 'beauty';
+type ServiceProviderTypeFilter = 'barber' | 'beauty';
+
+type LedgerCategory =
+  | 'haircuts'
+  | 'beardAndGrooming'
+  | 'textureAndDesign'
+  | 'colorAndTreatments'
+  | 'beauty';
+
+const LEDGER_SECTIONS: { id: LedgerCategory; title: string }[] = [
+  { id: 'haircuts', title: 'Haircuts' },
+  { id: 'beardAndGrooming', title: 'Beard & Grooming' },
+  { id: 'textureAndDesign', title: 'Texture & Design' },
+  { id: 'colorAndTreatments', title: 'Color & Treatments' },
+  { id: 'beauty', title: 'Beauty' },
+];
+
+function ledgerCategoryForService(slug: string, name: string): LedgerCategory {
+  const hay = `${slug} ${name}`.toLowerCase();
+  if (hay.includes('beard') || hay.includes('shave') || hay.includes('lineup') || hay.includes('line-up') || hay.includes('line up')) {
+    return 'beardAndGrooming';
+  }
+  if (hay.includes('color') || hay.includes('perm') || hay.includes('treatment') || hay.includes('dye')) {
+    return 'colorAndTreatments';
+  }
+  if (hay.includes('design') || hay.includes('afro') || hay.includes('texture') || hay.includes('art')) {
+    return 'textureAndDesign';
+  }
+  if (
+    hay.includes('hair') ||
+    hay.includes('fade') ||
+    hay.includes('cut') ||
+    hay.includes('buzz') ||
+    hay.includes('taper') ||
+    hay.includes('mullet') ||
+    hay.includes('kids') ||
+    hay.includes('women')
+  ) {
+    return 'haircuts';
+  }
+  return 'beauty';
+}
 
 const KNOWN_BEAUTY_KEYS = new Set(
   SERVICE_TYPES.filter((s) => s.providerType === 'beauty').flatMap((s) => [
@@ -2474,7 +2515,7 @@ export const ServicesManagementPanel: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
-  const [providerTypeFilter, setProviderTypeFilter] = useState<ServiceProviderTypeFilter>('all');
+  const [providerTypeFilter, setProviderTypeFilter] = useState<ServiceProviderTypeFilter>('barber');
 
   // Inline bounds editing state
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
@@ -2495,7 +2536,7 @@ export const ServicesManagementPanel: React.FC = () => {
       const params = new URLSearchParams({
         includeInactive: String(showInactive),
       });
-      if (providerTypeFilter !== 'all') {
+      if (providerTypeFilter) {
         params.set('providerType', providerTypeFilter);
       }
       const response = await fetch(
@@ -2726,7 +2767,7 @@ export const ServicesManagementPanel: React.FC = () => {
               onChange={(e) => setShowInactive(e.target.checked)}
               className="rounded border-gray-300 text-gray-900 focus:ring-gray-400"
             />
-            Show Deleted
+            Show removed
           </label>
           {/* Desktop controls */}
           <div className="hidden sm:flex items-center gap-3">
@@ -2737,7 +2778,7 @@ export const ServicesManagementPanel: React.FC = () => {
                 onChange={(e) => setShowInactive(e.target.checked)}
                 className="rounded border-gray-300 text-gray-900 focus:ring-gray-400"
               />
-              Show Deleted
+              Show removed
             </label>
             <Button
               onClick={() => {
@@ -2753,12 +2794,11 @@ export const ServicesManagementPanel: React.FC = () => {
         </div>
         {/* Description */}
         <p className="text-sm text-gray-500 mt-1">
-          Set default price and duration limits providers must stay within
+          Catalog editor for Barber and Beauty services — toggle availability and set price/duration ranges providers must stay within.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex rounded-xl bg-stone-100 p-1 gap-0.5 max-w-xs">
           {(
             [
-              { id: 'all', label: 'All' },
               { id: 'barber', label: 'Barber' },
               { id: 'beauty', label: 'Beauty' },
             ] as const
@@ -2767,10 +2807,10 @@ export const ServicesManagementPanel: React.FC = () => {
               key={option.id}
               type="button"
               onClick={() => setProviderTypeFilter(option.id)}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors ${
+              className={`flex-1 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${
                 providerTypeFilter === option.id
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {option.label}
@@ -2790,13 +2830,11 @@ export const ServicesManagementPanel: React.FC = () => {
         </Button>
       </div>
 
-      {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-        {/* Inline Add Service Form */}
-        {showAddModal && (
+      {/* Add form above categorized services */}
+      {showAddModal && (
           <form
             onSubmit={handleAddService}
-            className="p-3 rounded-lg border-2 border-dashed border-gray-400 bg-primary-50"
+            className="mb-4 max-w-sm p-3 rounded-lg border-2 border-dashed border-gray-400 bg-primary-50"
           >
             <div className="mb-2">
               <input
@@ -2858,9 +2896,19 @@ export const ServicesManagementPanel: React.FC = () => {
               </button>
             </div>
           </form>
-        )}
-        
-        {services.map((service) => {
+      )}
+
+      {LEDGER_SECTIONS.map((section) => {
+        const sectionServices = services.filter(
+          (s) => ledgerCategoryForService(s.slug, s.name) === section.id
+        );
+        if (sectionServices.length === 0) return null;
+        return (
+          <section key={section.id} className="mb-6 space-y-2">
+            <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+              {sectionServices.map((service) => {
+
           const isEditing = editingServiceId === service.id;
           const providerType = resolveServiceProviderType(service);
           
@@ -3041,15 +3089,17 @@ export const ServicesManagementPanel: React.FC = () => {
               )}
             </div>
           );
-        })}
-      </div>
+        
+              })}
+            </div>
+          </section>
+        );
+      })}
 
       {services.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">
-            {providerTypeFilter === 'all'
-              ? 'No services found'
-              : `No ${providerTypeFilter} services found`}
+            {`No ${providerTypeFilter} services found`}
           </p>
           <Button
             onClick={() => {
@@ -3064,9 +3114,7 @@ export const ServicesManagementPanel: React.FC = () => {
           </Button>
         </div>
       )}
-
-
-      </div>
+    </div>
   );
 };
 

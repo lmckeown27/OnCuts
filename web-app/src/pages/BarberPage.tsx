@@ -432,9 +432,7 @@ export default function BarberPage() {
   
   // Admin Dashboard specific state
   const [adminDashboardCampusId, setAdminDashboardCampusId] = useState<string | null>(null);
-  const [adminCampusSearchQuery, setAdminCampusSearchQuery] = useState('');
-  const [showAdminCampusDropdown, setShowAdminCampusDropdown] = useState(false);
-  const adminCampusDropdownRef = useRef<HTMLDivElement>(null);
+  const [adminRefreshSignal, setAdminRefreshSignal] = useState(0);
 
   // For admins, use the selected campus (or first available campus)
   const defaultCampusId = barberProfile?.campusId || user?.campus_id || '';
@@ -464,24 +462,6 @@ export default function BarberPage() {
     };
     fetchCampuses();
   }, [isAdmin, user?.campus_id]);
-
-  // Close admin dashboard campus selector when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (adminCampusDropdownRef.current && !adminCampusDropdownRef.current.contains(event.target as Node)) {
-        setShowAdminCampusDropdown(false);
-        setAdminCampusSearchQuery('');
-      }
-    };
-    
-    if (showAdminCampusDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showAdminCampusDropdown]);
 
   // Fetch barber profile data for walk-in modal
   useEffect(() => {
@@ -785,96 +765,50 @@ export default function BarberPage() {
         </div>
       )}
 
-      {/* Admin Dashboard Modal */}
+      {/* Admin Dashboard — pushed shell (admins only) */}
       {isAdmin && showAdminDashboard && (
-        <div 
-          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
+        <div
+          className={`fixed inset-0 z-50 min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
+            isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
           onClick={closeAdminDashboard}
         >
-          <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto overscroll-contain transition-all duration-150 ease-out
-              ${isAdminDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
+          <div
+            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[94dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+              isAdminDashboardVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+            }`}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin"
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-start justify-between rounded-t-xl z-10">
-              <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Admin Dashboard</h2>
-                {/* Campus Selector Row */}
-                <div className="relative" ref={adminCampusDropdownRef}>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    {/* Campus Search Input */}
-                    <div className="relative max-w-xs">
-                      <input
-                        type="text"
-                        value={showAdminCampusDropdown ? adminCampusSearchQuery : (adminDashboardCampusId ? formatCampusName(allCampuses.find(c => c.id?.toString() === adminDashboardCampusId)?.name || '') : '')}
-                        onChange={(e) => {
-                          setAdminCampusSearchQuery(e.target.value);
-                          if (!showAdminCampusDropdown) setShowAdminCampusDropdown(true);
-                        }}
-                        onFocus={() => {
-                          setShowAdminCampusDropdown(true);
-                          setAdminCampusSearchQuery('');
-                        }}
-                        placeholder="All Universities"
-                        className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-gray-400 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-gray-300 outline-none"
-                      />
-                      <ChevronDown
-                        onClick={() => setShowAdminCampusDropdown(!showAdminCampusDropdown)}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showAdminCampusDropdown ? 'rotate-180' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  {/* Campus Dropdown */}
-                  {showAdminCampusDropdown && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[300px] max-h-[300px] overflow-y-auto overscroll-contain">
-                      <div className="p-2">
-                        {allCampuses
-                          .filter(campus => {
-                            if (!adminCampusSearchQuery) return true;
-                            const query = adminCampusSearchQuery.toLowerCase();
-                            return campus.name.toLowerCase().includes(query) ||
-                                   campus.city?.toLowerCase().includes(query) ||
-                                   campus.state?.toLowerCase().includes(query);
-                          })
-                          .map(campus => (
-                            <button
-                              key={campus.id}
-                              onClick={() => {
-                                setAdminDashboardCampusId(campus.id?.toString() || null);
-                                setShowAdminCampusDropdown(false);
-                                setAdminCampusSearchQuery('');
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                campus.id?.toString() === adminDashboardCampusId
-                                  ? 'bg-primary-100 text-primary-700 font-medium'
-                                  : 'hover:bg-gray-100 text-gray-700'
-                              }`}
-                            >
-                              <div className="font-medium">{formatCampusName(campus.name)}</div>
-                              <div className="text-xs text-gray-500">{campus.city}, {campus.state}</div>
-                            </button>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="px-4 sm:px-5 pt-1 pb-3 flex items-center justify-between border-b border-stone-200/80 shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
               <button
+                type="button"
                 onClick={closeAdminDashboard}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors ml-2"
+                className="p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+                aria-label="Close"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            <div className="p-4 sm:p-6">
-              <AdminDashboard 
-                campuses={allCampuses}
-                selectedCampusId={adminDashboardCampusId || ''}
-                onCampusIdChange={(id) => setAdminDashboardCampusId(id)}
-                isLoadingCampuses={false}
-                hideHeader={true}
-              />
-            </div>
+            <AdminDashboard
+              campuses={allCampuses}
+              selectedCampusId={adminDashboardCampusId || ''}
+              onCampusIdChange={(id) => setAdminDashboardCampusId(id)}
+              isLoadingCampuses={false}
+              hideHeader={false}
+              refreshSignal={adminRefreshSignal}
+              onRefresh={async () => {
+                setAdminRefreshSignal((n) => n + 1);
+              }}
+            />
           </div>
         </div>
       )}

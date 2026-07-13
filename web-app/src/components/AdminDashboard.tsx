@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -23,11 +23,8 @@ import barberApplicationService, { BarberApplication } from '../services/barber-
 import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
 import Button from './Button';
+import PullToRefresh from './PullToRefresh';
 import {
-  BarberAvailabilityPanel,
-  AllCampusesLocationsPanel,
-  CampusLocationsPanel,
-  CompletedBookingsPanel,
   ServicesManagementPanel,
 } from './AdminCampusPanels';
 
@@ -113,9 +110,9 @@ interface MetricsResponse {
   totalUsers?: number;
 }
 
-type MetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
-type MetricsView = 'revenue' | 'bookings';
-type AdminView = 'performance' | 'barbers' | 'locations' | 'bookings' | 'services' | 'users' | 'moderation';
+type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+type MetricsView = 'revenue' | 'bookings' | 'signups';
+type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
 
 type UgcReportStatusFilter = 'open' | 'all' | 'dismissed' | 'resolved';
 
@@ -257,6 +254,9 @@ interface AdminDashboardProps {
   onCampusIdChange?: (campusId: string | null) => void;
   isLoadingCampuses?: boolean;
   hideHeader?: boolean;
+  /** Increment to re-fetch tabs after pull-to-refresh. */
+  refreshSignal?: number;
+  onRefresh?: () => Promise<void> | void;
 }
 
 export function AdminDashboard({ 
@@ -264,7 +264,9 @@ export function AdminDashboard({
   selectedCampusId: externalCampusId,
   onCampusIdChange,
   isLoadingCampuses: externalIsLoading,
-  hideHeader = false
+  hideHeader = false,
+  refreshSignal = 0,
+  onRefresh,
 }: AdminDashboardProps) {
   // Internal state for uncontrolled mode
   const [internalCampuses, setInternalCampuses] = useState<Campus[]>([]);
@@ -307,7 +309,7 @@ export function AdminDashboard({
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
   const [metricsTotalUsers, setMetricsTotalUsers] = useState<number>(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
-  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('4w');
+  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
@@ -328,6 +330,10 @@ export function AdminDashboard({
   // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersHasMore, setUsersHasMore] = useState(false);
+  const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
+  const USERS_PAGE_SIZE = 40;
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [ugcReports, setUgcReports] = useState<UgcContentReport[]>([]);
@@ -448,7 +454,7 @@ export function AdminDashboard({
     const intervalId = setInterval(() => fetchPerformance(false), 30000);
     
     return () => clearInterval(intervalId);
-  }, [selectedCampusId]);
+  }, [selectedCampusId, refreshSignal]);
   
   // Fetch barbers for campus when campus changes (or all barbers if no campus selected)
   useEffect(() => {
@@ -471,7 +477,7 @@ export function AdminDashboard({
     };
     
     fetchBarbers();
-  }, [selectedCampusId]);
+  }, [selectedCampusId, refreshSignal]);
   
   // Fetch barber applications when campus changes (always fetch to show count)
   useEffect(() => {
@@ -496,7 +502,7 @@ export function AdminDashboard({
     };
     
     fetchApplications();
-  }, [selectedCampusId]);
+  }, [selectedCampusId, refreshSignal]);
   
   // Show confirmation for application action
   const requestApplicationAction = (app: BarberApplication, action: 'approve' | 'reject') => {
@@ -545,10 +551,10 @@ export function AdminDashboard({
     const fetchMetrics = async (showLoading = true) => {
       if (showLoading) setIsLoadingMetrics(true);
       try {
-        // Use aggregate endpoint when no campus selected, otherwise campus-specific
+        const periodParam = metricsPeriod === 'yearly' ? '1y' : metricsPeriod;
         const url = selectedCampusId 
-          ? `/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`
-          : `/admin/campuses/aggregate/metrics?period=${metricsPeriod}`;
+          ? `/admin/campuses/${selectedCampusId}/metrics?period=${periodParam}`
+          : `/admin/campuses/aggregate/metrics?period=${periodParam}`;
         // api.get extracts the data, which could be the full response or just the data array
         const response = await api.get<MetricsResponse | MetricsDataPoint[]>(url);
         
@@ -579,7 +585,7 @@ export function AdminDashboard({
     const intervalId = setInterval(() => fetchMetrics(false), 30000);
     
     return () => clearInterval(intervalId);
-  }, [selectedCampusId, metricsPeriod]);
+  }, [selectedCampusId, metricsPeriod, refreshSignal]);
   
   // Fetch total user count whenever campus changes (for summary stats)
   useEffect(() => {
@@ -609,25 +615,64 @@ export function AdminDashboard({
       if (adminView !== 'users') return;
       
       setIsLoadingUsers(true);
+      setUsersPage(1);
       try {
-        // If no campus selected, fetch all consumers; otherwise filter by campus
-        const url = selectedCampusId 
-          ? `/admin/users?campusId=${selectedCampusId}`
-          : '/admin/users';
-        const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
-        setUsers(response.users || []);
-        setTotalUsersCount(response.pagination?.total || response.users?.length || 0);
+        const params: Record<string, string | number> = {
+          page: 1,
+          limit: USERS_PAGE_SIZE,
+        };
+        if (selectedCampusId) params.campusId = selectedCampusId;
+        const response = await api.get<{
+          users: PlatformUser[];
+          pagination: { total: number; page: number; pages: number; limit: number };
+        }>('/admin/users', params);
+        const list = response.users || [];
+        setUsers(list);
+        const total = response.pagination?.total || list.length;
+        setTotalUsersCount(total);
+        setUsersHasMore(list.length < total);
       } catch (error) {
         console.error('Failed to fetch users:', error);
         setUsers([]);
         setTotalUsersCount(0);
+        setUsersHasMore(false);
       } finally {
         setIsLoadingUsers(false);
       }
     };
     
     fetchUsers();
-  }, [adminView, selectedCampusId]);
+  }, [adminView, selectedCampusId, refreshSignal, USERS_PAGE_SIZE]);
+
+  const loadMoreUsers = async () => {
+    if (isLoadingMoreUsers || !usersHasMore) return;
+    const nextPage = usersPage + 1;
+    setIsLoadingMoreUsers(true);
+    try {
+      const params: Record<string, string | number> = {
+        page: nextPage,
+        limit: USERS_PAGE_SIZE,
+      };
+      if (selectedCampusId) params.campusId = selectedCampusId;
+      const response = await api.get<{
+        users: PlatformUser[];
+        pagination: { total: number };
+      }>('/admin/users', params);
+      const list = response.users || [];
+      const total = response.pagination?.total ?? totalUsersCount;
+      setUsers((prev) => {
+        const next = [...prev, ...list];
+        setUsersHasMore(next.length < total);
+        return next;
+      });
+      setUsersPage(nextPage);
+    } catch (error) {
+      console.error('Failed to load more users:', error);
+      toast.error('Could not load more users');
+    } finally {
+      setIsLoadingMoreUsers(false);
+    }
+  };
 
   useEffect(() => {
     if (adminView !== 'moderation') return;
@@ -725,7 +770,8 @@ export function AdminDashboard({
     const query = campusSearchQuery.toLowerCase();
     return campuses.filter(c => 
       c.name.toLowerCase().includes(query) || 
-      c.city.toLowerCase().includes(query)
+      (c.city || '').toLowerCase().includes(query) ||
+      (c.state || '').toLowerCase().includes(query)
     );
   }, [campuses, campusSearchQuery]);
   
@@ -1084,30 +1130,31 @@ export function AdminDashboard({
       const day = date.getUTCDate();
       const year = String(date.getUTCFullYear()).slice(-2);
       
-      // Daily granularity periods: 1w, 4w, mtd, qtd
-      if (['1w', '4w', 'mtd', 'qtd'].includes(metricsPeriod)) {
-        return `${month} ${day}`;
-      // Weekly granularity periods: 1y, ytd
-      } else if (['1y', 'ytd'].includes(metricsPeriod)) {
-        return `Week of ${month} ${day}`;
-      // Monthly granularity: all
-      } else {
-        return `${month} '${year}`;
+      // Daily / weekly buckets
+      if (metricsPeriod === 'daily' || metricsPeriod === 'weekly') {
+        return metricsPeriod === 'daily' ? `${month} ${day}` : `Wk ${month} ${day}`;
       }
+      // Monthly / yearly
+      return `${month} '${year}`;
     });
     
-    const dataValues = metrics.map(m => 
-      metricsView === 'revenue' ? m.revenue / 100 : m.bookings
-    );
+    const dataValues = metrics.map((m) => {
+      if (metricsView === 'revenue') return m.revenue / 100;
+      if (metricsView === 'bookings') return m.bookings;
+      return m.users || 0;
+    });
+    
+    const seriesLabel =
+      metricsView === 'revenue' ? 'Revenue ($)' : metricsView === 'bookings' ? 'Bookings' : 'Sign-ups';
     
     return {
       labels,
       datasets: [
         {
-          label: metricsView === 'revenue' ? 'Revenue ($)' : 'Bookings',
+          label: seriesLabel,
           data: dataValues,
-          borderColor: '#708d81', // primary color for both views
-          backgroundColor: 'rgba(112, 141, 129, 0.15)', // primary color with opacity
+          borderColor: '#708d81',
+          backgroundColor: 'rgba(112, 141, 129, 0.15)',
           fill: true,
           tension: 0.3,
           pointRadius: 4,
@@ -1204,273 +1251,239 @@ export function AdminDashboard({
             users: m.users || 0,
           });
         }
-      } else {
-        setIsChartHovered(false);
-        setHoveredDataPoint(null);
       }
     },
   }), [metrics, metricsView]);
   
+  const periodSeriesValues = metrics.map((m) => {
+    if (metricsView === 'revenue') return m.revenue;
+    if (metricsView === 'bookings') return m.bookings;
+    return m.users || 0;
+  });
+  const periodAverage =
+    periodSeriesValues.length > 0
+      ? periodSeriesValues.reduce((a, b) => a + b, 0) / periodSeriesValues.length
+      : 0;
+  const bestBucketValue =
+    periodSeriesValues.length > 0 ? Math.max(...periodSeriesValues) : 0;
+  const formatSeriesValue = (value: number) =>
+    metricsView === 'revenue' ? formatCurrency(value) : String(Math.round(value));
+
+  const handleDashboardRefresh = async () => {
+    await onRefresh?.();
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* All Universities Button - Show when campus is selected */}
-      {selectedCampusId && (
-        <button
-          onClick={() => {
-            setSelectedCampusId(null);
-            setSelectedBarber(null);
-            setBarberBookings([]);
-          }}
-          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          All Universities
-        </button>
-      )}
+    <div className="relative flex flex-col min-h-0 flex-1 overflow-hidden">
+      {/* Shared chrome: campus scope + tabs */}
+      <div className="shrink-0 px-3 sm:px-4 pt-2 pb-2 space-y-2 border-b border-stone-200/80 bg-stone-50">
+        {/* Centered campus menu */}
+        <div className="flex justify-center">
+          {isLoadingCampuses ? (
+            <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+          ) : (
+            <div className="relative w-full max-w-xs" ref={campusDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCampusDropdown((o) => !o);
+                  setCampusSearchQuery('');
+                }}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-sm font-semibold text-gray-900 hover:bg-stone-50"
+              >
+                <span className="truncate">
+                  {selectedCampus ? formatCampusName(selectedCampus.name) : 'All Campuses'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {showCampusDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 max-h-64 overflow-hidden flex flex-col">
+                  <div className="p-2 border-b border-stone-100">
+                    <input
+                      type="text"
+                      value={campusSearchQuery}
+                      onChange={(e) => setCampusSearchQuery(e.target.value)}
+                      placeholder="Search campuses…"
+                      className="w-full text-sm px-2.5 py-1.5 rounded-lg bg-stone-100 border-0 outline-none focus:ring-2 focus:ring-gray-300"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCampusId(null);
+                        setShowCampusDropdown(false);
+                        setCampusSearchQuery('');
+                        setSelectedBarber(null);
+                        setBarberBookings([]);
+                      }}
+                      className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${
+                        !selectedCampusId ? 'bg-primary-50 font-semibold text-primary-800' : 'text-gray-800'
+                      }`}
+                    >
+                      All Campuses
+                    </button>
+                    {filteredCampuses.map((campus) => (
+                      <button
+                        key={campus.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCampusId(campus.id);
+                          setShowCampusDropdown(false);
+                          setCampusSearchQuery('');
+                        }}
+                        className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${
+                          campus.id === selectedCampusId ? 'bg-primary-50' : ''
+                        }`}
+                      >
+                        <p className="font-medium text-gray-900">{formatCampusName(campus.name)}</p>
+                        <p className="text-xs text-gray-500">
+                          {campus.city}, {campus.state}
+                        </p>
+                      </button>
+                    ))}
+                    {campusSearchQuery.trim() && filteredCampuses.length === 0 && (
+                      <p className="px-3 py-3 text-sm text-gray-500 text-center">No campuses found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {campusLoadError && (
+          <p className="text-center text-xs text-red-600">{campusLoadError}</p>
+        )}
+
+        {/* Five-tab bar */}
+        <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
+          {(
+            [
+              { view: 'performance' as const, label: 'Perf.', Icon: Activity },
+              { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
+              { view: 'users' as const, label: 'Users', Icon: Users },
+              { view: 'services' as const, label: 'Services', Icon: Scissors },
+              { view: 'moderation' as const, label: 'Safety', Icon: Shield },
+            ] as const
+          ).map(({ view, label, Icon }) => {
+            const active = adminView === view;
+            return (
+              <button
+                key={view}
+                type="button"
+                onClick={() => setAdminView(view)}
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-0.5 transition-colors ${
+                  active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" strokeWidth={active ? 2.25 : 1.75} />
+                <span className="text-[10px] font-semibold leading-tight">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      <PullToRefresh
+        scoped
+        onRefresh={handleDashboardRefresh}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-3 space-y-4"
+      >
       
-      {/* View Tabs */}
-      <div className="border-b border-gray-200 -mx-1 sm:mx-0">
-        <nav className="flex gap-1 overflow-x-auto pb-px scrollbar-hide">
-          {([
-            ['performance', 'Performance'],
-            ['barbers', 'Barbers'],
-            ['locations', 'Locations'],
-            ['bookings', 'Bookings'],
-            ['services', 'Services'],
-            ['users', 'Consumers'],
-            ['moderation', 'Safety'],
-          ] as const).map(([view, label]) => (
+      {/* Performance Chart & Summary */}
+      {adminView === 'performance' && (
+      <>
+      {/* Platform / campus totals — 2×2 */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
+          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
+            {isLoadingPerformance || isLoadingUsers
+              ? '…'
+              : (performance?.totalBarbers ?? 0) + totalUsersCount}
+          </p>
+        </div>
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Bookings</p>
+          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
+            {isLoadingPerformance ? '…' : performance?.totalBookings ?? 0}
+          </p>
+        </div>
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Operators</p>
+          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
+            {isLoadingPerformance ? '…' : performance?.totalBarbers ?? 0}
+          </p>
+        </div>
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+            {selectedCampus ? 'Consumers' : 'Campuses'}
+          </p>
+          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
+            {selectedCampus
+              ? isLoadingUsers
+                ? '…'
+                : totalUsersCount
+              : campuses.length}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
+        <h3 className="text-center text-base font-semibold text-gray-900">Performance over time</h3>
+
+        {/* Timeline */}
+        <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
+          {(
+            [
+              { key: 'daily', label: 'Daily' },
+              { key: 'weekly', label: 'Weekly' },
+              { key: 'monthly', label: 'Monthly' },
+              { key: 'yearly', label: 'Yearly' },
+            ] as const
+          ).map(({ key, label }) => (
             <button
-              key={view}
-              onClick={() => setAdminView(view)}
-              className={`py-2.5 px-3 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                adminView === view
-                  ? 'border-gray-900 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              key={key}
+              type="button"
+              onClick={() => setMetricsPeriod(key)}
+              className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                metricsPeriod === key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {label}
             </button>
           ))}
-        </nav>
-      </div>
-      
-      {/* Campus Selector - hidden when rendered in header */}
-      {!hideHeader && (
-      <div>
-        {isLoadingCampuses ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-          </div>
-        ) : campusLoadError ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">Failed to load campuses</p>
-                <p className="text-xs text-red-600 mt-1">{campusLoadError}</p>
-                <button
-                  onClick={fetchCampuses}
-                  className="mt-2 text-xs font-medium text-red-700 hover:text-red-800 underline"
-                >
-                  Try again
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="relative" ref={campusDropdownRef}>
-            <input
-              type="text"
-              value={showCampusDropdown ? campusSearchQuery : (selectedCampus ? formatCampusName(selectedCampus.name) : '')}
-              onChange={(e) => {
-                setCampusSearchQuery(e.target.value);
-                if (!showCampusDropdown) setShowCampusDropdown(true);
-              }}
-              onFocus={() => setShowCampusDropdown(true)}
-              placeholder="All Universities"
-              className={`w-full text-base bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-gray-400 px-3 py-2.5 rounded-lg transition-colors border border-transparent focus:border-gray-300 outline-none ${
-                selectedCampus ? 'text-gray-900 pr-16' : 'text-gray-700 pr-8'
+        </div>
+
+        {/* Series */}
+        <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
+          {(
+            [
+              { key: 'revenue', label: 'Revenue' },
+              { key: 'bookings', label: 'Bookings' },
+              { key: 'signups', label: 'Sign-ups' },
+            ] as const
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setMetricsView(key)}
+              className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                metricsView === key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
-            />
-            {selectedCampus && !showCampusDropdown && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedCampusId(null);
-                  setCampusSearchQuery('');
-                }}
-                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-300 rounded-full transition-colors"
-                title="Clear selection"
-              >
-                <X className="w-3.5 h-3.5 text-gray-500" />
-              </button>
-            )}
-            <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
-            
-            {showCampusDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                {campusSearchQuery.trim() === '' ? (
-                  // Show "Start typing to search" when no query
-                  <div className="p-4 text-center text-gray-500">
-                    <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    <p>Start typing to search</p>
-                    <p className="text-xs mt-1 text-gray-400">{campuses.length} universities available</p>
-                  </div>
-                ) : filteredCampuses.length > 0 ? (
-                  filteredCampuses.map(campus => (
-                    <button
-                      key={campus.id}
-                      onClick={() => {
-                        setSelectedCampusId(campus.id);
-                        setShowCampusDropdown(false);
-                        setCampusSearchQuery('');
-                      }}
-                      className={`w-full px-3 py-2.5 text-left hover:bg-gray-100 flex items-center justify-between text-sm ${
-                        campus.id === selectedCampusId ? 'bg-primary-50' : ''
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{formatCampusName(campus.name)}</p>
-                        <p className="text-xs text-gray-500">{campus.city}, {campus.state}</p>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-3 text-sm text-gray-500 text-center">No campuses found</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      )}
-      
-      {/* Performance Chart & Summary */}
-      {adminView === 'performance' && (
-      <>
-      {/* Summary Stats - Only visible on Performance tab */}
-      <div className="grid grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-        <div>
-          <p className="text-gray-500 text-xs">
-            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Volume` : 'Volume'}
-          </p>
-          <p className="font-semibold text-gray-900">
-            {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">
-            {selectedCampus ? 'Campus Net Revenue' : 'Profit'}
-          </p>
-          <p className={`font-semibold ${
-            selectedCampus 
-              ? (performance?.netPlatformRevenue ?? 0) >= 0 ? 'text-primary-600' : 'text-red-600'
-              : (performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                ? 'text-primary-600' 
-                : 'text-red-600')
-          }`}>
-            {isLoadingPerformance ? '...' : (
-              selectedCampus 
-                ? formatCurrency(performance?.netPlatformRevenue ?? 0)
-                : formatCurrency((performance?.netPlatformRevenue ?? 0) - (performance?.awsTotalCost ?? 0))
-            )}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">Users</p>
-          <p className="font-semibold text-gray-900">
-            {isLoadingPerformance || isLoadingUsers ? '...' : (performance?.totalBarbers ?? 0) + totalUsersCount}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">Barbers</p>
-          <p className="font-semibold text-gray-900">
-            {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">Consumers</p>
-          <p className="font-semibold text-gray-900">
-            {isLoadingUsers ? '...' : totalUsersCount}
-          </p>
-        </div>
-      </div>
-      <div>
-        {/* Stats Header - shows hovered data or period totals */}
-        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-3">
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">
-              {hoveredDataPoint ? 'Date' : 'Period'}
-            </p>
-            <p className="text-base font-semibold text-gray-900">
-              {hoveredDataPoint ? hoveredDataPoint.label : 
-               metricsPeriod === '1w' ? '1 Week' : 
-               metricsPeriod === '4w' ? '4 Weeks' : 
-               metricsPeriod === 'mtd' ? 'MTD' : 
-               metricsPeriod === 'qtd' ? 'QTD' : 
-               metricsPeriod === 'ytd' ? 'YTD' : 
-               metricsPeriod === '1y' ? '1 Year' : 'All Time'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">Volume</p>
-            <p className="text-base font-semibold text-gray-900">
-              ${hoveredDataPoint 
-                ? (hoveredDataPoint.revenue / 100).toFixed(2)
-                : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
-              }
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">Bookings</p>
-            <p className="text-base font-semibold text-gray-900">
-              {hoveredDataPoint 
-                ? hoveredDataPoint.bookings
-                : metrics.reduce((sum, m) => sum + m.bookings, 0)
-              }
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">Users</p>
-            <p className="text-base font-semibold text-gray-900">
-              {hoveredDataPoint 
-                ? hoveredDataPoint.users
-                : metricsTotalUsers
-              }
-            </p>
-          </div>
+            >
+              {label}
+            </button>
+          ))}
         </div>
         
-        {/* Period Selector */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-          {/* Period Toggle */}
-          <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
-            {[
-              { key: '1w', label: '1W' },
-              { key: '4w', label: '4W' },
-              { key: 'mtd', label: 'MTD' },
-              { key: 'qtd', label: 'QTD' },
-              { key: 'ytd', label: 'YTD' },
-              { key: '1y', label: '1Y' },
-              { key: 'all', label: 'All' },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setMetricsPeriod(key as MetricsPeriod)}
-                className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  metricsPeriod === key 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Chart - directly under toggles */}
+        {/* Chart */}
         {isLoadingMetrics ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
@@ -1478,7 +1491,7 @@ export function AdminDashboard({
         ) : metrics.length > 0 ? (
           <div 
             ref={chartContainerRef} 
-            className="h-40 sm:h-48 mb-4 max-w-2xl"
+            className="h-40 sm:h-48"
             onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
             onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
           >
@@ -1490,6 +1503,39 @@ export function AdminDashboard({
             No data available for this period
           </div>
         )}
+
+        {!hoveredDataPoint && metrics.length > 0 && (
+          <p className="text-center text-xs text-gray-400">
+            Press and drag on the chart to inspect a bucket.
+          </p>
+        )}
+        {hoveredDataPoint && (
+          <p className="text-center text-xs font-medium text-gray-600">
+            {hoveredDataPoint.label}: {formatCurrency(hoveredDataPoint.revenue)} ·{' '}
+            {hoveredDataPoint.bookings} bookings · {hoveredDataPoint.users} sign-ups
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+            <p className="text-[11px] text-gray-500">Period average</p>
+            <p className="text-sm font-semibold text-gray-900 tabular-nums">
+              {formatSeriesValue(periodAverage)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+            <p className="text-[11px] text-gray-500">Best bucket</p>
+            <p className="text-sm font-semibold text-gray-900 tabular-nums">
+              {formatSeriesValue(bestBucketValue)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-2 px-0.5">
+          {selectedCampus ? 'Campus performance' : 'Aggregate performance'}
+        </h3>
         
         {/* Performance Summary - Below chart */}
         {performance && (
@@ -1708,12 +1754,12 @@ export function AdminDashboard({
                 </div>
                 <div>
                   <p className="text-[10px] text-gray-500">
-                    Cuts/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Wk' : 'Mo'}
+                    Cuts/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Wk' : 'Mo'}
                   </p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {['1w', '4w', 'mtd'].includes(metricsPeriod)
+                    {metricsPeriod === 'daily'
                       ? performance.averageBookingsPerDay.toFixed(1)
-                      : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
+                      : metricsPeriod === 'weekly'
                       ? performance.averageBookingsPerWeek.toFixed(1)
                       : performance.averageBookingsPerMonth.toFixed(1)
                     }
@@ -1721,12 +1767,12 @@ export function AdminDashboard({
                 </div>
                 <div>
                   <p className="text-[10px] text-gray-500">
-                    Rev/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Wk' : 'Mo'}
+                    Rev/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Wk' : 'Mo'}
                   </p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {['1w', '4w', 'mtd'].includes(metricsPeriod)
+                    {metricsPeriod === 'daily'
                       ? formatCurrency(performance.averageRevenuePerDay)
-                      : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
+                      : metricsPeriod === 'weekly'
                       ? formatCurrency(performance.averageRevenuePerWeek)
                       : formatCurrency(performance.averageRevenuePerMonth)
                     }
@@ -1765,9 +1811,12 @@ export function AdminDashboard({
       </>
       )}
       
-      {/* Barber Management */}
+      {/* Barber Management → Operators */}
       {adminView === 'barbers' && (
-      <div>
+      <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
+        {!selectedBarber && (
+          <h3 className="text-base font-semibold text-gray-900">Operators</h3>
+        )}
         {selectedBarber ? (
           /* Barber Detail View */
           <div>
@@ -1777,7 +1826,7 @@ export function AdminDashboard({
               className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-3 text-sm"
             >
               <ChevronLeft className="w-4 h-4" />
-              Back to barbers
+              Back to operators
             </button>
             
             <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
@@ -2030,47 +2079,46 @@ export function AdminDashboard({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search barbers by name, email, or campus..."
+                placeholder="Search operators by name, email, or campus..."
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                 value={allBarberSearchQuery}
                 onChange={(e) => setAllBarberSearchQuery(e.target.value)}
               />
             </div>
             
-            <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
+            <p className="text-xs text-gray-500 mb-2">Tap an operator to view detail</p>
             
-            {/* Main category tabs */}
-            <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
+            {/* Current | Applications */}
+            <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1 mb-3">
               <button
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
                   barberViewTab === 'barbers'
-                    ? 'border-gray-900 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Barbers ({filteredAllBarbers.length})
+                Current ({filteredAllBarbers.length})
               </button>
               <button
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
                   barberViewTab === 'applications'
-                    ? 'border-gray-900 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Applications ({applications.length})
               </button>
             </nav>
             
-            {/* Filters — collapsed until Filter is opened */}
+            {/* Filters — opens medium sheet */}
             {barberViewTab === 'barbers' && (
               <div className="mb-3">
                 <button
                   type="button"
-                  onClick={() => setShowBarberFilters((open) => !open)}
+                  onClick={() => setShowBarberFilters(true)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                    showBarberFilters ||
                     barberVisibilityFilter !== 'visible' ||
                     activeBarberStripeFilter !== 'all' ||
                     barberLocationFilter !== 'all'
@@ -2086,116 +2134,15 @@ export function AdminDashboard({
                     <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                   )}
                 </button>
-
-                {showBarberFilters && (
-                  <div className="space-y-2 mt-2">
-                    {/* Visible/Hidden toggle */}
-                    <div className="flex rounded-lg bg-gray-100 p-1">
-                      <button
-                        onClick={() => setBarberVisibilityFilter('visible')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberVisibilityFilter === 'visible'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Visible ({filteredAllBarbers.filter(b => b.isActive).length})
-                      </button>
-                      <button
-                        onClick={() => setBarberVisibilityFilter('hidden')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberVisibilityFilter === 'hidden'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Hidden ({filteredAllBarbers.filter(b => !b.isActive).length})
-                      </button>
-                    </div>
-                    
-                    {/* Stripe filter - only for visible barbers */}
-                    {barberVisibilityFilter === 'visible' && (
-                      <div className="flex rounded-lg bg-gray-100 p-1">
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('all')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'all'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          All ({filteredAllBarbers.filter(b => b.isActive).length})
-                        </button>
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('setup')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'setup'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Stripe ({filteredAllBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
-                        </button>
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('not-setup')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'not-setup'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Location org filter — nearest campus by public pin */}
-                    <div className="flex rounded-lg bg-gray-100 p-1">
-                      <button
-                        type="button"
-                        onClick={() => setBarberLocationFilter('all')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberLocationFilter === 'all'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        All ({barbers.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBarberLocationFilter('near-campus')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberLocationFilter === 'near-campus'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Near campus ({barbers.filter((b) => Boolean(b.campusId)).length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBarberLocationFilter('unassigned')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberLocationFilter === 'unassigned'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Unassigned ({barbers.filter((b) => !b.hasServiceLocation || !b.campusId).length})
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
-            
+
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {barberViewTab === 'barbers' ? (barberVisibilityFilter === 'visible' ? 'Visible Barbers' : 'Hidden Barbers') : 'Barber Applications'}
+                {barberViewTab === 'barbers' ? (barberVisibilityFilter === 'visible' ? 'Visible operators' : 'Hidden operators') : 'Applications'}
               </h3>
               <span className="text-xs text-gray-500">
-                {barberViewTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
+                {barberViewTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} operators`}
               </span>
             </div>
             
@@ -2529,48 +2476,36 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
             </div>
             
-            {/* Main category tabs - same as all-barbers view */}
-            <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
+            {/* Current | Applications */}
+            <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1 mb-3">
               <button
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
                   barberViewTab === 'barbers'
-                    ? 'border-gray-900 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Barbers ({filteredBarbers.length})
+                Current ({filteredBarbers.length})
               </button>
               <button
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
                   barberViewTab === 'applications'
-                    ? 'border-gray-900 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Applications ({applications.length})
               </button>
-              <button
-                onClick={() => { setBarberViewTab('availability'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'availability'
-                    ? 'border-gray-900 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Availability
-              </button>
             </nav>
             
-            {/* Filters — collapsed until Filter is opened */}
             {barberViewTab === 'barbers' && (
               <div className="mb-3">
                 <button
                   type="button"
-                  onClick={() => setShowBarberFilters((open) => !open)}
+                  onClick={() => setShowBarberFilters(true)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                    showBarberFilters ||
                     barberVisibilityFilter !== 'visible' ||
                     activeBarberStripeFilter !== 'all'
                       ? 'border-gray-900 bg-gray-900 text-white'
@@ -2583,69 +2518,6 @@ export function AdminDashboard({
                     <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                   )}
                 </button>
-
-                {showBarberFilters && (
-                  <div className="space-y-2 mt-2">
-                    <div className="flex rounded-lg bg-gray-100 p-1">
-                      <button
-                        onClick={() => setBarberVisibilityFilter('visible')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberVisibilityFilter === 'visible'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Visible ({filteredBarbers.filter(b => b.isActive).length})
-                      </button>
-                      <button
-                        onClick={() => setBarberVisibilityFilter('hidden')}
-                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          barberVisibilityFilter === 'hidden'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Hidden ({filteredBarbers.filter(b => !b.isActive).length})
-                      </button>
-                    </div>
-                    
-                    {/* Stripe filter - only for visible barbers */}
-                    {barberVisibilityFilter === 'visible' && (
-                      <div className="flex rounded-lg bg-gray-100 p-1">
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('all')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'all'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          All ({filteredBarbers.filter(b => b.isActive).length})
-                        </button>
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('setup')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'setup'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Stripe ({filteredBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
-                        </button>
-                        <button
-                          onClick={() => setActiveBarberStripeFilter('not-setup')}
-                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                            activeBarberStripeFilter === 'not-setup'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          No Stripe ({filteredBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
             
@@ -2658,16 +2530,16 @@ export function AdminDashboard({
                     type="text"
                     value={barberSearchQuery}
                     onChange={(e) => setBarberSearchQuery(e.target.value)}
-                    placeholder="Search barbers..."
+                    placeholder="Search operators..."
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
                 
-                <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
+                <p className="text-xs text-gray-500 mb-2">Tap an operator to view detail</p>
             
             {isLoadingBarbers ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
               </div>
             ) : filteredBarbers.length > 0 ? (
               <div className="space-y-4 max-h-80 overflow-y-auto">
@@ -2994,53 +2866,18 @@ export function AdminDashboard({
               )
             )}
 
-            {barberViewTab === 'availability' && selectedCampusId && (
-              <BarberAvailabilityPanel campusId={selectedCampusId} />
-            )}
           </>
         )}
       </div>
       )}
       
-      {adminView === 'locations' && (
-        <div key={selectedCampusId || 'locations-all'}>
-          {selectedCampusId ? (
-            <CampusLocationsPanel campusId={selectedCampusId} />
-          ) : isLoadingBarbers ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
-            </div>
-          ) : campusScopeList.length > 0 ? (
-            <AllCampusesLocationsPanel campuses={campusScopeList} />
-          ) : (
-            noCampusScopeContent
-          )}
-        </div>
-      )}
-
-      {adminView === 'bookings' && (
-        <div key={selectedCampusId || 'bookings-all'}>
-          {selectedCampusId ? (
-            <CompletedBookingsPanel campusId={selectedCampusId} />
-          ) : isLoadingBarbers ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
-            </div>
-          ) : campusScopeList.length > 0 ? (
-            <CompletedBookingsPanel campuses={campusScopeList} />
-          ) : (
-            noCampusScopeContent
-          )}
-        </div>
-      )}
-
       {adminView === 'services' && (
         <div>
           <ServicesManagementPanel />
         </div>
       )}
       
-      {/* Consumers View */}
+      {/* Users View */}
       {adminView === 'users' && (
       <div>
         {selectedConsumer ? (
@@ -3051,7 +2888,7 @@ export function AdminDashboard({
               className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors mb-4"
             >
               <ChevronLeft className="w-4 h-4" />
-              Back to Consumers
+              Back to users
             </button>
             
             {/* Consumer Header */}
@@ -3214,12 +3051,12 @@ export function AdminDashboard({
             )}
           </>
         ) : (
-          // Consumer List View
+          // User List View
           <>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-gray-900">Consumer Signups</h3>
+              <h3 className="text-base font-semibold text-gray-900">Users</h3>
               <span className="text-xs text-gray-500">
-                {totalUsersCount} total consumers
+                {totalUsersCount} total
               </span>
             </div>
             
@@ -3230,22 +3067,22 @@ export function AdminDashboard({
                 type="text"
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
-                placeholder="Search consumers..."
+                placeholder="Search users…"
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             
             {isLoadingUsers ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
               </div>
             ) : filteredUsers.length > 0 ? (
-              <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden">
+              <div className="space-y-2">
                 {filteredUsers.map(user => (
                   <div 
                     key={user.id}
                     onClick={() => handleConsumerClick(user)}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 w-full cursor-pointer transition-colors"
+                    className="flex items-center justify-between p-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 w-full cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -3257,40 +3094,31 @@ export function AdminDashboard({
                         <p className="font-medium text-gray-900 text-sm truncate">
                           {user.first_name} {user.last_name}
                         </p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {user.role || 'CONSUMER'}
+                          {user.campus_name ? ` · ${user.campus_name}` : ''}
                         </p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-gray-500">
-                          {new Date(user.created_at).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', year: 'numeric'
-                          })}
-                        </p>
-                        <p className="text-[10px] text-gray-400">
-                          {new Date(user.created_at).toLocaleTimeString('en-US', {
-                            hour: 'numeric', minute: '2-digit'
-                          })}
-                        </p>
-                        {user.campus_name && (
-                          <p className="text-[10px] text-gray-400 truncate max-w-28 mt-0.5">
-                            {user.campus_name}
-                          </p>
-                        )}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 ))}
+                {usersHasMore && !userSearchQuery.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => void loadMoreUsers()}
+                    disabled={isLoadingMoreUsers}
+                    className="w-full py-2.5 text-sm font-semibold text-gray-700 border border-stone-200 rounded-xl hover:bg-stone-50 disabled:opacity-50"
+                  >
+                    {isLoadingMoreUsers ? 'Loading…' : `Show next ${USERS_PAGE_SIZE}`}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                <UserPlus className="w-10 h-10 text-gray-300 mb-2" />
-                <p className="text-sm">No consumers found</p>
+                <Users className="w-10 h-10 text-gray-300 mb-2" />
+                <p className="text-sm">No users found</p>
               </div>
             )}
           </>
@@ -3541,6 +3369,118 @@ export function AdminDashboard({
       )}
 
       {/* Application Action Confirmation Modal */}
+      </PullToRefresh>
+
+      {/* Operators filters sheet */}
+      {showBarberFilters && (
+        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            aria-label="Dismiss filters"
+            onClick={() => setShowBarberFilters(false)}
+          />
+          <div className="relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4">
+            <div className="flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between border-b border-stone-200 shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+              <button
+                type="button"
+                onClick={() => setShowBarberFilters(false)}
+                className="p-2 hover:bg-stone-100 rounded-full"
+                aria-label="Close filters"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Visibility</p>
+                <div className="flex rounded-lg bg-stone-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setBarberVisibilityFilter('visible')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md ${
+                      barberVisibilityFilter === 'visible' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
+                    }`}
+                  >
+                    Visible
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBarberVisibilityFilter('hidden')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md ${
+                      barberVisibilityFilter === 'hidden' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600'
+                    }`}
+                  >
+                    Hidden
+                  </button>
+                </div>
+              </div>
+              {barberVisibilityFilter === 'visible' && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Stripe</p>
+                  <div className="flex rounded-lg bg-stone-100 p-1">
+                    {(
+                      [
+                        { id: 'all', label: 'All' },
+                        { id: 'setup', label: 'Setup' },
+                        { id: 'not-setup', label: 'Not setup' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setActiveBarberStripeFilter(opt.id)}
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
+                          activeBarberStripeFilter === opt.id
+                            ? 'bg-white shadow-sm text-gray-900'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!selectedCampusId && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Location</p>
+                  <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
+                    {(
+                      [
+                        { id: 'all', label: 'All' },
+                        { id: 'near-campus', label: 'Near campus' },
+                        { id: 'unassigned', label: 'Unassigned' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBarberLocationFilter(opt.id)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
+                          barberLocationFilter === opt.id
+                            ? 'bg-white shadow-sm text-gray-900'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Button type="button" className="w-full" onClick={() => setShowBarberFilters(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {pendingApplicationAction && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
