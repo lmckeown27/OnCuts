@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin
+  Copy, Check, MapPin, Filter
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -359,6 +359,7 @@ export function AdminDashboard({
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   /** All-universities only: filter by whether operator has a public service pin near a campus */
   const [barberLocationFilter, setBarberLocationFilter] = useState<'all' | 'near-campus' | 'unassigned'>('all');
+  const [showBarberFilters, setShowBarberFilters] = useState(false);
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
   // Barber applications state
@@ -2105,105 +2106,130 @@ export function AdminDashboard({
               </button>
             </nav>
             
-            {/* Visibility toggle and Stripe filter for Barbers tab */}
+            {/* Filters — collapsed until Filter is opened */}
             {barberViewTab === 'barbers' && (
-              <div className="space-y-2 mb-3">
-                {/* Visible/Hidden toggle */}
-                <div className="flex rounded-lg bg-gray-100 p-1">
-                  <button
-                    onClick={() => setBarberVisibilityFilter('visible')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberVisibilityFilter === 'visible'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Visible ({filteredAllBarbers.filter(b => b.isActive).length})
-                  </button>
-                  <button
-                    onClick={() => setBarberVisibilityFilter('hidden')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberVisibilityFilter === 'hidden'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Hidden ({filteredAllBarbers.filter(b => !b.isActive).length})
-                  </button>
-                </div>
-                
-                {/* Stripe filter - only for visible barbers */}
-                {barberVisibilityFilter === 'visible' && (
-                  <div className="flex rounded-lg bg-gray-100 p-1">
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('all')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'all'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      All ({filteredAllBarbers.filter(b => b.isActive).length})
-                    </button>
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('setup')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'setup'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Stripe ({filteredAllBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
-                    </button>
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('not-setup')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'not-setup'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
-                    </button>
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBarberFilters((open) => !open)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    showBarberFilters ||
+                    barberVisibilityFilter !== 'visible' ||
+                    activeBarberStripeFilter !== 'all' ||
+                    barberLocationFilter !== 'all'
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  Filters
+                  {(barberVisibilityFilter !== 'visible' ||
+                    activeBarberStripeFilter !== 'all' ||
+                    barberLocationFilter !== 'all') && (
+                    <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  )}
+                </button>
+
+                {showBarberFilters && (
+                  <div className="space-y-2 mt-2">
+                    {/* Visible/Hidden toggle */}
+                    <div className="flex rounded-lg bg-gray-100 p-1">
+                      <button
+                        onClick={() => setBarberVisibilityFilter('visible')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberVisibilityFilter === 'visible'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Visible ({filteredAllBarbers.filter(b => b.isActive).length})
+                      </button>
+                      <button
+                        onClick={() => setBarberVisibilityFilter('hidden')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberVisibilityFilter === 'hidden'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Hidden ({filteredAllBarbers.filter(b => !b.isActive).length})
+                      </button>
+                    </div>
+                    
+                    {/* Stripe filter - only for visible barbers */}
+                    {barberVisibilityFilter === 'visible' && (
+                      <div className="flex rounded-lg bg-gray-100 p-1">
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('all')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'all'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          All ({filteredAllBarbers.filter(b => b.isActive).length})
+                        </button>
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('setup')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'setup'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Stripe ({filteredAllBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
+                        </button>
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('not-setup')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'not-setup'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Location org filter — nearest campus by public pin */}
+                    <div className="flex rounded-lg bg-gray-100 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setBarberLocationFilter('all')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberLocationFilter === 'all'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        All ({barbers.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBarberLocationFilter('near-campus')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberLocationFilter === 'near-campus'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Near campus ({barbers.filter((b) => Boolean(b.campusId)).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBarberLocationFilter('unassigned')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberLocationFilter === 'unassigned'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Unassigned ({barbers.filter((b) => !b.hasServiceLocation || !b.campusId).length})
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                {/* Location org filter — nearest campus by public pin */}
-                <div className="flex rounded-lg bg-gray-100 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setBarberLocationFilter('all')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberLocationFilter === 'all'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    All ({barbers.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBarberLocationFilter('near-campus')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberLocationFilter === 'near-campus'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Near campus ({barbers.filter((b) => Boolean(b.campusId)).length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBarberLocationFilter('unassigned')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberLocationFilter === 'unassigned'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Unassigned ({barbers.filter((b) => !b.hasServiceLocation || !b.campusId).length})
-                  </button>
-                </div>
               </div>
             )}
             
@@ -2580,65 +2606,87 @@ export function AdminDashboard({
               </button>
             </nav>
             
-            {/* Visibility toggle for Barbers tab */}
+            {/* Filters — collapsed until Filter is opened */}
             {barberViewTab === 'barbers' && (
-              <div className="space-y-2 mb-3">
-                <div className="flex rounded-lg bg-gray-100 p-1">
-                  <button
-                    onClick={() => setBarberVisibilityFilter('visible')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberVisibilityFilter === 'visible'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Visible ({filteredBarbers.filter(b => b.isActive).length})
-                  </button>
-                  <button
-                    onClick={() => setBarberVisibilityFilter('hidden')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      barberVisibilityFilter === 'hidden'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Hidden ({filteredBarbers.filter(b => !b.isActive).length})
-                  </button>
-                </div>
-                
-                {/* Stripe filter - only for visible barbers */}
-                {barberVisibilityFilter === 'visible' && (
-                  <div className="flex rounded-lg bg-gray-100 p-1">
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('all')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'all'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      All ({filteredBarbers.filter(b => b.isActive).length})
-                    </button>
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('setup')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'setup'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Stripe ({filteredBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
-                    </button>
-                    <button
-                      onClick={() => setActiveBarberStripeFilter('not-setup')}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        activeBarberStripeFilter === 'not-setup'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      No Stripe ({filteredBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
-                    </button>
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBarberFilters((open) => !open)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    showBarberFilters ||
+                    barberVisibilityFilter !== 'visible' ||
+                    activeBarberStripeFilter !== 'all'
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  Filters
+                  {(barberVisibilityFilter !== 'visible' || activeBarberStripeFilter !== 'all') && (
+                    <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  )}
+                </button>
+
+                {showBarberFilters && (
+                  <div className="space-y-2 mt-2">
+                    <div className="flex rounded-lg bg-gray-100 p-1">
+                      <button
+                        onClick={() => setBarberVisibilityFilter('visible')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberVisibilityFilter === 'visible'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Visible ({filteredBarbers.filter(b => b.isActive).length})
+                      </button>
+                      <button
+                        onClick={() => setBarberVisibilityFilter('hidden')}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          barberVisibilityFilter === 'hidden'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Hidden ({filteredBarbers.filter(b => !b.isActive).length})
+                      </button>
+                    </div>
+                    
+                    {/* Stripe filter - only for visible barbers */}
+                    {barberVisibilityFilter === 'visible' && (
+                      <div className="flex rounded-lg bg-gray-100 p-1">
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('all')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'all'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          All ({filteredBarbers.filter(b => b.isActive).length})
+                        </button>
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('setup')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'setup'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Stripe ({filteredBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
+                        </button>
+                        <button
+                          onClick={() => setActiveBarberStripeFilter('not-setup')}
+                          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            activeBarberStripeFilter === 'not-setup'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          No Stripe ({filteredBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
