@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RefreshCw, RotateCcw, EyeOff, Plus } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -38,6 +38,7 @@ import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdo
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
+import { colors } from '../utils/colors';
 import barberService, { TimeBlock } from '../services/barber.service';
 import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
@@ -604,9 +605,8 @@ export default function BarberPage() {
                         openProfileEditor();
                         setShowProfileDropdown(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <User className="w-4 h-4 text-gray-500" />
                       Account
                     </button>
                     <button
@@ -615,9 +615,8 @@ export default function BarberPage() {
                         setShowPayoutSettings(true);
                         setShowProfileDropdown(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <Landmark className="w-4 h-4 text-gray-500" />
                       Business Analytics
                     </button>
                     <button
@@ -626,9 +625,8 @@ export default function BarberPage() {
                         setShowPayoutSettingsScreen(true);
                         setShowProfileDropdown(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <CreditCard className="w-4 h-4 text-gray-500" />
                       Payout Settings
                     </button>
                     {isAdmin && (
@@ -640,9 +638,8 @@ export default function BarberPage() {
                             openAdminDashboard();
                             setShowProfileDropdown(false);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                         >
-                          <Shield className="w-4 h-4 text-gray-500" />
                           Admin dashboard
                         </button>
                       </>
@@ -655,9 +652,8 @@ export default function BarberPage() {
                         navigate('/web');
                         setShowProfileDropdown(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                     >
-                      <LogOut className="w-4 h-4 text-red-500" />
                       Sign out
                     </button>
                   </div>
@@ -3350,13 +3346,23 @@ const timeToMinutes = (time: string | undefined | null): number => {
   return hours * 60 + minutes;
 };
 
-// Validate all intervals and return errors
+// Validate all intervals and return errors (iOS-style day-scoped messages)
 const validateAvailability = (availability: WeeklyAvailability): ValidationErrors => {
   const errors: ValidationErrors = {};
+  const dayLabels: Record<DayKey, string> = {
+    sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+  };
   
   const dayKeys: DayKey[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   
   for (const day of dayKeys) {
+    if (!availability[day].enabled) continue;
     const intervals = availability[day].intervals;
     
     for (let i = 0; i < intervals.length; i++) {
@@ -3364,17 +3370,15 @@ const validateAvailability = (availability: WeeklyAvailability): ValidationError
       const startMins = timeToMinutes(current.start);
       const endMins = timeToMinutes(current.end);
       
-      // Check for reverse time (start >= end)
       if (startMins >= endMins) {
         if (!errors[day]) errors[day] = {};
         errors[day]![current.id] = {
           type: 'reverse',
-          message: 'End time must be after start time'
+          message: `${dayLabels[day]}: end time must be after start time.`,
         };
-        continue; // Skip overlap check if times are reversed
+        continue;
       }
       
-      // Check for overlaps with other intervals
       for (let j = 0; j < intervals.length; j++) {
         if (i === j) continue;
         
@@ -3382,15 +3386,13 @@ const validateAvailability = (availability: WeeklyAvailability): ValidationError
         const otherStartMins = timeToMinutes(other.start);
         const otherEndMins = timeToMinutes(other.end);
         
-        // Skip if other interval has reverse times
         if (otherStartMins >= otherEndMins) continue;
         
-        // Check for overlap
         if (startMins < otherEndMins && endMins > otherStartMins) {
           if (!errors[day]) errors[day] = {};
           errors[day]![current.id] = {
             type: 'overlap',
-            message: 'Time slots cannot overlap'
+            message: `${dayLabels[day]}: time slots cannot overlap.`,
           };
           break;
         }
@@ -3401,23 +3403,75 @@ const validateAvailability = (availability: WeeklyAvailability): ValidationError
   return errors;
 };
 
-// Availability Modal Component - Calendly-style with multiple intervals per day
+// Availability Modal — iOS Edit Schedule (weeklyEditorOnly) layout
 function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean; onClose: () => void; userId?: string }) {
   const [availability, setAvailability] = useState<WeeklyAvailability>(createDefaultAvailability);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [barberId, setBarberId] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const skipAutosaveRef = useRef(true);
+  const toastTimerRef = useRef<number | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
 
-  // Compute validation errors whenever availability changes
   const validationErrors = useMemo(() => validateAvailability(availability), [availability]);
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
+  const validationCaptions = useMemo(() => {
+    const messages: string[] = [];
+    const seen = new Set<string>();
+    (Object.keys(validationErrors) as DayKey[]).forEach((day) => {
+      const dayErrors = validationErrors[day];
+      if (!dayErrors) return;
+      Object.values(dayErrors).forEach((err) => {
+        if (!seen.has(err.message)) {
+          seen.add(err.message);
+          messages.push(err.message);
+        }
+      });
+    });
+    return messages;
+  }, [validationErrors]);
 
-  // Load barber's current weekly schedule when modal opens
+  const olive = colors.olive.DEFAULT;
+
   useEffect(() => {
     if (isVisible && userId) {
-      loadSchedule();
+      skipAutosaveRef.current = true;
+      setSaveToast(null);
+      setSaveError(null);
+      void loadSchedule();
     }
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
   }, [isVisible, userId]);
+
+  // Autosave when schedule changes (debounced), matching iOS weekly editor
+  useEffect(() => {
+    if (!isVisible || !barberId || isLoading) return;
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+    if (hasValidationErrors) return;
+
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      void persistSchedule(availability, { showToast: true });
+    }, 450);
+
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
+  }, [availability, barberId, isVisible, isLoading, hasValidationErrors]);
+
+  const showSavedToast = (message: string) => {
+    setSaveToast(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setSaveToast(null), 2200);
+  };
 
   const loadSchedule = async () => {
     if (!userId) return;
@@ -3435,48 +3489,74 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         if (data.data) {
           setBarberId(data.data.id);
           if (data.data.weekly_schedule) {
-            // Migrate old format to new format if needed
-            const migratedSchedule = migrateSchedule(data.data.weekly_schedule);
-            setAvailability(migratedSchedule);
+            setAvailability(migrateSchedule(data.data.weekly_schedule));
+          } else {
+            setAvailability(createDefaultAvailability());
           }
         }
+      } else {
+        setSaveError('Could not load schedule.');
       }
     } catch (error) {
       console.error('Failed to load schedule:', error);
+      setSaveError('Could not load schedule.');
     } finally {
       setIsLoading(false);
+      skipAutosaveRef.current = true;
     }
   };
 
-  const days: { key: DayKey; label: string; shortLabel: string }[] = [
-    { key: 'sunday', label: 'Sunday', shortLabel: 'Sun' },
-    { key: 'monday', label: 'Monday', shortLabel: 'Mon' },
-    { key: 'tuesday', label: 'Tuesday', shortLabel: 'Tue' },
-    { key: 'wednesday', label: 'Wednesday', shortLabel: 'Wed' },
-    { key: 'thursday', label: 'Thursday', shortLabel: 'Thu' },
-    { key: 'friday', label: 'Friday', shortLabel: 'Fri' },
-    { key: 'saturday', label: 'Saturday', shortLabel: 'Sat' },
+  const days: { key: DayKey; label: string }[] = [
+    { key: 'monday', label: 'Monday' },
+    { key: 'tuesday', label: 'Tuesday' },
+    { key: 'wednesday', label: 'Wednesday' },
+    { key: 'thursday', label: 'Thursday' },
+    { key: 'friday', label: 'Friday' },
+    { key: 'saturday', label: 'Saturday' },
+    { key: 'sunday', label: 'Sunday' },
   ];
 
+  const toggleDay = (day: DayKey, enabled: boolean) => {
+    setAvailability((prev) => {
+      const dayData = prev[day];
+      if (enabled) {
+        return {
+          ...prev,
+          [day]: {
+            enabled: true,
+            intervals:
+              dayData.intervals.length > 0
+                ? dayData.intervals
+                : [{ id: generateId(), start: '09:00', end: '17:00' }],
+          },
+        };
+      }
+      return {
+        ...prev,
+        [day]: {
+          ...dayData,
+          enabled: false,
+        },
+      };
+    });
+    setSaveError(null);
+  };
+
   const addInterval = (day: DayKey) => {
-    setAvailability(prev => {
+    setAvailability((prev) => {
       const dayData = prev[day];
       const lastInterval = dayData.intervals[dayData.intervals.length - 1];
       
-      // Calculate next interval start (end of last interval + 1 hour)
       let newStart = '09:00';
-      if (lastInterval && lastInterval.end && lastInterval.end.includes(':')) {
+      if (lastInterval?.end?.includes(':')) {
         const [hours] = lastInterval.end.split(':').map(Number);
         if (!isNaN(hours)) {
-          const nextHour = Math.min(hours + 1, 23);
-          newStart = `${nextHour.toString().padStart(2, '0')}:00`;
+          newStart = `${Math.min(hours + 1, 23).toString().padStart(2, '0')}:00`;
         }
       }
       
-      // End time is 2 hours after start
       const [startHours] = newStart.split(':').map(Number);
-      const endHour = Math.min(startHours + 2, 23);
-      const newEnd = `${endHour.toString().padStart(2, '0')}:00`;
+      const newEnd = `${Math.min(startHours + 2, 23).toString().padStart(2, '0')}:00`;
       
       return {
         ...prev,
@@ -3484,224 +3564,253 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
           enabled: true,
           intervals: [
             ...dayData.intervals,
-            { id: generateId(), start: newStart, end: newEnd }
-          ]
-        }
+            { id: generateId(), start: newStart, end: newEnd },
+          ],
+        },
       };
     });
+    setSaveError(null);
   };
 
   const removeInterval = (day: DayKey, intervalId: string) => {
-    setAvailability(prev => {
-      const newIntervals = prev[day].intervals.filter(i => i.id !== intervalId);
+    setAvailability((prev) => {
+      const newIntervals = prev[day].intervals.filter((i) => i.id !== intervalId);
       return {
         ...prev,
         [day]: {
           enabled: newIntervals.length > 0,
-          intervals: newIntervals
-        }
+          intervals: newIntervals,
+        },
       };
     });
+    setSaveError(null);
   };
 
   const updateInterval = (day: DayKey, intervalId: string, field: 'start' | 'end', value: string) => {
-    setAvailability(prev => ({
+    setAvailability((prev) => ({
       ...prev,
       [day]: {
         ...prev[day],
-        intervals: prev[day].intervals.map(i => 
+        intervals: prev[day].intervals.map((i) =>
           i.id === intervalId ? { ...i, [field]: value } : i
-        )
-      }
+        ),
+      },
     }));
+    setSaveError(null);
   };
 
-  const handleSave = async () => {
-    if (!barberId) {
-      console.error('No barber ID found');
-      return;
-    }
-    
-    // Safety check - should be disabled in UI but double-check
-    if (hasValidationErrors) {
-      toast.error('Please fix validation errors before saving');
-      return;
-    }
-    
+  const persistSchedule = async (
+    schedule: WeeklyAvailability,
+    opts?: { showToast?: boolean }
+  ) => {
+    if (!barberId) return;
+    if (Object.keys(validateAvailability(schedule)).length > 0) return;
+
     setIsSaving(true);
+    setSaveError(null);
     try {
       const response = await fetch(`/api/v1/barbers/${barberId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ weekly_schedule: availability }),
+        body: JSON.stringify({ weekly_schedule: schedule }),
       });
       
       if (response.ok) {
-        toast.success('Availability saved!');
-        onClose();
+        if (opts?.showToast) showSavedToast('Saved.');
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error?.message || 'Failed to save availability');
+        const errorData = await response.json().catch(() => ({}));
+        setSaveError(
+          errorData?.error?.message || errorData?.message || 'Could not save schedule.'
+        );
       }
     } catch (error) {
       console.error('Failed to save availability:', error);
-      toast.error('Failed to save availability');
+      setSaveError('Could not save schedule.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Format time for display (12-hour format)
-  const formatTime = (time24: string | undefined | null): string => {
-    if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) {
-      return 'N/A';
-    }
-    const [hourStr, minuteStr] = time24.split(':');
-    const hour = parseInt(hourStr, 10);
-    if (isNaN(hour)) return 'N/A';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    const period = hour < 12 ? 'am' : 'pm';
-    return `${displayHour}:${minuteStr}${period}`;
-  };
-
   return (
     <div 
-      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
       onClick={onClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-stone-50 rounded-2xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex-shrink-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">Edit Schedule</h2>
-            <p className="text-white/80 text-sm">Add multiple time slots per day</p>
+        <div className="flex-shrink-0 bg-white border-b border-stone-200 px-5 py-3.5 flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-gray-900">Edit Schedule</h2>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                skipAutosaveRef.current = true;
+                void loadSchedule();
+              }}
+              className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
+              aria-label="Refresh schedule"
+              title="Refresh"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-[18px] h-[18px] ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
 
-        {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        <PullToRefresh
+          scoped
+          onRefresh={async () => {
+            skipAutosaveRef.current = true;
+            await loadSchedule();
+          }}
+          className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4"
+        >
+          {saveToast && (
+            <div className="rounded-xl bg-emerald-100 border border-emerald-300 px-4 py-2.5 text-sm font-medium text-emerald-900 text-center">
+              {saveToast}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {days.map(({ key, label, shortLabel }) => (
-                <div 
-                  key={key}
-                  className={`rounded-xl border-2 transition-all overflow-hidden ${
-                    availability[key].enabled && availability[key].intervals.length > 0
-                      ? 'border-gray-200 bg-primary-50/50' 
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
-                >
-                  {/* Day header */}
-                  <div className="flex items-center gap-3 p-3 sm:p-4">
-                    {/* Day abbreviation badge */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
-                      availability[key].enabled && availability[key].intervals.length > 0
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {shortLabel}
-                    </div>
-                    
-                    {/* Day name and intervals or unavailable */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 hidden sm:block">{label}</div>
-                      
-                      {availability[key].intervals.length === 0 ? (
-                        <span className="text-gray-400 text-sm">Unavailable</span>
-                      ) : (
-                        <div className="space-y-2 mt-2">
-                          {availability[key].intervals.map((interval, idx) => {
+          )}
+
+          <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Weekly schedule</h3>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Set the hours you&apos;re available each weekday.
+              </p>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div
+                  className="animate-spin rounded-full h-8 w-8 border-2 border-stone-200 border-t-transparent"
+                  style={{ borderTopColor: olive }}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {days.map(({ key, label }) => {
+                  const day = availability[key];
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-xl border border-stone-200/80 bg-stone-50/80 px-3 py-3 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-gray-900">{label}</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={!!day.enabled}
+                          aria-label={`${label} available`}
+                          onClick={() => toggleDay(key, !day.enabled)}
+                          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
+                            day.enabled ? '' : 'bg-gray-300'
+                          }`}
+                          style={day.enabled ? { backgroundColor: olive } : undefined}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                              day.enabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {day.enabled ? (
+                        <div className="space-y-2">
+                          {day.intervals.map((interval) => {
                             const intervalError = validationErrors[key]?.[interval.id];
                             return (
-                              <div key={interval.id}>
-                                <div className="flex items-center gap-1 sm:gap-2">
-                                  <TimeInput
-                                    value={interval.start}
-                                    onChange={(value) => updateInterval(key, interval.id, 'start', value)}
-                                    aria-label={`${label} start time`}
-                                    className="w-[5.5rem] sm:w-28"
-                                    error={!!intervalError}
-                                  />
-                                  <span className="text-gray-400 text-sm">-</span>
-                                  <TimeInput
-                                    value={interval.end}
-                                    onChange={(value) => updateInterval(key, interval.id, 'end', value)}
-                                    aria-label={`${label} end time`}
-                                    className="w-[5.5rem] sm:w-28"
-                                    error={!!intervalError}
-                                  />
+                              <div key={interval.id} className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-500 w-9">Start</span>
+                                    <TimeInput
+                                      value={interval.start}
+                                      onChange={(value) =>
+                                        updateInterval(key, interval.id, 'start', value)
+                                      }
+                                      aria-label={`${label} start`}
+                                      className="w-[5.5rem]"
+                                      error={!!intervalError}
+                                    />
+                                  </div>
+                                  <span className="text-gray-400">–</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-500 w-7">End</span>
+                                    <TimeInput
+                                      value={interval.end}
+                                      onChange={(value) =>
+                                        updateInterval(key, interval.id, 'end', value)
+                                      }
+                                      aria-label={`${label} end`}
+                                      className="w-[5.5rem]"
+                                      error={!!intervalError}
+                                    />
+                                  </div>
                                   <button
+                                    type="button"
                                     onClick={() => removeInterval(key, interval.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                                    title={`Remove ${label} interval ${idx + 1}`}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors ml-auto"
+                                    aria-label="Remove time slot"
+                                    title="Remove time slot"
                                   >
-                                    <X className="w-4 h-4" />
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
-                                {intervalError && (
-                                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    {intervalError.message}
-                                  </p>
-                                )}
                               </div>
                             );
                           })}
+                          <button
+                            type="button"
+                            onClick={() => addInterval(key)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold pt-0.5"
+                            style={{ color: olive }}
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add time slot
+                          </button>
                         </div>
+                      ) : (
+                        <p className="text-sm text-gray-400">Not available</p>
                       )}
                     </div>
-                    
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-1">
-                      {/* Add interval button */}
-                      <button
-                        onClick={() => addInterval(key)}
-                        className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
-                        title={`Add time slot for ${label}`}
-                      >
-                        <svg viewBox="0 0 10 10" className="w-5 h-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="5" cy="5" r="4.5" />
-                          <path d="M5 3v4M3 5h4" />
-                        </svg>
-                      </button>
-                      
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            )}
 
-        {/* Footer */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
-          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving || isLoading || hasValidationErrors}>
-            {isSaving ? 'Saving...' : hasValidationErrors ? 'Fix Errors to Save' : 'Save Availability'}
-          </Button>
-        </div>
+            {(validationCaptions.length > 0 || saveError) && (
+              <div className="space-y-1 pt-1">
+                {validationCaptions.map((msg) => (
+                  <p key={msg} className="text-sm text-red-600">
+                    {msg}
+                  </p>
+                ))}
+                {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+              </div>
+            )}
+
+            {isSaving && (
+              <p className="text-xs text-gray-400 text-right">Saving…</p>
+            )}
+          </section>
+        </PullToRefresh>
       </div>
     </div>
   );

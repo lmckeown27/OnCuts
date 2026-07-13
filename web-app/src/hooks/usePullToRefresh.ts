@@ -12,6 +12,8 @@ interface UsePullToRefreshOptions {
   threshold?: number; // Distance in pixels to trigger refresh (default: 70)
   resistance?: number; // How much to resist the pull (default: 2.5)
   maxPull?: number; // Maximum pull distance (default: 120)
+  /** When true, use the container scrollTop and ignore body scroll lock (for modal sheets). */
+  scoped?: boolean;
 }
 
 interface UsePullToRefreshReturn {
@@ -28,6 +30,7 @@ export function usePullToRefresh({
   threshold = 70,
   resistance = 2.5,
   maxPull = 120,
+  scoped = false,
 }: UsePullToRefreshOptions): UsePullToRefreshReturn {
   const [isPulling, setIsPulling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,10 +41,16 @@ export function usePullToRefresh({
   const currentY = useRef(0);
   const canPull = useRef(false);
 
+  const getScrollTop = useCallback(() => {
+    if (scoped && containerRef.current) {
+      return containerRef.current.scrollTop;
+    }
+    return window.scrollY;
+  }, [scoped]);
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    // Don't activate if body scroll is locked (modal is open)
-    // This is detected by checking if body has position: fixed (set by useBodyScrollLock)
-    if (document.body.style.position === 'fixed') {
+    // Don't activate page-level pull when a modal has locked body scroll
+    if (!scoped && document.body.style.position === 'fixed') {
       canPull.current = false;
       return;
     }
@@ -54,8 +63,8 @@ export function usePullToRefresh({
       return;
     }
     
-    // Only activate if at the very top of the page (or nearly so)
-    if (window.scrollY > 5) {
+    // Only activate if at the very top of the scrollable surface
+    if (getScrollTop() > 5) {
       canPull.current = false;
       return;
     }
@@ -67,13 +76,13 @@ export function usePullToRefresh({
     canPull.current = true;
     startY.current = e.touches[0].clientY;
     setIsPulling(true);
-  }, [isRefreshing]);
+  }, [getScrollTop, isRefreshing, scoped]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!canPull.current || isRefreshing) return;
     
     // If user scrolled down, cancel pull
-    if (window.scrollY > 5) {
+    if (getScrollTop() > 5) {
       canPull.current = false;
       setIsPulling(false);
       setPullDistance(0);
@@ -96,7 +105,7 @@ export function usePullToRefresh({
       // User is scrolling up, reset
       setPullDistance(0);
     }
-  }, [isRefreshing, resistance, maxPull]);
+  }, [getScrollTop, isRefreshing, resistance, maxPull]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!canPull.current) return;

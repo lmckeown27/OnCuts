@@ -14,6 +14,8 @@ interface PullToRefreshProps {
   className?: string;
   style?: React.CSSProperties;
   disabled?: boolean;
+  /** Modal/sheet scroll regions — pull uses the container instead of the page. */
+  scoped?: boolean;
 }
 
 export default function PullToRefresh({
@@ -22,6 +24,7 @@ export default function PullToRefresh({
   className = '',
   style,
   disabled = false,
+  scoped = false,
 }: PullToRefreshProps) {
   const {
     isPulling,
@@ -32,6 +35,7 @@ export default function PullToRefresh({
   } = usePullToRefresh({
     onRefresh: disabled ? async () => {} : onRefresh,
     threshold: 70,
+    scoped,
   });
 
   // Only show on touch devices
@@ -54,7 +58,7 @@ export default function PullToRefresh({
     <div ref={containerRef} className={`relative ${className}`} style={style}>
       {/* Native-style Pull Indicator - appears from top center */}
       <div
-        className="fixed left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+        className={`${scoped ? 'absolute' : 'fixed'} left-1/2 -translate-x-1/2 z-[9999] pointer-events-none`}
         style={{
           top: 0,
           transform: `translateX(-50%) translateY(${spinnerTranslateY - 50}px)`,
