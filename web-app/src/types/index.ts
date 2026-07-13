@@ -151,6 +151,8 @@ export interface Barber {
   service_longitude?: number;
   service_radius_km?: number;
   service_location_label?: string;
+  service_location_source?: string | null;
+  service_location_updated_at?: string | null;
   user_latitude?: number; // Barber's user location (fallback)
   user_longitude?: number;
   distance_km?: number; // Calculated distance from user (when location provided)

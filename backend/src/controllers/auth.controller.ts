@@ -599,7 +599,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
            "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
            "pricingMultiplier", "isCampusManager", "isOnboarded",
-           service_latitude, service_longitude,
+           service_latitude, service_longitude, service_location_source, service_location_updated_at,
            "createdAt", "updatedAt"
          )
          VALUES (
@@ -607,7 +607,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
-           ${cc.lat}, ${cc.lng},
+           ${cc.lat}, ${cc.lng}, ${cc.source},
+           CASE WHEN (${cc.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 

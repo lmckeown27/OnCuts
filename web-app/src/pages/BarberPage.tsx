@@ -350,6 +350,7 @@ export default function BarberPage() {
                 serviceLocationLabel: profile.service_location_label,
                 serviceLatitude: profile.service_latitude ?? null,
                 serviceLongitude: profile.service_longitude ?? null,
+                serviceLocationSource: profile.service_location_source ?? null,
               }
             : prev
         );
@@ -419,6 +420,7 @@ export default function BarberPage() {
     serviceLocationLabel?: string;
     serviceLatitude?: number | null;
     serviceLongitude?: number | null;
+    serviceLocationSource?: string | null;
   } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -495,6 +497,7 @@ export default function BarberPage() {
             serviceLocationLabel: response.service_location_label,
             serviceLatitude: response.service_latitude ?? null,
             serviceLongitude: response.service_longitude ?? null,
+            serviceLocationSource: response.service_location_source ?? null,
           });
         }
       } catch (error) {
@@ -792,6 +795,7 @@ export default function BarberPage() {
           serviceLocationLabel={barberProfile?.serviceLocationLabel}
           serviceLatitude={barberProfile?.serviceLatitude}
           serviceLongitude={barberProfile?.serviceLongitude}
+          serviceLocationSource={barberProfile?.serviceLocationSource}
           onServiceLocationUpdated={(update) =>
             setBarberProfile((prev) =>
               prev
@@ -800,6 +804,7 @@ export default function BarberPage() {
                     serviceLocationLabel: update.label,
                     serviceLatitude: update.latitude,
                     serviceLongitude: update.longitude,
+                    serviceLocationSource: update.source ?? 'manual',
                   }
                 : prev
             )
@@ -1329,10 +1334,12 @@ interface DashboardViewProps {
   serviceLocationLabel?: string;
   serviceLatitude?: number | null;
   serviceLongitude?: number | null;
+  serviceLocationSource?: string | null;
   onServiceLocationUpdated?: (update: {
     label: string;
     latitude: number;
     longitude: number;
+    source?: string;
   }) => void;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
   // Google Calendar integration (disabled)
@@ -1373,7 +1380,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, onServiceLocationUpdated, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationSource, onServiceLocationUpdated, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1396,10 +1403,17 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [weeklyTimeBlocks, setWeeklyTimeBlocks] = useState<TimeBlock[]>([]);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationDraft, setLocationDraft] = useState(serviceLocationLabel || '');
+  const [showManualLocationOverride, setShowManualLocationOverride] = useState(false);
 
   useEffect(() => {
     setLocationDraft(serviceLocationLabel || '');
   }, [serviceLocationLabel]);
+
+  useEffect(() => {
+    if (serviceLocationSource !== 'device') {
+      setShowManualLocationOverride(false);
+    }
+  }, [serviceLocationSource]);
 
   const handleInlinePlaceSelect = async (place: GeocodePlace) => {
     try {
@@ -1409,14 +1423,21 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         longitude: place.longitude,
         service_radius_km: radiusKmFromPreset('campus'),
         service_location_label: place.label,
+        source: 'manual',
       });
       setLocationDraft(place.label);
       onServiceLocationUpdated?.({
         label: place.label,
         latitude: place.latitude,
         longitude: place.longitude,
+        source: 'manual',
       });
-      toast.success('Service location saved');
+      setShowManualLocationOverride(false);
+      toast.success(
+        serviceLocationSource === 'device'
+          ? 'Public location updated (replaces device location until the Operator app syncs again)'
+          : 'Service location saved'
+      );
     } catch {
       toast.error('Failed to save service location');
     } finally {
@@ -1431,28 +1452,74 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     locationDraft.trim() === serviceLocationLabel.trim()
   );
 
+  const usingDeviceLocation = serviceLocationSource === 'device';
+
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <PlaceSearchInput
-              value={locationDraft}
-              onChange={setLocationDraft}
-              onSelectPlace={handleInlinePlaceSelect}
-              disabled={locationSaving}
-              showLabel={false}
-              showSearchIcon={false}
-              placeholder="Set public location so clients can best find you"
-            />
-          </div>
-          {hasSavedServiceLocation && !locationSaving && (
-            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
-          )}
-        </div>
-        <p className="text-xs text-gray-500 mt-1.5">
-          Hint: set your location as broadly as possible for safety.
-        </p>
+        {usingDeviceLocation && !showManualLocationOverride ? (
+          <>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900 truncate">
+                  {serviceLocationLabel?.trim() || 'Operator app device location'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Using your Operator app device location
+                </p>
+              </div>
+              {hasSavedServiceLocation && (
+                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
+              )}
+            </div>
+            <button
+              type="button"
+              className="text-xs text-gray-600 underline mt-1.5 hover:text-gray-900"
+              onClick={() => setShowManualLocationOverride(true)}
+            >
+              Change public location
+            </button>
+            <p className="text-xs text-gray-500 mt-1">
+              Changing here replaces device location until the Operator app updates again.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <PlaceSearchInput
+                  value={locationDraft}
+                  onChange={setLocationDraft}
+                  onSelectPlace={handleInlinePlaceSelect}
+                  disabled={locationSaving}
+                  showLabel={false}
+                  showSearchIcon={false}
+                  placeholder="Set public location so clients can best find you"
+                />
+              </div>
+              {hasSavedServiceLocation && !locationSaving && (
+                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
+              )}
+            </div>
+            {usingDeviceLocation && showManualLocationOverride && (
+              <button
+                type="button"
+                className="text-xs text-gray-600 underline mt-1.5 hover:text-gray-900"
+                onClick={() => {
+                  setShowManualLocationOverride(false);
+                  setLocationDraft(serviceLocationLabel || '');
+                }}
+              >
+                Keep device location
+              </button>
+            )}
+            <p className="text-xs text-gray-500 mt-1.5">
+              {usingDeviceLocation
+                ? 'This replaces your Operator app device location until the app syncs again. Prefer a broad area for safety.'
+                : 'For web use when device location isn’t available. Prefer a broad area for safety; on iOS the Operator app device location is primary.'}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

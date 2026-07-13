@@ -37,20 +37,28 @@ class LocationService {
   }
 
   /**
-   * Update barber's service location
+   * Update barber's service location (public discovery pin).
+   * Web PlaceSearch should send source: 'manual' (backup).
+   * Operator iOS device GPS should send source: 'device' (primary).
    */
   async updateBarberServiceLocation(data: {
     latitude?: number;
     longitude?: number;
     service_radius_km?: number;
     service_location_label?: string;
+    source?: 'device' | 'manual';
   }): Promise<{
     service_latitude: number;
     service_longitude: number;
     service_radius_km: number;
     service_location_label?: string;
+    service_location_source?: string;
+    service_location_updated_at?: string;
   }> {
-    const response = await api.put<{ success: boolean; data: any }>('/barbers/service-location', data);
+    const response = await api.put<{ success: boolean; data: any }>('/barbers/service-location', {
+      ...data,
+      source: data.source ?? 'manual',
+    });
     return response.data;
   }
 }

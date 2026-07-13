@@ -18,7 +18,10 @@ import {
   getIntervalsForDay,
   type WeeklySchedule,
 } from '../services/barber-availability.service';
-import { barberServiceLocationLabelSelectSql } from '../services/barber-location-schema.service';
+import {
+  barberServiceLocationLabelSelectSql,
+  barberServiceLocationSourceSelectSql,
+} from '../services/barber-location-schema.service';
 import {
   barberProviderTypeExpr,
   barberProviderTypeSelectSql,
@@ -33,6 +36,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
   try {
     const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType, category } = req.query;
     const labelSelect = await barberServiceLocationLabelSelectSql();
+    const sourceSelect = await barberServiceLocationSourceSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
     
     // Parse user location for distance-based sorting
@@ -70,7 +74,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect}${providerTypeSelect},
+        b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
         u.email,
         u.first_name,
         u.last_name,
@@ -402,6 +406,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
     }
 
     const labelSelect = await barberServiceLocationLabelSelectSql();
+    const sourceSelect = await barberServiceLocationSourceSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
 
     const barberResult = await pool.query(
@@ -426,7 +431,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         u."campusId" as campus_id,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect}${providerTypeSelect}
+        b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect}
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
@@ -487,6 +492,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
   try {
     const { userId } = req.params;
     const labelSelect = await barberServiceLocationLabelSelectSql();
+    const sourceSelect = await barberServiceLocationSourceSelectSql();
 
     let barberResult = await pool.query(
       `SELECT 
@@ -503,7 +509,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect},
+        b.service_radius_km${labelSelect}${sourceSelect},
         u.email,
         u.first_name,
         u.last_name,
@@ -583,7 +589,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
            "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
            "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
            "pricingMultiplier", "isCampusManager", "isOnboarded",
-           service_latitude, service_longitude,
+           service_latitude, service_longitude, service_location_source, service_location_updated_at,
            "createdAt", "updatedAt"
          )
          VALUES (
@@ -591,7 +597,8 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
-           ${ccAuto.lat}, ${ccAuto.lng},
+           ${ccAuto.lat}, ${ccAuto.lng}, ${ccAuto.source},
+           CASE WHEN (${ccAuto.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 

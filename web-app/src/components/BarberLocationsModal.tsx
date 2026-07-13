@@ -36,6 +36,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mapFocusVersion, setMapFocusVersion] = useState(0);
+  const [locationSource, setLocationSource] = useState<string | null>(null);
   const reverseGeocodeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const serviceRadiusKm = radiusKmFromPreset(areaPreset);
@@ -87,6 +88,8 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         setPlaceLabel('');
       }
 
+      setLocationSource(profile?.service_location_source ?? null);
+
       if (profile?.service_radius_km != null) {
         setAreaPreset(presetFromRadiusKm(profile.service_radius_km));
       }
@@ -122,8 +125,13 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         longitude,
         service_radius_km: serviceRadiusKm,
         service_location_label: label,
+        source: 'manual',
       });
-      toast.success('Service location saved');
+      toast.success(
+        locationSource === 'device'
+          ? 'Public location updated (replaces device location until the Operator app syncs again)'
+          : 'Service location saved'
+      );
       onClose();
     } catch {
       toast.error('Failed to save service location');
@@ -163,13 +171,22 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
             <p className="text-sm text-gray-500 text-center py-4">Loading saved location…</p>
           ) : (
             <>
+              {locationSource === 'device' && (
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  Your public pin currently comes from the Operator app device location. Saving here
+                  replaces it until the app syncs again.
+                </p>
+              )}
               <PlaceSearchInput
                 value={placeLabel}
                 onChange={setPlaceLabel}
                 onSelectPlace={applyPlace}
                 disabled={saving}
               />
-
+              <p className="text-xs text-gray-500">
+                Web backup when device location isn’t available. Prefer a broad area for safety; on
+                iOS the Operator app device location is primary.
+              </p>
               {latitude != null && longitude != null && (
                 <ServiceAreaMap
                   latitude={latitude}

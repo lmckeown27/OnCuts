@@ -10,7 +10,8 @@ import { AuthRequest } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-import { barberServiceLocationLabelColumnExists } from '../services/barber-location-schema.service';
+import { barberServiceLocationLabelColumnExists, barberServiceLocationSourceColumnExists, normalizeServiceLocationSource, warnIfBarberServiceLocationSourceMissing } from '../services/barber-location-schema.service';
+import { reverseGeocodeCoarse } from '../services/geocode.service';
 
 interface UpdateLocationBody {
   latitude: number;
@@ -139,6 +140,12 @@ export const getUserLocation = async (
 /**
  * Update barber's service location (where they provide services)
  * PUT /api/barbers/service-location
+ *
+ * Operator iOS (primary): { latitude, longitude, source: "device", service_location_label? }
+ * Web PlaceSearch (backup): { latitude, longitude, source: "manual" | omitted, service_location_label }
+ *
+ * Do not use PUT /users/location for the public discovery pin — that updates users.latitude
+ * which client browse distance does not use.
  */
 export const updateBarberServiceLocation = async (
   req: AuthRequest,
@@ -151,7 +158,8 @@ export const updateBarberServiceLocation = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { latitude, longitude, service_radius_km, service_location_label } = req.body;
+    const { latitude, longitude, service_radius_km, service_location_label, source: sourceRaw } =
+      req.body;
 
     // Validate coordinates if provided
     if (latitude !== undefined && longitude !== undefined) {
@@ -190,6 +198,12 @@ export const updateBarberServiceLocation = async (
       }
     }
 
+    // Default to manual for web / older clients; device is primary from Operator iOS.
+    let source = normalizeServiceLocationSource(sourceRaw) ?? 'manual';
+    if (source === 'campus_default') {
+      throw new ApiError(400, 'source cannot be set to campus_default via this endpoint');
+    }
+
     // Check if user has a barber profile
     const barberCheck = await pool.query(
       'SELECT id FROM barbers WHERE "userId" = $1',
@@ -202,44 +216,88 @@ export const updateBarberServiceLocation = async (
 
     const barberId = barberCheck.rows[0].id;
     const hasLabelColumn = await barberServiceLocationLabelColumnExists();
+    const hasSourceColumn = await barberServiceLocationSourceColumnExists();
+    await warnIfBarberServiceLocationSourceMissing();
 
     if (label !== undefined && !hasLabelColumn) {
       label = undefined;
     }
 
-    const result = hasLabelColumn
-      ? await pool.query(
-          `UPDATE barbers 
-           SET service_latitude = COALESCE($1, service_latitude),
-               service_longitude = COALESCE($2, service_longitude),
-               service_radius_km = COALESCE($3, service_radius_km),
-               service_location_label = COALESCE($4, service_location_label),
-               "updatedAt" = NOW()
-           WHERE id = $5
-           RETURNING id, service_latitude, service_longitude, service_radius_km, service_location_label`,
-          [latitude, longitude, service_radius_km, label, barberId]
-        )
-      : await pool.query(
-          `UPDATE barbers 
-           SET service_latitude = COALESCE($1, service_latitude),
-               service_longitude = COALESCE($2, service_longitude),
-               service_radius_km = COALESCE($3, service_radius_km),
-               "updatedAt" = NOW()
-           WHERE id = $4
-           RETURNING id, service_latitude, service_longitude, service_radius_km`,
-          [latitude, longitude, service_radius_km, barberId]
-        );
+    // Device updates without a label: reverse-geocode to a coarse city/region name.
+    if (
+      source === 'device' &&
+      hasLabelColumn &&
+      (label === undefined || label === null) &&
+      typeof latitude === 'number' &&
+      typeof longitude === 'number'
+    ) {
+      try {
+        const place = await reverseGeocodeCoarse(latitude, longitude);
+        if (place?.label) {
+          label = place.label;
+        }
+      } catch (geoErr) {
+        logger.warn('Device service-location reverse geocode failed; saving coords without label', {
+          barberId,
+          err: geoErr instanceof Error ? geoErr.message : geoErr,
+        });
+      }
+    }
 
-    logger.info(`Barber ${barberId} service location updated`);
+    let result;
+    if (hasLabelColumn && hasSourceColumn) {
+      result = await pool.query(
+        `UPDATE barbers
+         SET service_latitude = COALESCE($1, service_latitude),
+             service_longitude = COALESCE($2, service_longitude),
+             service_radius_km = COALESCE($3, service_radius_km),
+             service_location_label = COALESCE($4, service_location_label),
+             service_location_source = $5,
+             service_location_updated_at = NOW(),
+             "updatedAt" = NOW()
+         WHERE id = $6
+         RETURNING id, service_latitude, service_longitude, service_radius_km,
+                   service_location_label, service_location_source, service_location_updated_at`,
+        [latitude, longitude, service_radius_km, label, source, barberId]
+      );
+    } else if (hasLabelColumn) {
+      result = await pool.query(
+        `UPDATE barbers
+         SET service_latitude = COALESCE($1, service_latitude),
+             service_longitude = COALESCE($2, service_longitude),
+             service_radius_km = COALESCE($3, service_radius_km),
+             service_location_label = COALESCE($4, service_location_label),
+             "updatedAt" = NOW()
+         WHERE id = $5
+         RETURNING id, service_latitude, service_longitude, service_radius_km, service_location_label`,
+        [latitude, longitude, service_radius_km, label, barberId]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE barbers
+         SET service_latitude = COALESCE($1, service_latitude),
+             service_longitude = COALESCE($2, service_longitude),
+             service_radius_km = COALESCE($3, service_radius_km),
+             "updatedAt" = NOW()
+         WHERE id = $4
+         RETURNING id, service_latitude, service_longitude, service_radius_km`,
+        [latitude, longitude, service_radius_km, barberId]
+      );
+    }
 
+    logger.info(`Barber ${barberId} service location updated (source=${source})`);
+
+    const row = result.rows[0];
     res.json({
       success: true,
       message: 'Service location updated successfully',
       data: {
-        service_latitude: result.rows[0].service_latitude,
-        service_longitude: result.rows[0].service_longitude,
-        service_radius_km: result.rows[0].service_radius_km,
-        service_location_label: hasLabelColumn ? result.rows[0].service_location_label : undefined,
+        service_latitude: row.service_latitude,
+        service_longitude: row.service_longitude,
+        service_radius_km: row.service_radius_km,
+        service_location_label: hasLabelColumn ? row.service_location_label : undefined,
+        service_location_source: hasSourceColumn ? row.service_location_source : undefined,
+        service_location_updated_at: hasSourceColumn ? row.service_location_updated_at : undefined,
       },
     });
   } catch (error) {

@@ -47,6 +47,34 @@ export function sanitizeGeocodeQuery(raw: string): string {
     .slice(0, 200);
 }
 
+/**
+ * Coarse public label for device GPS pins (city/region — not street address).
+ * Aligns with “set location as broadly as possible for safety.”
+ */
+export function formatCoarsePublicLabel(item: Record<string, unknown>): string {
+  const address = item.address as Record<string, string> | undefined;
+  if (address) {
+    const parts: string[] = [];
+    const city =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county;
+    if (city) parts.push(city);
+    const state = address.state;
+    if (state && !parts.includes(state)) parts.push(state);
+    if (parts.length > 0) return parts.join(', ');
+  }
+  const display = String(item.display_name || '');
+  const segments = display.split(',').map((s) => s.trim()).filter(Boolean);
+  // Prefer last meaningful segments (often city, state, country) without house number/road
+  if (segments.length >= 3) {
+    return segments.slice(-3, -1).join(', ') || segments.slice(0, 2).join(', ');
+  }
+  return segments.slice(0, 2).join(', ') || display;
+}
+
 function formatShortLabel(item: Record<string, unknown>): string {
   const address = item.address as Record<string, string> | undefined;
   if (address) {
@@ -188,6 +216,43 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
 
   const place: GeocodePlace = {
     label: formatShortLabel(item),
+    latitude: lat,
+    longitude: lng,
+    placeType: item.type ? String(item.type) : undefined,
+  };
+
+  reverseCache.set(cacheKey, place);
+  return place;
+}
+
+/** Reverse geocode to a coarse city/region label for public device pins. */
+export async function reverseGeocodeCoarse(
+  latitude: number,
+  longitude: number
+): Promise<GeocodePlace | null> {
+  const latKey = latitude.toFixed(5);
+  const lngKey = longitude.toFixed(5);
+  const cacheKey = `reverse-coarse:${latKey},${lngKey}`;
+
+  const cached = reverseCache.get<GeocodePlace>(cacheKey);
+  if (cached) return cached;
+
+  const params = new URLSearchParams({
+    lat: latKey,
+    lon: lngKey,
+    format: 'json',
+    addressdetails: '1',
+  });
+
+  const item = await nominatimGet<Record<string, unknown>>(`/reverse?${params.toString()}`);
+  if (!item || item.error) return null;
+
+  const lat = parseFloat(String(item.lat ?? latitude));
+  const lng = parseFloat(String(item.lon ?? longitude));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const place: GeocodePlace = {
+    label: formatCoarsePublicLabel(item),
     latitude: lat,
     longitude: lng,
     placeType: item.type ? String(item.type) : undefined,

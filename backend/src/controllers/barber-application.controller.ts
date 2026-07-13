@@ -526,7 +526,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
                "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
                "pricingMultiplier", "isCampusManager", "isOnboarded",
-               service_latitude, service_longitude,
+               service_latitude, service_longitude, service_location_source, service_location_updated_at,
                "createdAt", "updatedAt"${providerTypeInsert.columns}
              )
              VALUES (
@@ -534,7 +534,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                0, 0,
                0, 0, 0, 0,
                1.00, false, false,
-               ${ccGuest.lat}, ${ccGuest.lng},
+               ${ccGuest.lat}, ${ccGuest.lng}, ${ccGuest.source},
+               CASE WHEN (${ccGuest.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
                NOW(), NOW()${providerTypeInsert.values}
              )
              ON CONFLICT ("userId") DO UPDATE SET 
@@ -604,7 +605,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
              "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
              "pricingMultiplier", "isCampusManager", "isOnboarded",
-             service_latitude, service_longitude,
+             service_latitude, service_longitude, service_location_source, service_location_updated_at,
              "createdAt", "updatedAt"${providerTypeInsert.columns}
            )
            VALUES (
@@ -612,7 +613,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              0, 0,
              0, 0, 0, 0,
              1.00, false, false,
-             ${ccApp.lat}, ${ccApp.lng},
+             ${ccApp.lat}, ${ccApp.lng}, ${ccApp.source},
+             CASE WHEN (${ccApp.lat}) IS NOT NULL THEN NOW() ELSE NULL END,
              NOW(), NOW()${providerTypeInsert.values}
            )
            ON CONFLICT ("userId") DO UPDATE SET 
