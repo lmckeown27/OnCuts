@@ -351,6 +351,7 @@ export default function BarberPage() {
                 serviceLatitude: profile.service_latitude ?? null,
                 serviceLongitude: profile.service_longitude ?? null,
                 serviceLocationSource: profile.service_location_source ?? null,
+                serviceLocationWebOnly: profile.service_location_web_only === true,
               }
             : prev
         );
@@ -421,6 +422,7 @@ export default function BarberPage() {
     serviceLatitude?: number | null;
     serviceLongitude?: number | null;
     serviceLocationSource?: string | null;
+    serviceLocationWebOnly?: boolean;
   } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -498,6 +500,7 @@ export default function BarberPage() {
             serviceLatitude: response.service_latitude ?? null,
             serviceLongitude: response.service_longitude ?? null,
             serviceLocationSource: response.service_location_source ?? null,
+            serviceLocationWebOnly: response.service_location_web_only === true,
           });
         }
       } catch (error) {
@@ -796,6 +799,7 @@ export default function BarberPage() {
           serviceLatitude={barberProfile?.serviceLatitude}
           serviceLongitude={barberProfile?.serviceLongitude}
           serviceLocationSource={barberProfile?.serviceLocationSource}
+          serviceLocationWebOnly={barberProfile?.serviceLocationWebOnly === true}
           onServiceLocationUpdated={(update) =>
             setBarberProfile((prev) =>
               prev
@@ -805,8 +809,17 @@ export default function BarberPage() {
                     serviceLatitude: update.latitude,
                     serviceLongitude: update.longitude,
                     serviceLocationSource: update.source ?? 'manual',
+                    serviceLocationWebOnly:
+                      update.webOnly !== undefined
+                        ? update.webOnly
+                        : prev.serviceLocationWebOnly,
                   }
                 : prev
+            )
+          }
+          onServiceLocationWebOnlyChanged={(webOnly) =>
+            setBarberProfile((prev) =>
+              prev ? { ...prev, serviceLocationWebOnly: webOnly } : prev
             )
           }
           onUnblockTime={async (blockId) => {
@@ -1335,12 +1348,15 @@ interface DashboardViewProps {
   serviceLatitude?: number | null;
   serviceLongitude?: number | null;
   serviceLocationSource?: string | null;
+  serviceLocationWebOnly?: boolean;
   onServiceLocationUpdated?: (update: {
     label: string;
     latitude: number;
     longitude: number;
     source?: string;
+    webOnly?: boolean;
   }) => void;
+  onServiceLocationWebOnlyChanged?: (webOnly: boolean) => void;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
   // Google Calendar integration (disabled)
   // googleCalendarConnected?: boolean | null;
@@ -1380,7 +1396,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationSource, onServiceLocationUpdated, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationSource, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1402,6 +1418,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [weeklyTimeBlocks, setWeeklyTimeBlocks] = useState<TimeBlock[]>([]);
   const [locationSaving, setLocationSaving] = useState(false);
+  const [webOnlySaving, setWebOnlySaving] = useState(false);
   const [locationDraft, setLocationDraft] = useState(serviceLocationLabel || '');
   const [showManualLocationOverride, setShowManualLocationOverride] = useState(false);
 
@@ -1410,10 +1427,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   }, [serviceLocationLabel]);
 
   useEffect(() => {
-    if (serviceLocationSource !== 'device') {
+    if (serviceLocationSource !== 'device' || serviceLocationWebOnly) {
       setShowManualLocationOverride(false);
     }
-  }, [serviceLocationSource]);
+  }, [serviceLocationSource, serviceLocationWebOnly]);
 
   const handleInlinePlaceSelect = async (place: GeocodePlace) => {
     try {
@@ -1434,7 +1451,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       });
       setShowManualLocationOverride(false);
       toast.success(
-        serviceLocationSource === 'device'
+        serviceLocationSource === 'device' && !serviceLocationWebOnly
           ? 'Public location updated (replaces device location until the Operator app syncs again)'
           : 'Service location saved'
       );
@@ -1445,6 +1462,27 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     }
   };
 
+  const handleWebOnlyToggle = async () => {
+    const next = !serviceLocationWebOnly;
+    try {
+      setWebOnlySaving(true);
+      await locationService.updateBarberServiceLocation({ web_only: next });
+      onServiceLocationWebOnlyChanged?.(next);
+      if (next) {
+        setShowManualLocationOverride(false);
+      }
+      toast.success(
+        next
+          ? 'Web-only location on — Operator app GPS will not update your public pin'
+          : 'Device location priority restored for the Operator app'
+      );
+    } catch {
+      toast.error('Failed to update location preference');
+    } finally {
+      setWebOnlySaving(false);
+    }
+  };
+
   const hasSavedServiceLocation = Boolean(
     serviceLocationLabel?.trim() &&
     serviceLatitude != null &&
@@ -1452,7 +1490,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     locationDraft.trim() === serviceLocationLabel.trim()
   );
 
-  const usingDeviceLocation = serviceLocationSource === 'device';
+  const usingDeviceLocation =
+    serviceLocationSource === 'device' && !serviceLocationWebOnly;
 
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
@@ -1491,7 +1530,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   value={locationDraft}
                   onChange={setLocationDraft}
                   onSelectPlace={handleInlinePlaceSelect}
-                  disabled={locationSaving}
+                  disabled={locationSaving || webOnlySaving}
                   showLabel={false}
                   showSearchIcon={false}
                   placeholder="Set public location so clients can best find you"
@@ -1514,12 +1553,43 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               </button>
             )}
             <p className="text-xs text-gray-500 mt-1.5">
-              {usingDeviceLocation
-                ? 'This replaces your Operator app device location until the app syncs again. Prefer a broad area for safety.'
-                : 'For web use when device location isn’t available. Prefer a broad area for safety; on iOS the Operator app device location is primary.'}
+              {serviceLocationWebOnly
+                ? 'Web location is your public pin. Prefer a broad area for safety.'
+                : usingDeviceLocation
+                  ? 'This replaces your Operator app device location until the app syncs again. Prefer a broad area for safety.'
+                  : 'For web use when device location isn’t available. Prefer a broad area for safety; on iOS the Operator app device location is primary.'}
             </p>
           </>
         )}
+        <label className="mt-3 flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={serviceLocationWebOnly}
+            disabled={webOnlySaving || locationSaving}
+            onChange={handleWebOnlyToggle}
+          />
+          <span
+            aria-hidden
+            className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
+              serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
+            } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+              }`}
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm text-gray-900">
+              I only use the web app (no Operator iOS app)
+            </span>
+            <span className="block text-xs text-gray-500 mt-0.5">
+              Turn this on so your public pin stays the location you set here, and device GPS will not override it.
+            </span>
+          </span>
+        </label>
       </div>
     </div>
   );

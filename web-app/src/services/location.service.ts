@@ -39,7 +39,8 @@ class LocationService {
   /**
    * Update barber's service location (public discovery pin).
    * Web PlaceSearch should send source: 'manual' (backup).
-   * Operator iOS device GPS should send source: 'device' (primary).
+   * Operator iOS device GPS should send source: 'device' (primary), unless web_only.
+   * Toggle web_only without coords: { web_only: true | false }.
    */
   async updateBarberServiceLocation(data: {
     latitude?: number;
@@ -47,6 +48,7 @@ class LocationService {
     service_radius_km?: number;
     service_location_label?: string;
     source?: 'device' | 'manual';
+    web_only?: boolean;
   }): Promise<{
     service_latitude: number;
     service_longitude: number;
@@ -54,11 +56,16 @@ class LocationService {
     service_location_label?: string;
     service_location_source?: string;
     service_location_updated_at?: string;
+    service_location_web_only?: boolean;
+    ignored_device_update?: boolean;
   }> {
-    const response = await api.put<{ success: boolean; data: any }>('/barbers/service-location', {
-      ...data,
-      source: data.source ?? 'manual',
-    });
+    const body: Record<string, unknown> = { ...data };
+    if (data.source === undefined && data.web_only === undefined) {
+      body.source = 'manual';
+    } else if (data.source !== undefined) {
+      body.source = data.source;
+    }
+    const response = await api.put<{ success: boolean; data: any }>('/barbers/service-location', body);
     return response.data;
   }
 }

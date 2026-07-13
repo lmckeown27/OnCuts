@@ -1,6 +1,6 @@
 /**
  * User Location Controller
- * 
+ *
  * Handles updating and retrieving user location data
  * for proximity-based barber matching.
  */
@@ -10,7 +10,15 @@ import { AuthRequest } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-import { barberServiceLocationLabelColumnExists, barberServiceLocationSourceColumnExists, normalizeServiceLocationSource, warnIfBarberServiceLocationSourceMissing } from '../services/barber-location-schema.service';
+import {
+  barberServiceLocationLabelColumnExists,
+  barberServiceLocationSourceColumnExists,
+  barberServiceLocationWebOnlyColumnExists,
+  normalizeServiceLocationSource,
+  parseOptionalBoolean,
+  warnIfBarberServiceLocationSourceMissing,
+  warnIfBarberServiceLocationWebOnlyMissing,
+} from '../services/barber-location-schema.service';
 import { reverseGeocodeCoarse } from '../services/geocode.service';
 
 interface UpdateLocationBody {
@@ -141,8 +149,9 @@ export const getUserLocation = async (
  * Update barber's service location (where they provide services)
  * PUT /api/barbers/service-location
  *
- * Operator iOS (primary): { latitude, longitude, source: "device", service_location_label? }
- * Web PlaceSearch (backup): { latitude, longitude, source: "manual" | omitted, service_location_label }
+ * Operator iOS (primary, unless web_only): { latitude, longitude, source: "device", service_location_label? }
+ * Web PlaceSearch (backup / web-only): { latitude, longitude, source: "manual" | omitted, service_location_label }
+ * Opt out of iOS device pin: { web_only: true } (or false to re-enable device priority)
  *
  * Do not use PUT /users/location for the public discovery pin — that updates users.latitude
  * which client browse distance does not use.
@@ -158,10 +167,20 @@ export const updateBarberServiceLocation = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { latitude, longitude, service_radius_km, service_location_label, source: sourceRaw } =
-      req.body;
+    const {
+      latitude,
+      longitude,
+      service_radius_km,
+      service_location_label,
+      source: sourceRaw,
+      web_only: webOnlyRaw,
+      webOnly: webOnlyCamel,
+    } = req.body;
 
-    // Validate coordinates if provided
+    const webOnlyUpdate = parseOptionalBoolean(
+      webOnlyRaw !== undefined ? webOnlyRaw : webOnlyCamel
+    );
+
     if (latitude !== undefined && longitude !== undefined) {
       if (typeof latitude !== 'number' || typeof longitude !== 'number') {
         throw new ApiError(400, 'Latitude and longitude must be numbers');
@@ -174,14 +193,12 @@ export const updateBarberServiceLocation = async (
       }
     }
 
-    // Validate service radius
     if (service_radius_km !== undefined) {
       if (typeof service_radius_km !== 'number' || service_radius_km < 0 || service_radius_km > 100) {
         throw new ApiError(400, 'Service radius must be a number between 0 and 100 km');
       }
     }
 
-    // Validate display label
     let label: string | null | undefined = service_location_label;
     if (label !== undefined) {
       if (label !== null && typeof label !== 'string') {
@@ -198,13 +215,11 @@ export const updateBarberServiceLocation = async (
       }
     }
 
-    // Default to manual for web / older clients; device is primary from Operator iOS.
     let source = normalizeServiceLocationSource(sourceRaw) ?? 'manual';
     if (source === 'campus_default') {
       throw new ApiError(400, 'source cannot be set to campus_default via this endpoint');
     }
 
-    // Check if user has a barber profile
     const barberCheck = await pool.query(
       'SELECT id FROM barbers WHERE "userId" = $1',
       [userId]
@@ -217,13 +232,89 @@ export const updateBarberServiceLocation = async (
     const barberId = barberCheck.rows[0].id;
     const hasLabelColumn = await barberServiceLocationLabelColumnExists();
     const hasSourceColumn = await barberServiceLocationSourceColumnExists();
+    const hasWebOnlyColumn = await barberServiceLocationWebOnlyColumnExists();
     await warnIfBarberServiceLocationSourceMissing();
+    await warnIfBarberServiceLocationWebOnlyMissing();
 
     if (label !== undefined && !hasLabelColumn) {
       label = undefined;
     }
 
-    // Device updates without a label: reverse-geocode to a coarse city/region name.
+    let currentWebOnly = false;
+    if (hasWebOnlyColumn) {
+      const wo = await pool.query(
+        `SELECT service_location_web_only FROM barbers WHERE id = $1`,
+        [barberId]
+      );
+      currentWebOnly = wo.rows[0]?.service_location_web_only === true;
+    }
+
+    const coordsProvided = latitude !== undefined || longitude !== undefined;
+    if (
+      webOnlyUpdate !== undefined &&
+      !coordsProvided &&
+      service_radius_km === undefined &&
+      label === undefined
+    ) {
+      if (!hasWebOnlyColumn) {
+        throw new ApiError(503, 'service_location_web_only is not available; run migration 043');
+      }
+      const prefResult = await pool.query(
+        `UPDATE barbers
+         SET service_location_web_only = $1,
+             "updatedAt" = NOW()
+         WHERE id = $2
+         RETURNING id, service_latitude, service_longitude, service_radius_km,
+                   service_location_label, service_location_source, service_location_updated_at,
+                   service_location_web_only`,
+        [webOnlyUpdate, barberId]
+      );
+      const row = prefResult.rows[0];
+      return res.json({
+        success: true,
+        message: webOnlyUpdate
+          ? 'Web-only location enabled; device location will not update your public pin'
+          : 'Device location priority re-enabled for the Operator app',
+        data: {
+          service_latitude: row.service_latitude,
+          service_longitude: row.service_longitude,
+          service_radius_km: row.service_radius_km,
+          service_location_label: hasLabelColumn ? row.service_location_label : undefined,
+          service_location_source: hasSourceColumn ? row.service_location_source : undefined,
+          service_location_updated_at: hasSourceColumn ? row.service_location_updated_at : undefined,
+          service_location_web_only: row.service_location_web_only === true,
+        },
+      });
+    }
+
+    const effectiveWebOnly =
+      webOnlyUpdate !== undefined ? webOnlyUpdate : currentWebOnly;
+
+    if (source === 'device' && effectiveWebOnly) {
+      const snap = await pool.query(
+        `SELECT service_latitude, service_longitude, service_radius_km,
+                service_location_label, service_location_source, service_location_updated_at,
+                ${hasWebOnlyColumn ? 'service_location_web_only' : 'false AS service_location_web_only'}
+         FROM barbers WHERE id = $1`,
+        [barberId]
+      );
+      const row = snap.rows[0];
+      return res.json({
+        success: true,
+        message: 'Device location ignored; operator selected web-only public location',
+        data: {
+          service_latitude: row?.service_latitude,
+          service_longitude: row?.service_longitude,
+          service_radius_km: row?.service_radius_km,
+          service_location_label: hasLabelColumn ? row?.service_location_label : undefined,
+          service_location_source: hasSourceColumn ? row?.service_location_source : undefined,
+          service_location_updated_at: hasSourceColumn ? row?.service_location_updated_at : undefined,
+          service_location_web_only: true,
+          ignored_device_update: true,
+        },
+      });
+    }
+
     if (
       source === 'device' &&
       hasLabelColumn &&
@@ -244,8 +335,32 @@ export const updateBarberServiceLocation = async (
       }
     }
 
+    const nextWebOnly =
+      hasWebOnlyColumn && webOnlyUpdate !== undefined
+        ? webOnlyUpdate
+        : hasWebOnlyColumn
+          ? currentWebOnly
+          : null;
+
     let result;
-    if (hasLabelColumn && hasSourceColumn) {
+    if (hasLabelColumn && hasSourceColumn && hasWebOnlyColumn) {
+      result = await pool.query(
+        `UPDATE barbers
+         SET service_latitude = COALESCE($1, service_latitude),
+             service_longitude = COALESCE($2, service_longitude),
+             service_radius_km = COALESCE($3, service_radius_km),
+             service_location_label = COALESCE($4, service_location_label),
+             service_location_source = $5,
+             service_location_updated_at = NOW(),
+             service_location_web_only = COALESCE($6, service_location_web_only),
+             "updatedAt" = NOW()
+         WHERE id = $7
+         RETURNING id, service_latitude, service_longitude, service_radius_km,
+                   service_location_label, service_location_source, service_location_updated_at,
+                   service_location_web_only`,
+        [latitude, longitude, service_radius_km, label, source, nextWebOnly, barberId]
+      );
+    } else if (hasLabelColumn && hasSourceColumn) {
       result = await pool.query(
         `UPDATE barbers
          SET service_latitude = COALESCE($1, service_latitude),
@@ -285,7 +400,9 @@ export const updateBarberServiceLocation = async (
       );
     }
 
-    logger.info(`Barber ${barberId} service location updated (source=${source})`);
+    logger.info(
+      `Barber ${barberId} service location updated (source=${source}, web_only=${result.rows[0].service_location_web_only ?? 'n/a'})`
+    );
 
     const row = result.rows[0];
     res.json({
@@ -298,10 +415,12 @@ export const updateBarberServiceLocation = async (
         service_location_label: hasLabelColumn ? row.service_location_label : undefined,
         service_location_source: hasSourceColumn ? row.service_location_source : undefined,
         service_location_updated_at: hasSourceColumn ? row.service_location_updated_at : undefined,
+        service_location_web_only: hasWebOnlyColumn
+          ? row.service_location_web_only === true
+          : undefined,
       },
     });
   } catch (error) {
     next(error);
   }
 };
-
