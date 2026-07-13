@@ -18,9 +18,11 @@ import {
 } from '../config/stripe';
 import { pool, query } from '../database/connection';
 import { logger } from '../utils/logger';
-
-// Platform fee percentage (15% to platform, 85% to barber)
-const PLATFORM_FEE_PERCENTAGE = 0.15;
+import {
+  DEFAULT_PLATFORM_FEE_RATE,
+  loadProviderCommissionSettings,
+  releaseCommissionFreeBooking,
+} from '../utils/platform-commission';
 
 /**
  * Archive messages for a booking before deletion
@@ -111,8 +113,14 @@ async function initiateBarberPayout(
       logger.info(`✅ Destination charges used for booking ${booking.id} - automatic split to ${paymentIntent.transfer_data.destination}, skipping manual transfer`);
       
       // Still record the payout info for our records
+      // Prefer application_fee_amount including 0 (commission-free); avoid `||` which treats 0 as missing.
       const serviceAmountCents = totalAmountCents - tipAmountCents;
-      const platformFeeCents = paymentIntent.application_fee_amount || Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
+      const platformFeeCents =
+        paymentIntent.application_fee_amount != null
+          ? paymentIntent.application_fee_amount
+          : booking.platformFeeUsdCents != null
+            ? booking.platformFeeUsdCents
+            : Math.round(serviceAmountCents * DEFAULT_PLATFORM_FEE_RATE);
       const barberEarnings = totalAmountCents - platformFeeCents;
       
       await client.query(
@@ -158,9 +166,17 @@ async function initiateBarberPayout(
       return;
     }
 
-    // Calculate barber's earnings: 85% of service + 100% of tip
+    // Calculate barber's earnings from stored booking fee (honors commission-free / overrides)
     const serviceAmountCents = totalAmountCents - tipAmountCents;
-    const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
+    let platformFeeCents: number;
+    if (booking.platformFeeUsdCents != null) {
+      platformFeeCents = booking.platformFeeUsdCents;
+    } else if (paymentIntent.metadata?.platform_fee_cents != null) {
+      platformFeeCents = parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0;
+    } else {
+      const settings = await loadProviderCommissionSettings(client, booking.barberId);
+      platformFeeCents = Math.round(serviceAmountCents * settings.effectiveFeeRate);
+    }
     const barberServiceEarnings = serviceAmountCents - platformFeeCents;
     const barberTotalEarnings = barberServiceEarnings + tipAmountCents;
 
@@ -531,6 +547,28 @@ async function handlePaymentIntentSucceeded(
     const booking = updateBookingResult.rows[0];
     logger.info(`✅ Booking ${booking_id} marked as COMPLETED (paid)`);
 
+    // Sync stored fee from Stripe (including $0 commission-free)
+    const tipCents = parseInt(tip_amount_cents || '0', 10) || 0;
+    const syncedPlatformFee =
+      paymentIntent.application_fee_amount != null
+        ? paymentIntent.application_fee_amount
+        : paymentIntent.metadata?.platform_fee_cents != null
+          ? parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0
+          : booking.platformFeeUsdCents;
+    if (syncedPlatformFee != null) {
+      const serviceCents = Math.max(0, (booking.priceUsdCents ?? amountCents - tipCents) as number);
+      await client.query(
+        `UPDATE bookings
+         SET "platformFeeUsdCents" = $1,
+             "barberEarningsUsdCents" = $2,
+             "updatedAt" = NOW()
+         WHERE id = $3::uuid`,
+        [syncedPlatformFee, Math.max(0, serviceCents - syncedPlatformFee), booking_id]
+      );
+      booking.platformFeeUsdCents = syncedPlatformFee;
+      booking.barberEarningsUsdCents = Math.max(0, serviceCents - syncedPlatformFee);
+    }
+
     // Archive messages for admin viewing, then delete the conversation
     try {
       await archiveBookingMessages(booking_id, client);
@@ -621,12 +659,49 @@ async function handlePaymentIntentFailed(
   });
 
   if (booking_id) {
-    await query(
-      `UPDATE bookings 
-       SET status = 'PAYMENT_FAILED', "updatedAt" = NOW()
-       WHERE id = $1`,
-      [booking_id]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const bookingResult = await client.query(
+        `SELECT id, "barberId", commission_free_applied, status, "paidAt", paid_at
+         FROM bookings WHERE id = $1::uuid FOR UPDATE`,
+        [booking_id]
+      );
+      const booking = bookingResult.rows[0];
+      if (
+        booking &&
+        booking.commission_free_applied === true &&
+        !booking.paidAt &&
+        !booking.paid_at
+      ) {
+        await releaseCommissionFreeBooking(client, booking.barberId);
+        await client.query(
+          `UPDATE bookings
+           SET commission_free_applied = false,
+               "updatedAt" = NOW()
+           WHERE id = $1::uuid`,
+          [booking_id]
+        );
+      }
+      await client.query(
+        `UPDATE bookings
+         SET status = 'PAYMENT_FAILED', "updatedAt" = NOW()
+         WHERE id = $1::uuid`,
+        [booking_id]
+      );
+      await client.query('COMMIT');
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      logger.error(`Failed to handle payment failure for booking ${booking_id}: ${err.message}`);
+      await query(
+        `UPDATE bookings
+         SET status = 'PAYMENT_FAILED', "updatedAt" = NOW()
+         WHERE id = $1`,
+        [booking_id]
+      );
+    } finally {
+      client.release();
+    }
   }
 
   await markEventProcessed(eventId, 'payment_intent.payment_failed', paymentIntent.metadata, 'success');

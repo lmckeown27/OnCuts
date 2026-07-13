@@ -41,6 +41,12 @@ import {
   normalizeProviderIdRequest,
   appendProviderIdAliasResponse,
 } from '../middleware/provider-id-alias.middleware';
+import {
+  estimatePlatformFeeSplit,
+  loadProviderCommissionSettings,
+  releaseCommissionFreeBooking,
+  resolveBookingPlatformFee,
+} from '../utils/platform-commission';
 
 const router = express.Router();
 
@@ -284,10 +290,12 @@ router.post('/', authenticate, async (req, res, next) => {
     const originalServiceName = serviceType;
 
     // Create booking record (all NOT NULL columns in production)
-    // Platform fee is 15% of price, barber gets 85%
+    // Fee estimate uses provider commission settings; payment-intent reserves free slots for real.
     const price = priceUsdCents || 0;
-    const platformFee = Math.round(price * 0.15);
-    const barberEarnings = price - platformFee;
+    const commissionSettings = await loadProviderCommissionSettings(pool, barberRecordId);
+    const feeEstimate = estimatePlatformFeeSplit(price, commissionSettings);
+    const platformFee = feeEstimate.platformFeeCents;
+    const barberEarnings = feeEstimate.barberEarningsCents;
 
     // Parse scheduled time once (Pacific → UTC) for conflict check and storage
     const requestedTime = parseScheduledTimePacificToUtc(scheduledTime);
@@ -1781,6 +1789,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     // Verify user is the consumer for this booking
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              b.commission_free_applied,
               c.service_name,
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name
@@ -1829,12 +1838,15 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     );
     const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
 
-    // Calculate platform fee (15% - covers Stripe's ~4% processing fee, nets ~11%)
-    // IMPORTANT: Platform fee is calculated ONLY on the service amount, NOT on tips
-    // Barbers receive 100% of tips - tips should never have fees deducted
-    const PLATFORM_FEE_PERCENTAGE = 0.15;
-    const serviceAmountCents = booking.priceUsdCents; // Service price only, excludes tip
-    const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
+    // Platform fee on SERVICE only (tips never commissioned). Honors admin rate + free quota.
+    const serviceAmountCents = booking.priceUsdCents;
+    const feeSplit = await resolveBookingPlatformFee(pool, {
+      bookingId: id,
+      barberRecordId: booking.barberId,
+      serviceAmountCents,
+      alreadyCommissionFreeApplied: booking.commission_free_applied === true,
+    });
+    const platformFeeCents = feeSplit.platformFeeCents;
 
     // Build payment intent config
     const statementDescriptor = getOptionalStatementDescriptor();
@@ -1857,13 +1869,15 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         service_name: booking.service_name || 'Haircut',
         tip_amount_cents: tipAmountCents.toString(),
         platform_fee_cents: platformFeeCents.toString(),
+        platform_fee_percent: String(feeSplit.feePercentDisplay),
+        commission_free: feeSplit.commissionFree ? 'true' : 'false',
         platform: 'OnCuts',
       },
       description: `OnCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
     };
 
     // If barber has Stripe Connect account, use destination charges for automatic split
-    // Platform takes 15% of SERVICE only (not tips), barber receives 85% of service + 100% of tips
+    // Platform takes fee% of SERVICE only (not tips); 0% when commission-free quota applies
     if (barberStripeAccountId) {
       await stripeService.validateConnectDestination(barberStripeAccountId);
       paymentIntentConfig.application_fee_amount = platformFeeCents;
@@ -1872,7 +1886,10 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       };
       const barberEarnings = totalAmountCents - platformFeeCents;
       const tipInfo = tipAmountCents > 0 ? ` (includes $${tipAmountCents / 100} tip - barber keeps 100%)` : '';
-      logger.info(`Payment split: $${platformFeeCents / 100} platform fee (15% of $${serviceAmountCents / 100} service), $${barberEarnings / 100} to barber${tipInfo} (${barberStripeAccountId})`, {
+      const feeLabel = feeSplit.commissionFree
+        ? 'commission-free'
+        : `${feeSplit.feePercentDisplay}% of $${serviceAmountCents / 100} service`;
+      logger.info(`Payment split: $${platformFeeCents / 100} platform fee (${feeLabel}), $${barberEarnings / 100} to barber${tipInfo} (${barberStripeAccountId})`, {
         stripeKey: formatStripeSecretKeyForSafeLog(getDefaultStripeSecretKey()),
       });
     } else {
@@ -1880,7 +1897,21 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     }
 
     // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+    } catch (stripeErr) {
+      if (feeSplit.reservedNow) {
+        await releaseCommissionFreeBooking(pool, booking.barberId);
+        await pool.query(
+          `UPDATE bookings
+           SET commission_free_applied = false, "updatedAt" = NOW()
+           WHERE id = $1::uuid`,
+          [id]
+        );
+      }
+      throw stripeErr;
+    }
 
     logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect)'}`);
 

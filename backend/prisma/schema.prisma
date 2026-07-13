@@ -213,7 +213,11 @@ model Barber {
   // Status
   isActive    Boolean  @default(true)
   isOnboarded Boolean  @default(false)
-  
+
+  // Admin payment controls (NULL fee % = platform default 15%)
+  platformFeePercent                 Decimal? @map("platform_fee_percent") @db.Decimal(5,2)
+  commissionFreeBookingsRemaining    Int      @default(0) @map("commission_free_bookings_remaining")
+
   // Timestamps
   createdAt   DateTime @default(now()) @db.Timestamptz
   updatedAt   DateTime @updatedAt @db.Timestamptz
@@ -350,6 +354,7 @@ model Booking {
   priceUsdCents   Int
   platformFeeUsdCents Int
   barberEarningsUsdCents Int
+  commissionFreeApplied Boolean @default(false) @map("commission_free_applied")
   
   // Blockchain anchoring (legacy column names in DB may still be aptos_*)
   aptosTxHash     String?  @db.VarChar(66)

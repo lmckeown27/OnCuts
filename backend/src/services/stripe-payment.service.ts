@@ -1,20 +1,22 @@
 /**
  * Stripe Payment Service
- * 
- * Handles customer payments for bookings with Stripe Connect
- * Platform takes 15%, barber receives 85%
+ *
+ * Handles customer payments for bookings with Stripe Connect.
+ * Platform fee is configurable per provider (default 15%); tips are never commissioned.
  */
 
 import Stripe from 'stripe';
 import { getDefaultStripeClient, getOptionalStatementDescriptor } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
+import {
+  DEFAULT_PLATFORM_FEE_RATE,
+  loadProviderCommissionSettingsByUserId,
+} from '../utils/platform-commission';
 
 function stripeClient(): Stripe {
   return getDefaultStripeClient();
 }
-
-const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% platform fee (covers Stripe's ~4% processing fee, nets ~11%)
 
 interface CreatePaymentIntentParams {
   amount: number; // Total amount in dollars (service + tip)
@@ -23,6 +25,8 @@ interface CreatePaymentIntentParams {
   customerId?: string;
   barberId?: string; // User ID of the barber
   metadata?: Record<string, string>;
+  /** When set, overrides provider settings (cents). */
+  platformFeeCentsOverride?: number;
 }
 
 interface PaymentIntentResult {
@@ -68,21 +72,39 @@ class StripePaymentService {
 
   /**
    * Create payment intent for booking with Stripe Connect
-   * Uses destination charges: payment goes to platform, then 85% transferred to barber
+   * Uses destination charges: payment goes to platform, then remainder transferred to barber
    */
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
     try {
-      const { amount, serviceAmount, currency = 'usd', customerId, barberId, metadata = {} } = params;
+      const {
+        amount,
+        serviceAmount,
+        currency = 'usd',
+        customerId,
+        barberId,
+        metadata = {},
+        platformFeeCentsOverride,
+      } = params;
 
-      // Calculate fees
-      // IMPORTANT: Platform fee is calculated ONLY on the service amount, NOT on tips
-      // Barbers receive 100% of tips - tips should never have fees deducted
-      const amountCents = Math.round(amount * 100); // Total amount in cents
-      const serviceAmountCents = serviceAmount ? Math.round(serviceAmount * 100) : amountCents; // Service-only for fee calculation
-      const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE); // Fee on service only
-      const barberAmountCents = amountCents - platformFeeCents; // Barber gets: service - fee + full tip
+      const amountCents = Math.round(amount * 100);
+      const serviceAmountCents = serviceAmount ? Math.round(serviceAmount * 100) : amountCents;
 
-      // Get barber's Stripe Connect account ID
+      let platformFeeCents: number;
+      if (platformFeeCentsOverride != null) {
+        platformFeeCents = Math.max(0, Math.round(platformFeeCentsOverride));
+      } else if (barberId) {
+        const { settings } = await loadProviderCommissionSettingsByUserId(pool, barberId);
+        if (settings.commissionFreeBookingsRemaining > 0) {
+          platformFeeCents = 0;
+        } else {
+          platformFeeCents = Math.round(serviceAmountCents * settings.effectiveFeeRate);
+        }
+      } else {
+        platformFeeCents = Math.round(serviceAmountCents * DEFAULT_PLATFORM_FEE_RATE);
+      }
+
+      const barberAmountCents = amountCents - platformFeeCents;
+
       let barberStripeAccountId: string | null = null;
       if (barberId) {
         const barberResult = await pool.query(
@@ -92,7 +114,6 @@ class StripePaymentService {
         barberStripeAccountId = barberResult.rows[0]?.stripe_account_id;
       }
 
-      // Build payment intent config
       const st = getOptionalStatementDescriptor();
       const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
         amount: amountCents,
@@ -102,13 +123,12 @@ class StripePaymentService {
           ...metadata,
           platformFee: platformFeeCents.toString(),
           barberAmount: barberAmountCents.toString(),
+          commission_free: platformFeeCents === 0 ? 'true' : 'false',
         },
-        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
+        payment_method_types: ['card'],
         ...(st ? { statement_descriptor: st } : {}),
       };
 
-      // If barber has a Stripe Connect account, use destination charges
-      // This automatically splits the payment: 85% to barber, 15% to platform
       if (barberStripeAccountId) {
         paymentIntentConfig.application_fee_amount = platformFeeCents;
         paymentIntentConfig.transfer_data = {
@@ -119,7 +139,6 @@ class StripePaymentService {
         logger.warn(`Barber ${barberId} has no Stripe Connect account - payment goes to platform only. Manual payout required.`);
       }
 
-      // Create payment intent
       const paymentIntent = await stripeClient().paymentIntents.create(paymentIntentConfig);
 
       logger.info(`Created payment intent: ${paymentIntent.id} for $${amount}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect - manual payout needed)'}`);

@@ -527,8 +527,12 @@ class StripeService {
   /**
    * Calculate platform fee (15%)
    */
-  calculateFees(amount: number): { platformFee: number; barberPayout: number } {
-    const platformFee = Math.floor(amount * 0.15); // 15%
+  calculateFees(
+    amount: number,
+    feeRate: number = 0.15
+  ): { platformFee: number; barberPayout: number } {
+    const rate = Math.min(1, Math.max(0, feeRate));
+    const platformFee = Math.round(amount * rate);
     const barberPayout = amount - platformFee;
 
     return { platformFee, barberPayout };

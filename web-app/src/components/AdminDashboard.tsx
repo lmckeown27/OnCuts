@@ -181,6 +181,9 @@ interface Barber {
   totalVolumeCents?: number;
   /** Platform ban (e.g. UGC moderation); blocks sign-in */
   isBanned?: boolean;
+  /** NULL = platform default (15%) */
+  platformFeePercent?: number | null;
+  commissionFreeBookingsRemaining?: number;
 }
 
 interface BarberBooking {
@@ -341,6 +344,9 @@ export function AdminDashboard({
   const [isLoadingBannedUsers, setIsLoadingBannedUsers] = useState(false);
   const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
   const [bannedCategoryFilter, setBannedCategoryFilter] = useState<'all' | BannedAccountCategory>('all');
+  const [commissionFeePercentInput, setCommissionFeePercentInput] = useState('');
+  const [commissionFreeRemainingInput, setCommissionFreeRemainingInput] = useState('0');
+  const [isSavingCommission, setIsSavingCommission] = useState(false);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -923,6 +929,69 @@ export function AdminDashboard({
       setDemotingBarberId(null);
     }
   };
+
+  const syncCommissionFormFromBarber = (barber: Barber) => {
+    setCommissionFeePercentInput(
+      barber.platformFeePercent != null && Number.isFinite(barber.platformFeePercent)
+        ? String(barber.platformFeePercent)
+        : ''
+    );
+    setCommissionFreeRemainingInput(String(barber.commissionFreeBookingsRemaining ?? 0));
+  };
+
+  const handleSaveBarberCommission = async () => {
+    if (!selectedBarber?.barberRecordId) {
+      toast.error('Missing provider profile id');
+      return;
+    }
+
+    const feeRaw = commissionFeePercentInput.trim();
+    let platformFeePercent: number | null;
+    if (feeRaw === '') {
+      platformFeePercent = null;
+    } else {
+      const pct = parseFloat(feeRaw);
+      if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+        toast.error('Commission rate must be 0–100, or blank for default 15%');
+        return;
+      }
+      platformFeePercent = Math.round(pct * 100) / 100;
+    }
+
+    const freeRemaining = parseInt(commissionFreeRemainingInput.trim(), 10);
+    if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+      toast.error('Commission-free bookings must be a whole number ≥ 0');
+      return;
+    }
+
+    setIsSavingCommission(true);
+    try {
+      const data = await api.put<{
+        platformFeePercent: number | null;
+        commissionFreeBookingsRemaining: number;
+      }>(`/admin/barbers/${selectedBarber.barberRecordId}/commission`, {
+        platformFeePercent,
+        commissionFreeBookingsRemaining: freeRemaining,
+      });
+      const updated = {
+        ...selectedBarber,
+        platformFeePercent: data.platformFeePercent ?? null,
+        commissionFreeBookingsRemaining: data.commissionFreeBookingsRemaining ?? freeRemaining,
+      };
+      setSelectedBarber(updated);
+      syncCommissionFormFromBarber(updated);
+      toast.success('Payment settings saved');
+      await reloadBarberList();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to save payment settings';
+      toast.error(msg);
+    } finally {
+      setIsSavingCommission(false);
+    }
+  };
   
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -954,6 +1023,7 @@ export function AdminDashboard({
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
     setSelectedBarber(barber);
+    syncCommissionFormFromBarber(barber);
     setBarberBookings([]);
     setSelectedBookingId(null);
     setSelectedBookingMessages([]);
@@ -1800,6 +1870,79 @@ export function AdminDashboard({
                     )}
                   </Button>
                 )}
+              </div>
+            </div>
+
+            {/* Payment / commission controls */}
+            <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
+                <span className="text-[10px] text-gray-500">
+                  Default commission 15% · tips never commissioned
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs text-gray-600">Commission rate (%)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.01}
+                    placeholder="15 (default)"
+                    value={commissionFeePercentInput}
+                    onChange={(e) => setCommissionFeePercentInput(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                  />
+                  <span className="mt-0.5 block text-[10px] text-gray-500">
+                    Leave blank to use the platform default (15%)
+                  </span>
+                </label>
+                <label className="block">
+                  <span className="text-xs text-gray-600">Commission-free bookings remaining</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={commissionFreeRemainingInput}
+                    onChange={(e) => setCommissionFreeRemainingInput(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                  />
+                  <span className="mt-0.5 block text-[10px] text-gray-500">
+                    Next N card bookings take $0 platform fee, then the rate above applies
+                  </span>
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isSavingCommission}
+                  onClick={() => void handleSaveBarberCommission()}
+                >
+                  {isSavingCommission ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save payment settings'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSavingCommission}
+                  onClick={() => setCommissionFreeRemainingInput('5')}
+                >
+                  Set 5 free
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSavingCommission}
+                  onClick={() => {
+                    setCommissionFeePercentInput('');
+                    setCommissionFreeRemainingInput('0');
+                  }}
+                >
+                  Reset to default
+                </Button>
               </div>
             </div>
             

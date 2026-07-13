@@ -3336,6 +3336,22 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 046 — Provider commission controls (admin fee % + free bookings)
+```bash
+sudo -u postgres psql -d oncuts -f /path/to/OnCuts/backend/src/database/migrations/046_provider_commission_controls.sql
+# then:
+pm2 restart oncuts-backend
+```
+
+Adds on `service_providers` / `barbers`:
+- `platform_fee_percent` — optional override (NULL = default 15%)
+- `commission_free_bookings_remaining` — next N card bookings with $0 platform fee
+
+Adds on `bookings`:
+- `commission_free_applied` — reserved free slot for that booking
+
+Admin API: `PUT /api/admin/barbers/:barberRecordId/commission`
+
 ### Add paymentRequestedAt column to bookings (Required for payment flow)
 ```bash
 sudo -u postgres psql -d oncuts -c 'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "paymentRequestedAt" TIMESTAMPTZ;'
