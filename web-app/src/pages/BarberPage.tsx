@@ -27,6 +27,7 @@ import type { GeocodePlace } from '../services/geocode.service';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
 import StripeHubModal from '../components/StripeHubModal';
+import PayoutSettingsScreen from '../components/PayoutSettingsScreen';
 import BlockTimeModal from '../components/BlockTimeModal';
 import ProviderWeeklyScheduleGrid from '../components/ProviderWeeklyScheduleGrid';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
@@ -115,7 +116,7 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
-  const [showStripeHub, setShowStripeHub] = useState(false);
+  const [showPayoutSettingsScreen, setShowPayoutSettingsScreen] = useState(false);
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   // Google Calendar integration (disabled)
@@ -173,7 +174,7 @@ export default function BarberPage() {
     showNotifications ||
     showBookingDetailsModal ||
     showPayoutSettings ||
-    showStripeHub ||
+    showPayoutSettingsScreen ||
     stripeGate.isBlocking;
   useBodyScrollLock(isAnyModalOpen);
   
@@ -272,7 +273,7 @@ export default function BarberPage() {
       window.history.replaceState({}, '', newUrl);
     }
     if (searchParams.get('showStripe') === 'true') {
-      setShowStripeHub(true);
+      setShowPayoutSettingsScreen(true);
       window.history.replaceState({}, '', location.pathname);
     }
     
@@ -622,7 +623,7 @@ export default function BarberPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setShowStripeHub(true);
+                        setShowPayoutSettingsScreen(true);
                         setShowProfileDropdown(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -1210,15 +1211,21 @@ export default function BarberPage() {
     </PullToRefresh>
     </div>
 
-    <StripeHubModal
-      isOpen={stripeGate.isBlocking || showStripeHub}
-      blocking={stripeGate.isBlocking}
-      onClose={() => {
-        if (!stripeGate.isBlocking) setShowStripeHub(false);
+    <PayoutSettingsScreen
+      isOpen={showPayoutSettingsScreen}
+      onClose={() => setShowPayoutSettingsScreen(false)}
+      onStatusChange={() => {
+        void stripeGate.refresh();
       }}
+    />
+
+    {/* Blocking Connect gate — separate from Account → Payout Settings */}
+    <StripeHubModal
+      isOpen={stripeGate.isBlocking}
+      blocking
+      onClose={() => {}}
       onFullyConnected={() => {
         void stripeGate.refresh();
-        setShowStripeHub(false);
       }}
     />
     </>

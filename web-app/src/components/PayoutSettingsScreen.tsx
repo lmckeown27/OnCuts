@@ -1,0 +1,565 @@
+/**
+ * Payout Settings — iOS-parity Connect hub (pushed screen from Account menu).
+ * Incomplete: embedded onboarding guide + Stripe App.
+ * Connected: status card + Express + Stripe App.
+ * Does not auto-dismiss when Connect becomes active.
+ */
+
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Button from './Button';
+import PullToRefresh from './PullToRefresh';
+import {
+  fetchBarberConnectStatus,
+  createBarberConnectOnboarding,
+  refreshBarberConnectOnboarding,
+  resetBarberConnect,
+  fetchBarberStripeDashboardUrl,
+  formatPayoutScheduleClarity,
+  type BarberConnectStatus,
+} from '../services/barber-connect.service';
+import { isBarberStripeFullyConnected } from '../utils/stripe-connect-status';
+
+const STRIPE_DASHBOARD_APP_STORE_URL = 'https://apps.apple.com/app/id978516833';
+const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
+const ONCUTS_URL = 'https://oncuts.com';
+const STRIPE_PURPLE_BTN =
+  'w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-4 py-3.5 transition-colors disabled:opacity-60';
+
+const LEARN_MORE_LINK_CLASS =
+  'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
+
+const STRIPE_REQUIRED_ACTIONS = [
+  {
+    id: 'dob',
+    label: 'Date of birth',
+    input:
+      'Your legal date of birth exactly as it appears on your government ID (MM / DD / YYYY).',
+  },
+  {
+    id: 'address',
+    label: 'Home address',
+    input:
+      'Your current residential street address, city, state, and ZIP. Use the address on your ID or bank statements.',
+  },
+  {
+    id: 'phone',
+    label: 'Phone number',
+    input:
+      'A US mobile number you can receive SMS on. Use the same number you use for OnCuts Provider if possible.',
+  },
+  {
+    id: 'ssn',
+    label: 'Last four digits of SSN',
+    input:
+      'The last 4 digits of your Social Security number as the account representative. Stripe will never ask for your full SSN.',
+  },
+  {
+    id: 'industry',
+    label: 'Industry',
+    input: 'Other personal services',
+    copyable: true,
+  },
+  {
+    id: 'website',
+    label: 'Business website',
+    input: ONCUTS_URL,
+    copyable: true,
+  },
+  {
+    id: 'bank',
+    label: 'Bank account (external account)',
+    input:
+      'Select your bank institution in Stripe (Chase, Wells Fargo, etc) and connect the account where you want payouts deposited.',
+  },
+  {
+    id: 'link',
+    label: 'Continue with Link',
+    input: 'Not now',
+  },
+  {
+    id: 'tos',
+    label: 'Accept terms of service',
+    input:
+      'Read and accept the Stripe Connected Account Agreement. Payments and payouts stay blocked until you accept.',
+  },
+] as const;
+
+type StripeRequirementId = (typeof STRIPE_REQUIRED_ACTIONS)[number]['id'];
+
+function apiErrorDetails(err: unknown): { message?: string; code?: string } {
+  if (!err || typeof err !== 'object' || !('response' in err)) return {};
+  const errBody = (err as { response?: { data?: { error?: { message?: string; code?: string } } } })
+    .response?.data?.error;
+  return { message: errBody?.message, code: errBody?.code };
+}
+
+function ChecklistInputBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success('Copied to clipboard');
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Could not copy text');
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-2">
+      <p className="text-sm text-gray-600 leading-relaxed select-text flex-1 min-w-0">{text}</p>
+      <button
+        type="button"
+        onClick={(event) => void handleCopy(event)}
+        className="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+        aria-label="Copy text to clipboard"
+      >
+        {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
+function ChecklistDrawerPanel({
+  expandedId,
+  onToggle,
+}: {
+  expandedId: StripeRequirementId | null;
+  onToggle: (id: StripeRequirementId) => void;
+}) {
+  return (
+    <div className="space-y-3 p-5">
+      <h3 className="text-lg font-semibold text-gray-900">Checklist</h3>
+      <p className="text-sm text-gray-600">
+        Guidance only — expanding an item does not verify that you finished it in Stripe.
+      </p>
+      <ul className="space-y-2">
+        {STRIPE_REQUIRED_ACTIONS.map((item) => {
+          const isExpanded = expandedId === item.id;
+          return (
+            <li key={item.id} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                aria-expanded={isExpanded}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-gray-50"
+              >
+                <span className="text-sm font-medium text-gray-900">{item.label}</span>
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {isExpanded && (
+                <div className="px-3 pb-3 pt-2 border-t border-gray-100">
+                  {'copyable' in item && item.copyable ? (
+                    <ChecklistInputBlock text={item.input} />
+                  ) : (
+                    <p className="text-sm text-gray-600 leading-relaxed">{item.input}</p>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function StripeAppSection() {
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
+      <h3 className="text-lg font-semibold text-gray-900">Stripe App</h3>
+      <p className="text-sm text-gray-600 leading-relaxed">
+        Optional — track balances and payout activity on your phone.
+      </p>
+      <a
+        href={STRIPE_DASHBOARD_APP_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+      >
+        Get Stripe Dashboard app
+      </a>
+    </section>
+  );
+}
+
+interface PayoutSettingsScreenProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Refresh parent Stripe gate after status changes (does not dismiss this screen). */
+  onStatusChange?: () => void;
+}
+
+export default function PayoutSettingsScreen({
+  isOpen,
+  onClose,
+  onStatusChange,
+}: PayoutSettingsScreenProps) {
+  const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<'stripe' | 'dashboard' | 'recheck' | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [expandedRequirementId, setExpandedRequirementId] = useState<StripeRequirementId | null>(
+    null
+  );
+  const [stripeTabOpened, setStripeTabOpened] = useState(false);
+  const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
+  const loadRef = useRef<() => Promise<BarberConnectStatus | null>>(async () => null);
+
+  const load = useCallback(async () => {
+    try {
+      const status = await fetchBarberConnectStatus();
+      setConnectStatus(status);
+      onStatusChange?.();
+      return status;
+    } catch (e) {
+      console.error(e);
+      setConnectStatus(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [onStatusChange]);
+
+  loadRef.current = load;
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      setLoading(true);
+      setStripeTabOpened(false);
+      setPlatformSetupBlocked(null);
+      setChecklistOpen(false);
+      void loadRef.current();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsAnimating(true));
+      });
+    } else {
+      setIsAnimating(false);
+      const t = setTimeout(() => setIsVisible(false), 150);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void (async () => {
+        const status = await loadRef.current();
+        if (stripeTabOpened && status && isBarberStripeFullyConnected(status)) {
+          toast.success("You're fully connected. Payouts and card charges are enabled.");
+        }
+      })();
+    };
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isOpen, stripeTabOpened]);
+
+  const handlePrimaryStripeAction = async () => {
+    try {
+      setBusy('stripe');
+      const status = await load();
+      if (status && isBarberStripeFullyConnected(status)) {
+        toast.success("You're fully connected. Payouts and card charges are enabled.");
+        return;
+      }
+
+      const needsReconnectNow = Boolean(status?.needs_reconnect);
+      const hasAccountNow = Boolean(status?.has_account);
+      const { onboarding_url: onboardingUrl } =
+        needsReconnectNow || !hasAccountNow
+          ? needsReconnectNow
+            ? await resetBarberConnect()
+            : await createBarberConnectOnboarding()
+          : await refreshBarberConnectOnboarding();
+
+      window.open(onboardingUrl, '_blank', 'noopener,noreferrer');
+      setStripeTabOpened(true);
+      await load();
+      toast(
+        needsReconnectNow || !hasAccountNow
+          ? 'Stripe opened in a new tab. Sign in with your provider email to continue.'
+          : 'Finish any remaining items in Stripe, then return here.',
+        { icon: '↔️' }
+      );
+    } catch (err: unknown) {
+      const { message: msg, code } = apiErrorDetails(err);
+      if (
+        code === 'STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE' ||
+        code === 'STRIPE_CONNECT_PLATFORM_NOT_ENABLED'
+      ) {
+        setPlatformSetupBlocked(
+          msg ||
+            'OnCuts must finish Stripe Connect platform setup before providers can onboard.'
+        );
+      }
+      if (code === 'STRIPE_CONNECT_STALE_ACCOUNT') {
+        try {
+          const { onboarding_url: resetUrl } = await resetBarberConnect();
+          window.open(resetUrl, '_blank', 'noopener,noreferrer');
+          setStripeTabOpened(true);
+          toast.success('Previous payout account cleared. Stripe opened for a fresh connection.');
+          await load();
+          return;
+        } catch {
+          await load();
+        }
+      }
+      toast.error(msg || 'Could not open Stripe');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const openStripeDashboard = async () => {
+    try {
+      setBusy('dashboard');
+      const url = await fetchBarberStripeDashboardUrl();
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err: unknown) {
+      const { message: msg } = apiErrorDetails(err);
+      toast.error(msg || 'Could not open Stripe Express. Complete Connect setup first.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const recheckStatus = async () => {
+    try {
+      setBusy('recheck');
+      const status = await load();
+      if (status && isBarberStripeFullyConnected(status)) {
+        toast.success("You're fully connected. Payouts and card charges are enabled.");
+      } else {
+        toast('Still finishing Stripe setup — complete remaining steps, then check again.', {
+          icon: '⏳',
+        });
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (!isVisible && !isOpen) return null;
+
+  const fullyConnected = isBarberStripeFullyConnected(connectStatus);
+  const hasAccount = Boolean(connectStatus?.has_account);
+  const needsReconnect = Boolean(connectStatus?.needs_reconnect);
+  const primaryLabel = needsReconnect
+    ? 'Reconnect Stripe'
+    : !hasAccount
+      ? 'Continue with Stripe'
+      : 'Open Stripe';
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 min-h-[100dvh] bg-gray-50 flex flex-col transition-opacity duration-150 ${
+        isAnimating ? 'opacity-100' : 'opacity-0'
+      }`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Payout Settings"
+    >
+      <header className="shrink-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-3">
+        <div className="max-w-2xl mx-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1 text-primary-700 hover:text-black font-medium px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-sm sm:text-base">Back</span>
+          </button>
+          <h1 className="flex-1 text-center text-lg sm:text-xl font-semibold text-gray-900 pr-14">
+            Payout Settings
+          </h1>
+        </div>
+      </header>
+
+      <PullToRefresh
+        onRefresh={async () => {
+          await load();
+        }}
+        className="flex-1 overflow-y-auto"
+      >
+        <div className="max-w-2xl mx-auto px-4 py-5 sm:py-6 pb-10 relative">
+          {loading && !connectStatus ? (
+            <p className="text-center text-gray-500 py-16">Checking Stripe Connect…</p>
+          ) : fullyConnected ? (
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                  <h2 className="text-lg font-semibold text-gray-900">Stripe Connect active</h2>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  You&apos;re fully onboarded with Stripe. Charges and payouts are enabled for your
+                  OnCuts operator account.
+                </p>
+                <p className="text-xs text-emerald-900/80 leading-relaxed">
+                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule)}
+                </p>
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
+                <h2 className="text-lg font-semibold text-gray-900">Stripe Express</h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Manage your bank account, tax details, payouts, and statements in Stripe Express.
+                </p>
+                <button
+                  type="button"
+                  className={STRIPE_PURPLE_BTN}
+                  onClick={() => void openStripeDashboard()}
+                  disabled={busy !== null}
+                >
+                  {busy === 'dashboard' ? 'Opening…' : 'Open Stripe Express'}
+                </button>
+              </section>
+
+              <StripeAppSection />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                {checklistOpen && (
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-10 bg-black/40"
+                    aria-label="Close checklist"
+                    onClick={() => setChecklistOpen(false)}
+                  />
+                )}
+                <div
+                  className={`absolute top-0 bottom-0 left-0 z-20 w-[min(18.75rem,90vw)] bg-stone-100 border-r border-gray-200 shadow-xl transition-transform duration-200 ease-in-out ${
+                    checklistOpen ? 'translate-x-0' : '-translate-x-full'
+                  }`}
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <span className="font-semibold text-gray-900">Checklist</span>
+                    <button
+                      type="button"
+                      onClick={() => setChecklistOpen(false)}
+                      className="text-sm text-gray-600 hover:text-gray-900 px-2 py-1"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto h-[calc(100%-3rem)]">
+                    <ChecklistDrawerPanel
+                      expandedId={expandedRequirementId}
+                      onToggle={(id) =>
+                        setExpandedRequirementId((current) => (current === id ? null : id))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-6 space-y-5">
+                  <button
+                    type="button"
+                    onClick={() => setChecklistOpen((open) => !open)}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-gray-900"
+                    aria-expanded={checklistOpen}
+                  >
+                    {checklistOpen ? (
+                      <ChevronLeft className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                    Checklist
+                  </button>
+
+                  <div className="text-center space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Payments Onboarding Guide
+                    </p>
+                    <h2 className="text-xl font-semibold text-gray-900">Welcome to OnCuts Operator!</h2>
+                  </div>
+
+                  <p className="text-base text-gray-600 leading-relaxed">
+                    OnCuts relies on a third-party payment processing system. This third-party is{' '}
+                    <strong>Stripe</strong>, which you can read more about{' '}
+                    <a
+                      href={STRIPE_WIKIPEDIA_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={LEARN_MORE_LINK_CLASS}
+                    >
+                      here
+                    </a>
+                    .
+                  </p>
+                  <p className="text-base text-gray-600 leading-relaxed">
+                    When a client pays you, Stripe securely moves funds to your bank account. Stripe
+                    will ask for personal details — open Checklist in the top left if you get stuck.
+                  </p>
+
+                  {platformSetupBlocked && (
+                    <p className="text-sm text-red-900 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                      <strong>Platform setup required:</strong> {platformSetupBlocked}
+                    </p>
+                  )}
+                  {needsReconnect ? (
+                    <p className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
+                      Your saved payout account needs a fresh connection. Select{' '}
+                      <strong>Reconnect Stripe</strong> below.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+                      You&apos;re seeing this because you still need to connect with Stripe to enable
+                      safe and secure payments.
+                    </p>
+                  )}
+
+                  {stripeTabOpened && (
+                    <p className="text-sm text-gray-600">
+                      Return here after working in Stripe. We check your progress when you switch
+                      back to this tab.
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    className={STRIPE_PURPLE_BTN}
+                    onClick={() => void handlePrimaryStripeAction()}
+                    disabled={busy !== null || Boolean(platformSetupBlocked)}
+                  >
+                    {busy === 'stripe' ? 'Opening Stripe…' : primaryLabel}
+                  </button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => void recheckStatus()}
+                    disabled={busy !== null}
+                  >
+                    {busy === 'recheck' ? 'Checking…' : "I've finished in Stripe — check again"}
+                  </Button>
+                </div>
+              </div>
+
+              <StripeAppSection />
+            </div>
+          )}
+        </div>
+      </PullToRefresh>
+    </div>
+  );
+}
