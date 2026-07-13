@@ -3336,6 +3336,14 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 050 — Clear per-provider commission rate overrides
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/050_clear_provider_fee_overrides.sql
+pm2 restart oncuts-backend
+```
+
+Nulls `platform_fee_percent` overrides. Fee stays hardcoded at 15%; Admin only edits commission-free booking counts.
+
 ### 049 — Default 5 commission-free bookings per provider
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/049_default_commission_free_bookings.sql

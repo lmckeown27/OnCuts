@@ -1,6 +1,7 @@
 /**
  * Platform commission helpers for Stripe Connect destination charges.
  * Fee applies to service amount only (never tips).
+ * Rate is platform-hardcoded (15%); admins only control commission-free booking quota.
  */
 
 import type { PoolClient, QueryResultRow } from 'pg';
@@ -15,9 +16,8 @@ export const DEFAULT_COMMISSION_FREE_BOOKINGS = 5;
 export type DbClient = PoolClient | typeof pool;
 
 export interface ProviderCommissionSettings {
-  platformFeePercent: number | null;
   commissionFreeBookingsRemaining: number;
-  /** Effective rate 0–1 used when not commission-free */
+  /** Effective rate 0–1 used when not commission-free (always platform default). */
   effectiveFeeRate: number;
 }
 
@@ -29,40 +29,22 @@ export interface PlatformFeeSplit {
   feePercentDisplay: number;
 }
 
-function parseFeePercent(raw: unknown): number | null {
-  if (raw == null || raw === '') return null;
-  const n = typeof raw === 'number' ? raw : parseFloat(String(raw));
-  if (!Number.isFinite(n)) return null;
-  return Math.min(100, Math.max(0, n));
-}
-
-export function effectiveFeeRateFromPercent(platformFeePercent: number | null | undefined): number {
-  if (platformFeePercent == null) return DEFAULT_PLATFORM_FEE_RATE;
-  return Math.min(1, Math.max(0, platformFeePercent / 100));
-}
-
 export function calculatePlatformFeeSplit(
   serviceAmountCents: number,
-  settings: Pick<ProviderCommissionSettings, 'platformFeePercent'>,
   opts?: { forceCommissionFree?: boolean }
 ): PlatformFeeSplit {
   const amount = Math.max(0, Math.round(serviceAmountCents));
   const waived = opts?.forceCommissionFree === true;
-  const feeRate = waived ? 0 : effectiveFeeRateFromPercent(settings.platformFeePercent);
+  const feeRate = waived ? 0 : DEFAULT_PLATFORM_FEE_RATE;
   const platformFeeCents = waived ? 0 : Math.round(amount * feeRate);
   const barberEarningsCents = amount - platformFeeCents;
-  const feePercentDisplay = waived
-    ? 0
-    : settings.platformFeePercent != null
-      ? settings.platformFeePercent
-      : DEFAULT_PLATFORM_FEE_PERCENT;
 
   return {
     platformFeeCents,
     barberEarningsCents,
     feeRate,
     commissionFree: waived,
-    feePercentDisplay,
+    feePercentDisplay: waived ? 0 : DEFAULT_PLATFORM_FEE_PERCENT,
   };
 }
 
@@ -72,18 +54,16 @@ export function estimatePlatformFeeSplit(
   settings: ProviderCommissionSettings
 ): PlatformFeeSplit {
   if (settings.commissionFreeBookingsRemaining > 0) {
-    return calculatePlatformFeeSplit(serviceAmountCents, settings, { forceCommissionFree: true });
+    return calculatePlatformFeeSplit(serviceAmountCents, { forceCommissionFree: true });
   }
-  return calculatePlatformFeeSplit(serviceAmountCents, settings, { forceCommissionFree: false });
+  return calculatePlatformFeeSplit(serviceAmountCents, { forceCommissionFree: false });
 }
 
 function mapSettingsRow(row: QueryResultRow | undefined): ProviderCommissionSettings {
-  const platformFeePercent = parseFeePercent(row?.platform_fee_percent);
   const remaining = Math.max(0, parseInt(String(row?.commission_free_bookings_remaining ?? '0'), 10) || 0);
   return {
-    platformFeePercent,
     commissionFreeBookingsRemaining: remaining,
-    effectiveFeeRate: effectiveFeeRateFromPercent(platformFeePercent),
+    effectiveFeeRate: DEFAULT_PLATFORM_FEE_RATE,
   };
 }
 
@@ -92,7 +72,7 @@ export async function loadProviderCommissionSettings(
   barberRecordId: string
 ): Promise<ProviderCommissionSettings> {
   const result = await client.query(
-    `SELECT platform_fee_percent, commission_free_bookings_remaining
+    `SELECT commission_free_bookings_remaining
      FROM barbers
      WHERE id = $1::uuid`,
     [barberRecordId]
@@ -105,7 +85,7 @@ export async function loadProviderCommissionSettingsByUserId(
   barberUserId: string
 ): Promise<{ settings: ProviderCommissionSettings; barberRecordId: string | null }> {
   const result = await client.query(
-    `SELECT id, platform_fee_percent, commission_free_bookings_remaining
+    `SELECT id, commission_free_bookings_remaining
      FROM barbers
      WHERE "userId" = $1::uuid`,
     [barberUserId]
@@ -113,7 +93,6 @@ export async function loadProviderCommissionSettingsByUserId(
   if (result.rows.length === 0) {
     return {
       settings: {
-        platformFeePercent: null,
         commissionFreeBookingsRemaining: 0,
         effectiveFeeRate: DEFAULT_PLATFORM_FEE_RATE,
       },
@@ -185,7 +164,7 @@ export async function resolveBookingPlatformFee(
 
   if (opts.alreadyCommissionFreeApplied) {
     return {
-      ...calculatePlatformFeeSplit(opts.serviceAmountCents, settings, { forceCommissionFree: true }),
+      ...calculatePlatformFeeSplit(opts.serviceAmountCents, { forceCommissionFree: true }),
       reservedNow: false,
     };
   }
@@ -202,12 +181,12 @@ export async function resolveBookingPlatformFee(
       [opts.serviceAmountCents, opts.bookingId]
     );
     return {
-      ...calculatePlatformFeeSplit(opts.serviceAmountCents, settings, { forceCommissionFree: true }),
+      ...calculatePlatformFeeSplit(opts.serviceAmountCents, { forceCommissionFree: true }),
       reservedNow: true,
     };
   }
 
-  const split = calculatePlatformFeeSplit(opts.serviceAmountCents, settings, {
+  const split = calculatePlatformFeeSplit(opts.serviceAmountCents, {
     forceCommissionFree: false,
   });
   await client.query(

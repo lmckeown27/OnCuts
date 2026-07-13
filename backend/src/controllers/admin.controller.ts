@@ -1960,7 +1960,6 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         b.service_location_label,
         b.service_latitude,
         b.service_longitude,
-        b.platform_fee_percent,
         b.commission_free_bookings_remaining,
         u.role,
         u.stripe_account_id,
@@ -2003,8 +2002,6 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
-        platformFeePercent:
-          row.platform_fee_percent != null ? parseFloat(String(row.platform_fee_percent)) : null,
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
         completedBookings: parseInt(row.completed_bookings) || 0,
@@ -2456,7 +2453,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b.service_location_label,
         b.service_latitude,
         b.service_longitude,
-        b.platform_fee_percent,
         b.commission_free_bookings_remaining,
         u.role,
         u.stripe_account_id,
@@ -2511,8 +2507,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
         isBanned: row.is_banned === true,
         createdAt: row.created_at,
-        platformFeePercent:
-          row.platform_fee_percent != null ? parseFloat(String(row.platform_fee_percent)) : null,
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
         completedBookings: parseInt(row.completed_bookings) || 0,
@@ -2527,7 +2521,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
 /**
  * PUT /api/admin/barbers/:barberRecordId/commission
- * Set per-provider platform fee % and/or commission-free booking quota.
+ * Set commission-free booking quota only (platform fee rate is hardcoded at 15%).
  */
 export const updateBarberCommission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -2537,14 +2531,25 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
     }
 
     const { barberRecordId } = req.params;
-    const { platformFeePercent, commissionFreeBookingsRemaining } = req.body ?? {};
+    const { commissionFreeBookingsRemaining } = req.body ?? {};
 
     if (!barberRecordId) {
       throw new ApiError(400, 'barberRecordId is required');
     }
 
+    if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'commissionFreeBookingsRemaining')) {
+      throw new ApiError(400, 'commissionFreeBookingsRemaining is required');
+    }
+
+    const remaining = typeof commissionFreeBookingsRemaining === 'number'
+      ? commissionFreeBookingsRemaining
+      : parseInt(String(commissionFreeBookingsRemaining), 10);
+    if (!Number.isInteger(remaining) || remaining < 0 || remaining > 10000) {
+      throw new ApiError(400, 'commissionFreeBookingsRemaining must be an integer between 0 and 10000');
+    }
+
     const existing = await pool.query(
-      `SELECT id, platform_fee_percent, commission_free_bookings_remaining
+      `SELECT id, commission_free_bookings_remaining
        FROM barbers WHERE id = $1::uuid`,
       [barberRecordId]
     );
@@ -2552,56 +2557,19 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
       throw new ApiError(404, 'Service provider not found');
     }
 
-    const updates: string[] = [];
-    const params: unknown[] = [];
-    let idx = 1;
-
-    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, 'platformFeePercent')) {
-      if (platformFeePercent === null || platformFeePercent === '' || platformFeePercent === undefined) {
-        updates.push(`platform_fee_percent = NULL`);
-      } else {
-        const pct = typeof platformFeePercent === 'number'
-          ? platformFeePercent
-          : parseFloat(String(platformFeePercent));
-        if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-          throw new ApiError(400, 'platformFeePercent must be between 0 and 100, or null for default (15%)');
-        }
-        updates.push(`platform_fee_percent = $${idx++}`);
-        params.push(Math.round(pct * 100) / 100);
-      }
-    }
-
-    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, 'commissionFreeBookingsRemaining')) {
-      const remaining = typeof commissionFreeBookingsRemaining === 'number'
-        ? commissionFreeBookingsRemaining
-        : parseInt(String(commissionFreeBookingsRemaining), 10);
-      if (!Number.isInteger(remaining) || remaining < 0 || remaining > 10000) {
-        throw new ApiError(400, 'commissionFreeBookingsRemaining must be an integer between 0 and 10000');
-      }
-      updates.push(`commission_free_bookings_remaining = $${idx++}`);
-      params.push(remaining);
-    }
-
-    if (updates.length === 0) {
-      throw new ApiError(400, 'Provide platformFeePercent and/or commissionFreeBookingsRemaining');
-    }
-
-    updates.push(`"updatedAt" = NOW()`);
-    params.push(barberRecordId);
-
     const result = await pool.query(
       `UPDATE barbers
-       SET ${updates.join(', ')}
-       WHERE id = $${idx}::uuid
-       RETURNING id, platform_fee_percent, commission_free_bookings_remaining`,
-      params
+       SET commission_free_bookings_remaining = $1,
+           "updatedAt" = NOW()
+       WHERE id = $2::uuid
+       RETURNING id, commission_free_bookings_remaining`,
+      [remaining, barberRecordId]
     );
 
     const row = result.rows[0];
     logger.info('admin_update_barber_commission', {
       barberRecordId,
       adminId: req.user!.userId,
-      platformFeePercent: row.platform_fee_percent,
       commissionFreeBookingsRemaining: row.commission_free_bookings_remaining,
     });
 
@@ -2609,13 +2577,10 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
       success: true,
       data: {
         barberRecordId: row.id.toString(),
-        platformFeePercent:
-          row.platform_fee_percent != null ? parseFloat(String(row.platform_fee_percent)) : null,
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
-        defaultPlatformFeePercent: 15,
       },
-      message: 'Commission settings updated',
+      message: 'Commission-free bookings updated',
     });
   } catch (error) {
     next(error);

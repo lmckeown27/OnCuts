@@ -214,8 +214,8 @@ model Barber {
   isActive    Boolean  @default(true)
   isOnboarded Boolean  @default(false)
 
-  // Admin payment controls (NULL fee % = platform default 15%)
-  platformFeePercent                 Decimal? @map("platform_fee_percent") @db.Decimal(5,2)
+  // Admin payment controls — commission-free quota only (fee rate is platform-hardcoded)
+  platformFeePercent                 Decimal? @map("platform_fee_percent") @db.Decimal(5,2) // unused; reserved/legacy
   commissionFreeBookingsRemaining    Int      @default(5) @map("commission_free_bookings_remaining")
 
   // Timestamps
