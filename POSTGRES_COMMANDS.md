@@ -3336,9 +3336,18 @@ WHERE id = 'LOCATION_ID';
 
 ## PENDING MIGRATIONS
 
+### 047 — Services Barber / Beauty provider type
+```bash
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/047_services_provider_type.sql
+# then:
+pm2 restart oncuts-backend
+```
+
+Adds `services.provider_type` (`barber` | `beauty`), seeds Beauty catalog rows (Braids, Makeup, Nails, Lashes, Tanning), and powers Admin Services filters.
+
 ### 046 — Provider commission controls (admin fee % + free bookings)
 ```bash
-sudo -u postgres psql -d oncuts -f /path/to/OnCuts/backend/src/database/migrations/046_provider_commission_controls.sql
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/046_provider_commission_controls.sql
 # then:
 pm2 restart oncuts-backend
 ```

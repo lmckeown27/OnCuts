@@ -30,6 +30,7 @@ import {
 } from '../services/campus-metrics-access.service';
 import {
   serviceDurationColumnsExist,
+  serviceProviderTypeColumnExist,
   serviceSelectSql,
   DEFAULT_MIN_DURATION_MINUTES,
   DEFAULT_MAX_DURATION_MINUTES,
@@ -475,6 +476,8 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
 // ═══════════════════════════════════════════════════════════════
 
 function mapServiceRow(row: Record<string, unknown>) {
+  const providerTypeRaw = row.provider_type != null ? String(row.provider_type).toLowerCase() : 'barber';
+  const providerType = providerTypeRaw === 'beauty' ? 'beauty' : 'barber';
   return {
     id: row.id,
     slug: row.slug,
@@ -485,10 +488,18 @@ function mapServiceRow(row: Record<string, unknown>) {
     maxPriceCents: row.default_max_price_cents,
     minDurationMinutes: row.default_min_duration_minutes ?? DEFAULT_MIN_DURATION_MINUTES,
     maxDurationMinutes: row.default_max_duration_minutes ?? DEFAULT_MAX_DURATION_MINUTES,
+    providerType,
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function normalizeServiceProviderType(raw: unknown): 'barber' | 'beauty' {
+  const value = String(raw ?? 'barber').trim().toLowerCase();
+  if (value === 'beauty') return 'beauty';
+  if (value === 'barber' || value === '') return 'barber';
+  throw new ApiError(400, 'providerType must be "barber" or "beauty"');
 }
 
 function validateServiceBounds(params: {
@@ -518,6 +529,7 @@ function validateServiceBounds(params: {
 export const getServices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hasDurationColumns = await serviceDurationColumnsExist();
+    const hasProviderTypeColumn = await serviceProviderTypeColumnExist();
 
     // Any authenticated user can read active services
     // Only admins can see inactive services
@@ -526,19 +538,35 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
     
     // Only allow includeInactive for admins
     const includeInactive = isAdmin && req.query.includeInactive === 'true';
+    const providerTypeFilterRaw = req.query.providerType;
+    const providerTypeFilter =
+      typeof providerTypeFilterRaw === 'string' && providerTypeFilterRaw.trim()
+        ? normalizeServiceProviderType(providerTypeFilterRaw)
+        : null;
+    
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (!includeInactive) {
+      conditions.push('is_active = true');
+    }
+    if (providerTypeFilter && hasProviderTypeColumn) {
+      params.push(providerTypeFilter);
+      conditions.push(`provider_type = $${params.length}`);
+    }
     
     let query = `
-      SELECT ${serviceSelectSql(hasDurationColumns)}
+      SELECT ${serviceSelectSql(hasDurationColumns, hasProviderTypeColumn)}
       FROM services
     `;
     
-    if (!includeInactive) {
-      query += ' WHERE is_active = true';
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
     }
     
     query += ' ORDER BY name ASC';
     
-    const result = await pool.query(query);
+    const result = await pool.query(query, params);
 
     res.json({
       success: true,
@@ -556,17 +584,29 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
 export const createService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hasDurationColumns = await serviceDurationColumnsExist();
+    const hasProviderTypeColumn = await serviceProviderTypeColumnExist();
 
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN') {
       throw new ApiError(403, 'Admin access required');
     }
 
-    const { name, description, basePriceCents, minPriceCents, maxPriceCents, minDurationMinutes, maxDurationMinutes } = req.body;
+    const {
+      name,
+      description,
+      basePriceCents,
+      minPriceCents,
+      maxPriceCents,
+      minDurationMinutes,
+      maxDurationMinutes,
+      providerType,
+    } = req.body;
 
     if (!name || !basePriceCents) {
       throw new ApiError(400, 'Name and base price are required');
     }
+
+    const providerTypeValue = normalizeServiceProviderType(providerType);
 
     // Generate slug from name
     const slug = name.toLowerCase()
@@ -589,23 +629,49 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
       maxDurationMinutes: maxDuration,
     });
 
-    const result = hasDurationColumns
-      ? await pool.query(
-          `INSERT INTO services (
-             slug, name, description,
-             default_base_price_cents, default_min_price_cents, default_max_price_cents,
-             default_min_duration_minutes, default_max_duration_minutes
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING *`,
-          [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration]
-        )
-      : await pool.query(
-          `INSERT INTO services (slug, name, description, default_base_price_cents, default_min_price_cents, default_max_price_cents)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING *`,
-          [slug, name, description || null, baseCents, minCents, maxCents]
-        );
+    let result;
+    if (hasDurationColumns && hasProviderTypeColumn) {
+      result = await pool.query(
+        `INSERT INTO services (
+           slug, name, description,
+           default_base_price_cents, default_min_price_cents, default_max_price_cents,
+           default_min_duration_minutes, default_max_duration_minutes,
+           provider_type
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration, providerTypeValue]
+      );
+    } else if (hasDurationColumns) {
+      result = await pool.query(
+        `INSERT INTO services (
+           slug, name, description,
+           default_base_price_cents, default_min_price_cents, default_max_price_cents,
+           default_min_duration_minutes, default_max_duration_minutes
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration]
+      );
+    } else if (hasProviderTypeColumn) {
+      result = await pool.query(
+        `INSERT INTO services (
+           slug, name, description,
+           default_base_price_cents, default_min_price_cents, default_max_price_cents,
+           provider_type
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [slug, name, description || null, baseCents, minCents, maxCents, providerTypeValue]
+      );
+    } else {
+      result = await pool.query(
+        `INSERT INTO services (slug, name, description, default_base_price_cents, default_min_price_cents, default_max_price_cents)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [slug, name, description || null, baseCents, minCents, maxCents]
+      );
+    }
 
     const row = result.rows[0];
 
@@ -615,10 +681,10 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
       action: 'service_created',
       object_type: 'service',
       object_id: row.id.toString(),
-      details: { name, slug, basePriceCents: baseCents },
+      details: { name, slug, basePriceCents: baseCents, providerType: providerTypeValue },
     });
 
-    logger.info('Service created', { id: row.id, name, slug, by: req.user!.userId });
+    logger.info('Service created', { id: row.id, name, slug, providerType: providerTypeValue, by: req.user!.userId });
 
     res.status(201).json({
       success: true,
@@ -640,6 +706,7 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
 export const updateService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hasDurationColumns = await serviceDurationColumnsExist();
+    const hasProviderTypeColumn = await serviceProviderTypeColumnExist();
 
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN') {
@@ -655,6 +722,7 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
       maxPriceCents,
       minDurationMinutes,
       maxDurationMinutes,
+      providerType,
       isActive,
     } = req.body;
 
@@ -688,6 +756,13 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(
         503,
         'Duration bounds are not available until migration 033 is applied as the services table owner (postgres superuser)'
+      );
+    }
+
+    if (providerType !== undefined && !hasProviderTypeColumn) {
+      throw new ApiError(
+        503,
+        'providerType is not available until migration 047_services_provider_type.sql is applied'
       );
     }
 
@@ -731,6 +806,10 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
     if (maxDurationMinutes !== undefined && hasDurationColumns) {
       updates.push(`default_max_duration_minutes = $${paramIndex++}`);
       values.push(parseInt(maxDurationMinutes));
+    }
+    if (providerType !== undefined && hasProviderTypeColumn) {
+      updates.push(`provider_type = $${paramIndex++}`);
+      values.push(normalizeServiceProviderType(providerType));
     }
     if (isActive !== undefined) {
       updates.push(`is_active = $${paramIndex++}`);

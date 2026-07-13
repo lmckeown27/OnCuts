@@ -2415,8 +2415,11 @@ interface Service {
   maxPriceCents: number;
   minDurationMinutes: number;
   maxDurationMinutes: number;
+  providerType?: 'barber' | 'beauty';
   isActive: boolean;
 }
+
+type ServiceProviderTypeFilter = 'all' | 'barber' | 'beauty';
 
 interface ServiceBoundsForm {
   basePrice: string;
@@ -2424,6 +2427,7 @@ interface ServiceBoundsForm {
   maxPrice: string;
   minDuration: string;
   maxDuration: string;
+  providerType: 'barber' | 'beauty';
 }
 
 const emptyBoundsForm = (): ServiceBoundsForm => ({
@@ -2432,6 +2436,7 @@ const emptyBoundsForm = (): ServiceBoundsForm => ({
   maxPrice: '',
   minDuration: '',
   maxDuration: '',
+  providerType: 'barber',
 });
 
 const boundsFormFromService = (service: Service): ServiceBoundsForm => ({
@@ -2440,6 +2445,7 @@ const boundsFormFromService = (service: Service): ServiceBoundsForm => ({
   maxPrice: Math.round(service.maxPriceCents / 100).toString(),
   minDuration: String(service.minDurationMinutes),
   maxDuration: String(service.maxDurationMinutes),
+  providerType: service.providerType === 'beauty' ? 'beauty' : 'barber',
 });
 
 export const ServicesManagementPanel: React.FC = () => {
@@ -2448,6 +2454,7 @@ export const ServicesManagementPanel: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [providerTypeFilter, setProviderTypeFilter] = useState<ServiceProviderTypeFilter>('all');
 
   // Inline bounds editing state
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
@@ -2458,15 +2465,25 @@ export const ServicesManagementPanel: React.FC = () => {
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formBasePrice, setFormBasePrice] = useState('');
+  const [formProviderType, setFormProviderType] = useState<'barber' | 'beauty'>('barber');
   const [formError, setFormError] = useState('');
 
   const fetchServices = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services?includeInactive=${showInactive}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const params = new URLSearchParams({
+        includeInactive: String(showInactive),
       });
+      if (providerTypeFilter !== 'all') {
+        params.set('providerType', providerTypeFilter);
+      }
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || ''}/admin/services?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await response.json();
       if (data.success) {
         setServices(data.data);
@@ -2481,7 +2498,7 @@ export const ServicesManagementPanel: React.FC = () => {
 
   useEffect(() => {
     fetchServices();
-  }, [showInactive]);
+  }, [showInactive, providerTypeFilter]);
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2510,6 +2527,7 @@ export const ServicesManagementPanel: React.FC = () => {
           name: formName.trim(),
           description: formDescription.trim() || null,
           basePriceCents: Math.round(basePrice * 100),
+          providerType: formProviderType,
         }),
       });
 
@@ -2576,6 +2594,7 @@ export const ServicesManagementPanel: React.FC = () => {
           maxPriceCents: parseInt(editingBounds.maxPrice, 10) * 100,
           minDurationMinutes: parseInt(editingBounds.minDuration, 10),
           maxDurationMinutes: parseInt(editingBounds.maxDuration, 10),
+          providerType: editingBounds.providerType,
         }),
       });
 
@@ -2659,6 +2678,7 @@ export const ServicesManagementPanel: React.FC = () => {
     setFormName('');
     setFormDescription('');
     setFormBasePrice('');
+    setFormProviderType('barber');
     setFormError('');
   };
 
@@ -2712,7 +2732,31 @@ export const ServicesManagementPanel: React.FC = () => {
           </div>
         </div>
         {/* Description */}
-        <p className="text-sm text-gray-500 mt-1">Set default price and duration limits barbers must stay within</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Set default price and duration limits providers must stay within
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(
+            [
+              { id: 'all', label: 'All' },
+              { id: 'barber', label: 'Barber' },
+              { id: 'beauty', label: 'Beauty' },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setProviderTypeFilter(option.id)}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors ${
+                providerTypeFilter === option.id
+                  ? 'border-gray-900 bg-gray-900 text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         {/* Mobile Add Service button */}
         <Button
           onClick={() => {
@@ -2743,6 +2787,22 @@ export const ServicesManagementPanel: React.FC = () => {
                 placeholder="Service name"
                 autoFocus
               />
+            </div>
+            <div className="mb-2 flex gap-1">
+              {(['barber', 'beauty'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setFormProviderType(type)}
+                  className={`flex-1 text-[10px] px-2 py-1 rounded border capitalize ${
+                    formProviderType === type
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-300 bg-white text-gray-600'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
             </div>
             <div className="flex items-center gap-0.5 mb-2">
               <DollarSign className="w-4 h-4 text-gray-400" />
@@ -2794,9 +2854,20 @@ export const ServicesManagementPanel: React.FC = () => {
             >
               {/* Header with name and actions */}
               <div className="flex items-start justify-between gap-1 mb-1">
-                <h4 className="font-semibold text-gray-900 text-sm leading-tight flex-1">
-                  {service.name}
-                </h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                    {service.name}
+                  </h4>
+                  <span
+                    className={`mt-1 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                      service.providerType === 'beauty'
+                        ? 'bg-violet-100 text-violet-800'
+                        : 'bg-sky-100 text-sky-800'
+                    }`}
+                  >
+                    {service.providerType === 'beauty' ? 'Beauty' : 'Barber'}
+                  </span>
+                </div>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {!isEditing && (
                     <button
@@ -2899,6 +2970,22 @@ export const ServicesManagementPanel: React.FC = () => {
                     </label>
                   </div>
                   <div className="flex gap-1">
+                    {(['barber', 'beauty'] as const).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setEditingBounds((prev) => ({ ...prev, providerType: type }))}
+                        className={`flex-1 text-[10px] px-2 py-1 rounded border capitalize ${
+                          editingBounds.providerType === type
+                            ? 'border-gray-900 bg-gray-900 text-white'
+                            : 'border-gray-300 bg-white text-gray-600'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1">
                     <button
                       onClick={() => saveInlineBounds(service.id)}
                       disabled={savingBounds}
@@ -2938,7 +3025,11 @@ export const ServicesManagementPanel: React.FC = () => {
 
       {services.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No services found</p>
+          <p className="text-gray-500">
+            {providerTypeFilter === 'all'
+              ? 'No services found'
+              : `No ${providerTypeFilter} services found`}
+          </p>
           <Button
             onClick={() => {
               resetForm();

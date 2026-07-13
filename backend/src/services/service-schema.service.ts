@@ -5,6 +5,7 @@ export const DEFAULT_MIN_DURATION_MINUTES = 15;
 export const DEFAULT_MAX_DURATION_MINUTES = 240;
 
 let durationColumnsCached: boolean | null = null;
+let providerTypeColumnCached: boolean | null = null;
 let missingColumnsWarned = false;
 
 /**
@@ -26,6 +27,22 @@ export async function serviceDurationColumnsExist(): Promise<boolean> {
   return durationColumnsCached;
 }
 
+/** Whether migration 047 `services.provider_type` exists. */
+export async function serviceProviderTypeColumnExist(): Promise<boolean> {
+  if (providerTypeColumnCached !== null) return providerTypeColumnCached;
+
+  const result = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'services'
+       AND column_name = 'provider_type'
+     LIMIT 1`
+  );
+  providerTypeColumnCached = result.rows.length > 0;
+  return providerTypeColumnCached;
+}
+
 /** Log once at startup when columns are missing (requires table owner to run migration 033). */
 export async function warnIfServiceDurationColumnsMissing(): Promise<void> {
   const exists = await serviceDurationColumnsExist();
@@ -37,18 +54,22 @@ export async function warnIfServiceDurationColumnsMissing(): Promise<void> {
   }
 }
 
-export function serviceSelectSql(hasDurationColumns: boolean): string {
+export function serviceSelectSql(
+  hasDurationColumns: boolean,
+  hasProviderTypeColumn: boolean = false
+): string {
   const base = `id, slug, name, description,
              default_base_price_cents,
              default_min_price_cents,
              default_max_price_cents`;
+  const providerType = hasProviderTypeColumn ? `,\n             provider_type` : '';
   if (hasDurationColumns) {
     return `${base},
              default_min_duration_minutes,
-             default_max_duration_minutes,
+             default_max_duration_minutes${providerType},
              is_active, created_at, updated_at`;
   }
-  return `${base},
+  return `${base}${providerType},
              is_active, created_at, updated_at`;
 }
 
