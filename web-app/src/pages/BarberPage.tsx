@@ -724,15 +724,17 @@ export default function BarberPage() {
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
-              <div>
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-10 shrink-0 gap-2">
+              <div className="min-w-0">
                 <h2 className="text-2xl font-bold">Services Offered</h2>
+                <p className="text-white/80 text-sm">Catalog, pricing, and what clients can book</p>
               </div>
               <button
+                type="button"
                 onClick={closeServiceSpecialties}
-                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
               >
-                <X className="w-6 h-6" />
+                Close
               </button>
             </div>
             <div className="p-6">

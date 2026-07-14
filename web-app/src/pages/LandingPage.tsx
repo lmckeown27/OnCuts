@@ -127,7 +127,7 @@ export default function LandingPage() {
               Don&apos;t have an iOS Device?
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600">
-              Search below to browse and book barbers near your college town on the web
+              Search below to browse and book barbers near you on the web
             </p>
           </div>
           
@@ -136,7 +136,7 @@ export default function LandingPage() {
               <UniversitySelector
                 value={selectedCollegeTown}
                 onChange={handleCollegeTownSelect}
-                placeholder="Search for your college town..."
+                placeholder="Search near you..."
               />
             </div>
             {selectedCollegeTown && (
