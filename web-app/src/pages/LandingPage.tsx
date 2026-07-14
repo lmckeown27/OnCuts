@@ -446,18 +446,18 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Partnerships & inquiries */}
+          {/* Team join */}
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
-            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect</h3>
+            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Wanna join the Team?</h3>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Whether you&apos;re a prospective operator, a campus partner, or interested in the OnCuts System, we&apos;d love to hear from you
+              Building OnCuts, campus partnerships, or something else? Reach out.
             </p>
             <button
               onClick={openContactPopup}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-brand-500 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-brand-600"
             >
               <Mail className="h-5 w-5" />
-              Connect with the Team
+              Hit us up
             </button>
           </div>
         </div>
@@ -481,7 +481,7 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">Connect with the Team</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Wanna join the Team?</h2>
               <button
                 onClick={closeContactPopup}
                 className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -509,9 +509,9 @@ export default function LandingPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   // Open mailto with pre-filled content
-                  const subject = encodeURIComponent(`OnCuts Support Request from ${contactForm.name}`);
+                  const subject = encodeURIComponent(`OnCuts Team Interest from ${contactForm.name}`);
                   const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
-                  window.location.href = `mailto:support@oncuts.com?subject=${subject}&body=${body}`;
+                  window.location.href = `mailto:liam.mckeown38415@gmail.com?subject=${subject}&body=${body}`;
                   setContactSubmitted(true);
                 }}
                 className="space-y-4"
@@ -557,7 +557,7 @@ export default function LandingPage() {
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none transition-colors resize-none"
-                    placeholder="How can we help you?"
+                    placeholder="Tell us how you'd like to join or help out"
                   />
                 </div>
 
