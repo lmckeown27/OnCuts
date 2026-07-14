@@ -160,18 +160,18 @@ export default function LandingPage() {
             </button>
       </div>
 
-      {/* Barber CTA */}
+      {/* Operator CTA */}
       <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be an OnCuts Barber?
+            Want to be an OnCuts Operator?
           </h2>
           <div className="flex justify-center">
             <button 
               onClick={() => setShowBarberApplication(true)}
               className="px-6 py-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              Become a Barber
+              Become an Operator
             </button>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Tap &quot;Become a Barber&quot; on this site and submit your application.</li>
+                        <li>Tap &quot;Become an Operator&quot; on this site and submit your application.</li>
                         <li>
                           Once approved, download{' '}
                           <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
