@@ -260,6 +260,12 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
       answer: 'Open Stripe Express below for balances, payout history, and bank settings.',
     },
     {
+      id: 'stripe-app',
+      question: 'What is the Stripe App?',
+      answer:
+        'Optional phone app from Stripe to check balances and payout activity on the go. It is not required for OnCuts. Get it from the Stripe App card below.',
+    },
+    {
       id: 'cash-vs-card',
       question: 'What about cash payments?',
       answer: 'Cash stays between you and the client. Only card take-home goes through Stripe.',
