@@ -307,15 +307,27 @@ function PayoutFaqSection({
                   {item.question}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 shrink-0 mt-0.5 transition-transform ${
+                  className={`w-4 h-4 text-gray-500 shrink-0 mt-0.5 transition-transform duration-200 ease-out ${
                     open ? 'rotate-180' : ''
                   }`}
                   aria-hidden
                 />
               </button>
-              {open && (
-                <p className="px-4 pb-3 text-sm text-gray-600 leading-relaxed">{item.answer}</p>
-              )}
+              <div
+                className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                  open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
+              >
+                <div className="overflow-hidden min-h-0">
+                  <p
+                    className={`px-4 pb-3 text-sm text-gray-600 leading-relaxed transition-opacity duration-200 ease-out ${
+                      open ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {item.answer}
+                  </p>
+                </div>
+              </div>
             </li>
           );
         })}
