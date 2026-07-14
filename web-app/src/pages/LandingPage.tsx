@@ -156,7 +156,7 @@ export default function LandingPage() {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Find Barber
+              Find Operator
             </button>
       </div>
 
@@ -241,7 +241,7 @@ export default function LandingPage() {
                           <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             OnCuts
                           </a>{' '}
-                          on iPhone, or search near you here and tap &quot;Find Barber&quot; on the web.
+                          on iPhone, or search near you here and tap &quot;Find Operator&quot; on the web.
                         </li>
                         <li>Browse operators near you and view their portfolio.</li>
                         <li>Pick a service, date, time, and location, then submit your request.</li>
