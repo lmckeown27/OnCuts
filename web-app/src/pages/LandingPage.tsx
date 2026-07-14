@@ -471,7 +471,7 @@ export default function LandingPage() {
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">Wanna join the Team?</h3>
             <button
               onClick={openContactPopup}
-              className="mt-8 inline-flex items-center justify-center px-8 py-4 bg-brand-500 font-semibold text-lg sm:text-xl text-white rounded-xl shadow-md transition-colors hover:bg-brand-600"
+              className="mt-8 inline-flex items-center justify-center px-12 py-5 sm:px-14 sm:py-6 bg-brand-500 font-semibold text-xl sm:text-2xl md:text-3xl text-white rounded-2xl shadow-md transition-colors hover:bg-brand-600"
             >
               Hit us up
             </button>
