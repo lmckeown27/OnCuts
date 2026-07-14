@@ -236,12 +236,6 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
 
   return [
     {
-      id: 'why-stripe',
-      question: 'Why do payments go through a third party (Stripe)?',
-      answer:
-        'Stripe handles card payments so OnCuts never holds your payouts. Delays and checks help cover refunds and chargebacks, confirm your identity (KYC), catch early fraud, and meet legal payment rules. That protects you, your clients, and the platform.',
-    },
-    {
       id: 'first-payout',
       question: "Why haven't I received money from my first client?",
       answer:
