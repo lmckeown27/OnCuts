@@ -1,7 +1,7 @@
 /**
  * Payout Settings — modal Connect hub.
  * Incomplete: embedded onboarding guide + Stripe App.
- * Connected: status card + Analytics (nested) + Express + Stripe App.
+ * Connected: Payouts | Analytics tabs (Connect status / Express / App vs analytics).
  * Does not auto-dismiss when Connect becomes active.
  */
 
@@ -306,14 +306,18 @@ export default function PayoutSettingsScreen({
     }
   }, []);
 
-  const openAnalytics = () => {
-    setPanel('analytics');
+  useEffect(() => {
+    if (!isOpen || panel !== 'analytics') return;
     void loadPerformance();
-  };
+  }, [isOpen, panel, loadPerformance]);
 
   const handleAnalyticsRefresh = async () => {
     await loadPerformance();
     setAnalyticsRefreshSignal((n) => n + 1);
+  };
+
+  const selectPanel = (next: 'payouts' | 'analytics') => {
+    setPanel(next);
   };
 
   useEffect(() => {
@@ -439,7 +443,7 @@ export default function PayoutSettingsScreen({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={panel === 'analytics' ? 'Business Analytics' : 'Payout Settings'}
+      aria-label="Payout Settings"
     >
       <div
         className={`relative bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
@@ -448,98 +452,99 @@ export default function PayoutSettingsScreen({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
-          {panel === 'analytics' ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setPanel('payouts')}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors shrink-0"
-                aria-label="Back to Payout Settings"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div className="flex-1 min-w-0 text-center sm:text-left">
-                <h2 className="text-xl sm:text-2xl font-bold truncate">Business Analytics</h2>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
-              >
-                Close
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="min-w-0">
-                <h2 className="text-2xl font-bold">Payout Settings</h2>
-                <p className="text-white/80 text-sm">Stripe Connect and Express dashboard</p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
-              >
-                Close
-              </button>
-            </>
-          )}
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold">Payout Settings</h2>
+            <p className="text-white/80 text-sm">Stripe Connect and Express dashboard</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
+          >
+            Close
+          </button>
         </div>
 
-        {panel === 'analytics' ? (
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-stone-50">
-            <BarberAnalyticsPanel
-              performance={performance}
-              isLoadingPerformance={performanceLoading}
-              payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
-                instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
-              })}
-              refreshSignal={analyticsRefreshSignal}
-              onRefresh={handleAnalyticsRefresh}
-            />
-          </div>
-        ) : (
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">
-          {loading && !connectStatus ? (
+        {loading && !connectStatus ? (
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1">
             <div className="text-center py-16">
               <div className="animate-spin w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-4" />
               <p className="text-gray-500">Checking Stripe Connect…</p>
             </div>
-          ) : fullyConnected ? (
-            <div className="space-y-6">
-              <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                  <h3 className="text-lg font-semibold text-gray-900">Stripe Connect is Active</h3>
-                </div>
-              </section>
-
-              <button
-                type="button"
-                onClick={openAnalytics}
-                className="w-full px-4 py-3.5 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-colors border border-gray-300"
-              >
-                Analytics
-              </button>
-
-              <div className="grid grid-cols-2 gap-3 items-stretch">
-                <section className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 space-y-3 flex flex-col">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 text-center">Stripe Express</h3>
-                  <button
-                    type="button"
-                    className="w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-3 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-60 mt-auto"
-                    onClick={() => void openStripeDashboard()}
-                    disabled={busy !== null}
-                  >
-                    {busy === 'dashboard' ? 'Opening…' : 'Open Stripe Express'}
-                  </button>
-                </section>
-
-                <StripeAppSection />
+          </div>
+        ) : (
+          <>
+            <div className="px-4 sm:px-6 pt-3 pb-2 shrink-0 bg-white border-b border-stone-100">
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => selectPanel('payouts')}
+                  className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                    panel === 'payouts'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Payouts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPanel('analytics')}
+                  className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                    panel === 'analytics'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Analytics
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6 relative min-h-[20rem]">
+
+            {panel === 'analytics' ? (
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-stone-50">
+                <BarberAnalyticsPanel
+                  performance={performance}
+                  isLoadingPerformance={performanceLoading}
+                  payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+                    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+                  })}
+                  refreshSignal={analyticsRefreshSignal}
+                  onRefresh={handleAnalyticsRefresh}
+                />
+              </div>
+            ) : fullyConnected ? (
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">
+                <div className="space-y-6">
+                  <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                      <h3 className="text-lg font-semibold text-gray-900">Stripe Connect is Active</h3>
+                    </div>
+                  </section>
+
+                  <div className="grid grid-cols-2 gap-3 items-stretch">
+                    <section className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 space-y-3 flex flex-col">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 text-center">
+                        Stripe Express
+                      </h3>
+                      <button
+                        type="button"
+                        className="w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-3 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-60 mt-auto"
+                        onClick={() => void openStripeDashboard()}
+                        disabled={busy !== null}
+                      >
+                        {busy === 'dashboard' ? 'Opening…' : 'Open Stripe Express'}
+                      </button>
+                    </section>
+
+                    <StripeAppSection />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">
+                <div className="space-y-6 relative min-h-[20rem]">
               {checklistOpen && (
                 <button
                   type="button"
@@ -662,9 +667,10 @@ export default function PayoutSettingsScreen({
               </div>
 
               <StripeAppSection />
-            </div>
-          )}
-        </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
