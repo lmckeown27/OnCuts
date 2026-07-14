@@ -167,9 +167,9 @@ export default function LandingPage() {
             Want to be an OnCuts Operator?
           </h2>
           <div className="flex justify-center">
-            <button 
+            <button
               onClick={() => setShowBarberApplication(true)}
-              className="px-6 py-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-12 py-5 sm:px-14 sm:py-6 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xl sm:text-2xl md:text-3xl transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
               Become an Operator
             </button>
