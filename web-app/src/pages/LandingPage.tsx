@@ -449,9 +449,6 @@ export default function LandingPage() {
           {/* Team join */}
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
             <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Wanna join the Team?</h3>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Building OnCuts, campus partnerships, or something else? Reach out.
-            </p>
             <button
               onClick={openContactPopup}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-brand-500 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-brand-600"
@@ -542,7 +539,7 @@ export default function LandingPage() {
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 outline-none transition-colors"
-                    placeholder="john@university.edu"
+                    placeholder="john@example.com"
                   />
                 </div>
 
