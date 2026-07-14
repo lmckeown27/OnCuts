@@ -224,6 +224,90 @@ function StripeAppSection({ className = '' }: { className?: string }) {
   );
 }
 
+type PayoutFaqItem = { id: string; question: string; answer: string };
+
+function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqItem[] {
+  const timing = formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+  });
+
+  return [
+    {
+      id: 'first-payout',
+      question: "Why haven't I received money from my first client?",
+      answer:
+        'Card payments go to your Stripe Express balance first — not straight to your bank app. ' +
+        'If Instant Payouts aren’t available for that payment (new accounts, unsupported banks, or Instant balance still settling), ' +
+        'Stripe sends funds on your Express schedule. Also confirm the booking was paid by card and completed in OnCuts.',
+    },
+    {
+      id: 'how-fast',
+      question: 'How fast do payouts reach my bank?',
+      answer: timing,
+    },
+    {
+      id: 'where-money',
+      question: 'Where can I see my balance or bank details?',
+      answer:
+        'Open Stripe Express below to view your balance, payout history, and linked bank or debit card. ' +
+        'You can also install the Stripe App to track activity on your phone.',
+    },
+    {
+      id: 'cash-vs-card',
+      question: 'What about cash payments?',
+      answer:
+        'Cash stays between you and the client — OnCuts doesn’t move cash through Stripe. ' +
+        'Only card take-home is deposited via Connect.',
+    },
+  ];
+}
+
+function PayoutFaqSection({
+  connectStatus,
+}: {
+  connectStatus: BarberConnectStatus | null;
+}) {
+  const faqs = buildPayoutFaqs(connectStatus);
+  const [openId, setOpenId] = useState<string | null>(faqs[0]?.id ?? null);
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <h3 className="text-base font-semibold text-gray-900 text-center">Common questions</h3>
+        <p className="text-xs text-gray-500 text-center mt-0.5">Tap a question for a quick answer</p>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {faqs.map((item) => {
+          const open = openId === item.id;
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
+                className="w-full flex items-start gap-2 px-4 py-3 text-left hover:bg-stone-50 transition-colors"
+                aria-expanded={open}
+              >
+                <span className="flex-1 text-sm font-semibold text-gray-900 leading-snug">
+                  {item.question}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-gray-500 shrink-0 mt-0.5 transition-transform ${
+                    open ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden
+                />
+              </button>
+              {open && (
+                <p className="px-4 pb-3 text-sm text-gray-600 leading-relaxed">{item.answer}</p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 interface PayoutSettingsScreenProps {
   isOpen: boolean;
   onClose: () => void;
@@ -516,12 +600,14 @@ export default function PayoutSettingsScreen({
             ) : fullyConnected ? (
               <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">
                 <div className="space-y-6">
-                  <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5">
-                    <div className="flex items-center gap-2.5">
+                  <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 sm:px-5 w-fit max-w-full mx-auto">
+                    <div className="flex items-center justify-center gap-2.5">
                       <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
                       <h3 className="text-lg font-semibold text-gray-900">Stripe Connect is Active</h3>
                     </div>
                   </section>
+
+                  <PayoutFaqSection connectStatus={connectStatus} />
 
                   <div className="grid grid-cols-2 gap-3 items-stretch">
                     <section className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 space-y-3 flex flex-col">
