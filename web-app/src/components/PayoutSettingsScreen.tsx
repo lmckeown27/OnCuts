@@ -239,7 +239,7 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
       id: 'why-stripe',
       question: 'Why do payments go through a third party (Stripe)?',
       answer:
-        'Stripe handles card money so OnCuts never holds your payouts. The wait and checks reduce refund and chargeback risk, verify your identity (KYC), watch early activity for fraud, and meet legal payment rules. That protects you, your clients, and the platform.',
+        'Stripe handles card payments so OnCuts never holds your payouts. Delays and checks help cover refunds and chargebacks, confirm your identity (KYC), catch early fraud, and meet legal payment rules. That protects you, your clients, and the platform.',
     },
     {
       id: 'first-payout',
@@ -278,8 +278,7 @@ function PayoutFaqSection({
   return (
     <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100">
-        <h3 className="text-base font-semibold text-gray-900 text-center">Common questions</h3>
-        <p className="text-xs text-gray-500 text-center mt-0.5">Tap a question for a quick answer</p>
+        <h3 className="text-base font-semibold text-gray-900 text-center">Payouts Q&A</h3>
       </div>
       <ul className="divide-y divide-gray-100">
         {faqs.map((item) => {
