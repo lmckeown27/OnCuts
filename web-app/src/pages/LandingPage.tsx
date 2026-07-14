@@ -121,18 +121,18 @@ export default function LandingPage() {
       <IosAppPromoSection />
 
       {/* Hero Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
-          <div className="w-full max-w-xl mb-6 text-center px-2">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+      <div className="py-24 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[55vh]">
+          <div className="w-full max-w-2xl mb-8 text-center px-2">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
               Don&apos;t have an iOS Device?
             </h1>
-            <p className="mt-2 text-sm sm:text-base text-gray-600">
+            <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-600">
               Search below to browse and book barbers near you on the web
             </p>
           </div>
           
-          <div className="w-full max-w-xl mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
+          <div className="w-full max-w-2xl mb-10">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-5">
               <UniversitySelector
                 value={selectedCollegeTown}
                 onChange={handleCollegeTownSelect}
@@ -140,7 +140,7 @@ export default function LandingPage() {
               />
             </div>
             {selectedCollegeTown && (
-            <p className="mt-4 text-sm text-gray-600 text-center">
+            <p className="mt-4 text-base sm:text-lg text-gray-600 text-center">
                 Searching barbers near {selectedCollegeTown.shortName}
               </p>
             )}
@@ -150,7 +150,7 @@ export default function LandingPage() {
             <button
               onClick={goToConsumerPage}
               disabled={!selectedCollegeTown}
-              className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
+              className={`px-20 py-8 sm:py-9 font-bold text-3xl sm:text-4xl md:text-5xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
                 selectedCollegeTown 
                   ? 'bg-brand-500 hover:bg-brand-600 text-white cursor-pointer' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

@@ -155,7 +155,7 @@ export default function UniversitySelector({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div
-        className={`relative flex items-center bg-white border-2 rounded-xl transition-all ${
+        className={`relative flex items-center bg-white border-2 rounded-2xl transition-all ${
           isOpen ? 'border-gray-900 shadow-lg' : 'border-gray-200 hover:border-gray-300'
         }`}
       >
@@ -172,7 +172,7 @@ export default function UniversitySelector({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 px-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-base text-center"
+          className="flex-1 px-4 py-4 sm:px-5 sm:py-5 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg sm:text-xl text-center"
           readOnly={!!value}
           onClick={() => {
             if (value) {
@@ -186,10 +186,10 @@ export default function UniversitySelector({
         {value ? (
           <button
             onClick={handleClear}
-            className="p-2 mr-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2.5 mr-2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Clear selected college town"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         ) : (
           <button
@@ -204,12 +204,12 @@ export default function UniversitySelector({
                 inputRef.current?.focus();
               }
             }}
-            className="pr-4 pl-2 py-3 text-gray-400 hover:text-gray-600 transition-colors"
+            className="pr-5 pl-2 py-4 text-gray-400 hover:text-gray-600 transition-colors"
           >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
-              <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-6 h-6 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             )}
           </button>
         )}
@@ -263,11 +263,11 @@ export default function UniversitySelector({
                   <button
                     onClick={() => handleSelect(town)}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full px-4 py-3 text-left transition-colors ${
+                    className={`w-full px-5 py-4 text-left transition-colors ${
                       index === highlightedIndex ? 'bg-gray-100 text-gray-900' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <p className="font-medium text-gray-900">{town.name}</p>
+                    <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
                   </button>
                 </li>
               ))}
