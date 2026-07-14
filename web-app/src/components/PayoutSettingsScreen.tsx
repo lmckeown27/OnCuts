@@ -508,20 +508,11 @@ export default function PayoutSettingsScreen({
             </div>
           ) : fullyConnected ? (
             <div className="space-y-6">
-              <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5 space-y-3">
+              <section className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 sm:p-5">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                  <h3 className="text-lg font-semibold text-gray-900">Stripe Connect active</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Stripe Connect is Active</h3>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  You&apos;re fully onboarded with Stripe. Charges and payouts are enabled for your
-                  OnCuts operator account.
-                </p>
-                <p className="text-xs text-emerald-900/80 leading-relaxed">
-                  {formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
-                    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
-                  })}
-                </p>
               </section>
 
               <button
