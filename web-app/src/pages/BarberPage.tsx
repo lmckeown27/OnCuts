@@ -599,16 +599,6 @@ export default function BarberPage() {
                     >
                       Business Analytics
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPayoutSettingsScreen(true);
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Payout Settings
-                    </button>
                     {isAdmin && (
                       <>
                         <div className="border-t border-gray-200 my-1" />
@@ -658,10 +648,7 @@ export default function BarberPage() {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
           }}
-          onOpenBlockTime={() => {
-            setBlockTimeInitialValues({});
-            setShowBlockTimeModal(true);
-          }}
+          onOpenPayoutSettings={() => setShowPayoutSettingsScreen(true)}
           onOpenBookings={openBookings}
           onEditAvailability={openAvailability}
           onOpenServicesOffered={openServiceSpecialties}
@@ -899,6 +886,11 @@ export default function BarberPage() {
           isVisible={isAvailabilityVisible} 
           onClose={closeAvailability}
           userId={user?.id}
+          onOpenBlockTime={() => {
+            closeAvailability();
+            setBlockTimeInitialValues({});
+            setShowBlockTimeModal(true);
+          }}
         />
       )}
 
@@ -1148,7 +1140,7 @@ export default function BarberPage() {
       }}
     />
 
-    {/* Blocking Connect gate — separate from Account → Payout Settings */}
+    {/* Blocking Connect gate — separate from schedule hub → Payouts */}
     <StripeHubModal
       isOpen={stripeGate.isBlocking}
       blocking
@@ -1170,7 +1162,7 @@ interface DashboardViewProps {
   refreshKey?: number;
   campusTimezone?: string;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
-  onOpenBlockTime?: () => void; // Open block time modal without prefilled slot
+  onOpenPayoutSettings?: () => void; // Open Stripe Connect / Payout Settings
   onOpenBookings?: () => void; // Open bookings list (e.g. awaiting payment)
   onEditAvailability?: () => void; // Open weekly availability modal
   onOpenServicesOffered?: () => void; // Open services catalog / pricing
@@ -1227,7 +1219,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenPayoutSettings, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -2058,10 +2050,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </button>
             <button
               type="button"
-              onClick={() => onOpenBlockTime?.()}
+              onClick={() => onOpenPayoutSettings?.()}
               className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
             >
-              Block Time
+              Payouts
             </button>
             <button
               type="button"
@@ -3338,7 +3330,17 @@ const validateAvailability = (availability: WeeklyAvailability): ValidationError
 };
 
 // Availability Modal — iOS Edit Schedule (weeklyEditorOnly) layout
-function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean; onClose: () => void; userId?: string }) {
+function AvailabilityModal({
+  isVisible,
+  onClose,
+  userId,
+  onOpenBlockTime,
+}: {
+  isVisible: boolean;
+  onClose: () => void;
+  userId?: string;
+  onOpenBlockTime?: () => void;
+}) {
   const [availability, setAvailability] = useState<WeeklyAvailability>(createDefaultAvailability);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -3729,6 +3731,24 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
               <p className="text-xs text-gray-400 text-right">Saving…</p>
             )}
           </section>
+
+          {onOpenBlockTime && (
+            <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Block time</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Block off one-time dates when you&apos;re unavailable.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenBlockTime()}
+                className="w-full px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+              >
+                Block Time
+              </button>
+            </section>
+          )}
         </PullToRefresh>
       </div>
     </div>
