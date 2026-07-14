@@ -248,6 +248,12 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
         'New Stripe accounts have a one-time wait of about 7 to 14 business days after you link a bank and process your first live card payment. Stripe cannot waive this. Check Stripe Express for any Action Required items. After that wait, payouts follow your normal schedule.',
     },
     {
+      id: 'why-wait',
+      question: 'Why a wait period after the first transaction?',
+      answer:
+        'Stripe holds the first payout so refunds or chargebacks can be covered, your identity can be verified (KYC), and early activity can be checked for fraud. It is required for risk and legal compliance.',
+    },
+    {
       id: 'how-fast',
       question: 'How fast do payouts reach my bank after the first wait?',
       answer: instant
