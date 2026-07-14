@@ -230,7 +230,7 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('c1')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I book a haircut?</h4>
+                    <h4 className="font-medium text-gray-900">How do I book a service?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c1' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -241,11 +241,11 @@ export default function LandingPage() {
                           <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             OnCuts
                           </a>{' '}
-                          on iPhone, or select your college town here and tap &quot;Find Barber&quot; on the web.
+                          on iPhone, or search near you here and tap &quot;Find Barber&quot; on the web.
                         </li>
-                        <li>Browse barbers at your school and view their portfolio.</li>
+                        <li>Browse operators near you and view their portfolio.</li>
                         <li>Pick a service, date, time, and location, then submit your request.</li>
-                        <li>Wait for a notification when the barber accepts.</li>
+                        <li>Wait for a notification when the operator accepts.</li>
                       </ol>
                     </div>
                   </div>
@@ -261,7 +261,9 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Pay after your haircut is complete. When the barber marks it done, pay in the app or on the web with card, Apple Pay, or Google Pay. Tips are optional (15%, 20%, or 25%).</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Pay after the service is complete. When the operator marks it done, pay in the app or on the web with card, Apple Pay, or Google Pay. Tips are optional (15%, 20%, or 25%).
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -271,12 +273,14 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('c3')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">Where do haircuts happen?</h4>
+                    <h4 className="font-medium text-gray-900">Where do services happen?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c3' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Choose from your barber&apos;s listed locations when you book. Options may include on-campus spots, dorms, or nearby areas.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Choose from your operator&apos;s listed locations when you book. Options may include campus spots, dorms, homes, or nearby areas.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -291,7 +295,9 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes. Edit time, date, location, or notes while your booking is pending. After acceptance, send a reschedule request for schedule changes. Cancel anytime before the service is marked complete.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Yes. Edit time, date, location, or notes while your booking is pending. After acceptance, send a reschedule request for schedule changes. Cancel anytime before the service is marked complete.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -301,14 +307,14 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('c5')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I contact my barber?</h4>
+                    <h4 className="font-medium text-gray-900">How do I contact my operator?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c5' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Open messaging in the OnCuts app or on the web.</li>
-                        <li>Chat with your barber to coordinate details or share reference photos.</li>
+                        <li>After they accept your request, open messaging in the OnCuts app or on the web.</li>
+                        <li>Chat to coordinate details or share reference photos.</li>
                       </ol>
                     </div>
                   </div>
@@ -324,7 +330,9 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes. Stripe processes all payments. We never store your card details. Stripe handles everything with bank-level encryption.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Yes. Stripe processes all card payments. We never store your card details. Stripe handles everything with bank-level encryption.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -354,10 +362,10 @@ export default function LandingPage() {
                           <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             OnCuts Provider
                           </a>{' '}
-                          from the App Store.
+                          from the App Store, or use the operator web dashboard.
                         </li>
                         <li>Set up your services, prices, availability, and portfolio.</li>
-                        <li>Connect Stripe to start accepting bookings.</li>
+                        <li>Finish Stripe Connect in Payouts so clients can book and pay you.</li>
                       </ol>
                     </div>
                   </div>
@@ -374,9 +382,9 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>You keep 85% of every payment.</li>
+                        <li>You keep 85% of each card service payment (OnCuts takes 15%).</li>
                         <li>You keep 100% of tips.</li>
-                        <li>OnCuts takes a 15% platform fee, far less than the 50% many shops take.</li>
+                        <li>Some operators get a few early card bookings with $0 platform fee before the 15% rate applies.</li>
                       </ol>
                     </div>
                   </div>
@@ -393,9 +401,9 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Mark the booking complete in OnCuts Provider or your barber dashboard after the haircut.</li>
-                        <li>The client pays through OnCuts.</li>
-                        <li>Funds deposit directly to your connected Stripe account.</li>
+                        <li>Mark the booking complete in OnCuts Provider or your web dashboard after the service.</li>
+                        <li>The client pays through OnCuts with card or digital wallet.</li>
+                        <li>Card take-home goes to your Stripe Express balance, then to your bank.</li>
                       </ol>
                     </div>
                   </div>
@@ -406,39 +414,51 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b4')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I manage my schedule?</h4>
+                    <h4 className="font-medium text-gray-900">When do payouts reach my bank?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b4' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Set your weekly hours in OnCuts Provider or your barber dashboard.</li>
-                        <li>Block specific dates or times when needed.</li>
-                        {/* Google Calendar integration (disabled)
-                        <li>Optionally connect Google Calendar to auto-block busy times.</li>
-                        */}
+                        <li>New Stripe accounts usually wait about 7 to 14 business days after the first live card payment before the first bank payout.</li>
+                        <li>After that, eligible Instant payouts can arrive in minutes; otherwise Stripe follows your Express schedule (often about 2 business days).</li>
+                        <li>Open Payouts on your operator dashboard for Stripe Express, the Stripe App, and payout Q&amp;A.</li>
                       </ol>
                     </div>
                   </div>
                 </div>
-
-                {/* Google Calendar FAQ (disabled)
-                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
-                  ...
-                </div>
-                */}
 
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
                   <button 
                     onClick={() => toggleFaq('b5')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">Can I decline booking requests?</h4>
+                    <h4 className="font-medium text-gray-900">How do I manage my schedule?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b5' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes. Accept or decline every booking request. You choose which jobs to take.</p>
+                      <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
+                        <li>Set weekly hours under Edit Schedule in OnCuts Provider or your web dashboard.</li>
+                        <li>Use Block Time for one-off unavailable dates or hours.</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b6')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Can I decline booking requests?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b6' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Yes. Accept or decline every booking request. You choose which jobs to take.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -565,10 +585,6 @@ export default function LandingPage() {
                   <Mail className="w-5 h-5" />
                   Send Message
                 </button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  This will open your email client with the message pre-filled
-                </p>
               </form>
             )}
           </div>
