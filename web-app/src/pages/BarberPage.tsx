@@ -3571,15 +3571,17 @@ function AvailabilityModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex-shrink-0 bg-white border-b border-stone-200 px-5 py-3.5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Schedule</h2>
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold">Edit Schedule</h2>
+            <p className="text-white/80 text-sm">Weekly hours and blocked time</p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-500 hover:bg-stone-100 rounded-full p-2 transition-colors"
-            aria-label="Close"
+            className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
           >
-            <X className="w-5 h-5" />
+            Close
           </button>
         </div>
 
