@@ -1,7 +1,7 @@
 /**
- * Payout Settings — modal Connect hub (same presentation as Account / Business Analytics).
+ * Payout Settings — modal Connect hub.
  * Incomplete: embedded onboarding guide + Stripe App.
- * Connected: status card + Express + Stripe App.
+ * Connected: status card + Analytics (nested) + Express + Stripe App.
  * Does not auto-dismiss when Connect becomes active.
  */
 
@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react
 import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
+import BarberAnalyticsPanel from './BarberAnalyticsPanel';
 import {
   fetchBarberConnectStatus,
   createBarberConnectOnboarding,
@@ -18,6 +19,10 @@ import {
   formatPayoutScheduleClarity,
   type BarberConnectStatus,
 } from '../services/barber-connect.service';
+import {
+  fetchBarberPerformance,
+  type BarberPerformance,
+} from '../services/barber-payout.service';
 import { isBarberStripeFullyConnected } from '../utils/stripe-connect-status';
 
 const STRIPE_DASHBOARD_APP_STORE_URL = 'https://apps.apple.com/app/id978516833';
@@ -25,6 +30,37 @@ const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
 const ONCUTS_URL = 'https://oncuts.com';
 const STRIPE_PURPLE_BTN =
   'w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-4 py-3.5 transition-colors disabled:opacity-60';
+
+const EMPTY_PERFORMANCE: BarberPerformance = {
+  has_barber_profile: false,
+  totalRevenue: 0,
+  totalBarberEarnings: 0,
+  totalPlatformFees: 0,
+  totalTips: 0,
+  completedBookings: 0,
+  cancelledBookings: 0,
+  pendingRequests: 0,
+  acceptedUpcoming: 0,
+  uniqueClients: 0,
+  repeatClientPct: 0,
+  completionRatePct: 0,
+  cardRevenue: 0,
+  cardCount: 0,
+  cardTips: 0,
+  cashRevenue: 0,
+  cashCount: 0,
+  cashTips: 0,
+  averageRating: 0,
+  totalReviews: 0,
+  averageBookingsPerDay: 0,
+  averageBookingsPerWeek: 0,
+  averageBookingsPerMonth: 0,
+  averageRevenuePerDay: 0,
+  averageRevenuePerWeek: 0,
+  averageRevenuePerMonth: 0,
+  averageCostPerAppointment: 0,
+  averageTakeHomePerAppointment: 0,
+};
 
 const LEARN_MORE_LINK_CLASS =
   'text-purple-600 bg-purple-50 px-1 rounded underline font-semibold hover:text-purple-800 hover:bg-purple-100';
@@ -194,15 +230,12 @@ interface PayoutSettingsScreenProps {
   onClose: () => void;
   /** Refresh parent Stripe gate after status changes (does not dismiss this screen). */
   onStatusChange?: () => void;
-  /** Open Business Analytics (Performance / Clients). */
-  onOpenAnalytics?: () => void;
 }
 
 export default function PayoutSettingsScreen({
   isOpen,
   onClose,
   onStatusChange,
-  onOpenAnalytics,
 }: PayoutSettingsScreenProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,6 +248,10 @@ export default function PayoutSettingsScreen({
   );
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
+  const [panel, setPanel] = useState<'payouts' | 'analytics'>('payouts');
+  const [performance, setPerformance] = useState<BarberPerformance>(EMPTY_PERFORMANCE);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [analyticsRefreshSignal, setAnalyticsRefreshSignal] = useState(0);
   const loadRef = useRef<() => Promise<BarberConnectStatus | null>>(async () => null);
 
   const load = useCallback(async () => {
@@ -241,16 +278,44 @@ export default function PayoutSettingsScreen({
       setStripeTabOpened(false);
       setPlatformSetupBlocked(null);
       setChecklistOpen(false);
+      setPanel('payouts');
       void loadRef.current();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsAnimating(true));
       });
     } else {
       setIsAnimating(false);
-      const t = setTimeout(() => setIsVisible(false), 150);
+      const t = setTimeout(() => {
+        setIsVisible(false);
+        setPanel('payouts');
+      }, 150);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
+  const loadPerformance = useCallback(async () => {
+    try {
+      setPerformanceLoading(true);
+      const perf = await fetchBarberPerformance();
+      setPerformance(perf);
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not load business analytics');
+      setPerformance(EMPTY_PERFORMANCE);
+    } finally {
+      setPerformanceLoading(false);
+    }
+  }, []);
+
+  const openAnalytics = () => {
+    setPanel('analytics');
+    void loadPerformance();
+  };
+
+  const handleAnalyticsRefresh = async () => {
+    await loadPerformance();
+    setAnalyticsRefreshSignal((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -375,7 +440,7 @@ export default function PayoutSettingsScreen({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Payout Settings"
+      aria-label={panel === 'analytics' ? 'Business Analytics' : 'Payout Settings'}
     >
       <div
         className={`relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
@@ -383,20 +448,58 @@ export default function PayoutSettingsScreen({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-30 shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold">Payout Settings</h2>
-            <p className="text-white/80 text-sm">Stripe Connect and Express dashboard</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-          >
-            Close
-          </button>
+        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+          {panel === 'analytics' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setPanel('payouts')}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors shrink-0"
+                aria-label="Back to Payout Settings"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <h2 className="text-xl sm:text-2xl font-bold truncate">Business Analytics</h2>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
+              >
+                Close
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold">Payout Settings</h2>
+                <p className="text-white/80 text-sm">Stripe Connect and Express dashboard</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
+              >
+                Close
+              </button>
+            </>
+          )}
         </div>
 
+        {panel === 'analytics' ? (
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-stone-50">
+            <BarberAnalyticsPanel
+              performance={performance}
+              isLoadingPerformance={performanceLoading}
+              payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
+                instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
+              })}
+              refreshSignal={analyticsRefreshSignal}
+              onRefresh={handleAnalyticsRefresh}
+            />
+          </div>
+        ) : (
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">
           {loading && !connectStatus ? (
             <div className="text-center py-16">
@@ -421,23 +524,28 @@ export default function PayoutSettingsScreen({
                 </p>
               </section>
 
-              <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={openAnalytics}
+                className="w-full px-4 py-3.5 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-colors border border-gray-300"
+              >
+                Analytics
+              </button>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">Stripe Express</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Manage your bank account, tax details, payouts, and statements in Stripe Express.
+                </p>
                 <button
                   type="button"
-                  onClick={() => onOpenAnalytics?.()}
-                  className="flex-1 px-4 py-3.5 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-colors border border-gray-300"
-                >
-                  Analytics
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-4 py-3.5 transition-colors disabled:opacity-60"
+                  className={STRIPE_PURPLE_BTN}
                   onClick={() => void openStripeDashboard()}
                   disabled={busy !== null}
                 >
-                  {busy === 'dashboard' ? 'Opening…' : 'Payouts'}
+                  {busy === 'dashboard' ? 'Opening…' : 'Open Stripe Express'}
                 </button>
-              </div>
+              </section>
 
               <StripeAppSection />
             </div>
@@ -568,6 +676,7 @@ export default function PayoutSettingsScreen({
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

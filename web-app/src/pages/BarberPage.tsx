@@ -1128,10 +1128,6 @@ export default function BarberPage() {
       onStatusChange={() => {
         void stripeGate.refresh();
       }}
-      onOpenAnalytics={() => {
-        setShowPayoutSettingsScreen(false);
-        setShowPayoutSettings(true);
-      }}
     />
 
     {/* Blocking Connect gate — separate from schedule hub → Payouts */}
