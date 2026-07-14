@@ -211,17 +211,14 @@ function StripeAppSection({ className = '' }: { className?: string }) {
     <section
       className={`rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 space-y-3 flex flex-col ${className}`}
     >
-      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Stripe App</h3>
-      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
-        Optional — track balances and payout activity on your phone.
-      </p>
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 text-center">Stripe App</h3>
       <a
         href={STRIPE_DASHBOARD_APP_STORE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center w-full px-3 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm font-semibold text-gray-800 hover:bg-gray-50 text-center"
+        className="inline-flex items-center justify-center w-full px-3 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm font-semibold text-gray-800 hover:bg-gray-50 text-center mt-auto"
       >
-        Get Stripe Dashboard app
+        Get Stripe App
       </a>
     </section>
   );
@@ -527,13 +524,10 @@ export default function PayoutSettingsScreen({
 
               <div className="grid grid-cols-2 gap-3 items-stretch">
                 <section className="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 space-y-3 flex flex-col">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Stripe Express</h3>
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
-                    Manage your bank account, tax details, payouts, and statements in Stripe Express.
-                  </p>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 text-center">Stripe Express</h3>
                   <button
                     type="button"
-                    className="w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-3 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-60"
+                    className="w-full bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-3 py-2.5 text-xs sm:text-sm transition-colors disabled:opacity-60 mt-auto"
                     onClick={() => void openStripeDashboard()}
                     disabled={busy !== null}
                   >
