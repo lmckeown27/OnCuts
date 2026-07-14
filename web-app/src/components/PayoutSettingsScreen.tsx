@@ -227,37 +227,36 @@ function StripeAppSection({ className = '' }: { className?: string }) {
 type PayoutFaqItem = { id: string; question: string; answer: string };
 
 function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqItem[] {
-  const timing = formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
-    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
-  });
+  const delay =
+    typeof connectStatus?.payoutSchedule?.delayDays === 'number' &&
+    connectStatus.payoutSchedule.delayDays >= 0
+      ? connectStatus.payoutSchedule.delayDays
+      : 2;
+  const instant = Boolean(connectStatus?.instantPayoutsEnabled);
 
   return [
     {
       id: 'first-payout',
       question: "Why haven't I received money from my first client?",
       answer:
-        'Card payments go to your Stripe Express balance first — not straight to your bank app. ' +
-        'If Instant Payouts aren’t available for that payment (new accounts, unsupported banks, or Instant balance still settling), ' +
-        'Stripe sends funds on your Express schedule. Also confirm the booking was paid by card and completed in OnCuts.',
+        'Card funds land in Stripe Express first, then your bank. Confirm the booking was paid by card in OnCuts.',
     },
     {
       id: 'how-fast',
       question: 'How fast do payouts reach my bank?',
-      answer: timing,
+      answer: instant
+        ? `Eligible Instant payouts can arrive in minutes. Otherwise Stripe usually pays about ${delay} business day${delay === 1 ? '' : 's'} after funds clear.`
+        : `Stripe usually pays your bank about ${delay} business day${delay === 1 ? '' : 's'} after card funds clear.`,
     },
     {
       id: 'where-money',
       question: 'Where can I see my balance or bank details?',
-      answer:
-        'Open Stripe Express below to view your balance, payout history, and linked bank or debit card. ' +
-        'You can also install the Stripe App to track activity on your phone.',
+      answer: 'Open Stripe Express below for balances, payout history, and bank settings.',
     },
     {
       id: 'cash-vs-card',
       question: 'What about cash payments?',
-      answer:
-        'Cash stays between you and the client — OnCuts doesn’t move cash through Stripe. ' +
-        'Only card take-home is deposited via Connect.',
+      answer: 'Cash stays between you and the client. Only card take-home goes through Stripe.',
     },
   ];
 }
@@ -268,7 +267,7 @@ function PayoutFaqSection({
   connectStatus: BarberConnectStatus | null;
 }) {
   const faqs = buildPayoutFaqs(connectStatus);
-  const [openId, setOpenId] = useState<string | null>(faqs[0]?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
