@@ -260,6 +260,12 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
       answer: 'Open Stripe Express below for balances, payout history, and bank settings.',
     },
     {
+      id: 'stripe-express',
+      question: 'What is Stripe Express?',
+      answer:
+        'Stripe Express is your payout dashboard. Use it to manage your bank account, tax details, balances, and payout history for OnCuts card payments.',
+    },
+    {
       id: 'stripe-app',
       question: 'What is the Stripe App?',
       answer:
