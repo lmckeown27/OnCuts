@@ -3607,6 +3607,16 @@ function AvailabilityModal({
             </div>
           )}
 
+          {onOpenBlockTime && (
+            <button
+              type="button"
+              onClick={() => onOpenBlockTime()}
+              className="w-full px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+            >
+              Block Time
+            </button>
+          )}
+
           <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-4">
             <div>
               <h3 className="text-base font-semibold text-gray-900">Weekly schedule</h3>
@@ -3731,24 +3741,6 @@ function AvailabilityModal({
               <p className="text-xs text-gray-400 text-right">Saving…</p>
             )}
           </section>
-
-          {onOpenBlockTime && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">Block time</h3>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Block off one-time dates when you&apos;re unavailable.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenBlockTime()}
-                className="w-full px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
-              >
-                Block Time
-              </button>
-            </section>
-          )}
         </PullToRefresh>
       </div>
     </div>
