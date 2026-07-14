@@ -589,16 +589,6 @@ export default function BarberPage() {
                     >
                       Account
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPayoutSettings(true);
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Business Analytics
-                    </button>
                     {isAdmin && (
                       <>
                         <div className="border-t border-gray-200 my-1" />
@@ -1137,6 +1127,10 @@ export default function BarberPage() {
       onClose={() => setShowPayoutSettingsScreen(false)}
       onStatusChange={() => {
         void stripeGate.refresh();
+      }}
+      onOpenAnalytics={() => {
+        setShowPayoutSettingsScreen(false);
+        setShowPayoutSettings(true);
       }}
     />
 
@@ -2051,7 +2045,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             <button
               type="button"
               onClick={() => onOpenPayoutSettings?.()}
-              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-[#635BFF] hover:bg-[#5851E6] text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Payouts
             </button>

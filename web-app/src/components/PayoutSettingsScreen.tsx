@@ -194,12 +194,15 @@ interface PayoutSettingsScreenProps {
   onClose: () => void;
   /** Refresh parent Stripe gate after status changes (does not dismiss this screen). */
   onStatusChange?: () => void;
+  /** Open Business Analytics (Performance / Clients). */
+  onOpenAnalytics?: () => void;
 }
 
 export default function PayoutSettingsScreen({
   isOpen,
   onClose,
   onStatusChange,
+  onOpenAnalytics,
 }: PayoutSettingsScreenProps) {
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -418,20 +421,23 @@ export default function PayoutSettingsScreen({
                 </p>
               </section>
 
-              <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900">Stripe Express</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Manage your bank account, tax details, payouts, and statements in Stripe Express.
-                </p>
+              <div className="flex flex-col sm:flex-row gap-2.5">
                 <button
                   type="button"
-                  className={STRIPE_PURPLE_BTN}
+                  onClick={() => onOpenAnalytics?.()}
+                  className="flex-1 px-4 py-3.5 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-colors border border-gray-300"
+                >
+                  Analytics
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 bg-[#635BFF] hover:bg-[#5851E6] text-white font-semibold rounded-xl px-4 py-3.5 transition-colors disabled:opacity-60"
                   onClick={() => void openStripeDashboard()}
                   disabled={busy !== null}
                 >
-                  {busy === 'dashboard' ? 'Opening…' : 'Open Stripe Express'}
+                  {busy === 'dashboard' ? 'Opening…' : 'Payouts'}
                 </button>
-              </section>
+              </div>
 
               <StripeAppSection />
             </div>
