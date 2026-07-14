@@ -468,12 +468,12 @@ export default function LandingPage() {
 
           {/* Team join */}
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
-            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Wanna join the Team?</h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">Wanna join the Team?</h3>
             <button
               onClick={openContactPopup}
-              className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-brand-500 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-brand-600"
+              className="mt-8 inline-flex items-center gap-2.5 px-8 py-4 bg-brand-500 font-semibold text-lg sm:text-xl text-white rounded-xl shadow-md transition-colors hover:bg-brand-600"
             >
-              <Mail className="h-5 w-5" />
+              <Mail className="h-6 w-6" />
               Hit us up
             </button>
           </div>
