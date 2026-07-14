@@ -236,17 +236,23 @@ function buildPayoutFaqs(connectStatus: BarberConnectStatus | null): PayoutFaqIt
 
   return [
     {
+      id: 'why-stripe',
+      question: 'Why do payments go through a third party (Stripe)?',
+      answer:
+        'Stripe handles card money so OnCuts never holds your payouts. The wait and checks reduce refund and chargeback risk, verify your identity (KYC), watch early activity for fraud, and meet legal payment rules. That protects you, your clients, and the platform.',
+    },
+    {
       id: 'first-payout',
       question: "Why haven't I received money from my first client?",
       answer:
-        'Card funds land in Stripe Express first, then your bank. Confirm the booking was paid by card in OnCuts.',
+        'New Stripe accounts have a one-time wait of about 7 to 14 business days after you link a bank and process your first live card payment. Stripe cannot waive this. Check Stripe Express for any Action Required items. After that wait, payouts follow your normal schedule.',
     },
     {
       id: 'how-fast',
-      question: 'How fast do payouts reach my bank?',
+      question: 'How fast do payouts reach my bank after the first wait?',
       answer: instant
-        ? `Eligible Instant payouts can arrive in minutes. Otherwise Stripe usually pays about ${delay} business day${delay === 1 ? '' : 's'} after funds clear.`
-        : `Stripe usually pays your bank about ${delay} business day${delay === 1 ? '' : 's'} after card funds clear.`,
+        ? `After the first wait ends, eligible Instant payouts can arrive in minutes. Otherwise Stripe usually pays about ${delay} business day${delay === 1 ? '' : 's'} after funds clear.`
+        : `After the first wait ends, Stripe usually pays your bank about ${delay} business day${delay === 1 ? '' : 's'} after card funds clear.`,
     },
     {
       id: 'where-money',
