@@ -200,7 +200,7 @@ export default function LandingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                For Customers
+                For Clients
               </button>
               <button
                 onClick={() => {
@@ -213,7 +213,7 @@ export default function LandingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                For Barbers
+                For Operators
               </button>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function LandingPage() {
             {/* For Consumers Column - Hidden on mobile when barbers selected */}
             <div className={`${faqCategory === 'barbers' ? 'hidden md:block' : ''}`}>
               <h3 className="text-xl font-bold text-gray-900 mb-4 text-center hidden md:block">
-                For Customers
+                For Clients
               </h3>
               <div className="space-y-3">
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
@@ -331,10 +331,10 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* For Barbers Column - Hidden on mobile when consumers selected */}
+            {/* For Operators Column - Hidden on mobile when consumers selected */}
             <div className={`${faqCategory === 'consumers' ? 'hidden md:block' : ''}`}>
               <h3 className="text-xl font-bold text-gray-900 mb-4 text-center hidden md:block">
-                For Barbers
+                For Operators
               </h3>
               <div className="space-y-3">
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
@@ -342,7 +342,7 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b1')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I join as a barber?</h4>
+                    <h4 className="font-medium text-gray-900">How do I join as an operator?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b1' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -394,7 +394,7 @@ export default function LandingPage() {
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
                         <li>Mark the booking complete in OnCuts Provider or your barber dashboard after the haircut.</li>
-                        <li>The customer pays through OnCuts.</li>
+                        <li>The client pays through OnCuts.</li>
                         <li>Funds deposit directly to your connected Stripe account.</li>
                       </ol>
                     </div>
@@ -450,7 +450,7 @@ export default function LandingPage() {
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
             <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect</h3>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Whether you&apos;re a prospective barber, a campus partner, or interested in the OnCuts System, we&apos;d love to hear from you
+              Whether you&apos;re a prospective operator, a campus partner, or interested in the OnCuts System, we&apos;d love to hear from you
             </p>
             <button
               onClick={openContactPopup}
