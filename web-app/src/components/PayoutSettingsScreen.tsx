@@ -443,7 +443,7 @@ export default function PayoutSettingsScreen({
       aria-label={panel === 'analytics' ? 'Business Analytics' : 'Payout Settings'}
     >
       <div
-        className={`relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
+        className={`relative bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
           isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
