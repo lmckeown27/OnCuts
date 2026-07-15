@@ -39,7 +39,7 @@ export function buildContactComposeUrl(options: {
   const { senderEmail, senderName, message } = options;
   const to = TEAM_CONTACT_EMAIL;
   const subject = `OnCuts Team Interest from ${senderName}`;
-  const body = `Name: ${senderName}\nEmail: ${senderEmail}\n\nMessage:\n${message}`;
+  const body = `Dear OnCuts Team.\n\n${message}\n\nFrom ${senderName}`;
   const domain = emailDomain(senderEmail);
 
   if (isGmailAddress(domain)) {
