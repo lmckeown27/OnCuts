@@ -16,6 +16,7 @@ import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPro
 import type { CollegeTown } from '../types';
 import { writeStoredCollegeTown } from '../utils/collegeTowns';
 import { setBrowseConstrainByDistance } from '../utils/consumerBrowseDistancePreference';
+import { buildContactComposeUrl, openContactCompose } from '../utils/contactComposeUrl';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
 
 export default function LandingPage() {
@@ -524,10 +525,12 @@ export default function LandingPage() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Open mailto with pre-filled content
-                  const subject = encodeURIComponent(`OnCuts Team Interest from ${contactForm.name}`);
-                  const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
-                  window.location.href = `mailto:liam.mckeown38415@gmail.com?subject=${subject}&body=${body}`;
+                  const composeUrl = buildContactComposeUrl({
+                    senderEmail: contactForm.email,
+                    senderName: contactForm.name,
+                    message: contactForm.message,
+                  });
+                  openContactCompose(composeUrl);
                   setContactSubmitted(true);
                 }}
                 className="space-y-4"
