@@ -249,7 +249,6 @@ export default function UniversitySelector({
           ) : searchQuery.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <p>Start typing to search</p>
-              <p className="text-xs mt-1 text-gray-400">{allTowns.length} college towns available</p>
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
