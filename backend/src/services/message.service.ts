@@ -71,6 +71,7 @@ const INBOX_CONVERSATION_SELECT = `
   b."priceUsdCents" as booking_price_cents,
   COALESCE(b."requestedAt", c.scheduled_time) as booking_scheduled_time,
   b.status as linked_booking_status,
+  COALESCE(booking_barber.provider_type, 'barber') AS barber_provider_type,
   (
     SELECT m.content
     FROM messages m
@@ -109,9 +110,26 @@ const INBOX_CONVERSATION_JOINS = `
     END = u.id
   )
   LEFT JOIN barbers br ON u.id = br."userId"
-  LEFT JOIN bookings b ON c.booking_id = b.id`;
+  LEFT JOIN bookings b ON c.booking_id = b.id
+  LEFT JOIN barbers booking_barber ON booking_barber.id = b."barberId"`;
 
-function formatInboxConversation(conv: Record<string, unknown>) {
+/** Null/undefined provider_type → "barber"; preserve stored values like "beauty". */
+export function resolveMessagingProviderType(raw: unknown): string {
+  if (raw == null) return 'barber';
+  return String(raw);
+}
+
+/** Compatibility keys on booking payloads for client apps. */
+export function bookingProviderTypeFields(raw: unknown): {
+  providerType: string;
+  provider_type: string;
+} {
+  const providerType = resolveMessagingProviderType(raw);
+  return { providerType, provider_type: providerType };
+}
+
+export function formatInboxConversation(conv: Record<string, unknown>) {
+  const providerFields = bookingProviderTypeFields(conv.barber_provider_type);
   return {
     id: conv.conversation_id,
     bookingId: conv.booking_id,
@@ -131,6 +149,7 @@ function formatInboxConversation(conv: Record<string, unknown>) {
           status: String(conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
           barberName: conv.conv_barber_name,
           consumerName: conv.conv_consumer_name,
+          ...providerFields,
         }
       : null,
     otherUser: {
@@ -361,10 +380,62 @@ class MessageService {
         }))
         .reverse(); // Oldest first
 
+      // Booking context + provider type via conversations.booking_id -> bookings.barberId -> barbers.provider_type
+      const bookingResult = await pool.query(
+        `SELECT
+          c.booking_id,
+          c.service_name as conv_service_name,
+          c.service_price as conv_service_price,
+          c.scheduled_time as conv_scheduled_time,
+          c.location as conv_location,
+          c.notes as conv_notes,
+          c.booking_status as conv_booking_status,
+          c.barber_name as conv_barber_name,
+          c.consumer_name as conv_consumer_name,
+          b.id as booking_id_ref,
+          b."barberId" as booking_barber_id,
+          b."serviceType" as booking_service_type,
+          b."priceUsdCents" as booking_price_cents,
+          COALESCE(b."requestedAt", c.scheduled_time) as booking_scheduled_time,
+          b.status as linked_booking_status,
+          COALESCE(booking_barber.provider_type, 'barber') AS barber_provider_type
+        FROM conversations c
+        LEFT JOIN bookings b ON c.booking_id = b.id
+        LEFT JOIN barbers booking_barber ON booking_barber.id = b."barberId"
+        WHERE c.id = $1`,
+        [conversationId]
+      );
+
+      const bookingRow = bookingResult.rows[0] as Record<string, unknown> | undefined;
+      const providerFields = bookingProviderTypeFields(bookingRow?.barber_provider_type);
+      const booking =
+        bookingRow && (bookingRow.conv_service_name || bookingRow.booking_id_ref)
+          ? {
+              id: bookingRow.booking_id_ref || null,
+              barberId: bookingRow.booking_barber_id || null,
+              serviceName: bookingRow.conv_service_name || bookingRow.booking_service_type || 'Service',
+              servicePrice: bookingRow.conv_service_price
+                ? parseFloat(String(bookingRow.conv_service_price))
+                : bookingRow.booking_price_cents
+                  ? Number(bookingRow.booking_price_cents) / 100
+                  : null,
+              scheduledTime: bookingRow.booking_scheduled_time || bookingRow.conv_scheduled_time,
+              location: bookingRow.conv_location || 'TBD',
+              notes: bookingRow.conv_notes || null,
+              status: String(
+                bookingRow.linked_booking_status || bookingRow.conv_booking_status || 'pending'
+              ).toLowerCase(),
+              barberName: bookingRow.conv_barber_name,
+              consumerName: bookingRow.conv_consumer_name,
+              ...providerFields,
+            }
+          : null;
+
       return {
         success: true,
         data: {
           messages,
+          booking,
           pagination: {
             page: parseInt(page.toString()),
             limit: parseInt(limit.toString()),
