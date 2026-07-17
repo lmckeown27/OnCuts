@@ -2030,7 +2030,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
               {adjacentWeekBookingCounts.previous > 0 ? (
-                <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
                   {adjacentWeekBookingCounts.previous > 9 ? '9+' : adjacentWeekBookingCounts.previous}
                 </span>
               ) : null}
@@ -2065,7 +2065,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
               {adjacentWeekBookingCounts.next > 0 ? (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
                   {adjacentWeekBookingCounts.next > 9 ? '9+' : adjacentWeekBookingCounts.next}
                 </span>
               ) : null}
