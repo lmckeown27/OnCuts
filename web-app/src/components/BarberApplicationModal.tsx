@@ -24,6 +24,8 @@ interface ApplicationForm {
   licenseDeclared: 'yes' | 'no' | '';
   licenseNumber: string;
   licenseAttestation: boolean;
+  /** Filters which services can be selected */
+  operatorType: 'barber' | 'beauty' | '';
   specialties: string[];
   portfolioDescription: string;
   whyBeBarber: string;
@@ -44,6 +46,7 @@ const emptyApplicationForm = (): ApplicationForm => ({
   licenseDeclared: '',
   licenseNumber: '',
   licenseAttestation: false,
+  operatorType: '',
   specialties: [],
   portfolioDescription: '',
   whyBeBarber: '',
@@ -280,10 +283,29 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   // Step 1: Experience & Skills (+ name/email in guest mode)
   const canProceedStep1 =
     form.yearsExperience &&
+    form.operatorType &&
     form.specialties.length > 0 &&
     phoneDigits(form.phoneNumber).length === 10 &&
     (!guestMode ||
       (form.firstName.trim() && form.lastName.trim() && form.email && isValidEmail(form.email)));
+
+  const availableServices = form.operatorType
+    ? SERVICE_TYPES.filter((service) => service.providerType === form.operatorType)
+    : [];
+
+  const handleOperatorTypeSelect = (operatorType: 'barber' | 'beauty') => {
+    setForm((prev) => {
+      if (prev.operatorType === operatorType) return prev;
+      const allowed = new Set(
+        SERVICE_TYPES.filter((s) => s.providerType === operatorType).map((s) => s.name),
+      );
+      return {
+        ...prev,
+        operatorType,
+        specialties: prev.specialties.filter((name) => allowed.has(name)),
+      };
+    });
+  };
 
   // Step 2: Barber license verification
   const canProceedStep2 =
@@ -615,9 +637,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       Your Name *
                     </label>
-                    <p className="text-xs text-gray-600 mb-3">
-                      Enter your full name as you'd like it to appear on your barber profile.
-                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"
@@ -641,9 +660,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       Your Email Address *
                     </label>
-                    <p className="text-xs text-gray-600 mb-3">
-                      We'll use this to contact you about your application.
-                    </p>
                     <input
                       type="email"
                       value={form.email}
@@ -665,9 +681,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Phone Number *
                 </label>
-                <p className="text-xs text-gray-500 mb-2">
-                  The OnCuts team may reach out to you via text or call.
-                </p>
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -747,12 +760,42 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  What Type of Operator are you? *
+                </label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleOperatorTypeSelect('barber')}
+                    className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-colors ${
+                      form.operatorType === 'barber'
+                        ? 'border-gray-900 bg-primary-50 text-gray-900'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Barber
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOperatorTypeSelect('beauty')}
+                    className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-colors ${
+                      form.operatorType === 'beauty'
+                        ? 'border-gray-900 bg-primary-50 text-gray-900'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Beauty
+                  </button>
+                </div>
+              </div>
+
+              {form.operatorType && (
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   What services will you offer? * (Select all that apply)
                 </label>
-                <p className="text-xs text-gray-500 mb-3">These will be your specialties on your barber profile.</p>
                 <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto">
-                  {SERVICE_TYPES.map((service) => {
+                  {availableServices.map((service) => {
                     const isSelected = form.specialties.includes(service.name);
                     return (
                       <div
@@ -777,6 +820,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   })}
                 </div>
               </div>
+              )}
             </div>
           ) : step === 2 ? (
             /* Step 2: Barber license verification */
@@ -968,6 +1012,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     {form.yearsExperience === 'less-than-1' ? 'Less than 1 year' :
                      form.yearsExperience === '1-2' ? '1-2 years' :
                      form.yearsExperience === '3-5' ? '3-5 years' : '5+ years'}
+                  </p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Operator Type</p>
+                  <p className="font-medium">
+                    {form.operatorType === 'beauty' ? 'Beauty' : 'Barber'}
                   </p>
                 </div>
 
