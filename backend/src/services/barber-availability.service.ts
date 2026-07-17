@@ -30,13 +30,15 @@ export const BOOKING_SLOT_INCREMENT_MINUTES = 15;
 export const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
 
 /**
- * Only active reservations block the calendar. Concluded bookings (PAID, COMPLETED),
- * cancellations, and rejections must not prevent rescheduling or new bookings.
+ * Reservations that occupy the calendar / block new bookings.
+ * COMPLETED (request-for-payment) stays busy until PAID; PAID, cancellations,
+ * and rejections free the slot.
  */
 export const BOOKING_STATUSES_THAT_BLOCK_SCHEDULE = [
   'PENDING',
   'ACCEPTED',
   'IN_PROGRESS',
+  'COMPLETED',
 ] as const;
 
 /** SQL predicate, e.g. `AND ${bookingStatusBlocksScheduleSql('status')}` */
@@ -224,7 +226,7 @@ type DbQueryable = Pick<typeof pool, 'query'>;
 
 /**
  * Returns the conflicting booking start time when another active reservation overlaps.
- * PAID/COMPLETED/CANCELLED bookings are ignored.
+ * PAID/CANCELLED/REJECTED bookings are ignored; COMPLETED (awaiting payment) still conflicts.
  */
 export async function assertNoBarberSlotConflict(
   client: DbQueryable,

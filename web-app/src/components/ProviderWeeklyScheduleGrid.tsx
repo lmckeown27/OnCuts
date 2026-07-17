@@ -125,7 +125,7 @@ const formatBookingStatusLabel = (status: string): string => {
     ACCEPTED: 'Accepted',
     PAID: 'Paid',
     IN_PROGRESS: 'In progress',
-    COMPLETED: 'Completed',
+    COMPLETED: 'Awaiting payment',
     DISPUTED: 'Disputed',
     CANCELLED: 'Cancelled',
     REFUNDED: 'Refunded',

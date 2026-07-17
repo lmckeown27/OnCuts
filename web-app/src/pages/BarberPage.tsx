@@ -1418,9 +1418,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     [confirmedBookings, hiddenPaidBookingIds]
   );
 
-  /** Statuses that occupy schedule slots (PAID / COMPLETED do not). Matches backend busy list. */
+  /** Statuses that occupy schedule slots. COMPLETED (awaiting payment) stays until PAID. Matches backend busy list. */
   const SCHEDULE_OCCUPYING_STATUSES = useMemo(
-    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS']),
+    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED']),
     []
   );
 
@@ -1550,7 +1550,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        // PENDING + ACCEPTED occupy the schedule; COMPLETED kept for awaiting-payment UI; PAID excluded from schedule
+        // PENDING/ACCEPTED/IN_PROGRESS/COMPLETED occupy the schedule; PAID is fetched for history but not shown on calendar
         const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
           role: 'barber',
           status: 'PENDING,ACCEPTED,COMPLETED,PAID',

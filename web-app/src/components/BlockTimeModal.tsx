@@ -31,7 +31,7 @@ type ConflictingBooking = {
   consumer?: { firstName?: string; lastName?: string };
 };
 
-const CONFLICT_STATUSES = new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS']);
+const CONFLICT_STATUSES = new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED']);
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
@@ -200,7 +200,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   const findConflicts = async (): Promise<ConflictingBooking[]> => {
     const response = await api.get<{ bookings: ConflictingBooking[] }>('/bookings-simple', {
       role: 'barber',
-      status: 'PENDING,ACCEPTED,IN_PROGRESS',
+      status: 'PENDING,ACCEPTED,IN_PROGRESS,COMPLETED',
     });
     const bookings = response.bookings || [];
     const rangeStart = hhmmToMinutes(effectiveRange.start);
