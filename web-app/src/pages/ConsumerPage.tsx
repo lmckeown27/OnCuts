@@ -1956,8 +1956,6 @@ function DiscoveryView({
         displayDistanceMiles={displayDistanceMiles}
         onMaxDistancePreview={handleMaxDistancePreview}
         onMaxDistanceCommitted={handleMaxDistanceCommitted}
-        resultsCount={filteredBarbers.length}
-        showResultsCount={false}
         missingTownCoords={latitude == null || longitude == null}
       />
 
@@ -2016,24 +2014,10 @@ function DiscoveryView({
         </div>
       )}
 
-      {!loading &&
-        (filteredBarbers.length > 0 || barberSearchQuery.trim().length > 0) && (
-        <p className="text-center text-xs text-gray-500 mb-4">
-          {filteredBarbers.length} provider{filteredBarbers.length !== 1 ? 's' : ''} found
-        </p>
-      )}
-
       {loading ? (
         <Loading />
       ) : (
         <>
-      {/* Price disclaimer */}
-      {filteredBarbers && filteredBarbers.length > 0 && (
-        <p className="text-center text-xs text-gray-400 mt-4 italic">
-          Prices are set by individual barbers
-        </p>
-      )}
-
       {/* No Results - Radius */}
       {constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
