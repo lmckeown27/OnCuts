@@ -525,10 +525,10 @@ export default function BarberPage() {
     <>
     <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
-      {/* Header — match iOS: Chats · Admin · Bookings · Account */}
+      {/* Header — Chats (left) · Admin (center) · Bookings · Account (right) */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 relative">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 type="button"
@@ -545,18 +545,18 @@ export default function BarberPage() {
                   </span>
                 )}
               </button>
-
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={openAdminDashboard}
-                  className="flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
-                  aria-label="Admin"
-                >
-                  <span className="text-xs font-semibold text-gray-700">Admin</span>
-                </button>
-              )}
             </div>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={openAdminDashboard}
+                className="absolute left-1/2 -translate-x-1/2 flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+                aria-label="Admin"
+              >
+                <span className="text-xs font-semibold text-gray-700">Admin</span>
+              </button>
+            )}
 
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <BarberBookingRequestsDropdown barberId={barberId} />
