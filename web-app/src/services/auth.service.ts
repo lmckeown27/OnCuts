@@ -75,6 +75,16 @@ class AuthService {
     return response;
   }
 
+  /**
+   * Exchange a Google ID token for OnCuts JWTs (existing accounts only).
+   * POST /auth/google — does not create accounts.
+   */
+  async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/google', { idToken });
+    this.saveAuthData(response);
+    return response;
+  }
+
   /** SMS OTP — step 1 (no auth header). */
   async requestPhoneOtp(phoneNumber: string): Promise<void> {
     await api.post('/auth/request-otp', { phoneNumber });

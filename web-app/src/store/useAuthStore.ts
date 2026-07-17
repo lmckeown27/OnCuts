@@ -15,6 +15,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setActiveRole: (role: 'admin' | 'barber' | 'consumer') => void;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
+  loginWithGoogle: (idToken: string) => Promise<{ isAdmin: boolean }>;
   loginWithPhone: (
     phoneNumber: string,
     code: string
@@ -115,6 +116,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ 
         error: errorMessage, 
         isLoading: false 
+      });
+      throw error;
+    }
+  },
+
+  loginWithGoogle: async (idToken) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await authService.loginWithGoogle(idToken);
+      const user = mapBackendUser(response.user as unknown as Record<string, unknown>);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        activeRole: null,
+      });
+      socketService.connect();
+      return { isAdmin: user.is_admin || false };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Google sign-in failed';
+      set({
+        error: errorMessage,
+        isLoading: false,
       });
       throw error;
     }
