@@ -751,10 +751,27 @@ export default function ConsumerPage() {
                   {/* Messages Button - Only for authenticated users */}
                   <button
                     onClick={openBookingsModal}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="My bookings"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    title={
+                      pendingPaymentBookings.length > 0
+                        ? 'My bookings — payment pending'
+                        : 'My bookings'
+                    }
+                    aria-label={
+                      pendingPaymentBookings.length > 0
+                        ? 'My bookings, payment awaiting'
+                        : 'My bookings'
+                    }
                   >
                     <Calendar className="w-5 h-5 text-gray-600" />
+                    {pendingPaymentBookings.length > 0 && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-bold leading-none flex items-center justify-center"
+                        aria-hidden
+                      >
+                        !
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => navigate(`${platformPrefix}/consumer/messages`)}
