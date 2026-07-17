@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Clock, Award, Check, Mail, UserX, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { X, Clock, Award, Check, Mail, UserX, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
@@ -613,7 +613,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   {/* First Name and Last Name */}
                   <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      <UserIcon className="w-4 h-4 inline mr-2 text-primary-600" />
                       Your Name *
                     </label>
                     <p className="text-xs text-gray-600 mb-3">
@@ -640,7 +639,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   {/* Email Field */}
                   <div className="bg-primary-50 border-2 border-gray-200 rounded-xl p-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      <Mail className="w-4 h-4 inline mr-2 text-primary-600" />
                       Your Email Address *
                     </label>
                     <p className="text-xs text-gray-600 mb-3">
@@ -650,7 +648,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       type="email"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="your.email@university.edu"
+                      placeholder="john@example.com"
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 bg-white ${
                         form.email && !isValidEmail(form.email) ? 'border-red-400' : 'border-gray-300'
                       }`}
