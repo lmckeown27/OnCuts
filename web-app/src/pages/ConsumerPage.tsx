@@ -18,12 +18,13 @@ import type { Barber } from '../types';
 import type { CollegeTown } from '../types';
 import {
   resolveInitialCollegeTown,
+  writeStoredCollegeTown,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
 import { TivelaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
-import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight } from '../hooks';
+import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight, useGeolocation } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -41,9 +42,11 @@ import {
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
   getBrowseConstrainByDistance,
+  getBrowseDeviceTracking,
   getBrowseMaxDistanceMiles,
   milesToKmForBrowse,
   setBrowseConstrainByDistance,
+  setBrowseDeviceTracking,
   setBrowseMaxDistanceMiles,
 } from '../utils/consumerBrowseDistancePreference';
 import {
@@ -51,12 +54,34 @@ import {
   setBrowseProviderCategory,
 } from '../utils/consumerBrowseCategoryPreference';
 import {
-  BROWSE_PROVIDER_CATEGORIES,
   browseCategoryApiParam,
   type BrowseProviderCategory,
 } from '../config/providerCategories';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
+import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
+
+function collegeTownFromGeocodePlace(place: GeocodePlace): CollegeTown {
+  const parts = place.label.split(',').map((p) => p.trim()).filter(Boolean);
+  const city = parts[0] || place.label;
+  const stateToken =
+    parts.find((p) => /^[A-Za-z]{2}$/.test(p)) ||
+    parts.find((p) => /^[A-Za-z]{2}\s+\d/.test(p))?.slice(0, 2) ||
+    'US';
+  const state = stateToken.slice(0, 2).toUpperCase();
+  return {
+    id: `place-${place.latitude.toFixed(5)}-${place.longitude.toFixed(5)}`,
+    name: place.label,
+    shortName: city,
+    city,
+    state,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    campusCount: place.placeType === 'campus' ? 1 : 0,
+    campusIds: [],
+    primaryCampusId: '',
+  };
+}
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {
@@ -1559,6 +1584,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const reviewsSectionRef = useRef<HTMLDivElement>(null);
   const [maxDistanceMiles, setMaxDistanceMilesState] = useState(getBrowseMaxDistanceMiles);
   const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
+  const [deviceTracking, setDeviceTrackingState] = useState(getBrowseDeviceTracking);
+  const [locationDraft, setLocationDraft] = useState('');
+  const [deviceLocationLabel, setDeviceLocationLabel] = useState('');
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
@@ -1569,13 +1597,27 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
+  const geo = useGeolocation();
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // College town coordinates (search center for browse radius)
-  const latitude = selectedCollegeTown?.latitude ?? null;
-  const longitude = selectedCollegeTown?.longitude ?? null;
+  // Browse center: device GPS when tracking on, otherwise selected town/place
+  const latitude = deviceTracking
+    ? (geo.latitude ?? selectedCollegeTown?.latitude ?? null)
+    : (selectedCollegeTown?.latitude ?? null);
+  const longitude = deviceTracking
+    ? (geo.longitude ?? selectedCollegeTown?.longitude ?? null)
+    : (selectedCollegeTown?.longitude ?? null);
+
+  const locationLabel = deviceTracking
+    ? (deviceLocationLabel.trim() ||
+        selectedCollegeTown?.shortName ||
+        'Location from device')
+    : (locationDraft.trim() ||
+        selectedCollegeTown?.shortName ||
+        selectedCollegeTown?.name ||
+        'Set a location');
 
   // Load saved college town when available; browse works without one (all providers).
   useEffect(() => {
@@ -1589,8 +1631,11 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         if (location.state?.fromCollegeTownSelection) {
           setBrowseConstrainByDistance(true);
           setConstrainByDistanceState(true);
+          setBrowseDeviceTracking(false);
+          setDeviceTrackingState(false);
         }
         setSelectedCollegeTown(savedTown);
+        setLocationDraft(savedTown.shortName || savedTown.name);
       }
 
       const savedFilters = readLocalStorageWithMigration(FILTER_STORAGE_KEY, [
@@ -1614,11 +1659,54 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     };
   }, [location.state, user?.campus_id]);
 
+  // Request GPS when device tracking is on
+  useEffect(() => {
+    if (!deviceTracking) return;
+    geo.requestLocation();
+  }, [deviceTracking]);
+
+  // Reverse-geocode device coords for the bold location label
+  useEffect(() => {
+    if (!deviceTracking || geo.latitude == null || geo.longitude == null) return;
+    let cancelled = false;
+    geocodeService
+      .reverseGeocode(geo.latitude, geo.longitude)
+      .then((place) => {
+        if (cancelled) return;
+        const short = place.label.split(',')[0]?.trim() || place.label;
+        setDeviceLocationLabel(short);
+      })
+      .catch(() => {
+        // Keep prior / fallback label
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [deviceTracking, geo.latitude, geo.longitude]);
+
   // Load barbers when town is resolved (or skipped) or browse preferences change
   useEffect(() => {
     if (!townHydrated) return;
+    // Wait for a GPS reading when tracking is on (unless we already have a town fallback)
+    if (
+      deviceTracking &&
+      geo.loading &&
+      geo.latitude == null &&
+      selectedCollegeTown?.latitude == null
+    ) {
+      return;
+    }
     loadBarbers();
-  }, [townHydrated, selectedCollegeTown, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
+  }, [
+    townHydrated,
+    selectedCollegeTown,
+    maxDistanceMiles,
+    constrainByDistance,
+    browseProviderCategory,
+    deviceTracking,
+    latitude,
+    longitude,
+  ]);
 
   useEffect(() => {
     applyFilters();
@@ -1759,20 +1847,36 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     setBrowseConstrainByDistance(enabled);
   };
 
+  const handleDeviceTrackingToggle = () => {
+    const next = !deviceTracking;
+    setDeviceTrackingState(next);
+    setBrowseDeviceTracking(next);
+    if (next) {
+      geo.requestLocation();
+      if (!constrainByDistance) {
+        setConstrainByDistanceState(true);
+        setBrowseConstrainByDistance(true);
+      }
+      toast.success('Device tracking on');
+    } else {
+      toast.success('Device tracking off');
+    }
+  };
+
+  const handleSelectBrowsePlace = (place: GeocodePlace) => {
+    const town = collegeTownFromGeocodePlace(place);
+    setSelectedCollegeTown(town);
+    writeStoredCollegeTown(town);
+    setLocationDraft(town.shortName || place.label);
+    setBrowseConstrainByDistance(true);
+    setConstrainByDistanceState(true);
+    toast.success(`Searching near ${town.shortName}`);
+  };
+
   const handleBrowseCategoryChange = (category: BrowseProviderCategory) => {
     setBrowseProviderCategoryState(category);
     setBrowseProviderCategory(category);
   };
-
-  const selectedBrowseCategory =
-    BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseProviderCategory) ??
-    BROWSE_PROVIDER_CATEGORIES[0];
-
-  const browseLabel = constrainByDistance && selectedCollegeTown
-    ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown.shortName}`
-    : selectedBrowseCategory.id === 'all'
-      ? 'All providers'
-      : `All ${selectedBrowseCategory.label.toLowerCase()} providers`;
 
   const searchSuggestions = useMemo(() => {
     const term = barberSearchQuery.trim().toLowerCase();
@@ -1855,9 +1959,13 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   return (
     <>
       <BrowseUtilityPill
-        browseLabel={browseLabel}
-        townShortName={selectedCollegeTown?.shortName ?? 'all areas'}
-        onChangeTown={() => navigate('/')}
+        locationLabel={locationLabel}
+        locationDraft={locationDraft}
+        onLocationDraftChange={setLocationDraft}
+        onSelectPlace={handleSelectBrowsePlace}
+        deviceTracking={deviceTracking}
+        onDeviceTrackingChange={handleDeviceTrackingToggle}
+        deviceTrackingBusy={deviceTracking && geo.loading}
         searchQuery={barberSearchQuery}
         onSearchQueryChange={setBarberSearchQuery}
         searchSuggestions={searchSuggestions}
@@ -1889,12 +1997,12 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       {constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
         barbers.length === 0 &&
-        selectedCollegeTown &&
+        (latitude != null || selectedCollegeTown) &&
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
           <p className="text-gray-600 text-base sm:text-lg mb-2">
-            No barbers within {Math.round(maxDistanceMiles)} mi of {selectedCollegeTown.shortName}
+            No barbers within {Math.round(maxDistanceMiles)} mi of {locationLabel}
           </p>
           <p className="text-xs sm:text-sm text-gray-500 mb-4">
             {barbersMeta?.total_before_distance_filter
@@ -1923,14 +2031,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
               Check back soon as more barbers join the platform!
             </p>
-            {selectedCollegeTown && (
-            <button 
-              onClick={() => navigate('/')}
-              className="text-primary-600 hover:text-black underline"
-            >
-              Change search area
-            </button>
-            )}
           </div>
           
           {/* Become a barber CTA - separated with vertical space */}

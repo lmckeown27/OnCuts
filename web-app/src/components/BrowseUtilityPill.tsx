@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Filter, Search, X } from 'lucide-react';
 import BrowseRadiusSlider from './BrowseRadiusSlider';
+import PlaceSearchInput from './PlaceSearchInput';
+import type { GeocodePlace } from '../services/geocode.service';
 import {
   BROWSE_PROVIDER_CATEGORIES,
   type BrowseProviderCategory,
@@ -19,9 +21,13 @@ type SearchSuggestion = {
 };
 
 interface BrowseUtilityPillProps {
-  browseLabel: string;
-  townShortName: string;
-  onChangeTown: () => void;
+  locationLabel: string;
+  locationDraft: string;
+  onLocationDraftChange: (label: string) => void;
+  onSelectPlace: (place: GeocodePlace) => void;
+  deviceTracking: boolean;
+  onDeviceTrackingChange: () => void;
+  deviceTrackingBusy?: boolean;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   searchSuggestions?: SearchSuggestion[];
@@ -45,9 +51,13 @@ function PillDivider({ visible }: { visible: boolean }) {
 }
 
 export default function BrowseUtilityPill({
-  browseLabel,
-  townShortName,
-  onChangeTown,
+  locationLabel,
+  locationDraft,
+  onLocationDraftChange,
+  onSelectPlace,
+  deviceTracking,
+  onDeviceTrackingChange,
+  deviceTrackingBusy = false,
   searchQuery,
   onSearchQueryChange,
   searchSuggestions = [],
@@ -125,18 +135,61 @@ export default function BrowseUtilityPill({
 
   return (
     <div className="mb-4 sm:mb-5">
-      <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2 mb-2">
-        <span>{browseLabel}</span>
-        <span className="text-gray-400" aria-hidden="true">
-          •
-        </span>
-        <button
-          type="button"
-          onClick={onChangeTown}
-          className="text-primary-600 hover:text-black underline"
-        >
-          Change
-        </button>
+      <div className="mb-3 px-1 w-full max-w-md mx-auto">
+        {deviceTracking ? (
+          <p className="py-2.5 text-sm font-bold text-gray-900 text-center">
+            {locationLabel}
+          </p>
+        ) : (
+          <PlaceSearchInput
+            value={locationDraft}
+            onChange={onLocationDraftChange}
+            onSelectPlace={onSelectPlace}
+            disabled={deviceTrackingBusy}
+            showLabel={false}
+            showSearchIcon={false}
+            placeholder="Campus, city, or area"
+          />
+        )}
+        <div className="mt-1.5 flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-500">
+            {deviceTracking
+              ? 'Toggle off to turn off device tracking'
+              : 'Toggle on to turn on device tracking'}
+          </p>
+          <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
+            <span
+              className={`text-xs font-medium ${deviceTracking ? 'text-gray-400' : 'text-gray-900'}`}
+            >
+              Off
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={deviceTracking}
+              disabled={deviceTrackingBusy}
+              onChange={onDeviceTrackingChange}
+              aria-label="Device tracking"
+            />
+            <span
+              aria-hidden
+              className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                deviceTracking ? 'bg-gray-900' : 'bg-gray-300'
+              } ${deviceTrackingBusy ? 'opacity-50' : ''}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                  deviceTracking ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+                }`}
+              />
+            </span>
+            <span
+              className={`text-xs font-medium ${deviceTracking ? 'text-gray-900' : 'text-gray-400'}`}
+            >
+              On
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="max-w-lg mx-auto space-y-2">
@@ -169,7 +222,7 @@ export default function BrowseUtilityPill({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-gray-500 text-center -mt-1">from {townShortName}</p>
+            <p className="text-xs text-gray-500 text-center -mt-1">from {locationLabel}</p>
             <div className="px-1">
               <BrowseRadiusSlider
                 min={BROWSE_MIN_DISTANCE_MILES}
@@ -185,7 +238,7 @@ export default function BrowseUtilityPill({
             </div>
             {missingTownCoords && (
               <p className="text-xs text-amber-700 text-center">
-                This college town has no map coordinates. Distance filtering may be unavailable.
+                This area has no map coordinates. Distance filtering may be unavailable.
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 const MAX_DISTANCE_MILES_KEY = 'consumer.browse.maxDistanceMiles';
 const CONSTRAIN_BY_DISTANCE_KEY = 'consumer.browse.constrainListByDistance';
+const DEVICE_TRACKING_KEY = 'consumer.browse.deviceTracking';
 
 export const BROWSE_MIN_DISTANCE_MILES = 1;
 export const BROWSE_MAX_DISTANCE_MILES = 100;
@@ -40,6 +41,22 @@ export function getBrowseConstrainByDistance(): boolean {
 
 export function setBrowseConstrainByDistance(enabled: boolean): void {
   localStorage.setItem(CONSTRAIN_BY_DISTANCE_KEY, enabled ? 'true' : 'false');
+  window.dispatchEvent(new CustomEvent(BROWSE_DISTANCE_CHANGED_EVENT));
+}
+
+/** When true, browse center uses device GPS; when false, manual place/town. */
+export function getBrowseDeviceTracking(): boolean {
+  try {
+    const raw = localStorage.getItem(DEVICE_TRACKING_KEY);
+    if (raw == null) return true;
+    return raw !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export function setBrowseDeviceTracking(enabled: boolean): void {
+  localStorage.setItem(DEVICE_TRACKING_KEY, enabled ? 'true' : 'false');
   window.dispatchEvent(new CustomEvent(BROWSE_DISTANCE_CHANGED_EVENT));
 }
 
