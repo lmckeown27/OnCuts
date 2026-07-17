@@ -125,7 +125,7 @@ export default function LandingPage() {
       <div className="py-24 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[55vh]">
           <div className="w-full max-w-2xl mb-8 text-center px-2">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
-              Don&apos;t have an iOS Device?
+              Cuts On-Demand
             </h1>
             <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-600">
               Search below to browse and book barbers near you on the web
