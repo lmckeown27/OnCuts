@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import MobilePhotoUpload from '../../components/MobilePhotoUpload';
 import ConsumerProfileEditor from '../../components/ConsumerProfileEditor';
 import BlockedProvidersModal from '../../components/BlockedProvidersModal';
+import ConsumerBookingsModal from '../../components/ConsumerBookingsModal';
 import userService from '../../services/user.service';
 import {
   Heart,
@@ -88,6 +89,7 @@ export default function MobileConsumerPage() {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [showFullEditor, setShowFullEditor] = useState(false);
   const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
+  const [showBookingsModal, setShowBookingsModal] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [townHydrated, setTownHydrated] = useState(false);
 
@@ -122,6 +124,16 @@ export default function MobileConsumerPage() {
   useEffect(() => {
     loadUnreadCount();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.openBookings) {
+      setShowBookingsModal(true);
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...location.state, openBookings: undefined },
+      });
+    }
+  }, [location.state?.openBookings]);
 
   // Load barbers — uses college town for distance when set; otherwise all providers
   const loadBarbers = async () => {
@@ -369,7 +381,7 @@ export default function MobileConsumerPage() {
                 </button>
                 
                 <button 
-                  onClick={() => navigate(`${platformPrefix}/consumer/bookings`)}
+                  onClick={() => setShowBookingsModal(true)}
                   className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
                 >
                   <span className="font-medium text-gray-900">My Bookings</span>
@@ -718,6 +730,10 @@ export default function MobileConsumerPage() {
       )}
 
       <BlockedProvidersModal open={showBlockedProvidersModal} onClose={() => setShowBlockedProvidersModal(false)} />
+      <ConsumerBookingsModal
+        isOpen={showBookingsModal}
+        onClose={() => setShowBookingsModal(false)}
+      />
     </div>
   );
 }

@@ -28,6 +28,7 @@ import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
 import BlockedProvidersModal from '../components/BlockedProvidersModal';
+import ConsumerBookingsModal from '../components/ConsumerBookingsModal';
 import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
 import {
@@ -155,6 +156,8 @@ export default function ConsumerPage() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isNotificationsVisible, setIsNotificationsVisible] = useState(false);
+  const [showBookingsModal, setShowBookingsModal] = useState(false);
+  const [isBookingsModalVisible, setIsBookingsModalVisible] = useState(false);
   const [showPendingPopup, setShowPendingPopup] = useState(false);
   const [isPendingPopupVisible, setIsPendingPopupVisible] = useState(false);
   const [showRejectedPopup, setShowRejectedPopup] = useState(false);
@@ -204,11 +207,12 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showBookingsModal || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
   useBodyScrollLock(showBlockedProvidersModal);
+  useBodyScrollLock(showBookingsModal);
   
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void, setVisible?: (v: boolean) => void) => {
@@ -410,6 +414,25 @@ export default function ConsumerPage() {
       setShowNotifications(false);
     }, 150);
   };
+
+  const openBookingsModal = () => {
+    scrollToTopAndOpen(setShowBookingsModal, setIsBookingsModalVisible);
+  };
+
+  const closeBookingsModal = () => {
+    setIsBookingsModalVisible(false);
+    setTimeout(() => {
+      setShowBookingsModal(false);
+    }, 150);
+  };
+
+  // Deep link / legacy /consumer/bookings route opens the modal
+  useEffect(() => {
+    if (location.state?.openBookings) {
+      openBookingsModal();
+      navigate(location.pathname, { replace: true, state: { ...location.state, openBookings: undefined } });
+    }
+  }, [location.state?.openBookings]);
 
   // Handle "Become a Barber" button click
   const handleBecomeBarberClick = () => {
@@ -727,7 +750,7 @@ export default function ConsumerPage() {
                 <>
                   {/* Messages Button - Only for authenticated users */}
                   <button
-                    onClick={() => navigate(`${platformPrefix}/consumer/bookings`)}
+                    onClick={openBookingsModal}
                     className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                     title="My bookings"
                   >
@@ -758,17 +781,6 @@ export default function ConsumerPage() {
 
                     {showProfileDropdown && (
                       <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
-                        {/* Notifications */}
-                        <button
-                          onClick={() => {
-                            navigate(`${platformPrefix}/consumer/bookings`);
-                            setShowProfileDropdown(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                        >
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          My bookings
-                        </button>
                         <button
                           onClick={() => {
                             openNotifications();
@@ -1012,6 +1024,12 @@ export default function ConsumerPage() {
       />
 
       <BlockedProvidersModal open={showBlockedProvidersModal} onClose={() => setShowBlockedProvidersModal(false)} />
+
+      <ConsumerBookingsModal
+        isOpen={showBookingsModal}
+        isVisible={isBookingsModalVisible}
+        onClose={closeBookingsModal}
+      />
 
       {/* Notifications Modal */}
       {showNotifications && (
