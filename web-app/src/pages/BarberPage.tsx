@@ -1299,15 +1299,21 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md space-y-3">
         <div>
-          <PlaceSearchInput
-            value={locationDraft}
-            onChange={setLocationDraft}
-            onSelectPlace={handleInlinePlaceSelect}
-            disabled={locationSaving || webOnlySaving}
-            showLabel={false}
-            showSearchIcon={false}
-            placeholder="Campus, city, or area so clients can find you"
-          />
+          {serviceLocationWebOnly ? (
+            <PlaceSearchInput
+              value={locationDraft}
+              onChange={setLocationDraft}
+              onSelectPlace={handleInlinePlaceSelect}
+              disabled={locationSaving || webOnlySaving}
+              showLabel={false}
+              showSearchIcon={false}
+              placeholder="Campus, city, or area so clients can find you"
+            />
+          ) : (
+            <p className="py-2.5 text-sm font-bold text-gray-900 text-center">
+              {locationDraft.trim() || serviceLocationLabel?.trim() || 'Location from device'}
+            </p>
+          )}
           <div className="mt-1.5 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500">
               {serviceLocationWebOnly
