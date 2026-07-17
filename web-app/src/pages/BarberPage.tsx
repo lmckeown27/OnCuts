@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, CheckCircle, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -1295,35 +1295,19 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     }
   };
 
-  const hasSavedServiceLocation = Boolean(
-    serviceLocationLabel?.trim() &&
-    locationDraft.trim() === serviceLocationLabel.trim() &&
-    (serviceLocationWebOnly
-      ? serviceLatitude != null && serviceLongitude != null
-      : true)
-  );
-
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md space-y-3">
         <div>
-          <p className="text-sm font-medium text-gray-900 mb-1.5">Set manual location</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <PlaceSearchInput
-                value={locationDraft}
-                onChange={setLocationDraft}
-                onSelectPlace={handleInlinePlaceSelect}
-                disabled={locationSaving || webOnlySaving}
-                showLabel={false}
-                showSearchIcon={false}
-                placeholder="Campus, city, or area so clients can find you"
-              />
-            </div>
-            {hasSavedServiceLocation && !locationSaving && (
-              <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
-            )}
-          </div>
+          <PlaceSearchInput
+            value={locationDraft}
+            onChange={setLocationDraft}
+            onSelectPlace={handleInlinePlaceSelect}
+            disabled={locationSaving || webOnlySaving}
+            showLabel={false}
+            showSearchIcon={false}
+            placeholder="Campus, city, or area so clients can find you"
+          />
           <div className="mt-1.5 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500">
               {serviceLocationWebOnly

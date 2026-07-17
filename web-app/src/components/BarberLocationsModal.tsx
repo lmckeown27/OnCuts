@@ -193,7 +193,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
           ) : (
             <>
               <div>
-                <p className="text-sm font-medium text-gray-900 mb-1.5">Set manual location</p>
                 <PlaceSearchInput
                   value={placeLabel}
                   onChange={setPlaceLabel}
