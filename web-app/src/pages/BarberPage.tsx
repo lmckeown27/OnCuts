@@ -574,6 +574,17 @@ export default function BarberPage() {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate(`${platformPrefix}/consumer`);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50"
+                    >
+                      Switch to Client View
+                    </button>
+                    <div className="border-t border-gray-200 my-1" />
                     {(user?.first_name || user?.last_name) && (
                       <div className="px-4 py-2 text-xs font-semibold text-gray-500 truncate">
                         {[user?.first_name, user?.last_name].filter(Boolean).join(' ')}
