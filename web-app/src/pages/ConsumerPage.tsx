@@ -176,8 +176,10 @@ export default function ConsumerPage() {
     Array<{
       bookingId: string;
       barberName: string;
+      barberAvatar?: string | null;
       serviceName: string;
       amount: number;
+      scheduledTime?: string;
     }>
   >([]);
   const [showDeclinedModal, setShowDeclinedModal] = useState(false);
@@ -295,8 +297,10 @@ export default function ConsumerPage() {
               b.barberName ||
               [b.barber?.firstName, b.barber?.lastName].filter(Boolean).join(' ') ||
               'Your provider',
+            barberAvatar: b.barberAvatar || b.barber?.profilePictureUrl || b.barber?.avatar || null,
             serviceName: b.serviceName || b.serviceType || 'Service',
             amount: b.priceUsdCents || 0,
+            scheduledTime: b.scheduledTime,
           }))
       );
     } catch (error) {
@@ -313,9 +317,16 @@ export default function ConsumerPage() {
     barberName: string;
     serviceName: string;
     amount: number;
+    barberAvatar?: string | null;
+    scheduledTime?: string;
   }) => {
     clearDeferredPaymentTakeover(data.bookingId);
-    setPaymentModalData(data);
+    setPaymentModalData({
+      bookingId: data.bookingId,
+      barberName: data.barberName,
+      serviceName: data.serviceName,
+      amount: data.amount,
+    });
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowPaymentModal(true);
   };
@@ -885,25 +896,57 @@ export default function ConsumerPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {pendingPaymentBookings.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              const next = pendingPaymentBookings[0];
-              openPaymentTakeover(next);
-            }}
-            className="w-full mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-left hover:bg-amber-100 transition-colors"
-          >
-            <p className="text-sm font-semibold text-amber-900">
-              {pendingPaymentBookings.length === 1
-                ? 'Payment pending'
-                : `${pendingPaymentBookings.length} payments pending`}
-            </p>
-            <p className="text-xs text-amber-700 mt-0.5">
-              {pendingPaymentBookings.length === 1
-                ? `Pay ${pendingPaymentBookings[0].barberName} for ${pendingPaymentBookings[0].serviceName} — tap to pay`
-                : 'Tap to pay for your completed service'}
-            </p>
-          </button>
+          <div className="mb-4 flex flex-col items-center gap-2">
+            {pendingPaymentBookings.map((booking) => {
+              const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
+              const dateStr = when
+                ? when.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : null;
+              const timeStr = when
+                ? when.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : null;
+              const price =
+                booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
+
+              return (
+                <button
+                  key={booking.bookingId}
+                  type="button"
+                  onClick={() => openPaymentTakeover(booking)}
+                  className="w-full max-w-[14rem] px-3 py-4 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Avatar
+                      src={booking.barberAvatar || undefined}
+                      alt={booking.barberName}
+                      size="lg"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                          {booking.barberName}
+                        </p>
+                        <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight">
+                          Awaiting payment
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 mt-1.5 truncate">{booking.serviceName}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
         <DiscoveryView navigate={navigate} onBecomeBarberClick={handleBecomeBarberClick} />
       </div>
