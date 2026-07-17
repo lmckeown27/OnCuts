@@ -121,8 +121,6 @@ export default function LandingPage() {
       {/* Offset fixed nav */}
       <div className="pt-20" />
 
-      <IosAppPromoSection />
-
       {/* Hero Section */}
       <div className="py-24 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[55vh]">
           <div className="w-full max-w-2xl mb-8 text-center px-2">
@@ -162,6 +160,8 @@ export default function LandingPage() {
               Find Operator
             </button>
       </div>
+
+      <IosAppPromoSection />
 
       {/* Operator CTA */}
       <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
