@@ -321,14 +321,7 @@ export default function ConsumerPage() {
     scheduledTime?: string;
   }) => {
     clearDeferredPaymentTakeover(data.bookingId);
-    setPaymentModalData({
-      bookingId: data.bookingId,
-      barberName: data.barberName,
-      serviceName: data.serviceName,
-      amount: data.amount,
-    });
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setShowPaymentModal(true);
+    navigate(`${platformPrefix}/payment/${data.bookingId}`);
   };
 
   const handlePayLater = (bookingId: string) => {
@@ -1186,7 +1179,7 @@ export default function ConsumerPage() {
                         navigate(`${platformPrefix}/consumer/messages/${data.conversationId}`);
                         closeNotifications();
                       } else if (notification.type === 'payment_request' && data.bookingId) {
-                        // Payment request - open payment modal (clears Pay Later deferral)
+                        // Payment request - go straight to payment page (clears Pay Later deferral)
                         openPaymentTakeover({
                           bookingId: data.bookingId,
                           barberName: data.barberName || 'Your Barber',

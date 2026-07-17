@@ -69,7 +69,7 @@ function formatService(booking: BookingRow): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function statusBadge(status: string): { label: string; className: string } {
+function statusBadge(status: string): { label: string; className: string; plain?: boolean } {
   const s = (status || '').toUpperCase();
   switch (s) {
     case 'PENDING':
@@ -77,7 +77,12 @@ function statusBadge(status: string): { label: string; className: string } {
     case 'ACCEPTED':
       return { label: 'Confirmed', className: 'bg-blue-100 text-blue-800' };
     case 'COMPLETED':
-      return { label: 'Awaiting payment', className: 'bg-purple-100 text-purple-800' };
+      return {
+        label: 'Awaiting payment',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5',
+        plain: true,
+      };
     case 'PAID':
       return { label: 'Paid', className: 'bg-green-100 text-green-800' };
     case 'CANCELLED':
@@ -281,7 +286,11 @@ export default function ConsumerBookingsModal({
                             {b.barberName || 'Barber'}
                           </p>
                           <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${badge.className}`}
+                            className={
+                              badge.plain
+                                ? badge.className
+                                : `text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${badge.className}`
+                            }
                           >
                             {badge.label}
                           </span>
