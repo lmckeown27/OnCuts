@@ -913,61 +913,12 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        {pendingPaymentBookings.length > 0 && (
-          <div className="mb-4 flex flex-col items-center gap-2">
-            {pendingPaymentBookings.map((booking) => {
-              const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
-              const dateStr = when
-                ? when.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                : null;
-              const timeStr = when
-                ? when.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })
-                : null;
-              const price =
-                booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
-
-              return (
-                <button
-                  key={booking.bookingId}
-                  type="button"
-                  onClick={() => openPaymentTakeover(booking)}
-                  className="w-full max-w-md px-4 py-5 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
-                >
-                  <div className="flex items-start gap-3.5">
-                    <Avatar
-                      src={booking.barberAvatar || undefined}
-                      alt={booking.barberName}
-                      size="xl"
-                      className="!rounded-md"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-base font-semibold text-gray-900 truncate leading-tight">
-                          {booking.barberName}
-                        </p>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
-                          Awaiting payment
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
-                      <p className="text-sm text-gray-500 mt-1.5">
-                        {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <DiscoveryView navigate={navigate} onBecomeBarberClick={handleBecomeBarberClick} />
+        <DiscoveryView
+          navigate={navigate}
+          onBecomeBarberClick={handleBecomeBarberClick}
+          pendingPaymentBookings={pendingPaymentBookings}
+          onOpenPayment={openPaymentTakeover}
+        />
       </div>
 
       {/* Profile Editor Modal */}
@@ -1562,7 +1513,31 @@ function getBarberNameSearchText(barber: Barber): string {
     .toLowerCase();
 }
 
-function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBecomeBarberClick: () => void }) {
+function DiscoveryView({
+  navigate,
+  onBecomeBarberClick,
+  pendingPaymentBookings = [],
+  onOpenPayment,
+}: {
+  navigate: any;
+  onBecomeBarberClick: () => void;
+  pendingPaymentBookings?: Array<{
+    bookingId: string;
+    barberName: string;
+    barberAvatar?: string | null;
+    serviceName: string;
+    amount: number;
+    scheduledTime?: string;
+  }>;
+  onOpenPayment?: (data: {
+    bookingId: string;
+    barberName: string;
+    serviceName: string;
+    amount: number;
+    barberAvatar?: string | null;
+    scheduledTime?: string;
+  }) => void;
+}) {
   const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
@@ -1952,7 +1927,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     });
   };
 
-  if (!townHydrated || loading) {
+  if (!townHydrated) {
     return <Loading />;
   }
 
@@ -1982,10 +1957,76 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         onMaxDistancePreview={handleMaxDistancePreview}
         onMaxDistanceCommitted={handleMaxDistanceCommitted}
         resultsCount={filteredBarbers.length}
-        showResultsCount={filteredBarbers.length > 0 || barberSearchQuery.trim().length > 0}
+        showResultsCount={false}
         missingTownCoords={latitude == null || longitude == null}
       />
 
+      {pendingPaymentBookings.length > 0 && (
+        <div className="mb-4 flex flex-col items-center gap-2">
+          {pendingPaymentBookings.map((booking) => {
+            const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
+            const dateStr = when
+              ? when.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : null;
+            const timeStr = when
+              ? when.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
+              : null;
+            const price =
+              booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
+
+            return (
+              <button
+                key={booking.bookingId}
+                type="button"
+                onClick={() => onOpenPayment?.(booking)}
+                className="w-full max-w-md px-4 py-5 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                <div className="flex items-start gap-3.5">
+                  <Avatar
+                    src={booking.barberAvatar || undefined}
+                    alt={booking.barberName}
+                    size="xl"
+                    className="!rounded-md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-base font-semibold text-gray-900 truncate leading-tight">
+                        {booking.barberName}
+                      </p>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
+                        Awaiting payment
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
+                    <p className="text-sm text-gray-500 mt-1.5">
+                      {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading &&
+        (filteredBarbers.length > 0 || barberSearchQuery.trim().length > 0) && (
+        <p className="text-center text-xs text-gray-500 mb-4">
+          {filteredBarbers.length} provider{filteredBarbers.length !== 1 ? 's' : ''} found
+        </p>
+      )}
+
+      {loading ? (
+        <Loading />
+      ) : (
+        <>
       {/* Price disclaimer */}
       {filteredBarbers && filteredBarbers.length > 0 && (
         <p className="text-center text-xs text-gray-400 mt-4 italic">
@@ -2197,6 +2238,8 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           );
         })}
       </div>
+      )}
+        </>
       )}
 
 
