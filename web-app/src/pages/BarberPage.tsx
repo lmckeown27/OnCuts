@@ -1983,24 +1983,50 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           {serviceLocationField}
 
           {awaitingPaymentBookings.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                if (awaitingPaymentBookings.length === 1) {
-                  onViewDetails(awaitingPaymentBookings[0]);
-                } else {
-                  onOpenBookings?.();
-                }
-              }}
-              className="w-full max-w-md px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-left hover:bg-amber-100 transition-colors"
-            >
-              <p className="text-sm font-semibold text-amber-900">
-                {awaitingPaymentBookings.length} appointment{awaitingPaymentBookings.length !== 1 ? 's' : ''} awaiting payment
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                {awaitingPaymentBookings.length === 1 ? 'Tap to view booking details' : 'Tap to open bookings'}
-              </p>
-            </button>
+            <div className="w-full max-w-md space-y-2">
+              {awaitingPaymentBookings.map((booking) => {
+                const consumerName = [booking.consumer?.firstName, booking.consumer?.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() || 'Client';
+                const serviceLabel = booking.serviceName || booking.serviceType || 'Service';
+                const when = new Date(booking.scheduledTime);
+                const dateStr = when.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                });
+                const timeStr = when.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                });
+                const price =
+                  booking.priceUsdCents != null
+                    ? `$${(booking.priceUsdCents / 100).toFixed(2)}`
+                    : null;
+
+                return (
+                  <button
+                    key={booking.id}
+                    type="button"
+                    onClick={() => onViewDetails(booking)}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-left hover:bg-gray-50 transition-colors shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{consumerName}</p>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0">
+                        Awaiting payment
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700 mt-1 truncate">{serviceLabel}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {dateStr} · {timeStr}
+                      {price ? ` · ${price}` : ''}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           )}
 
           {weekOffset !== 0 ? (
