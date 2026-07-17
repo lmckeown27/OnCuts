@@ -201,44 +201,43 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                   disabled={saving || webOnlySaving}
                   showLabel={false}
                 />
-                <p className="text-xs text-gray-500 mt-1.5">
-                  {webOnly
-                    ? 'Toggle on to turn on device tracking'
-                    : 'Toggle off to turn off device tracking'}
-                </p>
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-500">
+                    {webOnly
+                      ? 'Toggle on to turn on device tracking'
+                      : 'Toggle off to turn off device tracking'}
+                  </p>
+                  <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
+                    <span className={`text-xs font-medium ${!webOnly ? 'text-gray-400' : 'text-gray-900'}`}>
+                      Off
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={!webOnly}
+                      disabled={webOnlySaving || saving}
+                      onChange={handleWebOnlyToggle}
+                      aria-label="Device tracking"
+                    />
+                    <span
+                      aria-hidden
+                      className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                        !webOnly ? 'bg-gray-900' : 'bg-gray-300'
+                      } ${webOnlySaving || saving ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                          !webOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </span>
+                    <span className={`text-xs font-medium ${!webOnly ? 'text-gray-900' : 'text-gray-400'}`}>
+                      On
+                    </span>
+                  </label>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-gray-900">Device tracking</p>
-                <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
-                  <span className={`text-xs font-medium ${!webOnly ? 'text-gray-400' : 'text-gray-900'}`}>
-                    Off
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={!webOnly}
-                    disabled={webOnlySaving || saving}
-                    onChange={handleWebOnlyToggle}
-                    aria-label="Device tracking"
-                  />
-                  <span
-                    aria-hidden
-                    className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                      !webOnly ? 'bg-gray-900' : 'bg-gray-300'
-                    } ${webOnlySaving || saving ? 'opacity-50' : ''}`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
-                        !webOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </span>
-                  <span className={`text-xs font-medium ${!webOnly ? 'text-gray-900' : 'text-gray-400'}`}>
-                    On
-                  </span>
-                </label>
-              </div>
               {latitude != null && longitude != null && (
                 <ServiceAreaMap
                   latitude={latitude}

@@ -1324,43 +1324,41 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1.5">
-            {serviceLocationWebOnly
-              ? 'Toggle on to turn on device tracking'
-              : 'Toggle off to turn off device tracking'}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-gray-900">Device tracking</p>
-          <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
-            <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-400' : 'text-gray-900'}`}>
-              Off
-            </span>
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={!serviceLocationWebOnly}
-              disabled={webOnlySaving || locationSaving}
-              onChange={handleWebOnlyToggle}
-              aria-label="Device tracking"
-            />
-            <span
-              aria-hidden
-              className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                !serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
-              } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
-                  !serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-                }`}
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-500">
+              {serviceLocationWebOnly
+                ? 'Toggle on to turn on device tracking'
+                : 'Toggle off to turn off device tracking'}
+            </p>
+            <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
+              <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-400' : 'text-gray-900'}`}>
+                Off
+              </span>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={!serviceLocationWebOnly}
+                disabled={webOnlySaving || locationSaving}
+                onChange={handleWebOnlyToggle}
+                aria-label="Device tracking"
               />
-            </span>
-            <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-900' : 'text-gray-400'}`}>
-              On
-            </span>
-          </label>
+              <span
+                aria-hidden
+                className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                  !serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
+                } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                    !serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+              <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-900' : 'text-gray-400'}`}>
+                On
+              </span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
