@@ -920,13 +920,14 @@ export default function ConsumerPage() {
                   key={booking.bookingId}
                   type="button"
                   onClick={() => openPaymentTakeover(booking)}
-                  className="w-full max-w-[14rem] px-3 py-4 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
+                  className="w-full max-w-[20rem] px-3 py-4 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
                 >
                   <div className="flex items-start gap-2.5">
                     <Avatar
                       src={booking.barberAvatar || undefined}
                       alt={booking.barberName}
                       size="lg"
+                      className="!rounded-md"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-1">
