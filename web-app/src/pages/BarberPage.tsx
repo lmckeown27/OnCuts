@@ -29,7 +29,7 @@ import PaymentManagementModal from '../components/PaymentManagementModal';
 import StripeHubModal from '../components/StripeHubModal';
 import PayoutSettingsScreen from '../components/PayoutSettingsScreen';
 import BlockTimeModal from '../components/BlockTimeModal';
-import ProviderWeeklyScheduleGrid from '../components/ProviderWeeklyScheduleGrid';
+import ProviderWeeklyScheduleGrid, { getWeekStartMonday } from '../components/ProviderWeeklyScheduleGrid';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -1437,13 +1437,25 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     [visibleConfirmedBookings]
   );
 
-  const getScheduleSummaryText = (): string => {
+  const adjacentWeekBookingCounts = useMemo(() => {
     const today = getTodayInCampusTimezone();
-    const todayDay = today.getDay();
-    const startOfWeek = new Date(today);
-    const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-    startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
-    startOfWeek.setHours(0, 0, 0, 0);
+    const countInWeek = (offset: number) => {
+      const startOfWeek = getWeekStartMonday(today, offset);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      return scheduleBookings.filter(b => {
+        const bookingDate = new Date(b.scheduledTime);
+        return bookingDate >= startOfWeek && bookingDate < endOfWeek;
+      }).length;
+    };
+    return {
+      previous: countInWeek(weekOffset - 1),
+      next: countInWeek(weekOffset + 1),
+    };
+  }, [scheduleBookings, weekOffset, campusTimezone]);
+
+  const getScheduleSummaryText = (): string => {
+    const startOfWeek = getWeekStartMonday(getTodayInCampusTimezone(), weekOffset);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
     const count = scheduleBookings.filter(b => {
@@ -2002,18 +2014,30 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setWeekOffset(prev => prev - 1)}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              className="relative p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label={
+                adjacentWeekBookingCounts.previous > 0
+                  ? `Previous week, ${adjacentWeekBookingCounts.previous} appointment${adjacentWeekBookingCounts.previous !== 1 ? 's' : ''}`
+                  : 'Previous week'
+              }
+              title={
+                adjacentWeekBookingCounts.previous > 0
+                  ? `${adjacentWeekBookingCounts.previous} appointment${adjacentWeekBookingCounts.previous !== 1 ? 's' : ''} last week`
+                  : 'Previous week'
+              }
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
+              {adjacentWeekBookingCounts.previous > 0 ? (
+                <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                  {adjacentWeekBookingCounts.previous > 9 ? '9+' : adjacentWeekBookingCounts.previous}
+                </span>
+              ) : null}
             </button>
             <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
               {(() => {
-                const today = getTodayInCampusTimezone();
-                const todayDay = today.getDay();
-                const startOfWeek = new Date(today);
-                const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-                startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
+                const startOfWeek = getWeekStartMonday(getTodayInCampusTimezone(), weekOffset);
                 const endOfWeek = new Date(startOfWeek);
                 endOfWeek.setDate(startOfWeek.getDate() + 6);
                 const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
@@ -2025,10 +2049,26 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               })()}
             </h3>
             <button
+              type="button"
               onClick={() => setWeekOffset(prev => prev + 1)}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              className="relative p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label={
+                adjacentWeekBookingCounts.next > 0
+                  ? `Next week, ${adjacentWeekBookingCounts.next} appointment${adjacentWeekBookingCounts.next !== 1 ? 's' : ''}`
+                  : 'Next week'
+              }
+              title={
+                adjacentWeekBookingCounts.next > 0
+                  ? `${adjacentWeekBookingCounts.next} appointment${adjacentWeekBookingCounts.next !== 1 ? 's' : ''} next week`
+                  : 'Next week'
+              }
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
+              {adjacentWeekBookingCounts.next > 0 ? (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                  {adjacentWeekBookingCounts.next > 9 ? '9+' : adjacentWeekBookingCounts.next}
+                </span>
+              ) : null}
             </button>
           </div>
 
