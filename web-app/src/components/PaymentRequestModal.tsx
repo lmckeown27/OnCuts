@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X, DollarSign, Star, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
@@ -12,6 +12,8 @@ interface PaymentRequestModalProps {
   serviceName: string;
   amount: number; // in cents
   onPaymentComplete?: () => void;
+  /** Client-only: dismiss takeover and skip auto-pop until reopen */
+  onPayLater?: () => void;
 }
 
 export default function PaymentRequestModal({
@@ -22,8 +24,11 @@ export default function PaymentRequestModal({
   serviceName,
   amount,
   onPaymentComplete,
+  onPayLater,
 }: PaymentRequestModalProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const [step, setStep] = useState<'payment' | 'tip' | 'review' | 'complete'>('payment');
   const [selectedTip, setSelectedTip] = useState<number>(0);
   const [customTip, setCustomTip] = useState<string>('');
@@ -45,10 +50,15 @@ export default function PaymentRequestModal({
     { label: '25%', value: Math.round(baseAmountDollars * 0.25 * 100) / 100 },
   ];
 
+  const handlePayLater = () => {
+    onPayLater?.();
+    onClose();
+  };
+
   // Handle card payment - redirect to full Stripe payment page with Apple Pay, Google Pay, and card support
   const handleCardPayment = () => {
     onClose(); // Close modal first
-    navigate(`/web/payment/${bookingId}`);
+    navigate(`${platformPrefix}/payment/${bookingId}`);
   };
 
   // Handle cash payment - process in modal
@@ -302,6 +312,14 @@ export default function PaymentRequestModal({
                   Continue to Pay ${baseAmountDollars.toFixed(2)}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={handlePayLater}
+                className="w-full py-3 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors"
+              >
+                Pay Later
+              </button>
               
               {paymentMethod === 'card' && (
                 <p className="text-center text-sm text-gray-500">

@@ -31,6 +31,11 @@ import BlockedProvidersModal from '../components/BlockedProvidersModal';
 import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
 import {
+  clearDeferredPaymentTakeover,
+  deferPaymentTakeover,
+  isPaymentTakeoverDeferred,
+} from '../store/deferredPaymentBookings';
+import {
   BROWSE_MAX_DISTANCE_MILES,
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
@@ -163,6 +168,15 @@ export default function ConsumerPage() {
     amount: number;
   } | null>(null);
   const paymentModalRef = useRef<{ open: boolean; bookingId: string }>({ open: false, bookingId: '' });
+  /** Unpaid COMPLETED bookings — powers home pending-payment banner (incl. after Pay Later). */
+  const [pendingPaymentBookings, setPendingPaymentBookings] = useState<
+    Array<{
+      bookingId: string;
+      barberName: string;
+      serviceName: string;
+      amount: number;
+    }>
+  >([]);
   const [showDeclinedModal, setShowDeclinedModal] = useState(false);
   const [declinedModalData, setDeclinedModalData] = useState<{
     barberName: string;
@@ -256,6 +270,58 @@ export default function ConsumerPage() {
     
     checkActiveBookings();
   }, [user?.id, platformPrefix, navigate]);
+
+  const refreshPendingPaymentBookings = async () => {
+    if (!user) {
+      setPendingPaymentBookings([]);
+      return;
+    }
+    try {
+      const response = await api.get('/bookings-simple', {
+        role: 'consumer',
+        status: 'COMPLETED',
+      });
+      const bookings = response.bookings || [];
+      setPendingPaymentBookings(
+        bookings
+          .filter((b: any) => b.status === 'COMPLETED' && !b.paidAt)
+          .map((b: any) => ({
+            bookingId: b.id,
+            barberName:
+              b.barberName ||
+              [b.barber?.firstName, b.barber?.lastName].filter(Boolean).join(' ') ||
+              'Your provider',
+            serviceName: b.serviceName || b.serviceType || 'Service',
+            amount: b.priceUsdCents || 0,
+          }))
+      );
+    } catch (error) {
+      console.error('Failed to load pending payments:', error);
+    }
+  };
+
+  useEffect(() => {
+    void refreshPendingPaymentBookings();
+  }, [user?.id]);
+
+  const openPaymentTakeover = (data: {
+    bookingId: string;
+    barberName: string;
+    serviceName: string;
+    amount: number;
+  }) => {
+    clearDeferredPaymentTakeover(data.bookingId);
+    setPaymentModalData(data);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShowPaymentModal(true);
+  };
+
+  const handlePayLater = (bookingId: string) => {
+    deferPaymentTakeover(bookingId);
+    setShowPaymentModal(false);
+    setPaymentModalData(null);
+    void refreshPendingPaymentBookings();
+  };
 
   // Check for barber profile if not already known
   useEffect(() => {
@@ -470,6 +536,17 @@ export default function ConsumerPage() {
       paymentUrl: string;
     }) => {
       console.log('Received booking-completed event:', data);
+
+      void refreshPendingPaymentBookings();
+
+      // Pay Later: skip auto-pop for this booking until user reopens from banner/bookings
+      if (isPaymentTakeoverDeferred(data.bookingId)) {
+        toast(
+          `${data.barberName} completed your ${data.serviceName}. Pay when you're ready from Home or Bookings.`,
+          { duration: 5000 }
+        );
+        return;
+      }
       
       // Show toast notification
       toast.success(
@@ -521,6 +598,8 @@ export default function ConsumerPage() {
     }) => {
       if (data.status !== 'ACCEPTED') return;
 
+      clearDeferredPaymentTakeover(data.bookingId);
+
       toast.success(
         data.message || 'The barber has cancelled the payment request. Your booking stays active.',
         { duration: 5000 }
@@ -531,6 +610,8 @@ export default function ConsumerPage() {
         setShowPaymentModal(false);
         setPaymentModalData(null);
       }
+
+      void refreshPendingPaymentBookings();
 
       notificationService.getNotifications().then((notifData) => {
         setNotifications(notifData.notifications);
@@ -774,6 +855,27 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {pendingPaymentBookings.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              const next = pendingPaymentBookings[0];
+              openPaymentTakeover(next);
+            }}
+            className="w-full mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-left hover:bg-amber-100 transition-colors"
+          >
+            <p className="text-sm font-semibold text-amber-900">
+              {pendingPaymentBookings.length === 1
+                ? 'Payment pending'
+                : `${pendingPaymentBookings.length} payments pending`}
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              {pendingPaymentBookings.length === 1
+                ? `Pay ${pendingPaymentBookings[0].barberName} for ${pendingPaymentBookings[0].serviceName} — tap to pay`
+                : 'Tap to pay for your completed service'}
+            </p>
+          </button>
+        )}
         <DiscoveryView navigate={navigate} onBecomeBarberClick={handleBecomeBarberClick} />
       </div>
 
@@ -1005,15 +1107,13 @@ export default function ConsumerPage() {
                         navigate(`${platformPrefix}/consumer/messages/${data.conversationId}`);
                         closeNotifications();
                       } else if (notification.type === 'payment_request' && data.bookingId) {
-                        // Payment request - open payment modal
-                        setPaymentModalData({
+                        // Payment request - open payment modal (clears Pay Later deferral)
+                        openPaymentTakeover({
                           bookingId: data.bookingId,
                           barberName: data.barberName || 'Your Barber',
                           serviceName: data.serviceName || 'Service',
                           amount: data.amount || 0,
                         });
-                        window.scrollTo({ top: 0, behavior: 'instant' });
-                        setShowPaymentModal(true);
                         closeNotifications();
                       } else if (notification.type === 'booking_rejected') {
                         // Booking declined - show decline details modal
@@ -1110,7 +1210,10 @@ export default function ConsumerPage() {
           barberName={paymentModalData.barberName}
           serviceName={paymentModalData.serviceName}
           amount={paymentModalData.amount}
+          onPayLater={() => handlePayLater(paymentModalData.bookingId)}
           onPaymentComplete={() => {
+            clearDeferredPaymentTakeover(paymentModalData.bookingId);
+            void refreshPendingPaymentBookings();
             handlePullToRefresh();
           }}
         />

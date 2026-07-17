@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
@@ -21,6 +21,10 @@ import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
 import { findService } from '../config/services';
 import { STRIPE_PUBLIC_KEY } from '../config/constants';
+import {
+  clearDeferredPaymentTakeover,
+  deferPaymentTakeover,
+} from '../store/deferredPaymentBookings';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -565,6 +569,8 @@ function ReviewForm({
 export default function PostServicePaymentPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, isLoading: isAuthLoading } = useAuthStore();
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
@@ -619,6 +625,19 @@ export default function PostServicePaymentPage() {
     }
   }, [bookingId, user?.id]);
 
+  // Intentional open of the payment page clears Pay Later deferral for this booking
+  useEffect(() => {
+    if (bookingId) {
+      clearDeferredPaymentTakeover(bookingId);
+    }
+  }, [bookingId]);
+
+  const handlePayLater = () => {
+    if (!bookingId) return;
+    deferPaymentTakeover(bookingId);
+    toast.success('You can pay later from Home or Bookings');
+    navigate(`${platformPrefix}/consumer`);
+  };
   // Listen for payment-received WebSocket event (for barber view)
   useEffect(() => {
     if (!bookingId) return;
@@ -1024,6 +1043,15 @@ export default function PostServicePaymentPage() {
             {/* Payment Form */}
             <div className="p-6">
               <PaymentForm booking={booking} onSuccess={handlePaymentSuccess} />
+              {step === 'payment' && (
+                <button
+                  type="button"
+                  onClick={handlePayLater}
+                  className="w-full mt-4 py-3 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  Pay Later
+                </button>
+              )}
             </div>
           </div>
         )}

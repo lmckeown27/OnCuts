@@ -27,6 +27,10 @@ import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/C
 import { useBodyScrollLock } from '../hooks';
 import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
+import {
+  clearDeferredPaymentTakeover,
+  isPaymentTakeoverDeferred,
+} from '../store/deferredPaymentBookings';
 
 interface ActiveBooking {
   id: string;
@@ -171,6 +175,15 @@ export default function ConsumerBookingStatusPage() {
       paymentUrl: string;
     }) => {
       console.log('Received booking-completed event:', data);
+
+      if (isPaymentTakeoverDeferred(data.bookingId)) {
+        toast(
+          `${data.barberName} completed your ${data.serviceName}. Pay when you're ready from Home or Bookings.`,
+          { duration: 5000 }
+        );
+        fetchActiveBooking();
+        return;
+      }
       
       // Show toast notification
       toast.success(
@@ -206,6 +219,9 @@ export default function ConsumerBookingStatusPage() {
       // Check if this is for the current booking
       if (data.bookingId === booking.id) {
         // Refresh booking data to get the updated status
+        if (data.status === 'ACCEPTED') {
+          clearDeferredPaymentTakeover(data.bookingId);
+        }
         toast.success(data.message || 'Booking status updated');
         fetchActiveBooking();
       }
@@ -1056,7 +1072,10 @@ export default function ConsumerBookingStatusPage() {
                 </p>
                 
                 <button
-                  onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
+                  onClick={() => {
+                    clearDeferredPaymentTakeover(booking.id);
+                    navigate(`${platformPrefix}/payment/${booking.id}`);
+                  }}
                   className="px-12 py-4 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
                   Pay ${(booking.priceUsdCents / 100).toFixed(2)}

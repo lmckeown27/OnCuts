@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import Button from '../../components/Button';
 import { TivelaPlatformsLogo } from '@assets';
 import Avatar from '../../components/Avatar';
+import { clearDeferredPaymentTakeover } from '../../store/deferredPaymentBookings';
 
 type Tab = 'upcoming' | 'today' | 'past';
 
@@ -157,6 +158,7 @@ export default function ConsumerBookingsPage() {
   };
 
   const goPay = (bookingId: string) => {
+    clearDeferredPaymentTakeover(bookingId);
     navigate(`${platformPrefix}/payment/${bookingId}`);
   };
 

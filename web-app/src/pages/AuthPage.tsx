@@ -17,6 +17,7 @@ import {
   readSessionStorageWithMigration,
   removeSessionStorageKeys,
 } from '../utils/storageMigration';
+import { isPaymentTakeoverDeferred } from '../store/deferredPaymentBookings';
 
 type AuthMode = 'login' | 'signup';
 type LoginChannel = 'email' | 'phone';
@@ -249,7 +250,10 @@ export default function AuthPage() {
 
         const completedBookings = response.bookings || [];
         const pendingPayment = completedBookings.find(
-          (b: any) => b.status === 'COMPLETED' && !b.paidAt
+          (b: any) =>
+            b.status === 'COMPLETED' &&
+            !b.paidAt &&
+            !isPaymentTakeoverDeferred(b.id)
         );
 
         if (pendingPayment) {

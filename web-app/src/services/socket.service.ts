@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { WS_URL, STORAGE_KEYS } from '../config/constants';
 import type { Message, Booking } from '../types';
+import { clearAllDeferredPaymentTakeovers } from '../store/deferredPaymentBookings';
 
 type SocketEventHandler = (...args: any[]) => void;
 
@@ -75,6 +76,8 @@ class SocketService {
       this.socket = null;
       this.isConnected = false;
     }
+    // Match iOS: Pay Later deferrals do not survive a realtime session reset
+    clearAllDeferredPaymentTakeovers();
   }
 
   on(event: string, handler: SocketEventHandler): void {
