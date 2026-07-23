@@ -3,8 +3,8 @@ import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
-  consumer: 'https://apps.apple.com/us/app/avilaplatforms/id6763953203',
-  interaProvider: 'https://apps.apple.com/us/app/interaprovider/id6770430152',
+  consumer: 'https://apps.apple.com/us/app/oncuts/id6789238174',
+  interaProvider: 'https://apps.apple.com/us/app/oncuts-operator/id6789008195',
 } as const;
 
 type AppCardProps = {
