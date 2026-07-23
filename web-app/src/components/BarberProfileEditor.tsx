@@ -13,7 +13,6 @@ import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
-import Avatar from './Avatar';
 import MobilePhotoUpload from './MobilePhotoUpload';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
@@ -444,7 +443,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
                 key={row.blockedUserId}
                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50"
               >
-                <Avatar src={row.avatarUrl || undefined} alt={row.name} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-gray-900 truncate">{row.name}</p>
                   {row.email && (
