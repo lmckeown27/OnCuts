@@ -20,7 +20,6 @@ import barberService from '../services/barber.service';
 import userService from '../services/user.service';
 import messageService, { type BlockedAccountItem } from '../services/message.service';
 import { useAuthStore } from '../store/useAuthStore';
-import { SPECIALTY_OPTIONS } from '../config/services';
 import type { Barber } from '../types';
 
 // Detect if user is on a mobile device (for camera/gallery picker)
@@ -49,14 +48,10 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [bio, setBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
-  const [specialties, setSpecialties] = useState<string[]>([]);
   const [isHidden, setIsHidden] = useState(false); // Hide profile from consumers
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccountItem[]>([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
-  
-  // Available specialty options from shared config
-  const availableSpecialties = SPECIALTY_OPTIONS;
 
   const loadBlockedAccounts = useCallback(async () => {
     setBlockedLoading(true);
@@ -128,7 +123,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setProfilePhoto(data.profile_photo_url || data.profile_picture_url || '');
-      setSpecialties(data.specialties || []);
       setIsHidden(!data.is_active); // is_active=false means hidden
       
       setIsLoading(false);
@@ -152,7 +146,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         display_name: displayName,
         bio,
         instagram_handle: instagramHandle,
-        specialties,
         is_active: !isHidden, // Hidden = not active
       };
 
@@ -165,29 +158,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       toast.error('Failed to update profile');
     } finally {
       setIsSaving(false);
-    }
-  };
-  
-  const toggleSpecialty = async (specialty: string) => {
-    if (!barber) return;
-    
-    const newSpecialties = specialties.includes(specialty)
-      ? specialties.filter(s => s !== specialty)
-      : [...specialties, specialty];
-    
-    // Optimistically update UI
-    setSpecialties(newSpecialties);
-    
-    try {
-      // Save immediately to keep in sync with BarberServiceSpecialties
-      await barberService.updateBarberProfile(barber.id, {
-        specialties: newSpecialties,
-      });
-    } catch (error) {
-      console.error('Failed to update specialties:', error);
-      toast.error('Failed to update specialty');
-      // Revert on error
-      setSpecialties(specialties);
     }
   };
 
@@ -406,28 +376,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           maxLength={500}
         />
         <p className="text-xs text-gray-500 mt-2">{bio.length}/500 characters</p>
-      </Card>
-
-      {/* Specialties */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-2">Specialties</h3>
-        <p className="text-sm text-gray-600 mb-4">Select the services you specialize in</p>
-        <div className="flex flex-wrap gap-2">
-          {availableSpecialties.map((specialty) => (
-            <button
-              key={specialty}
-              type="button"
-              onClick={() => toggleSpecialty(specialty)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                specialties.includes(specialty)
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {specialty}
-            </button>
-          ))}
-        </div>
       </Card>
 
       {/* Instagram Handle (Optional) */}
