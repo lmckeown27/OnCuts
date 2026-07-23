@@ -30,6 +30,18 @@ export type BlockedServiceProviderItem = {
   name: string;
 };
 
+export type BlockedAccountItem = {
+  blockedUserId: string;
+  blockedAt: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+  isServiceProvider: boolean;
+  name: string;
+};
+
 interface CreateConversationData {
   other_user_id: string;
   booking_id?: string;
@@ -172,6 +184,14 @@ class MessageService {
       '/messages/blocks/service-providers'
     );
     return data.blockedServiceProviders ?? [];
+  }
+
+  /** All outgoing peer blocks with profile info (operator Account “Blocked accounts”). */
+  async getBlockedAccounts(): Promise<BlockedAccountItem[]> {
+    const data = await api.get<{ blockedAccounts: BlockedAccountItem[] }>(
+      '/messages/blocks/accounts'
+    );
+    return data.blockedAccounts ?? [];
   }
 
   /** Remove an outgoing block (unblock). */

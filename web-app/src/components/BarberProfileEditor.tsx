@@ -8,15 +8,17 @@
  * - Instant booking toggle
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
+import Avatar from './Avatar';
 import MobilePhotoUpload from './MobilePhotoUpload';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import userService from '../services/user.service';
+import messageService, { type BlockedAccountItem } from '../services/message.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { Barber } from '../types';
@@ -49,13 +51,55 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [isHidden, setIsHidden] = useState(false); // Hide profile from consumers
+  const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccountItem[]>([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
   
   // Available specialty options from shared config
   const availableSpecialties = SPECIALTY_OPTIONS;
 
+  const loadBlockedAccounts = useCallback(async () => {
+    setBlockedLoading(true);
+    try {
+      const list = await messageService.getBlockedAccounts();
+      setBlockedAccounts(Array.isArray(list) ? list : []);
+    } catch (e) {
+      const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code === 'UGC_SCHEMA_MISSING') {
+        setBlockedAccounts([]);
+      } else {
+        console.error(e);
+        toast.error('Could not load blocked accounts');
+        setBlockedAccounts([]);
+      }
+    } finally {
+      setBlockedLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadBarberProfile();
-  }, [barberId, userId]);
+    void loadBlockedAccounts();
+  }, [barberId, userId, loadBlockedAccounts]);
+
+  const handleUnblock = async (blockedUserId: string) => {
+    setUnblockingId(blockedUserId);
+    try {
+      await messageService.unblockUser(blockedUserId);
+      setBlockedAccounts((prev) => prev.filter((r) => r.blockedUserId !== blockedUserId));
+      toast.success('Unblocked');
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
+        setBlockedAccounts((prev) => prev.filter((r) => r.blockedUserId !== blockedUserId));
+        toast.error('Block was already removed');
+      } else {
+        toast.error('Could not unblock');
+      }
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   const loadBarberProfile = async () => {
     try {
@@ -431,6 +475,47 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
             </div>
           )}
         </div>
+      </Card>
+
+      {/* Blocked accounts */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-2">Blocked accounts</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          People you have blocked cannot message you or appear in each other&apos;s browse until you unblock them.
+        </p>
+        {blockedLoading ? (
+          <div className="flex items-center justify-center py-6 text-gray-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+          </div>
+        ) : blockedAccounts.length === 0 ? (
+          <p className="text-sm text-gray-500 py-2">No blocked accounts</p>
+        ) : (
+          <ul className="space-y-3">
+            {blockedAccounts.map((row) => (
+              <li
+                key={row.blockedUserId}
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50"
+              >
+                <Avatar src={row.avatarUrl || undefined} alt={row.name} size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 truncate">{row.name}</p>
+                  {row.email && (
+                    <p className="text-xs text-gray-500 truncate">{row.email}</p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={unblockingId === row.blockedUserId}
+                  onClick={() => handleUnblock(row.blockedUserId)}
+                >
+                  {unblockingId === row.blockedUserId ? '…' : 'Unblock'}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       {/* Action Buttons (Bottom) */}

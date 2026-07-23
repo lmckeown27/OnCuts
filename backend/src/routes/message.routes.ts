@@ -14,6 +14,7 @@ import {
   createContentReport,
   createUserBlock,
   isUgcModerationSchemaReady,
+  listBlockedAccounts,
   listBlockedServiceProviders,
   listBlockedUserIds,
   notifyDeveloperOfBlock,
@@ -551,6 +552,46 @@ router.get('/blocks', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId as string;
     const blockedUserIds = await listBlockedUserIds(userId);
     res.json({ success: true, data: { blockedUserIds } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/messages/blocks/accounts
+ * All outgoing peer blocks with profile info (operator Account “Blocked accounts” UI).
+ */
+router.get('/blocks/accounts', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    if (!(await isUgcModerationSchemaReady())) {
+      return res.status(503).json({
+        success: false,
+        error: 'User blocking is not available until database migration 028 is applied.',
+        code: 'UGC_SCHEMA_MISSING',
+      });
+    }
+    const blocked = await listBlockedAccounts(userId);
+    res.json({
+      success: true,
+      data: {
+        blockedAccounts: blocked.map((row) => ({
+          blockedUserId: row.blockedUserId,
+          blockedAt: row.blockedAt,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          displayName: row.displayName,
+          avatarUrl: row.avatarUrl,
+          email: row.email,
+          isServiceProvider: row.isServiceProvider,
+          name:
+            row.displayName?.trim() ||
+            `${row.firstName || ''} ${row.lastName || ''}`.trim() ||
+            row.email ||
+            'Blocked account',
+        })),
+      },
+    });
   } catch (error) {
     next(error);
   }

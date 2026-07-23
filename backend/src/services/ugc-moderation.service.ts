@@ -414,6 +414,88 @@ export async function listBlockedServiceProviders(blockerUserId: string): Promis
   }));
 }
 
+export type BlockedAccountRow = {
+  blockedUserId: string;
+  blockedAt: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+  isServiceProvider: boolean;
+};
+
+/**
+ * All outgoing peer blocks for the current user (clients and operators).
+ * Used by operator Account settings so blocked consumers are visible to unblock.
+ */
+export async function listBlockedAccounts(blockerUserId: string): Promise<BlockedAccountRow[]> {
+  if (!(await isUgcModerationSchemaReady())) {
+    return [];
+  }
+
+  const uCols = await getPgTableColumns('users');
+  const bCols = await getPgTableColumns('barbers');
+  const barberUserCol = pickFirstExistingColumn(bCols, ['userId', 'user_id']);
+
+  const displayNameCols = filterExistingColumns(uCols, ['displayName', 'display_name']);
+  const firstNameCols = filterExistingColumns(uCols, ['first_name', 'firstName']);
+  const lastNameCols = filterExistingColumns(uCols, ['last_name', 'lastName']);
+  const avatarCols = filterExistingColumns(uCols, ['avatarUrl', 'avatar_url']);
+  const emailSql = uCols.has('email') ? `u.${quotePgIdent('email')}` : 'NULL::text';
+
+  const displayFromUserCols =
+    displayNameCols.length > 0 ? coalesceFirstNonEmptyTrim('u', displayNameCols) : 'NULL::text';
+
+  let displayFromFullName = 'NULL::text';
+  if (firstNameCols.length > 0 || lastNameCols.length > 0) {
+    const firstSql = firstNameCols.length > 0 ? coalesceColumnValues('u', firstNameCols) : `''::text`;
+    const lastSql = lastNameCols.length > 0 ? coalesceColumnValues('u', lastNameCols) : `''::text`;
+    displayFromFullName = `NULLIF(TRIM(CONCAT_WS(' ', ${firstSql}::text, ${lastSql}::text)), '')`;
+  }
+
+  const mergedDisplaySql = `COALESCE(${displayFromUserCols}, ${displayFromFullName})`;
+  const mergedAvatarSql =
+    avatarCols.length > 0 ? coalesceFirstNonEmptyTrim('u', avatarCols) : 'NULL::text';
+  const mergedFirstSql =
+    firstNameCols.length > 0 ? coalesceColumnValues('u', firstNameCols) : 'NULL::text';
+  const mergedLastSql = lastNameCols.length > 0 ? coalesceColumnValues('u', lastNameCols) : 'NULL::text';
+
+  const providerExistsSql = barberUserCol
+    ? `EXISTS (
+         SELECT 1 FROM barbers b
+         WHERE b.${quotePgIdent(barberUserCol)} = u.id
+       )`
+    : 'false';
+
+  const sql = `
+    SELECT
+       ub.blocked_user_id::text AS blocked_user_id,
+       ub.created_at AS blocked_at,
+       ${mergedFirstSql} AS first_name,
+       ${mergedLastSql} AS last_name,
+       ${mergedDisplaySql} AS display_name,
+       ${mergedAvatarSql} AS avatar_url,
+       ${emailSql} AS email,
+       ${providerExistsSql} AS is_service_provider
+     FROM user_blocks ub
+     JOIN users u ON u.id = ub.blocked_user_id
+     WHERE ub.blocker_user_id = $1::uuid
+     ORDER BY ub.created_at DESC`;
+
+  const r = await pool.query(sql, [blockerUserId]);
+  return r.rows.map((row) => ({
+    blockedUserId: row.blocked_user_id,
+    blockedAt: row.blocked_at instanceof Date ? row.blocked_at.toISOString() : String(row.blocked_at),
+    firstName: row.first_name,
+    lastName: row.last_name,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url,
+    email: row.email,
+    isServiceProvider: row.is_service_provider === true,
+  }));
+}
+
 export async function listBlockedUserIds(blockerUserId: string): Promise<string[]> {
   if (!(await isUgcModerationSchemaReady())) {
     return [];
