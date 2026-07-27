@@ -46,6 +46,7 @@ import { useViewport, useBodyScrollLock, useDynamicViewportHeight } from '../hoo
 import { useStripeOnboardingGate } from '../hooks/useStripeOnboardingGate';
 import toast from 'react-hot-toast';
 import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storageMigration';
+import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
 const BARBER_HIDDEN_PAID_BOOKINGS_PREFIX = 'oncuts_barber_hidden_paid_bookings_';
@@ -525,6 +526,7 @@ export default function BarberPage() {
     <>
     <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
+      <IosAppDownloadBanner variant="operator" />
       {/* Header — Chats (left) · Admin (center) · Bookings · Account (right) */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">

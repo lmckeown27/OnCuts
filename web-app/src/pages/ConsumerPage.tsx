@@ -58,6 +58,7 @@ import {
   type BrowseProviderCategory,
 } from '../config/providerCategories';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
+import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 
@@ -739,6 +740,7 @@ export default function ConsumerPage() {
 
   return (
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>
+      <IosAppDownloadBanner variant="consumer" />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
