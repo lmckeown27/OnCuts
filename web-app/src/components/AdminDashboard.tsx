@@ -2296,7 +2296,7 @@ export function AdminDashboard({
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search operators by name, email, or campus..."
+                    placeholder="Search for Operators..."
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                     value={onboardingSearchQuery}
                     onChange={(e) => setOnboardingSearchQuery(e.target.value)}
@@ -2615,7 +2615,7 @@ export function AdminDashboard({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search operators by name, email, or campus..."
+                placeholder="Search for Operators..."
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                 value={allBarberSearchQuery}
                 onChange={(e) => setAllBarberSearchQuery(e.target.value)}
@@ -3061,7 +3061,7 @@ export function AdminDashboard({
                     type="text"
                     value={barberSearchQuery}
                     onChange={(e) => setBarberSearchQuery(e.target.value)}
-                    placeholder="Search operators..."
+                    placeholder="Search for Operators..."
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
