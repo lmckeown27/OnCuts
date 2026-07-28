@@ -356,6 +356,12 @@ export function AdminDashboard({
   const [onboardingSelectedIds, setOnboardingSelectedIds] = useState<Set<string>>(new Set());
   const [onboardingFreeInput, setOnboardingFreeInput] = useState('5');
   const [onboardingKickbackInput, setOnboardingKickbackInput] = useState('0');
+  const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('all');
+  const [onboardingLocationFilter, setOnboardingLocationFilter] = useState<'all' | 'has-pin' | 'missing'>('all');
+  const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'with-free' | 'at-zero'>('all');
+  const [onboardingKickbackFilter, setOnboardingKickbackFilter] = useState<'all' | 'with-kickback' | 'none'>('all');
+  const [showOnboardingFilters, setShowOnboardingFilters] = useState(false);
+  const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
   
   // Consumer detail view state
@@ -798,6 +804,43 @@ export function AdminDashboard({
         ),
     [barbers]
   );
+
+  const onboardingFiltersActive =
+    onboardingStripeFilter !== 'all' ||
+    onboardingLocationFilter !== 'all' ||
+    onboardingFreeFilter !== 'all' ||
+    onboardingKickbackFilter !== 'all';
+
+  const filteredOnboardingOperators = useMemo(() => {
+    const query = onboardingSearchQuery.trim().toLowerCase();
+    return onboardingOperators.filter((b) => {
+      if (onboardingStripeFilter === 'ready' && !b.hasStripeSetup) return false;
+      if (onboardingStripeFilter === 'not-ready' && b.hasStripeSetup) return false;
+      if (onboardingLocationFilter === 'has-pin' && !b.hasServiceLocation) return false;
+      if (onboardingLocationFilter === 'missing' && b.hasServiceLocation) return false;
+      const free = b.commissionFreeBookingsRemaining ?? 0;
+      if (onboardingFreeFilter === 'with-free' && free <= 0) return false;
+      if (onboardingFreeFilter === 'at-zero' && free > 0) return false;
+      const kickback = b.kickbackPercent ?? 0;
+      if (onboardingKickbackFilter === 'with-kickback' && kickback <= 0) return false;
+      if (onboardingKickbackFilter === 'none' && kickback > 0) return false;
+      if (!query) return true;
+      return (
+        b.firstName.toLowerCase().includes(query) ||
+        b.lastName.toLowerCase().includes(query) ||
+        b.email.toLowerCase().includes(query) ||
+        (b.campusName && b.campusName.toLowerCase().includes(query)) ||
+        (b.serviceLocationLabel && b.serviceLocationLabel.toLowerCase().includes(query))
+      );
+    });
+  }, [
+    onboardingOperators,
+    onboardingSearchQuery,
+    onboardingStripeFilter,
+    onboardingLocationFilter,
+    onboardingFreeFilter,
+    onboardingKickbackFilter,
+  ]);
 
   const onboardingStats = useMemo(() => {
     const total = onboardingOperators.length;
@@ -2142,104 +2185,98 @@ export function AdminDashboard({
 
             {operatorsHubTab === 'onboarding' ? (
               <div className="space-y-4 pt-1">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">Onboarding</h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Overview of operator readiness, then mass-apply the same payment settings used on each
-                    operator profile.
-                  </p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search operators by name, email, or campus..."
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    value={onboardingSearchQuery}
+                    onChange={(e) => setOnboardingSearchQuery(e.target.value)}
+                  />
                 </div>
 
-                {/* Current operator state */}
-                <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">Current operator state</h4>
-                    <span className="text-[10px] text-gray-500">
-                      {isLoadingBarbers ? 'Loading…' : `${onboardingStats.total} operators`}
-                    </span>
-                  </div>
+                <div className="mb-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowOnboardingFilters(true)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                      onboardingFiltersActive
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                    Filters
+                    {onboardingFiltersActive && (
+                      <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    )}
+                  </button>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.total}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Stripe ready</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.stripeReady}
-                        <span className="ml-1 text-[10px] font-normal text-gray-500">
-                          / {onboardingStats.stripeNotReady} not
-                        </span>
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Public location</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.withLocation}
-                        <span className="ml-1 text-[10px] font-normal text-gray-500">
-                          / {onboardingStats.withoutLocation} missing
-                        </span>
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">With free slots</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.withFree}
-                        <span className="ml-1 text-[10px] font-normal text-gray-500">
-                          / {onboardingStats.zeroFree} at 0
-                        </span>
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Total free slots</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.totalFreeSlots}
-                        <span className="ml-1 text-[10px] font-normal text-gray-500">
-                          avg {onboardingStats.avgFreeSlots.toFixed(1)}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500">With kickback</p>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                        {onboardingStats.withKickback}
-                        <span className="ml-1 text-[10px] font-normal text-gray-500">
-                          avg {onboardingStats.avgKickbackPercent.toFixed(1)}%
-                        </span>
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">Operator settings</h3>
+                  <span className="text-xs text-gray-500">
+                    {isLoadingBarbers
+                      ? 'Loading…'
+                      : `${filteredOnboardingOperators.length}${
+                          onboardingFiltersActive || onboardingSearchQuery.trim()
+                            ? ` of ${onboardingStats.total}`
+                            : ''
+                        } operators`}
+                  </span>
+                </div>
 
-                  <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-stone-100">
-                    {isLoadingBarbers ? (
-                      <div className="flex justify-center py-6">
-                        <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                {isLoadingBarbers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {filteredOnboardingOperators.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <Scissors className="w-8 h-8 mb-2" />
+                        <p className="text-sm">No operators match these filters</p>
                       </div>
-                    ) : onboardingOperators.length === 0 ? (
-                      <p className="py-4 text-center text-sm text-gray-400">No operators found</p>
                     ) : (
-                      onboardingOperators.map((barber) => (
+                      filteredOnboardingOperators.map((barber) => (
                         <div
                           key={barber.barberRecordId || barber.id}
-                          className="flex items-center justify-between gap-2 border-b border-stone-100 px-2.5 py-2 last:border-b-0"
+                          className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 text-left"
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-medium text-gray-900">
-                              {barber.firstName} {barber.lastName}
-                            </p>
-                            <p className="truncate text-[10px] text-gray-500">{barber.email}</p>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {barber.profileImageUrl ? (
+                                <img
+                                  src={barber.profileImageUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold text-gray-500">
+                                  {barber.firstName.charAt(0)}
+                                  {barber.lastName.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                                {barber.firstName} {barber.lastName}
+                                {barber.hasStripeSetup && (
+                                  <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">
+                                    Stripe
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{barber.email}</p>
+                            </div>
                           </div>
-                          <div className="shrink-0 text-right">
+                          <div className="text-right shrink-0 ml-2">
                             <p className="text-[10px] tabular-nums text-gray-700">
                               free {barber.commissionFreeBookingsRemaining ?? 0} ·{' '}
                               {barber.kickbackPercent ?? 0}% kickback
                             </p>
                             <p className="text-[10px] text-gray-400">
-                              {barber.hasStripeSetup ? 'Stripe' : 'No Stripe'}
-                              {' · '}
                               {barberLocationSubtitle(barber)}
                             </p>
                           </div>
@@ -2247,7 +2284,7 @@ export function AdminDashboard({
                       ))
                     )}
                   </div>
-                </div>
+                )}
 
                 {/* Mass apply — mirrors per-operator Payment settings */}
                 <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3">
@@ -2324,7 +2361,12 @@ export function AdminDashboard({
                   {onboardingScope === 'selected' && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] text-gray-500">Tap operators to include</p>
+                        <p className="text-[10px] text-gray-500">
+                          Tap operators to include
+                          {onboardingFiltersActive || onboardingSearchQuery.trim()
+                            ? ' (from filtered list)'
+                            : ''}
+                        </p>
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -2332,7 +2374,7 @@ export function AdminDashboard({
                             onClick={() =>
                               setOnboardingSelectedIds(
                                 new Set(
-                                  onboardingOperators
+                                  filteredOnboardingOperators
                                     .map((b) => b.barberRecordId)
                                     .filter((id): id is string => Boolean(id))
                                 )
@@ -2351,7 +2393,7 @@ export function AdminDashboard({
                         </div>
                       </div>
                       <div className="max-h-48 space-y-1.5 overflow-y-auto">
-                        {onboardingOperators.map((barber) => {
+                        {filteredOnboardingOperators.map((barber) => {
                           const id = barber.barberRecordId!;
                           const selected = onboardingSelectedIds.has(id);
                           return (
@@ -3843,6 +3885,174 @@ export function AdminDashboard({
                 </div>
               )}
               <Button type="button" className="w-full" onClick={() => setShowBarberFilters(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding filters sheet */}
+      {showOnboardingFilters && (
+        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            aria-label="Dismiss onboarding filters"
+            onClick={() => setShowOnboardingFilters(false)}
+          />
+          <div className="relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4">
+            <div className="flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between border-b border-stone-200 shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+              <button
+                type="button"
+                onClick={() => setShowOnboardingFilters(false)}
+                className="p-2 hover:bg-stone-100 rounded-full"
+                aria-label="Close filters"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Stripe</p>
+                <div className="flex rounded-lg bg-stone-100 p-1">
+                  {(
+                    [
+                      { id: 'all', label: `All (${onboardingStats.total})` },
+                      { id: 'ready', label: `Ready (${onboardingStats.stripeReady})` },
+                      { id: 'not-ready', label: `Not ready (${onboardingStats.stripeNotReady})` },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setOnboardingStripeFilter(opt.id)}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
+                        onboardingStripeFilter === opt.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Public location
+                </p>
+                <div className="flex rounded-lg bg-stone-100 p-1">
+                  {(
+                    [
+                      { id: 'all', label: 'All' },
+                      { id: 'has-pin', label: `Set (${onboardingStats.withLocation})` },
+                      { id: 'missing', label: `Missing (${onboardingStats.withoutLocation})` },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setOnboardingLocationFilter(opt.id)}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
+                        onboardingLocationFilter === opt.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Commission-free
+                </p>
+                <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
+                  {(
+                    [
+                      {
+                        id: 'all',
+                        label: `All · ${onboardingStats.totalFreeSlots} total free (avg ${onboardingStats.avgFreeSlots.toFixed(1)})`,
+                      },
+                      { id: 'with-free', label: `With free slots (${onboardingStats.withFree})` },
+                      { id: 'at-zero', label: `At 0 (${onboardingStats.zeroFree})` },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setOnboardingFreeFilter(opt.id)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
+                        onboardingFreeFilter === opt.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Kickback
+                </p>
+                <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
+                  {(
+                    [
+                      {
+                        id: 'all',
+                        label: `All · avg ${onboardingStats.avgKickbackPercent.toFixed(1)}%`,
+                      },
+                      {
+                        id: 'with-kickback',
+                        label: `With kickback (${onboardingStats.withKickback})`,
+                      },
+                      {
+                        id: 'none',
+                        label: `None (${Math.max(0, onboardingStats.total - onboardingStats.withKickback)})`,
+                      },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setOnboardingKickbackFilter(opt.id)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
+                        onboardingKickbackFilter === opt.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setOnboardingStripeFilter('all');
+                  setOnboardingLocationFilter('all');
+                  setOnboardingFreeFilter('all');
+                  setOnboardingKickbackFilter('all');
+                }}
+              >
+                Clear filters
+              </Button>
+              <Button type="button" className="w-full" onClick={() => setShowOnboardingFilters(false)}>
                 Done
               </Button>
             </div>
