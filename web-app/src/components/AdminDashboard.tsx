@@ -364,6 +364,7 @@ export function AdminDashboard({
   const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
   const [savingOnboardingBarberId, setSavingOnboardingBarberId] = useState<string | null>(null);
+  const [showOnboardingBulkConfirm, setShowOnboardingBulkConfirm] = useState(false);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -1120,6 +1121,22 @@ export function AdminDashboard({
       return;
     }
 
+    if (onboardingScope === 'selected') {
+      if (onboardingSelectedIds.size === 0) {
+        toast.error('Select at least one operator');
+        return;
+      }
+      await executeBulkOnboardingSave(freeRemaining, kickbackPercent);
+      return;
+    }
+
+    setShowOnboardingBulkConfirm(true);
+  };
+
+  const executeBulkOnboardingSave = async (
+    freeRemaining: number,
+    kickbackPercent: number
+  ) => {
     const body: {
       scope: 'all' | 'selected';
       barberRecordIds?: string[];
@@ -1132,12 +1149,7 @@ export function AdminDashboard({
     };
 
     if (onboardingScope === 'selected') {
-      const ids = Array.from(onboardingSelectedIds);
-      if (ids.length === 0) {
-        toast.error('Select at least one operator');
-        return;
-      }
-      body.barberRecordIds = ids;
+      body.barberRecordIds = Array.from(onboardingSelectedIds);
     }
 
     setIsSavingOnboardingBulk(true);
@@ -1156,6 +1168,13 @@ export function AdminDashboard({
     } finally {
       setIsSavingOnboardingBulk(false);
     }
+  };
+
+  const confirmBulkOnboardingSave = async () => {
+    setShowOnboardingBulkConfirm(false);
+    const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
+    const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+    await executeBulkOnboardingSave(freeRemaining, kickbackPercent);
   };
 
   const toggleOnboardingProvider = (barberRecordId: string) => {
@@ -4158,6 +4177,38 @@ export function AdminDashboard({
                   }`}
                 >
                   {pendingApplicationAction.action === 'approve' ? 'Yes, Approve' : 'Yes, Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOnboardingBulkConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-200">
+              <h3 className="text-lg font-semibold text-gray-900">Are you sure?</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-5">
+                Apply commissionless {onboardingFreeInput} and kickback {onboardingKickbackInput}% to all{' '}
+                {onboardingStats.total} operators?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOnboardingBulkConfirm(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void confirmBulkOnboardingSave()}
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors"
+                >
+                  Yes
                 </button>
               </div>
             </div>
