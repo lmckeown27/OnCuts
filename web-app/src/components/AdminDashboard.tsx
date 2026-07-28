@@ -2332,60 +2332,62 @@ export function AdminDashboard({
                     </nav>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700 whitespace-nowrap">
-                        Commissionless Bookings:
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={onboardingFreeInput}
-                        onChange={(e) => setOnboardingFreeInput(e.target.value)}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
-                      />
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700 whitespace-nowrap">
-                        Kickback % Per Booking:
-                      </span>
-                      <span className="relative inline-flex">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          Commissionless Bookings:
+                        </span>
                         <input
                           type="number"
                           min={0}
-                          max={100}
                           step={1}
-                          value={onboardingKickbackInput}
-                          onChange={(e) => setOnboardingKickbackInput(e.target.value)}
-                          className="w-20 rounded-md border border-gray-300 py-1.5 pl-2 pr-6 text-sm tabular-nums"
+                          value={onboardingFreeInput}
+                          onChange={(e) => setOnboardingFreeInput(e.target.value)}
+                          className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
                         />
-                        <span
-                          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm tabular-nums text-gray-700"
-                          aria-hidden
-                        >
-                          %
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          Kickback % Per Booking:
                         </span>
-                      </span>
-                    </label>
+                        <span className="relative inline-flex">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={onboardingKickbackInput}
+                            onChange={(e) => setOnboardingKickbackInput(e.target.value)}
+                            className="w-20 rounded-md border border-gray-300 py-1.5 pl-2 pr-6 text-sm tabular-nums"
+                          />
+                          <span
+                            className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm tabular-nums text-gray-700"
+                            aria-hidden
+                          >
+                            %
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={
+                        isSavingOnboardingBulk ||
+                        (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                      }
+                      onClick={() => void handleBulkOnboardingSave()}
+                    >
+                      {isSavingOnboardingBulk ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : onboardingScope === 'all' ? (
+                        'Apply to all'
+                      ) : (
+                        `Apply to ${onboardingSelectedIds.size || 0}`
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={
-                      isSavingOnboardingBulk ||
-                      (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
-                    }
-                    onClick={() => void handleBulkOnboardingSave()}
-                  >
-                    {isSavingOnboardingBulk ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : onboardingScope === 'all' ? (
-                      'Apply to all'
-                    ) : (
-                      `Apply to ${onboardingSelectedIds.size || 0}`
-                    )}
-                  </Button>
 
                   {onboardingScope === 'selected' && (
                     <div className="flex items-center justify-between gap-2">
