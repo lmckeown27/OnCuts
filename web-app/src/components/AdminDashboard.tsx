@@ -364,7 +364,9 @@ export function AdminDashboard({
   const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
   const [savingOnboardingBarberId, setSavingOnboardingBarberId] = useState<string | null>(null);
-  const [showOnboardingBulkConfirm, setShowOnboardingBulkConfirm] = useState(false);
+  const [onboardingBulkConfirmField, setOnboardingBulkConfirmField] = useState<
+    'free' | 'kickback' | null
+  >(null);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -1119,17 +1121,22 @@ export function AdminDashboard({
     }
   };
 
-  const handleBulkOnboardingSave = async () => {
-    const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
-    if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
-      toast.error('Commission-free bookings must be a whole number ≥ 0');
-      return;
-    }
+  const onboardingApplyTargetCount =
+    onboardingScope === 'all' ? onboardingStats.total : onboardingSelectedIds.size;
 
-    const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
-    if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
-      toast.error('Kickback percent must be between 0 and 100');
-      return;
+  const handleBulkOnboardingFieldSave = async (field: 'free' | 'kickback') => {
+    if (field === 'free') {
+      const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
+      if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+        toast.error('Commission-free bookings must be a whole number ≥ 0');
+        return;
+      }
+    } else {
+      const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+      if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
+        toast.error('Kickback percent must be between 0 and 100');
+        return;
+      }
     }
 
     if (onboardingScope === 'selected') {
@@ -1137,27 +1144,28 @@ export function AdminDashboard({
         toast.error('Select at least one operator');
         return;
       }
-      await executeBulkOnboardingSave(freeRemaining, kickbackPercent);
+      await executeBulkOnboardingSave(field);
       return;
     }
 
-    setShowOnboardingBulkConfirm(true);
+    setOnboardingBulkConfirmField(field);
   };
 
-  const executeBulkOnboardingSave = async (
-    freeRemaining: number,
-    kickbackPercent: number
-  ) => {
+  const executeBulkOnboardingSave = async (field: 'free' | 'kickback') => {
     const body: {
       scope: 'all' | 'selected';
       barberRecordIds?: string[];
-      commissionFreeBookingsRemaining: number;
-      kickbackPercent: number;
+      commissionFreeBookingsRemaining?: number;
+      kickbackPercent?: number;
     } = {
       scope: onboardingScope,
-      commissionFreeBookingsRemaining: freeRemaining,
-      kickbackPercent,
     };
+
+    if (field === 'free') {
+      body.commissionFreeBookingsRemaining = parseInt(onboardingFreeInput.trim(), 10);
+    } else {
+      body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+    }
 
     if (onboardingScope === 'selected') {
       body.barberRecordIds = Array.from(onboardingSelectedIds);
@@ -1182,10 +1190,10 @@ export function AdminDashboard({
   };
 
   const confirmBulkOnboardingSave = async () => {
-    setShowOnboardingBulkConfirm(false);
-    const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
-    const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
-    await executeBulkOnboardingSave(freeRemaining, kickbackPercent);
+    const field = onboardingBulkConfirmField;
+    setOnboardingBulkConfirmField(null);
+    if (!field) return;
+    await executeBulkOnboardingSave(field);
   };
 
   const toggleOnboardingProvider = (barberRecordId: string) => {
@@ -2343,8 +2351,8 @@ export function AdminDashboard({
                     </nav>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <div className="flex flex-col gap-2">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <label className="flex items-center gap-2">
                         <span className="text-sm text-gray-700 whitespace-nowrap">
                           Commissionless Bookings:
@@ -2358,6 +2366,23 @@ export function AdminDashboard({
                           className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
                         />
                       </label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          isSavingOnboardingBulk ||
+                          (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                        }
+                        onClick={() => void handleBulkOnboardingFieldSave('free')}
+                      >
+                        {isSavingOnboardingBulk ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          `Add to ${onboardingApplyTargetCount}`
+                        )}
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <label className="flex items-center gap-2">
                         <span className="text-sm text-gray-700 whitespace-nowrap">
                           Kickback % Per Booking:
@@ -2380,24 +2405,22 @@ export function AdminDashboard({
                           </span>
                         </span>
                       </label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          isSavingOnboardingBulk ||
+                          (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                        }
+                        onClick={() => void handleBulkOnboardingFieldSave('kickback')}
+                      >
+                        {isSavingOnboardingBulk ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          `Apply to ${onboardingApplyTargetCount}`
+                        )}
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={
-                        isSavingOnboardingBulk ||
-                        (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
-                      }
-                      onClick={() => void handleBulkOnboardingSave()}
-                    >
-                      {isSavingOnboardingBulk ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : onboardingScope === 'all' ? (
-                        'Apply to all'
-                      ) : (
-                        `Apply to ${onboardingSelectedIds.size || 0}`
-                      )}
-                    </Button>
                   </div>
 
                   {onboardingScope === 'selected' && (
@@ -4200,7 +4223,7 @@ export function AdminDashboard({
         </div>
       )}
 
-      {showOnboardingBulkConfirm && (
+      {onboardingBulkConfirmField && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-stone-200">
@@ -4208,13 +4231,14 @@ export function AdminDashboard({
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-600 mb-5">
-                Apply commissionless {onboardingFreeInput} and kickback {onboardingKickbackInput}% to all{' '}
-                {onboardingStats.total} operators?
+                {onboardingBulkConfirmField === 'free'
+                  ? `Set commissionless bookings to ${onboardingFreeInput} for all ${onboardingStats.total} operators?`
+                  : `Set kickback to ${onboardingKickbackInput}% for all ${onboardingStats.total} operators?`}
               </p>
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowOnboardingBulkConfirm(false)}
+                  onClick={() => setOnboardingBulkConfirmField(null)}
                   className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   No
