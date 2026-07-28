@@ -2358,7 +2358,10 @@ export function AdminDashboard({
                     <Button
                       type="button"
                       size="sm"
-                      disabled={isSavingOnboardingBulk}
+                      disabled={
+                        isSavingOnboardingBulk ||
+                        (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                      }
                       onClick={() => void handleBulkOnboardingSave()}
                     >
                       {isSavingOnboardingBulk ? (
