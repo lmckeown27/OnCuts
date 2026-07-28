@@ -2332,20 +2332,24 @@ export function AdminDashboard({
                     </nav>
                   </div>
 
-                  <div className="flex flex-wrap items-end gap-2">
-                    <label className="block">
-                      <span className="text-[10px] text-gray-500">Commissionless</span>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                        Commissionless Bookings:
+                      </span>
                       <input
                         type="number"
                         min={0}
                         step={1}
                         value={onboardingFreeInput}
                         onChange={(e) => setOnboardingFreeInput(e.target.value)}
-                        className="mt-0.5 block w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                        className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
                       />
                     </label>
-                    <label className="block">
-                      <span className="text-[10px] text-gray-500">Kickback %</span>
+                    <label className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                        Kickback % Per Booking:
+                      </span>
                       <input
                         type="number"
                         min={0}
@@ -2353,7 +2357,7 @@ export function AdminDashboard({
                         step={1}
                         value={onboardingKickbackInput}
                         onChange={(e) => setOnboardingKickbackInput(e.target.value)}
-                        className="mt-0.5 block w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                        className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
                       />
                     </label>
                   </div>
