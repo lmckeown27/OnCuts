@@ -2377,6 +2377,8 @@ export function AdminDashboard({
                       >
                         {isSavingOnboardingBulk ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : onboardingScope === 'all' ? (
+                          'Add to All'
                         ) : (
                           `Add to ${onboardingApplyTargetCount}`
                         )}
@@ -2416,6 +2418,8 @@ export function AdminDashboard({
                       >
                         {isSavingOnboardingBulk ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : onboardingScope === 'all' ? (
+                          'Apply to All'
                         ) : (
                           `Apply to ${onboardingApplyTargetCount}`
                         )}
