@@ -879,6 +879,18 @@ export function AdminDashboard({
     };
   }, [onboardingOperators]);
 
+  const stripeStatusBadge = (barber: Barber) =>
+    barber.hasStripeSetup ? (
+      <span className="text-[10px] text-white bg-purple-600 px-1.5 py-0.5 rounded shrink-0">
+        Stripe
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-0.5 text-[10px] text-white bg-red-600 px-1.5 py-0.5 rounded shrink-0">
+        <XCircle className="w-3 h-3" aria-hidden />
+        No Stripe
+      </span>
+    );
+
   const barberLocationSubtitle = (barber: Barber) => {
     // City/town only — never street address
     let place: string | null = null;
@@ -2492,11 +2504,7 @@ export function AdminDashboard({
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                                   {barber.firstName} {barber.lastName}
-                                  {barber.hasStripeSetup && (
-                                    <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">
-                                      Stripe
-                                    </span>
-                                  )}
+                                  {stripeStatusBadge(barber)}
                                   {busy && (
                                     <Loader2 className="w-3 h-3 animate-spin text-gray-400 shrink-0" />
                                   )}
@@ -2683,9 +2691,7 @@ export function AdminDashboard({
                               {barber.isBanned ? (
                                 <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                               ) : null}
-                              {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
-                              )}
+                              {stripeStatusBadge(barber)}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
@@ -2730,9 +2736,7 @@ export function AdminDashboard({
                               {barber.isBanned ? (
                                 <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                               ) : null}
-                              {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
-                              )}
+                              {stripeStatusBadge(barber)}
                             </p>
                             <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                           </div>
@@ -3075,9 +3079,7 @@ export function AdminDashboard({
                                 {barber.isBanned ? (
                                   <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                                 ) : null}
-                                {barber.hasStripeSetup && (
-                                  <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
-                                )}
+                                {stripeStatusBadge(barber)}
                               </p>
                               <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                             </div>
