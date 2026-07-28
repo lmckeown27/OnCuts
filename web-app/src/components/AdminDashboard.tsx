@@ -2356,24 +2356,24 @@ export function AdminDashboard({
                         className="mt-0.5 block w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
                       />
                     </label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={
-                        isSavingOnboardingBulk ||
-                        (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
-                      }
-                      onClick={() => void handleBulkOnboardingSave()}
-                    >
-                      {isSavingOnboardingBulk ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : onboardingScope === 'all' ? (
-                        'Apply to all'
-                      ) : (
-                        `Apply to ${onboardingSelectedIds.size || 0}`
-                      )}
-                    </Button>
                   </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={
+                      isSavingOnboardingBulk ||
+                      (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                    }
+                    onClick={() => void handleBulkOnboardingSave()}
+                  >
+                    {isSavingOnboardingBulk ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : onboardingScope === 'all' ? (
+                      'Apply to all'
+                    ) : (
+                      `Apply to ${onboardingSelectedIds.size || 0}`
+                    )}
+                  </Button>
 
                   {onboardingScope === 'selected' && (
                     <div className="flex items-center justify-between gap-2">
@@ -2574,8 +2574,7 @@ export function AdminDashboard({
               />
             </div>
             
-            <p className="text-xs text-gray-500 mb-2">Tap an operator to view detail</p>
-            
+
             {/* Current | Applications */}
             <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1 mb-3">
               <button
@@ -3022,8 +3021,6 @@ export function AdminDashboard({
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
-                
-                <p className="text-xs text-gray-500 mb-2">Tap an operator to view detail</p>
             
             {isLoadingBarbers ? (
               <div className="flex items-center justify-center py-8">
