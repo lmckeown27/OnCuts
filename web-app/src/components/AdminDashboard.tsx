@@ -2332,7 +2332,7 @@ export function AdminDashboard({
                     </nav>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-center gap-3">
                     <div className="flex flex-col gap-2">
                       <label className="flex items-center gap-2">
                         <span className="text-sm text-gray-700 whitespace-nowrap">
