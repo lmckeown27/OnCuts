@@ -885,8 +885,7 @@ export function AdminDashboard({
         Stripe
       </span>
     ) : (
-      <span className="inline-flex items-center gap-0.5 text-[10px] text-white bg-red-600 px-1.5 py-0.5 rounded shrink-0">
-        <XCircle className="w-3 h-3" aria-hidden />
+      <span className="text-[10px] text-white bg-red-600 px-1.5 py-0.5 rounded shrink-0">
         No Stripe
       </span>
     );
