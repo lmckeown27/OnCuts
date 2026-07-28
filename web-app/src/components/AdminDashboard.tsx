@@ -2302,8 +2302,7 @@ export function AdminDashboard({
 
                 {/* Compact mass apply */}
                 <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">Mass apply</h4>
+                  <div className="flex justify-center">
                     <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
                       <button
                         type="button"
