@@ -2334,7 +2334,7 @@ export function AdminDashboard({
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        All ({onboardingStats.total})
+                        All Operators ({onboardingStats.total})
                       </button>
                       <button
                         type="button"
@@ -2345,7 +2345,7 @@ export function AdminDashboard({
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        Selected
+                        Select Operators
                         {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
                       </button>
                     </nav>
