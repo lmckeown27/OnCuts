@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, startTransition, useDeferredValue } from 'react';
 import { 
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
@@ -317,6 +317,10 @@ export function AdminDashboard({
   
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
   const [adminView, setAdminView] = useState<AdminView>('performance');
+  /** Defer heavy panel swaps so tab chrome stays responsive. */
+  const deferredAdminView = useDeferredValue(adminView);
+  const [servicesPanelMounted, setServicesPanelMounted] = useState(false);
+  const [usersPanelMounted, setUsersPanelMounted] = useState(false);
   
   // Barber detail view state
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
@@ -618,8 +622,9 @@ export function AdminDashboard({
   useEffect(() => {
     const fetchUsers = async () => {
       if (adminView !== 'users') return;
-      
-      setIsLoadingUsers(true);
+
+      // Soft refresh: only block the panel on the first load
+      if (users.length === 0) setIsLoadingUsers(true);
       setUsersPage(1);
       try {
         const params: Record<string, string | number> = {
@@ -645,8 +650,10 @@ export function AdminDashboard({
         setIsLoadingUsers(false);
       }
     };
-    
-    fetchUsers();
+
+    void fetchUsers();
+    // users.length only gates the spinner; omit from deps to avoid refetch loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminView, selectedCampusId, refreshSignal, USERS_PAGE_SIZE]);
 
   const loadMoreUsers = async () => {
@@ -1552,7 +1559,13 @@ export function AdminDashboard({
               <button
                 key={view}
                 type="button"
-                onClick={() => setAdminView(view)}
+                onClick={() => {
+                  startTransition(() => {
+                    setAdminView(view);
+                    if (view === 'services') setServicesPanelMounted(true);
+                    if (view === 'users') setUsersPanelMounted(true);
+                  });
+                }}
                 className={`flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-0.5 transition-colors ${
                   active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -1572,7 +1585,7 @@ export function AdminDashboard({
       >
       
       {/* Performance Chart & Summary */}
-      {adminView === 'performance' && (
+      {deferredAdminView === 'performance' && (
       <>
       {/* Platform totals */}
       <div className="grid grid-cols-3 gap-2">
@@ -1979,7 +1992,7 @@ export function AdminDashboard({
       )}
       
       {/* Barber Management → Operators */}
-      {adminView === 'barbers' && (
+      {deferredAdminView === 'barbers' && (
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
         {selectedBarber ? (
           /* Barber Detail View */
@@ -3400,15 +3413,21 @@ export function AdminDashboard({
       </div>
       )}
       
-      {adminView === 'services' && (
-        <div>
+      {(deferredAdminView === 'services' || servicesPanelMounted) && (
+        <div
+          className={deferredAdminView === 'services' ? undefined : 'hidden'}
+          aria-hidden={deferredAdminView !== 'services'}
+        >
           <ServicesManagementPanel />
         </div>
       )}
       
       {/* Users View */}
-      {adminView === 'users' && (
-      <div>
+      {(deferredAdminView === 'users' || usersPanelMounted) && (
+      <div
+        className={deferredAdminView === 'users' ? undefined : 'hidden'}
+        aria-hidden={deferredAdminView !== 'users'}
+      >
         {selectedConsumer ? (
           // Consumer Detail View - show booking history
           <>
@@ -3655,7 +3674,7 @@ export function AdminDashboard({
       </div>
       )}
 
-      {adminView === 'moderation' && (
+      {deferredAdminView === 'moderation' && (
         <div className="space-y-8">
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900">Reports</h3>
