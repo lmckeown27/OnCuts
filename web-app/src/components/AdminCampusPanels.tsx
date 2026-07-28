@@ -2792,11 +2792,7 @@ export const ServicesManagementPanel: React.FC = () => {
             </Button>
           </div>
         </div>
-        {/* Description */}
-        <p className="text-sm text-gray-500 mt-1">
-          Catalog editor for Barber and Beauty services — toggle availability and set price/duration ranges providers must stay within.
-        </p>
-        <div className="mt-3 flex rounded-xl bg-stone-100 p-1 gap-0.5 max-w-xs">
+        <div className="mt-3 mx-auto flex rounded-xl bg-stone-100 p-1 gap-0.5 max-w-xs">
           {(
             [
               { id: 'barber', label: 'Barber' },
