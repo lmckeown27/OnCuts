@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -363,6 +363,7 @@ export function AdminDashboard({
   const [showOnboardingFilters, setShowOnboardingFilters] = useState(false);
   const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
+  const [savingOnboardingBarberId, setSavingOnboardingBarberId] = useState<string | null>(null);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -1164,6 +1165,72 @@ export function AdminDashboard({
       else next.add(barberRecordId);
       return next;
     });
+  };
+
+  const applyBarberCommissionLocally = (
+    barberRecordId: string,
+    commissionFreeBookingsRemaining: number,
+    kickbackPercent: number
+  ) => {
+    setBarbers((prev) =>
+      prev.map((b) =>
+        b.barberRecordId === barberRecordId
+          ? { ...b, commissionFreeBookingsRemaining, kickbackPercent }
+          : b
+      )
+    );
+    setSelectedBarber((prev) =>
+      prev && prev.barberRecordId === barberRecordId
+        ? { ...prev, commissionFreeBookingsRemaining, kickbackPercent }
+        : prev
+    );
+  };
+
+  const handleOnboardingAdjust = async (
+    barber: Barber,
+    field: 'free' | 'kickback',
+    delta: number
+  ) => {
+    if (!barber.barberRecordId) {
+      toast.error('Missing provider profile id');
+      return;
+    }
+    if (savingOnboardingBarberId || isSavingOnboardingBulk) return;
+
+    const currentFree = barber.commissionFreeBookingsRemaining ?? 0;
+    const currentKickback = barber.kickbackPercent ?? 0;
+    const nextFree =
+      field === 'free' ? Math.min(10000, Math.max(0, currentFree + delta)) : currentFree;
+    const nextKickback =
+      field === 'kickback'
+        ? Math.min(100, Math.max(0, Math.round((currentKickback + delta) * 10) / 10))
+        : currentKickback;
+
+    if (nextFree === currentFree && nextKickback === currentKickback) return;
+
+    setSavingOnboardingBarberId(barber.barberRecordId);
+    try {
+      const data = await api.put<{
+        commissionFreeBookingsRemaining: number;
+        kickbackPercent: number;
+      }>(`/admin/barbers/${barber.barberRecordId}/commission`, {
+        commissionFreeBookingsRemaining: nextFree,
+        kickbackPercent: nextKickback,
+      });
+      applyBarberCommissionLocally(
+        barber.barberRecordId,
+        data.commissionFreeBookingsRemaining ?? nextFree,
+        data.kickbackPercent ?? nextKickback
+      );
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to update settings';
+      toast.error(msg);
+    } finally {
+      setSavingOnboardingBarberId(null);
+    }
   };
   
   const formatCurrency = (cents: number) => {
@@ -2184,7 +2251,7 @@ export function AdminDashboard({
             </nav>
 
             {operatorsHubTab === 'onboarding' ? (
-              <div className="space-y-4 pt-1">
+              <div className="space-y-3 pt-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -2196,7 +2263,7 @@ export function AdminDashboard({
                   />
                 </div>
 
-                <div className="mb-0">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setShowOnboardingFilters(true)}
@@ -2214,8 +2281,110 @@ export function AdminDashboard({
                   </button>
                 </div>
 
+                {/* Compact mass apply */}
+                <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-gray-900">Mass apply</h4>
+                    <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingScope('all')}
+                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                          onboardingScope === 'all'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        All ({onboardingStats.total})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingScope('selected')}
+                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                          onboardingScope === 'selected'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Selected
+                        {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
+                      </button>
+                    </nav>
+                  </div>
+
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="block">
+                      <span className="text-[10px] text-gray-500">Free slots</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={onboardingFreeInput}
+                        onChange={(e) => setOnboardingFreeInput(e.target.value)}
+                        className="mt-0.5 block w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10px] text-gray-500">Kickback %</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={onboardingKickbackInput}
+                        onChange={(e) => setOnboardingKickbackInput(e.target.value)}
+                        className="mt-0.5 block w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => void handleBulkOnboardingSave()}
+                    >
+                      {isSavingOnboardingBulk ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : onboardingScope === 'all' ? (
+                        'Apply to all'
+                      ) : (
+                        `Apply to ${onboardingSelectedIds.size || 0}`
+                      )}
+                    </Button>
+                  </div>
+
+                  {onboardingScope === 'selected' && (
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] text-gray-500">Check operators below</p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
+                          onClick={() =>
+                            setOnboardingSelectedIds(
+                              new Set(
+                                filteredOnboardingOperators
+                                  .map((b) => b.barberRecordId)
+                                  .filter((id): id is string => Boolean(id))
+                              )
+                            )
+                          }
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
+                          onClick={() => setOnboardingSelectedIds(new Set())}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-gray-900">Operator settings</h3>
+                  <h3 className="text-base font-semibold text-gray-900">Operators</h3>
                   <span className="text-xs text-gray-500">
                     {isLoadingBarbers
                       ? 'Loading…'
@@ -2223,7 +2392,7 @@ export function AdminDashboard({
                           onboardingFiltersActive || onboardingSearchQuery.trim()
                             ? ` of ${onboardingStats.total}`
                             : ''
-                        } operators`}
+                        }`}
                   </span>
                 </div>
 
@@ -2239,246 +2408,125 @@ export function AdminDashboard({
                         <p className="text-sm">No operators match these filters</p>
                       </div>
                     ) : (
-                      filteredOnboardingOperators.map((barber) => (
-                        <div
-                          key={barber.barberRecordId || barber.id}
-                          className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 text-left"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img
-                                  src={barber.profileImageUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">
-                                  {barber.firstName.charAt(0)}
-                                  {barber.lastName.charAt(0)}
-                                </span>
+                      filteredOnboardingOperators.map((barber) => {
+                        const id = barber.barberRecordId!;
+                        const selected = onboardingSelectedIds.has(id);
+                        const busy = savingOnboardingBarberId === id;
+                        const free = barber.commissionFreeBookingsRemaining ?? 0;
+                        const kickback = barber.kickbackPercent ?? 0;
+                        return (
+                          <div
+                            key={id}
+                            className={`rounded-lg border p-2.5 ${
+                              onboardingScope === 'selected' && selected
+                                ? 'border-gray-900 bg-gray-50'
+                                : 'border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {onboardingScope === 'selected' && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleOnboardingProvider(id)}
+                                  className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                    selected
+                                      ? 'border-gray-900 bg-gray-900 text-white'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                  aria-label={selected ? 'Deselect operator' : 'Select operator'}
+                                >
+                                  {selected ? <Check className="h-3 w-3" /> : null}
+                                </button>
                               )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
-                                {barber.firstName} {barber.lastName}
-                                {barber.hasStripeSetup && (
-                                  <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">
-                                    Stripe
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                {barber.profileImageUrl ? (
+                                  <img
+                                    src={barber.profileImageUrl}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-bold text-gray-500">
+                                    {barber.firstName.charAt(0)}
+                                    {barber.lastName.charAt(0)}
                                   </span>
                                 )}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">{barber.email}</p>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                                  {barber.firstName} {barber.lastName}
+                                  {barber.hasStripeSetup && (
+                                    <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">
+                                      Stripe
+                                    </span>
+                                  )}
+                                  {busy && (
+                                    <Loader2 className="w-3 h-3 animate-spin text-gray-400 shrink-0" />
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">{barber.email}</p>
+                                <p className="text-[10px] text-gray-400 truncate">
+                                  {barberLocationSubtitle(barber)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-500 w-8">Free</span>
+                                <button
+                                  type="button"
+                                  disabled={busy || free <= 0}
+                                  onClick={() => void handleOnboardingAdjust(barber, 'free', -1)}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                  aria-label="Decrease free slots"
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-gray-900">
+                                  {free}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void handleOnboardingAdjust(barber, 'free', 1)}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                  aria-label="Increase free slots"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-500 w-10">Kick %</span>
+                                <button
+                                  type="button"
+                                  disabled={busy || kickback <= 0}
+                                  onClick={() => void handleOnboardingAdjust(barber, 'kickback', -1)}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                  aria-label="Decrease kickback"
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <span className="min-w-[2.25rem] text-center text-sm font-semibold tabular-nums text-gray-900">
+                                  {kickback}%
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={busy || kickback >= 100}
+                                  onClick={() => void handleOnboardingAdjust(barber, 'kickback', 1)}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                  aria-label="Increase kickback"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <p className="text-[10px] tabular-nums text-gray-700">
-                              free {barber.commissionFreeBookingsRemaining ?? 0} ·{' '}
-                              {barber.kickbackPercent ?? 0}% kickback
-                            </p>
-                            <p className="text-[10px] text-gray-400">
-                              {barberLocationSubtitle(barber)}
-                            </p>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
-
-                {/* Mass apply — mirrors per-operator Payment settings */}
-                <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-gray-900">Mass apply payment settings</h4>
-                    <span className="text-[10px] text-gray-500">
-                      Platform commission 15% · tips never commissioned
-                    </span>
-                  </div>
-
-                  <label className="block max-w-sm">
-                    <span className="text-xs text-gray-600">Commission-free bookings remaining</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={onboardingFreeInput}
-                      onChange={(e) => setOnboardingFreeInput(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                    />
-                    <span className="mt-0.5 block text-[10px] text-gray-500">
-                      Next N card bookings take $0 platform fee (default 5 for every provider), then 15%
-                      applies
-                    </span>
-                  </label>
-
-                  <label className="block max-w-sm">
-                    <span className="text-xs text-gray-600">Provider kickback %</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={onboardingKickbackInput}
-                      onChange={(e) => setOnboardingKickbackInput(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                    />
-                    <span className="mt-0.5 block text-[10px] text-gray-500">
-                      Platform pays this % of service (not tip) from its Stripe balance to the provider
-                      after each paid card booking. Example: $25 cut + 10% = +$2.50 transfer ($27.50 total
-                      when commission-free).
-                    </span>
-                  </label>
-
-                  <div>
-                    <p className="mb-1.5 text-xs text-gray-600">Apply to</p>
-                    <nav className="flex max-w-sm gap-1 rounded-lg bg-stone-100 p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setOnboardingScope('all')}
-                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
-                          onboardingScope === 'all'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        All ({onboardingStats.total})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOnboardingScope('selected')}
-                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
-                          onboardingScope === 'selected'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Selected
-                        {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
-                      </button>
-                    </nav>
-                  </div>
-
-                  {onboardingScope === 'selected' && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] text-gray-500">
-                          Tap operators to include
-                          {onboardingFiltersActive || onboardingSearchQuery.trim()
-                            ? ' (from filtered list)'
-                            : ''}
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
-                            onClick={() =>
-                              setOnboardingSelectedIds(
-                                new Set(
-                                  filteredOnboardingOperators
-                                    .map((b) => b.barberRecordId)
-                                    .filter((id): id is string => Boolean(id))
-                                )
-                              )
-                            }
-                          >
-                            Select all
-                          </button>
-                          <button
-                            type="button"
-                            className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
-                            onClick={() => setOnboardingSelectedIds(new Set())}
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
-                      <div className="max-h-48 space-y-1.5 overflow-y-auto">
-                        {filteredOnboardingOperators.map((barber) => {
-                          const id = barber.barberRecordId!;
-                          const selected = onboardingSelectedIds.has(id);
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              onClick={() => toggleOnboardingProvider(id)}
-                              className={`w-full flex items-center gap-2.5 rounded-lg border p-2 text-left transition-colors ${
-                                selected
-                                  ? 'border-gray-900 bg-gray-50'
-                                  : 'border-gray-200 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                  selected
-                                    ? 'border-gray-900 bg-gray-900 text-white'
-                                    : 'border-gray-300 bg-white'
-                                }`}
-                              >
-                                {selected ? <Check className="h-3 w-3" /> : null}
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-gray-900">
-                                  {barber.firstName} {barber.lastName}
-                                </p>
-                                <p className="truncate text-[10px] text-gray-500">
-                                  free {barber.commissionFreeBookingsRemaining ?? 0} · kickback{' '}
-                                  {barber.kickbackPercent ?? 0}%
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => void handleBulkOnboardingSave()}
-                    >
-                      {isSavingOnboardingBulk ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : onboardingScope === 'all' ? (
-                        'Save to all operators'
-                      ) : (
-                        `Save to ${onboardingSelectedIds.size || 0} selected`
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => setOnboardingFreeInput('5')}
-                    >
-                      Set 5 free
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => setOnboardingKickbackInput('10')}
-                    >
-                      Set 10% kickback
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => {
-                        setOnboardingFreeInput('5');
-                        setOnboardingKickbackInput('0');
-                      }}
-                    >
-                      Reset to default
-                    </Button>
-                  </div>
-                </div>
               </div>
             ) : !selectedCampusId ? (
           /* All Barbers View - organized by status with tabs */
