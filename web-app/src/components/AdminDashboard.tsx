@@ -2314,7 +2314,7 @@ export function AdminDashboard({
 
                   <div className="flex flex-wrap items-end gap-2">
                     <label className="block">
-                      <span className="text-[10px] text-gray-500">Free slots</span>
+                      <span className="text-[10px] text-gray-500">Commissionless</span>
                       <input
                         type="number"
                         min={0}
@@ -2469,56 +2469,64 @@ export function AdminDashboard({
                                   {barberLocationSubtitle(barber)}
                                 </p>
                               </div>
-                            </div>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-gray-500 w-8">Free</span>
-                                <button
-                                  type="button"
-                                  disabled={busy || free <= 0}
-                                  onClick={() => void handleOnboardingAdjust(barber, 'free', -1)}
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                  aria-label="Decrease free slots"
-                                >
-                                  <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-gray-900">
-                                  {free}
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={busy}
-                                  onClick={() => void handleOnboardingAdjust(barber, 'free', 1)}
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                  aria-label="Increase free slots"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-gray-500 w-10">Kick %</span>
-                                <button
-                                  type="button"
-                                  disabled={busy || kickback <= 0}
-                                  onClick={() => void handleOnboardingAdjust(barber, 'kickback', -1)}
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                  aria-label="Decrease kickback"
-                                >
-                                  <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="min-w-[2.25rem] text-center text-sm font-semibold tabular-nums text-gray-900">
-                                  {kickback}%
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={busy || kickback >= 100}
-                                  onClick={() => void handleOnboardingAdjust(barber, 'kickback', 1)}
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                  aria-label="Increase kickback"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                    Commissionless
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={busy || free <= 0}
+                                    onClick={() => void handleOnboardingAdjust(barber, 'free', -1)}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                    aria-label="Decrease commissionless slots"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-gray-900">
+                                    {free}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => void handleOnboardingAdjust(barber, 'free', 1)}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                    aria-label="Increase commissionless slots"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                    Kick %
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={busy || kickback <= 0}
+                                    onClick={() =>
+                                      void handleOnboardingAdjust(barber, 'kickback', -1)
+                                    }
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                    aria-label="Decrease kickback"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="min-w-[2.25rem] text-center text-sm font-semibold tabular-nums text-gray-900">
+                                    {kickback}%
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={busy || kickback >= 100}
+                                    onClick={() =>
+                                      void handleOnboardingAdjust(barber, 'kickback', 1)
+                                    }
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                    aria-label="Increase kickback"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
