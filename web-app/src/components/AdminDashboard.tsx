@@ -2334,7 +2334,7 @@ export function AdminDashboard({
 
                   <div className="flex flex-col gap-2">
                     <label className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                      <span className="text-sm text-gray-700 whitespace-nowrap">
                         Commissionless Bookings:
                       </span>
                       <input
@@ -2347,18 +2347,26 @@ export function AdminDashboard({
                       />
                     </label>
                     <label className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                      <span className="text-sm text-gray-700 whitespace-nowrap">
                         Kickback % Per Booking:
                       </span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={onboardingKickbackInput}
-                        onChange={(e) => setOnboardingKickbackInput(e.target.value)}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
-                      />
+                      <span className="relative inline-flex">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={onboardingKickbackInput}
+                          onChange={(e) => setOnboardingKickbackInput(e.target.value)}
+                          className="w-20 rounded-md border border-gray-300 py-1.5 pl-2 pr-6 text-sm tabular-nums"
+                        />
+                        <span
+                          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm tabular-nums text-gray-700"
+                          aria-hidden
+                        >
+                          %
+                        </span>
+                      </span>
                     </label>
                   </div>
                   <Button
