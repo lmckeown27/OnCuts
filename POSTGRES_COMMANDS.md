@@ -3360,6 +3360,16 @@ pm2 restart oncuts-backend
 
 Nulls `platform_fee_percent` overrides. Fee stays hardcoded at 15%; Admin only edits commission-free booking counts.
 
+### 053 — Provider kickback % (platform-funded Transfer)
+
+```bash
+cd ~/OnCuts && git pull
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/053_provider_kickback.sql
+pm2 restart oncuts-backend
+```
+
+Adds `kickback_percent` on providers (default 0) and booking kickback ledger columns. After paid card bookings, platform Transfers `% of service` from Stripe balance to the provider Connect account.
+
 ### 049 — Default 5 commission-free bookings per provider
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/049_default_commission_free_bookings.sql

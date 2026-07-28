@@ -179,6 +179,7 @@ interface Barber {
   /** Platform ban (e.g. UGC moderation); blocks sign-in */
   isBanned?: boolean;
   commissionFreeBookingsRemaining?: number;
+  kickbackPercent?: number;
 }
 
 interface BarberBooking {
@@ -347,6 +348,7 @@ export function AdminDashboard({
   const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
   const [bannedCategoryFilter, setBannedCategoryFilter] = useState<'all' | BannedAccountCategory>('all');
   const [commissionFreeRemainingInput, setCommissionFreeRemainingInput] = useState('5');
+  const [kickbackPercentInput, setKickbackPercentInput] = useState('0');
   const [isSavingCommission, setIsSavingCommission] = useState(false);
   
   // Consumer detail view state
@@ -952,6 +954,7 @@ export function AdminDashboard({
 
   const syncCommissionFormFromBarber = (barber: Barber) => {
     setCommissionFreeRemainingInput(String(barber.commissionFreeBookingsRemaining ?? 5));
+    setKickbackPercentInput(String(barber.kickbackPercent ?? 0));
   };
 
   const handleSaveBarberCommission = async () => {
@@ -966,16 +969,25 @@ export function AdminDashboard({
       return;
     }
 
+    const kickbackPercent = parseFloat(kickbackPercentInput.trim());
+    if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
+      toast.error('Kickback percent must be between 0 and 100');
+      return;
+    }
+
     setIsSavingCommission(true);
     try {
       const data = await api.put<{
         commissionFreeBookingsRemaining: number;
+        kickbackPercent: number;
       }>(`/admin/barbers/${selectedBarber.barberRecordId}/commission`, {
         commissionFreeBookingsRemaining: freeRemaining,
+        kickbackPercent,
       });
       const updated = {
         ...selectedBarber,
         commissionFreeBookingsRemaining: data.commissionFreeBookingsRemaining ?? freeRemaining,
+        kickbackPercent: data.kickbackPercent ?? kickbackPercent,
       };
       setSelectedBarber(updated);
       syncCommissionFormFromBarber(updated);
@@ -1787,7 +1799,7 @@ export function AdminDashboard({
               </div>
             </div>
 
-            {/* Payment settings — commission-free quota only (rate is fixed at 15%) */}
+            {/* Payment settings — commission-free quota + platform kickback */}
             <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
@@ -1807,6 +1819,21 @@ export function AdminDashboard({
                 />
                 <span className="mt-0.5 block text-[10px] text-gray-500">
                   Next N card bookings take $0 platform fee (default 5 for every provider), then 15% applies
+                </span>
+              </label>
+              <label className="mt-3 block max-w-sm">
+                <span className="text-xs text-gray-600">Provider kickback %</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={kickbackPercentInput}
+                  onChange={(e) => setKickbackPercentInput(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                />
+                <span className="mt-0.5 block text-[10px] text-gray-500">
+                  Platform pays this % of service (not tip) from its Stripe balance to the provider after each paid card booking. Example: $25 cut + 10% = +$2.50 transfer ($27.50 total when commission-free).
                 </span>
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1832,8 +1859,18 @@ export function AdminDashboard({
                   variant="outline"
                   size="sm"
                   disabled={isSavingCommission}
+                  onClick={() => setKickbackPercentInput('10')}
+                >
+                  Set 10% kickback
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSavingCommission}
                   onClick={() => {
                     setCommissionFreeRemainingInput('5');
+                    setKickbackPercentInput('0');
                   }}
                 >
                   Reset to default

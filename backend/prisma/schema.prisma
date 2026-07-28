@@ -214,9 +214,10 @@ model Barber {
   isActive    Boolean  @default(true)
   isOnboarded Boolean  @default(false)
 
-  // Admin payment controls — commission-free quota only (fee rate is platform-hardcoded)
+  // Admin payment controls — commission-free quota + platform kickback
   platformFeePercent                 Decimal? @map("platform_fee_percent") @db.Decimal(5,2) // unused; reserved/legacy
   commissionFreeBookingsRemaining    Int      @default(5) @map("commission_free_bookings_remaining")
+  kickbackPercent                    Decimal  @default(0) @map("kickback_percent") @db.Decimal(5,2)
 
   // Timestamps
   createdAt   DateTime @default(now()) @db.Timestamptz
@@ -355,6 +356,12 @@ model Booking {
   platformFeeUsdCents Int
   barberEarningsUsdCents Int
   commissionFreeApplied Boolean @default(false) @map("commission_free_applied")
+  kickbackPercent     Decimal? @map("kickback_percent") @db.Decimal(5,2)
+  kickbackCents       Int?     @map("kickback_cents")
+  kickbackTransferId  String?  @map("kickback_transfer_id")
+  kickbackStatus      String   @default("none") @map("kickback_status") @db.VarChar(20)
+  kickbackTransferredAt DateTime? @map("kickback_transferred_at") @db.Timestamptz
+  kickbackError       String?  @map("kickback_error") @db.Text
   
   // Blockchain anchoring (legacy column names in DB may still be aptos_*)
   aptosTxHash     String?  @db.VarChar(66)

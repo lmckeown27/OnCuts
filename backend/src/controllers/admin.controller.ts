@@ -1961,6 +1961,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         b.service_latitude,
         b.service_longitude,
         b.commission_free_bookings_remaining,
+        b.kickback_percent,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -2004,6 +2005,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         isBanned: row.is_banned === true,
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
+        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -2454,6 +2456,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b.service_latitude,
         b.service_longitude,
         b.commission_free_bookings_remaining,
+        b.kickback_percent,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -2509,6 +2512,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         createdAt: row.created_at,
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
+        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -2521,7 +2525,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
 /**
  * PUT /api/admin/barbers/:barberRecordId/commission
- * Set commission-free booking quota only (platform fee rate is hardcoded at 15%).
+ * Set commission-free booking quota + platform-funded kickback percent
+ * (platform fee rate remains hardcoded at 15%).
  */
 export const updateBarberCommission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -2531,7 +2536,7 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
     }
 
     const { barberRecordId } = req.params;
-    const { commissionFreeBookingsRemaining } = req.body ?? {};
+    const { commissionFreeBookingsRemaining, kickbackPercent } = req.body ?? {};
 
     if (!barberRecordId) {
       throw new ApiError(400, 'barberRecordId is required');
@@ -2548,8 +2553,29 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
       throw new ApiError(400, 'commissionFreeBookingsRemaining must be an integer between 0 and 10000');
     }
 
+    let kickback = 0;
+    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, 'kickbackPercent')) {
+      kickback =
+        typeof kickbackPercent === 'number'
+          ? kickbackPercent
+          : parseFloat(String(kickbackPercent));
+      if (!Number.isFinite(kickback) || kickback < 0 || kickback > 100) {
+        throw new ApiError(400, 'kickbackPercent must be a number between 0 and 100');
+      }
+      // Store one decimal place max for admin clarity
+      kickback = Math.round(kickback * 100) / 100;
+    } else {
+      const current = await pool.query(
+        `SELECT kickback_percent FROM barbers WHERE id = $1::uuid`,
+        [barberRecordId]
+      );
+      kickback = current.rows[0]?.kickback_percent != null
+        ? parseFloat(String(current.rows[0].kickback_percent)) || 0
+        : 0;
+    }
+
     const existing = await pool.query(
-      `SELECT id, commission_free_bookings_remaining
+      `SELECT id, commission_free_bookings_remaining, kickback_percent
        FROM barbers WHERE id = $1::uuid`,
       [barberRecordId]
     );
@@ -2560,10 +2586,11 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
     const result = await pool.query(
       `UPDATE barbers
        SET commission_free_bookings_remaining = $1,
+           kickback_percent = $2,
            "updatedAt" = NOW()
-       WHERE id = $2::uuid
-       RETURNING id, commission_free_bookings_remaining`,
-      [remaining, barberRecordId]
+       WHERE id = $3::uuid
+       RETURNING id, commission_free_bookings_remaining, kickback_percent`,
+      [remaining, kickback, barberRecordId]
     );
 
     const row = result.rows[0];
@@ -2571,6 +2598,7 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
       barberRecordId,
       adminId: req.user!.userId,
       commissionFreeBookingsRemaining: row.commission_free_bookings_remaining,
+      kickbackPercent: row.kickback_percent,
     });
 
     res.json({
@@ -2579,8 +2607,9 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
         barberRecordId: row.id.toString(),
         commissionFreeBookingsRemaining:
           parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
+        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
       },
-      message: 'Commission-free bookings updated',
+      message: 'Payment settings updated',
     });
   } catch (error) {
     next(error);

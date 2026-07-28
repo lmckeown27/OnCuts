@@ -23,6 +23,7 @@ import {
   loadProviderCommissionSettings,
   releaseCommissionFreeBooking,
 } from '../utils/platform-commission';
+import { processProviderKickback } from '../utils/platform-kickback';
 import {
   attemptInstantPayout,
   isInstantPayoutsEnabled,
@@ -192,6 +193,17 @@ async function initiateBarberPayout(
         });
       }
 
+      // Platform-funded kickback (extra Transfer from platform balance → provider)
+      await processProviderKickback({
+        client,
+        bookingId: booking.id,
+        barberRecordId: booking.barberId,
+        serviceAmountCents,
+        connectedAccountId: destinationAccountId,
+        paymentIntentId,
+        livemode,
+      });
+
       return;
     }
 
@@ -280,6 +292,16 @@ async function initiateBarberPayout(
       connectedAccountId: stripeAccountId,
       amountCents: barberTotalEarnings,
       bookingId: booking.id,
+      paymentIntentId,
+      livemode,
+    });
+
+    await processProviderKickback({
+      client,
+      bookingId: booking.id,
+      barberRecordId: booking.barberId,
+      serviceAmountCents,
+      connectedAccountId: stripeAccountId,
       paymentIntentId,
       livemode,
     });
@@ -568,6 +590,38 @@ async function handleCheckoutSessionCompleted(
         const message =
           instantError instanceof Error ? instantError.message : String(instantError);
         logger.warn(`Checkout Instant payout soft-failed for ${booking_id}: ${message}`);
+      }
+    }
+
+    // Platform kickback for Checkout-owned flows (PI.succeeded is skipped)
+    if (paymentIntentId) {
+      try {
+        const stripe = getStripeClientForLivemode(!!session.livemode);
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        const destinationRaw = paymentIntent.transfer_data?.destination;
+        const destinationAccountId =
+          typeof destinationRaw === 'string'
+            ? destinationRaw
+            : destinationRaw?.id;
+        const tipForKickback =
+          parseInt(paymentIntent.metadata?.tip_amount_cents || '0', 10) || 0;
+        const serviceForKickback = Math.max(0, amountCents - tipForKickback);
+        const barberRecordId = barber_id || booking.barberId;
+        if (barberRecordId) {
+          await processProviderKickback({
+            client,
+            bookingId: booking_id,
+            barberRecordId,
+            serviceAmountCents: serviceForKickback,
+            connectedAccountId: destinationAccountId,
+            paymentIntentId,
+            livemode: !!session.livemode,
+          });
+        }
+      } catch (kickbackError: unknown) {
+        const message =
+          kickbackError instanceof Error ? kickbackError.message : String(kickbackError);
+        logger.warn(`Checkout kickback soft-failed for ${booking_id}: ${message}`);
       }
     }
 
