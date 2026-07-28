@@ -354,7 +354,7 @@ export function AdminDashboard({
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
   const [onboardingSelectedIds, setOnboardingSelectedIds] = useState<Set<string>>(new Set());
-  const [onboardingFreeInput, setOnboardingFreeInput] = useState('5');
+  const [onboardingFreeInput, setOnboardingFreeInput] = useState('0');
   const [onboardingKickbackInput, setOnboardingKickbackInput] = useState('0');
   const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('all');
   const [onboardingLocationFilter, setOnboardingLocationFilter] = useState<'all' | 'has-pin' | 'missing'>('all');
@@ -2499,7 +2499,7 @@ export function AdminDashboard({
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                                    Kick %
+                                    Kickback %
                                   </span>
                                   <button
                                     type="button"
