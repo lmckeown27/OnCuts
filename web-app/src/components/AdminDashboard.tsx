@@ -350,6 +350,15 @@ export function AdminDashboard({
   const [commissionFreeRemainingInput, setCommissionFreeRemainingInput] = useState('5');
   const [kickbackPercentInput, setKickbackPercentInput] = useState('0');
   const [isSavingCommission, setIsSavingCommission] = useState(false);
+  /** Within Operators tab: list vs onboarding bulk tools */
+  const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
+  const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
+  const [onboardingSelectedIds, setOnboardingSelectedIds] = useState<Set<string>>(new Set());
+  const [onboardingFreeInput, setOnboardingFreeInput] = useState('5');
+  const [onboardingKickbackInput, setOnboardingKickbackInput] = useState('0');
+  const [onboardingApplyFree, setOnboardingApplyFree] = useState(true);
+  const [onboardingApplyKickback, setOnboardingApplyKickback] = useState(true);
+  const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -782,6 +791,30 @@ export function AdminDashboard({
     );
   }, [barbers, allBarberSearchQuery, barberLocationFilter]);
 
+  const onboardingOperators = useMemo(
+    () =>
+      [...barbers]
+        .filter((b) => Boolean(b.barberRecordId))
+        .sort((a, b) =>
+          `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+        ),
+    [barbers]
+  );
+
+  const onboardingStats = useMemo(() => {
+    const withFree = onboardingOperators.filter(
+      (b) => (b.commissionFreeBookingsRemaining ?? 0) > 0
+    ).length;
+    const withKickback = onboardingOperators.filter(
+      (b) => (b.kickbackPercent ?? 0) > 0
+    ).length;
+    return {
+      total: onboardingOperators.length,
+      withFree,
+      withKickback,
+    };
+  }, [onboardingOperators]);
+
   const barberLocationSubtitle = (barber: Barber) => {
     // City/town (or campus name) only — never street address
     const raw = barber.serviceLocationLabel?.trim();
@@ -1002,6 +1035,73 @@ export function AdminDashboard({
     } finally {
       setIsSavingCommission(false);
     }
+  };
+
+  const handleBulkOnboardingSave = async () => {
+    if (!onboardingApplyFree && !onboardingApplyKickback) {
+      toast.error('Select at least one setting to apply');
+      return;
+    }
+
+    const body: {
+      scope: 'all' | 'selected';
+      barberRecordIds?: string[];
+      commissionFreeBookingsRemaining?: number;
+      kickbackPercent?: number;
+    } = { scope: onboardingScope };
+
+    if (onboardingApplyFree) {
+      const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
+      if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+        toast.error('Commission-free bookings must be a whole number ≥ 0');
+        return;
+      }
+      body.commissionFreeBookingsRemaining = freeRemaining;
+    }
+
+    if (onboardingApplyKickback) {
+      const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+      if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
+        toast.error('Kickback percent must be between 0 and 100');
+        return;
+      }
+      body.kickbackPercent = kickbackPercent;
+    }
+
+    if (onboardingScope === 'selected') {
+      const ids = Array.from(onboardingSelectedIds);
+      if (ids.length === 0) {
+        toast.error('Select at least one operator');
+        return;
+      }
+      body.barberRecordIds = ids;
+    }
+
+    setIsSavingOnboardingBulk(true);
+    try {
+      const data = await api.put<{ updatedCount: number }>('/admin/barbers/commission/bulk', body);
+      toast.success(
+        `Updated ${data.updatedCount ?? 0} operator${(data.updatedCount ?? 0) === 1 ? '' : 's'}`
+      );
+      await reloadBarberList();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to apply onboarding settings';
+      toast.error(msg);
+    } finally {
+      setIsSavingOnboardingBulk(false);
+    }
+  };
+
+  const toggleOnboardingProvider = (barberRecordId: string) => {
+    setOnboardingSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(barberRecordId)) next.delete(barberRecordId);
+      else next.add(barberRecordId);
+      return next;
+    });
   };
   
   const formatCurrency = (cents: number) => {
@@ -1714,9 +1814,6 @@ export function AdminDashboard({
       {/* Barber Management → Operators */}
       {adminView === 'barbers' && (
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
-        {!selectedBarber && (
-          <h3 className="text-base font-semibold text-gray-900">Operators</h3>
-        )}
         {selectedBarber ? (
           /* Barber Detail View */
           <div>
@@ -1996,7 +2093,268 @@ export function AdminDashboard({
               </div>
             )}
           </div>
-        ) : !selectedCampusId ? (
+        ) : (
+          <>
+            <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1 mb-1">
+              <button
+                type="button"
+                onClick={() => setOperatorsHubTab('operators')}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  operatorsHubTab === 'operators'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Operators
+              </button>
+              <button
+                type="button"
+                onClick={() => setOperatorsHubTab('onboarding')}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  operatorsHubTab === 'onboarding'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Onboarding
+              </button>
+            </nav>
+
+            {operatorsHubTab === 'onboarding' ? (
+              <div className="space-y-4 pt-1">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Onboarding</h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Set commission-free booking quotas and platform kickback rates, then apply to every
+                    operator or a selected set.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Operators</p>
+                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                      {onboardingStats.total}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500">With free slots</p>
+                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                      {onboardingStats.withFree}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500">With kickback</p>
+                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                      {onboardingStats.withKickback}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-stone-200 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-gray-900">Settings to apply</p>
+
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      className="mt-1 rounded border-gray-300"
+                      checked={onboardingApplyFree}
+                      onChange={(e) => setOnboardingApplyFree(e.target.checked)}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs text-gray-700">Commission-free bookings remaining</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        disabled={!onboardingApplyFree}
+                        value={onboardingFreeInput}
+                        onChange={(e) => setOnboardingFreeInput(e.target.value)}
+                        className="mt-1 w-full max-w-xs rounded-md border border-gray-300 px-2.5 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400"
+                      />
+                      <span className="mt-0.5 block text-[10px] text-gray-500">
+                        Next N card bookings take $0 platform fee, then 15% applies
+                      </span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      className="mt-1 rounded border-gray-300"
+                      checked={onboardingApplyKickback}
+                      onChange={(e) => setOnboardingApplyKickback(e.target.checked)}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs text-gray-700">Provider kickback %</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        disabled={!onboardingApplyKickback}
+                        value={onboardingKickbackInput}
+                        onChange={(e) => setOnboardingKickbackInput(e.target.value)}
+                        className="mt-1 w-full max-w-xs rounded-md border border-gray-300 px-2.5 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400"
+                      />
+                      <span className="mt-0.5 block text-[10px] text-gray-500">
+                        Platform pays this % of service from its Stripe balance after each paid card booking
+                      </span>
+                    </span>
+                  </label>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => {
+                        setOnboardingApplyFree(true);
+                        setOnboardingFreeInput('5');
+                      }}
+                    >
+                      Set 5 free
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => {
+                        setOnboardingApplyKickback(true);
+                        setOnboardingKickbackInput('10');
+                      }}
+                    >
+                      Set 10% kickback
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-stone-200 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-gray-900">Apply to</p>
+                  <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setOnboardingScope('all')}
+                      className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
+                        onboardingScope === 'all'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      All operators ({onboardingStats.total})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOnboardingScope('selected')}
+                      className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
+                        onboardingScope === 'selected'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Select operators
+                      {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
+                    </button>
+                  </nav>
+
+                  {onboardingScope === 'selected' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] text-gray-500">
+                          Tap operators to include them in this apply
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
+                            onClick={() =>
+                              setOnboardingSelectedIds(
+                                new Set(
+                                  onboardingOperators
+                                    .map((b) => b.barberRecordId)
+                                    .filter((id): id is string => Boolean(id))
+                                )
+                              )
+                            }
+                          >
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            className="text-[10px] font-medium text-gray-700 hover:text-gray-900"
+                            onClick={() => setOnboardingSelectedIds(new Set())}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="max-h-64 space-y-1.5 overflow-y-auto">
+                        {isLoadingBarbers ? (
+                          <div className="flex justify-center py-6">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                          </div>
+                        ) : onboardingOperators.length === 0 ? (
+                          <p className="text-sm text-gray-400 py-4 text-center">No operators found</p>
+                        ) : (
+                          onboardingOperators.map((barber) => {
+                            const id = barber.barberRecordId!;
+                            const selected = onboardingSelectedIds.has(id);
+                            return (
+                              <button
+                                key={id}
+                                type="button"
+                                onClick={() => toggleOnboardingProvider(id)}
+                                className={`w-full flex items-center gap-2.5 rounded-lg border p-2 text-left transition-colors ${
+                                  selected
+                                    ? 'border-gray-900 bg-gray-50'
+                                    : 'border-gray-200 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                    selected
+                                      ? 'border-gray-900 bg-gray-900 text-white'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                >
+                                  {selected ? <Check className="h-3 w-3" /> : null}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-gray-900">
+                                    {barber.firstName} {barber.lastName}
+                                  </p>
+                                  <p className="truncate text-[10px] text-gray-500">
+                                    {barber.email} · free {barber.commissionFreeBookingsRemaining ?? 0} ·
+                                    kickback {barber.kickbackPercent ?? 0}%
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isSavingOnboardingBulk}
+                  onClick={() => void handleBulkOnboardingSave()}
+                >
+                  {isSavingOnboardingBulk ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : onboardingScope === 'all' ? (
+                    'Apply to all operators'
+                  ) : (
+                    `Apply to ${onboardingSelectedIds.size || 0} selected`
+                  )}
+                </Button>
+              </div>
+            ) : !selectedCampusId ? (
           /* All Barbers View - organized by status with tabs */
           <div>
             {/* Search bar */}
@@ -2791,6 +3149,8 @@ export function AdminDashboard({
               )
             )}
 
+          </>
+            )}
           </>
         )}
       </div>

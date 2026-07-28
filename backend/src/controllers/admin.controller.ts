@@ -2617,6 +2617,137 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
 };
 
 /**
+ * PUT /api/admin/barbers/commission/bulk
+ * Apply commission-free quota and/or kickback % to all providers or a selected set.
+ */
+export const bulkUpdateBarberCommission = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const {
+      scope,
+      barberRecordIds,
+      commissionFreeBookingsRemaining,
+      kickbackPercent,
+    } = req.body ?? {};
+
+    if (scope !== 'all' && scope !== 'selected') {
+      throw new ApiError(400, 'scope must be "all" or "selected"');
+    }
+
+    const hasFree = Object.prototype.hasOwnProperty.call(
+      req.body ?? {},
+      'commissionFreeBookingsRemaining'
+    );
+    const hasKickback = Object.prototype.hasOwnProperty.call(req.body ?? {}, 'kickbackPercent');
+    if (!hasFree && !hasKickback) {
+      throw new ApiError(
+        400,
+        'Provide commissionFreeBookingsRemaining and/or kickbackPercent'
+      );
+    }
+
+    let remaining: number | null = null;
+    if (hasFree) {
+      remaining =
+        typeof commissionFreeBookingsRemaining === 'number'
+          ? commissionFreeBookingsRemaining
+          : parseInt(String(commissionFreeBookingsRemaining), 10);
+      if (!Number.isInteger(remaining) || remaining! < 0 || remaining! > 10000) {
+        throw new ApiError(
+          400,
+          'commissionFreeBookingsRemaining must be an integer between 0 and 10000'
+        );
+      }
+    }
+
+    let kickback: number | null = null;
+    if (hasKickback) {
+      kickback =
+        typeof kickbackPercent === 'number'
+          ? kickbackPercent
+          : parseFloat(String(kickbackPercent));
+      if (!Number.isFinite(kickback) || kickback! < 0 || kickback! > 100) {
+        throw new ApiError(400, 'kickbackPercent must be a number between 0 and 100');
+      }
+      kickback = Math.round(kickback! * 100) / 100;
+    }
+
+    let ids: string[] = [];
+    if (scope === 'selected') {
+      if (!Array.isArray(barberRecordIds) || barberRecordIds.length === 0) {
+        throw new ApiError(400, 'barberRecordIds must be a non-empty array when scope is selected');
+      }
+      ids = barberRecordIds
+        .map((id: unknown) => String(id))
+        .filter((id: string) => /^[0-9a-f-]{36}$/i.test(id));
+      if (ids.length === 0) {
+        throw new ApiError(400, 'No valid barberRecordIds provided');
+      }
+    }
+
+    const setClauses: string[] = ['"updatedAt" = NOW()'];
+    const params: unknown[] = [];
+    if (remaining !== null) {
+      params.push(remaining);
+      setClauses.push(`commission_free_bookings_remaining = $${params.length}`);
+    }
+    if (kickback !== null) {
+      params.push(kickback);
+      setClauses.push(`kickback_percent = $${params.length}`);
+    }
+
+    let result;
+    if (scope === 'all') {
+      result = await pool.query(
+        `UPDATE barbers
+         SET ${setClauses.join(', ')}
+         RETURNING id`,
+        params
+      );
+    } else {
+      params.push(ids);
+      result = await pool.query(
+        `UPDATE barbers
+         SET ${setClauses.join(', ')}
+         WHERE id = ANY($${params.length}::uuid[])
+         RETURNING id`,
+        params
+      );
+    }
+
+    const updatedCount = result.rowCount ?? 0;
+    logger.info('admin_bulk_update_barber_commission', {
+      adminId: req.user!.userId,
+      scope,
+      updatedCount,
+      commissionFreeBookingsRemaining: remaining,
+      kickbackPercent: kickback,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        updatedCount,
+        scope,
+        commissionFreeBookingsRemaining: remaining,
+        kickbackPercent: kickback,
+      },
+      message: `Updated payment settings for ${updatedCount} operator${updatedCount === 1 ? '' : 's'}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/admin/users/:userId/ban
  * Platform ban — blocks sign-in (same flag as UGC moderation ban).
  */
