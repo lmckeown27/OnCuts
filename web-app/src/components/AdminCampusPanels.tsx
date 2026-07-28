@@ -2756,11 +2756,9 @@ export const ServicesManagementPanel: React.FC = () => {
     <div className="p-4 sm:p-6">
       {/* Header */}
       <div className="mb-6">
-        {/* Row 1: Title + Show Deleted (mobile), Title + controls (desktop) */}
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Service Types</h3>
-          {/* Show Deleted - visible on mobile, hidden on desktop (moves to right side) */}
-          <label className="flex sm:hidden items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
               type="checkbox"
               checked={showInactive}
@@ -2769,28 +2767,18 @@ export const ServicesManagementPanel: React.FC = () => {
             />
             Show removed
           </label>
-          {/* Desktop controls */}
-          <div className="hidden sm:flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-                className="rounded border-gray-300 text-gray-900 focus:ring-gray-400"
-              />
-              Show removed
-            </label>
-            <Button
-              onClick={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Service
-            </Button>
-          </div>
+        </div>
+        <div className="mt-3 flex justify-center">
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Service
+          </Button>
         </div>
         <div className="mt-3 mx-auto flex rounded-xl bg-stone-100 p-1 gap-0.5 max-w-xs">
           {(
@@ -2813,17 +2801,6 @@ export const ServicesManagementPanel: React.FC = () => {
             </button>
           ))}
         </div>
-        {/* Mobile Add Service button */}
-        <Button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
-          className="sm:hidden w-full mt-3 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Service
-        </Button>
       </div>
 
       {/* Add form above categorized services */}
