@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Pencil
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -359,6 +359,10 @@ export function AdminDashboard({
   const [onboardingApplyFree, setOnboardingApplyFree] = useState(true);
   const [onboardingApplyKickback, setOnboardingApplyKickback] = useState(true);
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
+  const [editingOnboardingFree, setEditingOnboardingFree] = useState(false);
+  const [editingOnboardingKickback, setEditingOnboardingKickback] = useState(false);
+  const [onboardingFreeDraft, setOnboardingFreeDraft] = useState('5');
+  const [onboardingKickbackDraft, setOnboardingKickbackDraft] = useState('0');
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -2163,15 +2167,51 @@ export function AdminDashboard({
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs text-gray-700">Commission-free bookings remaining</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        disabled={!onboardingApplyFree}
-                        value={onboardingFreeInput}
-                        onChange={(e) => setOnboardingFreeInput(e.target.value)}
-                        className="mt-1 w-full max-w-xs rounded-md border border-gray-300 px-2.5 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400"
-                      />
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          readOnly={!editingOnboardingFree}
+                          value={editingOnboardingFree ? onboardingFreeDraft : onboardingFreeInput}
+                          onChange={(e) => setOnboardingFreeDraft(e.target.value)}
+                          className={`w-16 shrink-0 rounded-md border px-2 py-1.5 text-sm tabular-nums ${
+                            editingOnboardingFree
+                              ? 'border-gray-900 bg-white text-gray-900'
+                              : 'border-gray-200 bg-gray-50 text-gray-900'
+                          }`}
+                        />
+                        {editingOnboardingFree ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+                            onClick={() => {
+                              const freeRemaining = parseInt(onboardingFreeDraft.trim(), 10);
+                              if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+                                toast.error('Commission-free bookings must be a whole number ≥ 0');
+                                return;
+                              }
+                              setOnboardingFreeInput(String(freeRemaining));
+                              setOnboardingFreeDraft(String(freeRemaining));
+                              setEditingOnboardingFree(false);
+                            }}
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                            aria-label="Edit commission-free bookings"
+                            onClick={() => {
+                              setOnboardingFreeDraft(onboardingFreeInput);
+                              setEditingOnboardingFree(true);
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                       <span className="mt-0.5 block text-[10px] text-gray-500">
                         Next N card bookings take $0 platform fee, then 15% applies
                       </span>
@@ -2187,16 +2227,57 @@ export function AdminDashboard({
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs text-gray-700">Provider kickback %</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={0.1}
-                        disabled={!onboardingApplyKickback}
-                        value={onboardingKickbackInput}
-                        onChange={(e) => setOnboardingKickbackInput(e.target.value)}
-                        className="mt-1 w-full max-w-xs rounded-md border border-gray-300 px-2.5 py-1.5 text-sm disabled:bg-gray-50 disabled:text-gray-400"
-                      />
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          readOnly={!editingOnboardingKickback}
+                          value={editingOnboardingKickback ? onboardingKickbackDraft : onboardingKickbackInput}
+                          onChange={(e) => setOnboardingKickbackDraft(e.target.value)}
+                          className={`w-16 shrink-0 rounded-md border px-2 py-1.5 text-sm tabular-nums ${
+                            editingOnboardingKickback
+                              ? 'border-gray-900 bg-white text-gray-900'
+                              : 'border-gray-200 bg-gray-50 text-gray-900'
+                          }`}
+                        />
+                        {editingOnboardingKickback ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
+                            onClick={() => {
+                              const kickbackPercent = parseFloat(onboardingKickbackDraft.trim());
+                              if (
+                                !Number.isFinite(kickbackPercent) ||
+                                kickbackPercent < 0 ||
+                                kickbackPercent > 100
+                              ) {
+                                toast.error('Kickback percent must be between 0 and 100');
+                                return;
+                              }
+                              const normalized = String(Math.round(kickbackPercent * 100) / 100);
+                              setOnboardingKickbackInput(normalized);
+                              setOnboardingKickbackDraft(normalized);
+                              setEditingOnboardingKickback(false);
+                            }}
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                            aria-label="Edit kickback percent"
+                            onClick={() => {
+                              setOnboardingKickbackDraft(onboardingKickbackInput);
+                              setEditingOnboardingKickback(true);
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                       <span className="mt-0.5 block text-[10px] text-gray-500">
                         Platform pays this % of service from its Stripe balance after each paid card booking
                       </span>
@@ -2212,6 +2293,8 @@ export function AdminDashboard({
                       onClick={() => {
                         setOnboardingApplyFree(true);
                         setOnboardingFreeInput('5');
+                        setOnboardingFreeDraft('5');
+                        setEditingOnboardingFree(false);
                       }}
                     >
                       Set 5 free
@@ -2224,6 +2307,8 @@ export function AdminDashboard({
                       onClick={() => {
                         setOnboardingApplyKickback(true);
                         setOnboardingKickbackInput('10');
+                        setOnboardingKickbackDraft('10');
+                        setEditingOnboardingKickback(false);
                       }}
                     >
                       Set 10% kickback
