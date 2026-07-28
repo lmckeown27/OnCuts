@@ -835,7 +835,8 @@ export function AdminDashboard({
   }, [onboardingOperators]);
 
   const barberLocationSubtitle = (barber: Barber) => {
-    // City/town (or campus name) only — never street address
+    // City/town only — never street address
+    let place: string | null = null;
     const raw = barber.serviceLocationLabel?.trim();
     if (raw) {
       const segments = raw.split(',').map((s) => s.trim()).filter(Boolean);
@@ -844,11 +845,17 @@ export function AdminDashboard({
         /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|way|ct|court)\.?$/i.test(
           segments[0] || ''
         );
-      if (streetLike && segments.length >= 2) return segments[1];
-      return segments[0] || raw;
+      place = streetLike && segments.length >= 2 ? segments[1] : segments[0] || raw;
+    } else if (barber.hasServiceLocation) {
+      place = 'Location set';
     }
-    if (!barber.hasServiceLocation) return 'No public location';
-    return 'Location set';
+
+    const campus = barber.campusName?.trim();
+    if (campus) {
+      return place ? `Near ${campus} · ${place}` : `Near ${campus}`;
+    }
+    if (place) return place;
+    return 'No public location';
   };
   
   const filteredUsers = useMemo(() => {
@@ -1856,6 +1863,7 @@ export function AdminDashboard({
                   ) : null}
                 </p>
                 <p className="text-xs text-gray-500">{selectedBarber.email}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{barberLocationSubtitle(selectedBarber)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button
@@ -2232,7 +2240,7 @@ export function AdminDashboard({
                             <p className="text-[10px] text-gray-400">
                               {barber.hasStripeSetup ? 'Stripe' : 'No Stripe'}
                               {' · '}
-                              {barber.hasServiceLocation ? 'Located' : 'No location'}
+                              {barberLocationSubtitle(barber)}
                             </p>
                           </div>
                         </div>
