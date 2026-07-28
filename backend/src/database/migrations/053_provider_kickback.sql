@@ -1,6 +1,8 @@
 -- Platform-funded provider kickback (percent of service amount).
--- After a successful card payment, Stripe Transfer from platform balance → Connect account.
--- Stacks with commission-free: e.g. $25 service + 10% kickback = $27.50 to provider.
+-- After a successful card payment on a commissionless booking, Stripe Transfer
+-- from platform balance → Connect account.
+-- Only applies when bookings.commission_free_applied is true.
+-- Example: $25 service + 0% fee + 10% kickback = $27.50 to provider.
 
 DO $$
 DECLARE
@@ -52,7 +54,7 @@ BEGIN
     EXECUTE format(
       'COMMENT ON COLUMN %I.kickback_percent IS %L',
       base_table,
-      'Platform-funded kickback percent of service amount, transferred from platform Stripe balance to the provider after successful card payment. 0 = disabled.'
+      'Platform-funded kickback percent of service amount. Transferred from platform Stripe balance to the provider only after a commissionless (0% fee) card payment. 0 = disabled.'
     );
 
     IF base_table = 'service_providers'
@@ -79,9 +81,9 @@ ALTER TABLE bookings
   CHECK (kickback_status IN ('none', 'pending', 'transferred', 'failed'));
 
 COMMENT ON COLUMN bookings.kickback_percent IS
-  'Kickback percent stamped at payment success (snapshot of provider setting).';
+  'Kickback percent stamped at payment success when commissionless; otherwise unused (0).';
 COMMENT ON COLUMN bookings.kickback_cents IS
-  'Platform-funded kickback amount in cents (service amount × percent).';
+  'Platform-funded kickback amount in cents (service × percent). Only for commissionless bookings.';
 COMMENT ON COLUMN bookings.kickback_transfer_id IS
   'Stripe Transfer id for the platform → provider kickback.';
 COMMENT ON COLUMN bookings.kickback_status IS

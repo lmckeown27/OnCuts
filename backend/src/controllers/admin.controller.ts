@@ -2526,7 +2526,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 /**
  * PUT /api/admin/barbers/:barberRecordId/commission
  * Set commission-free booking quota + platform-funded kickback percent
- * (platform fee rate remains hardcoded at 15%).
+ * (platform fee rate remains hardcoded at 15%; kickback only pays out on
+ * commissionless bookings).
  */
 export const updateBarberCommission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

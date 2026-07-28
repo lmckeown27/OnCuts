@@ -2079,7 +2079,9 @@ export function AdminDashboard({
                   className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
                 />
                 <span className="mt-0.5 block text-[10px] text-gray-500">
-                  Platform pays this % of service (not tip) from its Stripe balance to the provider after each paid card booking. Example: $25 cut + 10% = +$2.50 transfer ($27.50 total when commission-free).
+                  Only on commissionless bookings: platform pays this % of service (not tip) from its
+                  Stripe balance to the provider. Example: $25 cut + 10% = +$2.50 ($27.50 total). Not
+                  applied when the normal 15% commission is charged.
                 </span>
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-2">

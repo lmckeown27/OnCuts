@@ -1,7 +1,9 @@
 /**
  * Platform-funded provider kickback.
- * After a successful card payment, Transfer from platform Stripe balance → Connect account.
+ * After a successful card payment on a commissionless booking, Transfer from
+ * platform Stripe balance → Connect account.
  * Amount = round(serviceCents * kickbackPercent / 100). Tips are never included.
+ * Kickback is never applied to bookings that paid the normal platform commission.
  */
 
 import type { PoolClient } from 'pg';
@@ -38,6 +40,7 @@ export async function loadProviderKickbackPercent(
 
 /**
  * Idempotent platform → provider Transfer for kickback.
+ * Only runs when the booking was commissionless (`commission_free_applied`).
  * Safe to call from payment webhooks (destination-charge or manual Transfer flows).
  */
 export async function processProviderKickback(opts: {
@@ -61,7 +64,8 @@ export async function processProviderKickback(opts: {
 
   // Already transferred?
   const existing = await client.query(
-    `SELECT kickback_status, kickback_transfer_id, kickback_cents, kickback_percent
+    `SELECT kickback_status, kickback_transfer_id, kickback_cents, kickback_percent,
+            commission_free_applied
      FROM bookings WHERE id = $1::uuid FOR UPDATE`,
     [bookingId]
   );
@@ -76,6 +80,22 @@ export async function processProviderKickback(opts: {
       kickbackCents: parseInt(String(row.kickback_cents ?? '0'), 10) || 0,
       transferId: String(row.kickback_transfer_id),
     };
+  }
+
+  // Kickback only stacks on commissionless bookings — not on full-commission payments.
+  if (row.commission_free_applied !== true) {
+    await client.query(
+      `UPDATE bookings
+       SET kickback_percent = 0,
+           kickback_cents = 0,
+           kickback_status = 'none',
+           kickback_error = NULL,
+           "updatedAt" = NOW()
+       WHERE id = $1::uuid`,
+      [bookingId]
+    );
+    logger.info('Kickback skipped: booking was not commissionless', { bookingId });
+    return { transferred: false, kickbackCents: 0 };
   }
 
   const percent = await loadProviderKickbackPercent(client, barberRecordId);
@@ -137,6 +157,7 @@ export async function processProviderKickback(opts: {
           service_amount_cents: String(Math.max(0, Math.round(serviceAmountCents))),
           kickback_percent: String(percent),
           kickback_cents: String(kickbackCents),
+          commission_free: 'true',
         },
       },
       {
