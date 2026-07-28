@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Pencil
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -356,13 +356,7 @@ export function AdminDashboard({
   const [onboardingSelectedIds, setOnboardingSelectedIds] = useState<Set<string>>(new Set());
   const [onboardingFreeInput, setOnboardingFreeInput] = useState('5');
   const [onboardingKickbackInput, setOnboardingKickbackInput] = useState('0');
-  const [onboardingApplyFree, setOnboardingApplyFree] = useState(true);
-  const [onboardingApplyKickback, setOnboardingApplyKickback] = useState(true);
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
-  const [editingOnboardingFree, setEditingOnboardingFree] = useState(false);
-  const [editingOnboardingKickback, setEditingOnboardingKickback] = useState(false);
-  const [onboardingFreeDraft, setOnboardingFreeDraft] = useState('5');
-  const [onboardingKickbackDraft, setOnboardingKickbackDraft] = useState('0');
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -806,16 +800,37 @@ export function AdminDashboard({
   );
 
   const onboardingStats = useMemo(() => {
-    const withFree = onboardingOperators.filter(
-      (b) => (b.commissionFreeBookingsRemaining ?? 0) > 0
-    ).length;
-    const withKickback = onboardingOperators.filter(
-      (b) => (b.kickbackPercent ?? 0) > 0
-    ).length;
+    const total = onboardingOperators.length;
+    let withFree = 0;
+    let zeroFree = 0;
+    let withKickback = 0;
+    let stripeReady = 0;
+    let withLocation = 0;
+    let totalFreeSlots = 0;
+    let kickbackSum = 0;
+    for (const b of onboardingOperators) {
+      const free = b.commissionFreeBookingsRemaining ?? 0;
+      const kickback = b.kickbackPercent ?? 0;
+      totalFreeSlots += free;
+      kickbackSum += kickback;
+      if (free > 0) withFree += 1;
+      else zeroFree += 1;
+      if (kickback > 0) withKickback += 1;
+      if (b.hasStripeSetup) stripeReady += 1;
+      if (b.hasServiceLocation) withLocation += 1;
+    }
     return {
-      total: onboardingOperators.length,
+      total,
       withFree,
+      zeroFree,
       withKickback,
+      stripeReady,
+      stripeNotReady: Math.max(0, total - stripeReady),
+      withLocation,
+      withoutLocation: Math.max(0, total - withLocation),
+      totalFreeSlots,
+      avgFreeSlots: total > 0 ? totalFreeSlots / total : 0,
+      avgKickbackPercent: total > 0 ? kickbackSum / total : 0,
     };
   }, [onboardingOperators]);
 
@@ -1042,35 +1057,28 @@ export function AdminDashboard({
   };
 
   const handleBulkOnboardingSave = async () => {
-    if (!onboardingApplyFree && !onboardingApplyKickback) {
-      toast.error('Select at least one setting to apply');
+    const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
+    if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+      toast.error('Commission-free bookings must be a whole number ≥ 0');
+      return;
+    }
+
+    const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+    if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
+      toast.error('Kickback percent must be between 0 and 100');
       return;
     }
 
     const body: {
       scope: 'all' | 'selected';
       barberRecordIds?: string[];
-      commissionFreeBookingsRemaining?: number;
-      kickbackPercent?: number;
-    } = { scope: onboardingScope };
-
-    if (onboardingApplyFree) {
-      const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
-      if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
-        toast.error('Commission-free bookings must be a whole number ≥ 0');
-        return;
-      }
-      body.commissionFreeBookingsRemaining = freeRemaining;
-    }
-
-    if (onboardingApplyKickback) {
-      const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
-      if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
-        toast.error('Kickback percent must be between 0 and 100');
-        return;
-      }
-      body.kickbackPercent = kickbackPercent;
-    }
+      commissionFreeBookingsRemaining: number;
+      kickbackPercent: number;
+    } = {
+      scope: onboardingScope,
+      commissionFreeBookingsRemaining: freeRemaining,
+      kickbackPercent,
+    };
 
     if (onboardingScope === 'selected') {
       const ids = Array.from(onboardingSelectedIds);
@@ -2129,227 +2137,186 @@ export function AdminDashboard({
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">Onboarding</h3>
                   <p className="mt-1 text-xs text-gray-500">
-                    Set commission-free booking quotas and platform kickback rates, then apply to every
-                    operator or a selected set.
+                    Overview of operator readiness, then mass-apply the same payment settings used on each
+                    operator profile.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Operators</p>
-                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                      {onboardingStats.total}
-                    </p>
+                {/* Current operator state */}
+                <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-gray-900">Current operator state</h4>
+                    <span className="text-[10px] text-gray-500">
+                      {isLoadingBarbers ? 'Loading…' : `${onboardingStats.total} operators`}
+                    </span>
                   </div>
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500">With free slots</p>
-                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                      {onboardingStats.withFree}
-                    </p>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.total}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Stripe ready</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.stripeReady}
+                        <span className="ml-1 text-[10px] font-normal text-gray-500">
+                          / {onboardingStats.stripeNotReady} not
+                        </span>
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Public location</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.withLocation}
+                        <span className="ml-1 text-[10px] font-normal text-gray-500">
+                          / {onboardingStats.withoutLocation} missing
+                        </span>
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">With free slots</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.withFree}
+                        <span className="ml-1 text-[10px] font-normal text-gray-500">
+                          / {onboardingStats.zeroFree} at 0
+                        </span>
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">Total free slots</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.totalFreeSlots}
+                        <span className="ml-1 text-[10px] font-normal text-gray-500">
+                          avg {onboardingStats.avgFreeSlots.toFixed(1)}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500">With kickback</p>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                        {onboardingStats.withKickback}
+                        <span className="ml-1 text-[10px] font-normal text-gray-500">
+                          avg {onboardingStats.avgKickbackPercent.toFixed(1)}%
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500">With kickback</p>
-                    <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                      {onboardingStats.withKickback}
-                    </p>
+
+                  <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-stone-100">
+                    {isLoadingBarbers ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                      </div>
+                    ) : onboardingOperators.length === 0 ? (
+                      <p className="py-4 text-center text-sm text-gray-400">No operators found</p>
+                    ) : (
+                      onboardingOperators.map((barber) => (
+                        <div
+                          key={barber.barberRecordId || barber.id}
+                          className="flex items-center justify-between gap-2 border-b border-stone-100 px-2.5 py-2 last:border-b-0"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-gray-900">
+                              {barber.firstName} {barber.lastName}
+                            </p>
+                            <p className="truncate text-[10px] text-gray-500">{barber.email}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[10px] tabular-nums text-gray-700">
+                              free {barber.commissionFreeBookingsRemaining ?? 0} ·{' '}
+                              {barber.kickbackPercent ?? 0}% kickback
+                            </p>
+                            <p className="text-[10px] text-gray-400">
+                              {barber.hasStripeSetup ? 'Stripe' : 'No Stripe'}
+                              {' · '}
+                              {barber.hasServiceLocation ? 'Located' : 'No location'}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-stone-200 p-3 space-y-3">
-                  <p className="text-xs font-semibold text-gray-900">Settings to apply</p>
-
-                  <label className="flex items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      className="mt-1 rounded border-gray-300"
-                      checked={onboardingApplyFree}
-                      onChange={(e) => setOnboardingApplyFree(e.target.checked)}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs text-gray-700">Commission-free bookings remaining</span>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          readOnly={!editingOnboardingFree}
-                          value={editingOnboardingFree ? onboardingFreeDraft : onboardingFreeInput}
-                          onChange={(e) => setOnboardingFreeDraft(e.target.value)}
-                          className={`w-16 shrink-0 rounded-md border px-2 py-1.5 text-sm tabular-nums ${
-                            editingOnboardingFree
-                              ? 'border-gray-900 bg-white text-gray-900'
-                              : 'border-gray-200 bg-gray-50 text-gray-900'
-                          }`}
-                        />
-                        {editingOnboardingFree ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
-                            onClick={() => {
-                              const freeRemaining = parseInt(onboardingFreeDraft.trim(), 10);
-                              if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
-                                toast.error('Commission-free bookings must be a whole number ≥ 0');
-                                return;
-                              }
-                              setOnboardingFreeInput(String(freeRemaining));
-                              setOnboardingFreeDraft(String(freeRemaining));
-                              setEditingOnboardingFree(false);
-                            }}
-                          >
-                            Save
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                            aria-label="Edit commission-free bookings"
-                            onClick={() => {
-                              setOnboardingFreeDraft(onboardingFreeInput);
-                              setEditingOnboardingFree(true);
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <span className="mt-0.5 block text-[10px] text-gray-500">
-                        Next N card bookings take $0 platform fee, then 15% applies
-                      </span>
+                {/* Mass apply — mirrors per-operator Payment settings */}
+                <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-gray-900">Mass apply payment settings</h4>
+                    <span className="text-[10px] text-gray-500">
+                      Platform commission 15% · tips never commissioned
                     </span>
-                  </label>
-
-                  <label className="flex items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      className="mt-1 rounded border-gray-300"
-                      checked={onboardingApplyKickback}
-                      onChange={(e) => setOnboardingApplyKickback(e.target.checked)}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs text-gray-700">Provider kickback %</span>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.1}
-                          readOnly={!editingOnboardingKickback}
-                          value={editingOnboardingKickback ? onboardingKickbackDraft : onboardingKickbackInput}
-                          onChange={(e) => setOnboardingKickbackDraft(e.target.value)}
-                          className={`w-16 shrink-0 rounded-md border px-2 py-1.5 text-sm tabular-nums ${
-                            editingOnboardingKickback
-                              ? 'border-gray-900 bg-white text-gray-900'
-                              : 'border-gray-200 bg-gray-50 text-gray-900'
-                          }`}
-                        />
-                        {editingOnboardingKickback ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
-                            onClick={() => {
-                              const kickbackPercent = parseFloat(onboardingKickbackDraft.trim());
-                              if (
-                                !Number.isFinite(kickbackPercent) ||
-                                kickbackPercent < 0 ||
-                                kickbackPercent > 100
-                              ) {
-                                toast.error('Kickback percent must be between 0 and 100');
-                                return;
-                              }
-                              const normalized = String(Math.round(kickbackPercent * 100) / 100);
-                              setOnboardingKickbackInput(normalized);
-                              setOnboardingKickbackDraft(normalized);
-                              setEditingOnboardingKickback(false);
-                            }}
-                          >
-                            Save
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                            aria-label="Edit kickback percent"
-                            onClick={() => {
-                              setOnboardingKickbackDraft(onboardingKickbackInput);
-                              setEditingOnboardingKickback(true);
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <span className="mt-0.5 block text-[10px] text-gray-500">
-                        Platform pays this % of service from its Stripe balance after each paid card booking
-                      </span>
-                    </span>
-                  </label>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => {
-                        setOnboardingApplyFree(true);
-                        setOnboardingFreeInput('5');
-                        setOnboardingFreeDraft('5');
-                        setEditingOnboardingFree(false);
-                      }}
-                    >
-                      Set 5 free
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isSavingOnboardingBulk}
-                      onClick={() => {
-                        setOnboardingApplyKickback(true);
-                        setOnboardingKickbackInput('10');
-                        setOnboardingKickbackDraft('10');
-                        setEditingOnboardingKickback(false);
-                      }}
-                    >
-                      Set 10% kickback
-                    </Button>
                   </div>
-                </div>
 
-                <div className="rounded-xl border border-stone-200 p-3 space-y-3">
-                  <p className="text-xs font-semibold text-gray-900">Apply to</p>
-                  <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setOnboardingScope('all')}
-                      className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
-                        onboardingScope === 'all'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      All operators ({onboardingStats.total})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOnboardingScope('selected')}
-                      className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
-                        onboardingScope === 'selected'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Select operators
-                      {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
-                    </button>
-                  </nav>
+                  <label className="block max-w-sm">
+                    <span className="text-xs text-gray-600">Commission-free bookings remaining</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={onboardingFreeInput}
+                      onChange={(e) => setOnboardingFreeInput(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                    />
+                    <span className="mt-0.5 block text-[10px] text-gray-500">
+                      Next N card bookings take $0 platform fee (default 5 for every provider), then 15%
+                      applies
+                    </span>
+                  </label>
+
+                  <label className="block max-w-sm">
+                    <span className="text-xs text-gray-600">Provider kickback %</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={onboardingKickbackInput}
+                      onChange={(e) => setOnboardingKickbackInput(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                    />
+                    <span className="mt-0.5 block text-[10px] text-gray-500">
+                      Platform pays this % of service (not tip) from its Stripe balance to the provider
+                      after each paid card booking. Example: $25 cut + 10% = +$2.50 transfer ($27.50 total
+                      when commission-free).
+                    </span>
+                  </label>
+
+                  <div>
+                    <p className="mb-1.5 text-xs text-gray-600">Apply to</p>
+                    <nav className="flex max-w-sm gap-1 rounded-lg bg-stone-100 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingScope('all')}
+                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
+                          onboardingScope === 'all'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        All ({onboardingStats.total})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingScope('selected')}
+                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-all ${
+                          onboardingScope === 'selected'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Selected
+                        {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
+                      </button>
+                    </nav>
+                  </div>
 
                   {onboardingScope === 'selected' && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] text-gray-500">
-                          Tap operators to include them in this apply
-                        </p>
+                        <p className="text-[10px] text-gray-500">Tap operators to include</p>
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -2375,69 +2342,93 @@ export function AdminDashboard({
                           </button>
                         </div>
                       </div>
-                      <div className="max-h-64 space-y-1.5 overflow-y-auto">
-                        {isLoadingBarbers ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
-                          </div>
-                        ) : onboardingOperators.length === 0 ? (
-                          <p className="text-sm text-gray-400 py-4 text-center">No operators found</p>
-                        ) : (
-                          onboardingOperators.map((barber) => {
-                            const id = barber.barberRecordId!;
-                            const selected = onboardingSelectedIds.has(id);
-                            return (
-                              <button
-                                key={id}
-                                type="button"
-                                onClick={() => toggleOnboardingProvider(id)}
-                                className={`w-full flex items-center gap-2.5 rounded-lg border p-2 text-left transition-colors ${
+                      <div className="max-h-48 space-y-1.5 overflow-y-auto">
+                        {onboardingOperators.map((barber) => {
+                          const id = barber.barberRecordId!;
+                          const selected = onboardingSelectedIds.has(id);
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => toggleOnboardingProvider(id)}
+                              className={`w-full flex items-center gap-2.5 rounded-lg border p-2 text-left transition-colors ${
+                                selected
+                                  ? 'border-gray-900 bg-gray-50'
+                                  : 'border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                                   selected
-                                    ? 'border-gray-900 bg-gray-50'
-                                    : 'border-gray-200 hover:bg-gray-50'
+                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                    : 'border-gray-300 bg-white'
                                 }`}
                               >
-                                <span
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                    selected
-                                      ? 'border-gray-900 bg-gray-900 text-white'
-                                      : 'border-gray-300 bg-white'
-                                  }`}
-                                >
-                                  {selected ? <Check className="h-3 w-3" /> : null}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-medium text-gray-900">
-                                    {barber.firstName} {barber.lastName}
-                                  </p>
-                                  <p className="truncate text-[10px] text-gray-500">
-                                    {barber.email} · free {barber.commissionFreeBookingsRemaining ?? 0} ·
-                                    kickback {barber.kickbackPercent ?? 0}%
-                                  </p>
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
+                                {selected ? <Check className="h-3 w-3" /> : null}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                  {barber.firstName} {barber.lastName}
+                                </p>
+                                <p className="truncate text-[10px] text-gray-500">
+                                  free {barber.commissionFreeBookingsRemaining ?? 0} · kickback{' '}
+                                  {barber.kickbackPercent ?? 0}%
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
-                </div>
 
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isSavingOnboardingBulk}
-                  onClick={() => void handleBulkOnboardingSave()}
-                >
-                  {isSavingOnboardingBulk ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : onboardingScope === 'all' ? (
-                    'Apply to all operators'
-                  ) : (
-                    `Apply to ${onboardingSelectedIds.size || 0} selected`
-                  )}
-                </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => void handleBulkOnboardingSave()}
+                    >
+                      {isSavingOnboardingBulk ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : onboardingScope === 'all' ? (
+                        'Save to all operators'
+                      ) : (
+                        `Save to ${onboardingSelectedIds.size || 0} selected`
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => setOnboardingFreeInput('5')}
+                    >
+                      Set 5 free
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => setOnboardingKickbackInput('10')}
+                    >
+                      Set 10% kickback
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSavingOnboardingBulk}
+                      onClick={() => {
+                        setOnboardingFreeInput('5');
+                        setOnboardingKickbackInput('0');
+                      }}
+                    >
+                      Reset to default
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : !selectedCampusId ? (
           /* All Barbers View - organized by status with tabs */
