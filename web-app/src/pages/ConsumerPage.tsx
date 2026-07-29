@@ -765,18 +765,8 @@ export default function ConsumerPage() {
           <div className="flex items-center justify-between relative">
             {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Admin-only (no barber): Admin. Operators: Barber View. Consumers: Become a Barber. */}
-              {isAdmin && !isOperator ? (
-                <button
-                  type="button"
-                  onClick={openAdminDashboard}
-                  className="px-3 py-2 sm:px-4 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors border border-gray-200"
-                  title="Admin"
-                  aria-label="Admin"
-                >
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">Admin</span>
-                </button>
-              ) : isOperator || isAdmin ? (
+              {/* Operators: Barber View. Everyone else (incl. consumer-admins): Become a Barber. */}
+              {isOperator ? (
                 <button
                   onClick={() => navigate('/web/barber')}
                   className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
@@ -795,13 +785,24 @@ export default function ConsumerPage() {
               )}
             </div>
             
-            {/* Center section - Logo (centered on all screen sizes) - clickable to go home */}
-            <button 
-              onClick={() => navigate('/')}
-              className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
-            >
-              <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
-            </button>
+            {/* Center: Admin (admins) or logo home (everyone else) */}
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={openAdminDashboard}
+                className="absolute left-1/2 -translate-x-1/2 flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+                aria-label="Admin"
+              >
+                <span className="text-xs font-semibold text-gray-700">Admin</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/')}
+                className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
+              >
+                <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
+              </button>
+            )}
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
             <div className="flex items-center gap-2 sm:gap-4">
@@ -893,6 +894,21 @@ export default function ConsumerPage() {
                           <UserX className="w-4 h-4 text-gray-500" />
                           Blocked providers
                         </button>
+                        {isAdmin && (
+                          <>
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                openAdminDashboard();
+                                setShowProfileDropdown(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                            >
+                              Admin
+                            </button>
+                          </>
+                        )}
                         <div className="border-t border-gray-200 my-1"></div>
                         <Link
                           to="/privacy"
