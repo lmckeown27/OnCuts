@@ -1547,7 +1547,7 @@ export function AdminDashboard({
         <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
           {(
             [
-              { view: 'performance' as const, label: 'Perf.', Icon: Activity },
+              { view: 'performance' as const, label: 'Performance', Icon: Activity },
               { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
               { view: 'users' as const, label: 'Users', Icon: Users },
               { view: 'services' as const, label: 'Services', Icon: Scissors },
