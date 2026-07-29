@@ -3723,11 +3723,19 @@ export function AdminDashboard({
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <span className="text-xs font-bold text-primary-600">
-                          {user.customer_number != null
-                            ? `#${user.customer_number}`
-                            : (user.first_name?.charAt(0) || 'U')}
-                        </span>
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-bold text-primary-600">
+                            {user.customer_number != null
+                              ? `#${user.customer_number}`
+                              : (user.first_name?.charAt(0) || 'U')}
+                          </span>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-900 text-sm truncate">
