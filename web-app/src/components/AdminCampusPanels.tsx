@@ -2,7 +2,7 @@
  * Admin campus management panels (locations, bookings, services, availability).
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, startTransition } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -2529,16 +2529,15 @@ export const ServicesManagementPanel: React.FC = () => {
   const [formProviderType, setFormProviderType] = useState<'barber' | 'beauty'>('barber');
   const [formError, setFormError] = useState('');
 
-  const fetchServices = async () => {
+  const fetchServices = async (opts?: { soft?: boolean }) => {
+    const soft = opts?.soft === true;
     try {
-      setLoading(true);
+      if (!soft) setLoading(true);
       const token = localStorage.getItem('accessToken');
       const params = new URLSearchParams({
         includeInactive: String(showInactive),
       });
-      if (providerTypeFilter) {
-        params.set('providerType', providerTypeFilter);
-      }
+      // Load both Barber and Beauty; filter client-side for instant tab switches.
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ''}/admin/services?${params.toString()}`,
         {
@@ -2558,8 +2557,17 @@ export const ServicesManagementPanel: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchServices();
-  }, [showInactive, providerTypeFilter]);
+    void fetchServices({ soft: services.length > 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- soft gate uses services.length without refetch loops
+  }, [showInactive]);
+
+  const visibleServices = useMemo(
+    () =>
+      services.filter(
+        (s) => resolveServiceProviderType(s) === providerTypeFilter
+      ),
+    [services, providerTypeFilter]
+  );
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2597,7 +2605,7 @@ export const ServicesManagementPanel: React.FC = () => {
         toast.success('Service added successfully');
         setShowAddModal(false);
         resetForm();
-        fetchServices();
+        fetchServices({ soft: true });
       } else {
         setFormError(data.message || 'Failed to add service');
       }
@@ -2663,7 +2671,7 @@ export const ServicesManagementPanel: React.FC = () => {
       if (data.success) {
         toast.success('Service limits updated');
         setEditingServiceId(null);
-        fetchServices();
+        fetchServices({ soft: true });
       } else {
         toast.error(data.message || 'Failed to update service limits');
       }
@@ -2695,7 +2703,7 @@ export const ServicesManagementPanel: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         toast.success('Service deleted');
-        fetchServices();
+        fetchServices({ soft: true });
       } else {
         toast.error(data.message || 'Failed to delete service');
       }
@@ -2723,7 +2731,7 @@ export const ServicesManagementPanel: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         toast.success('Service restored');
-        fetchServices();
+        fetchServices({ soft: true });
       } else {
         toast.error(data.message || 'Failed to restore service');
       }
@@ -2790,7 +2798,9 @@ export const ServicesManagementPanel: React.FC = () => {
             <button
               key={option.id}
               type="button"
-              onClick={() => setProviderTypeFilter(option.id)}
+              onClick={() => {
+                startTransition(() => setProviderTypeFilter(option.id));
+              }}
               className={`flex-1 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${
                 providerTypeFilter === option.id
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -2872,7 +2882,7 @@ export const ServicesManagementPanel: React.FC = () => {
       )}
 
       {LEDGER_SECTIONS.map((section) => {
-        const sectionServices = services.filter(
+        const sectionServices = visibleServices.filter(
           (s) => ledgerCategoryForService(s.slug, s.name) === section.id
         );
         if (sectionServices.length === 0) return null;
@@ -3069,7 +3079,7 @@ export const ServicesManagementPanel: React.FC = () => {
         );
       })}
 
-      {services.length === 0 && (
+      {visibleServices.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">
             {`No ${providerTypeFilter} services found`}
