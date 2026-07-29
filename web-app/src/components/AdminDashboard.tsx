@@ -3506,17 +3506,21 @@ export function AdminDashboard({
                   {selectedConsumer.campus_name ? ` · ${selectedConsumer.campus_name}` : ''}
                 </p>
               </div>
-              {selectedConsumer.id !== currentAdminId &&
-                ['CONSUMER', 'ADMIN'].includes(
-                  String(selectedConsumer.role || 'CONSUMER').toUpperCase()
-                ) && (
+              {['CONSUMER', 'ADMIN'].includes(
+                String(selectedConsumer.role || 'CONSUMER').toUpperCase()
+              ) && (
                 String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="shrink-0 whitespace-nowrap"
-                    disabled={isUpdatingUserRole}
+                    disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
+                    title={
+                      selectedConsumer.id === currentAdminId
+                        ? 'You cannot revoke your own Admin access'
+                        : undefined
+                    }
                     onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
                   >
                     {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove Admin'}
@@ -3526,7 +3530,12 @@ export function AdminDashboard({
                     type="button"
                     size="sm"
                     className="shrink-0 whitespace-nowrap"
-                    disabled={isUpdatingUserRole}
+                    disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
+                    title={
+                      selectedConsumer.id === currentAdminId
+                        ? 'You cannot change your own role'
+                        : undefined
+                    }
                     onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
                   >
                     {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Make Admin'}
