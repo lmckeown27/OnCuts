@@ -1400,7 +1400,7 @@ export function AdminDashboard({
     }
     const confirmMsg =
       role === 'ADMIN'
-        ? `Make ${user.first_name} ${user.last_name} a platform Admin? They do not need to be a barber.`
+        ? `Make ${user.first_name} ${user.last_name} a platform Admin?`
         : `Remove Admin access for ${user.first_name} ${user.last_name}? They will become a consumer again.`;
     if (!window.confirm(confirmMsg)) return;
 
