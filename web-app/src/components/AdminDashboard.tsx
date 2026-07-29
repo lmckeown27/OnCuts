@@ -3511,23 +3511,26 @@ export function AdminDashboard({
                   String(selectedConsumer.role || 'CONSUMER').toUpperCase()
                 ) && (
                 String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
+                    disabled={isUpdatingUserRole}
                     onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
-                    disabled={isUpdatingUserRole}
-                    className="shrink-0 px-3 py-2 text-xs font-semibold text-gray-700 border border-stone-200 rounded-lg hover:bg-white disabled:opacity-50 whitespace-nowrap"
                   >
-                    {isUpdatingUserRole ? 'Updating…' : 'Remove Admin'}
-                  </button>
+                    {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove Admin'}
+                  </Button>
                 ) : (
-                  <button
+                  <Button
                     type="button"
-                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
                     disabled={isUpdatingUserRole}
-                    className="shrink-0 px-3 py-2 text-xs font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 whitespace-nowrap"
+                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
                   >
-                    {isUpdatingUserRole ? 'Updating…' : 'Make Admin'}
-                  </button>
+                    {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Make Admin'}
+                  </Button>
                 )
               )}
             </div>
