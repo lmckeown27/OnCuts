@@ -946,16 +946,6 @@ export function AdminDashboard({
 
   const userRoleFilterActive = userRoleFilter !== 'all';
 
-  const userRoleFilterStats = useMemo(() => {
-    let consumer = 0;
-    let admin = 0;
-    for (const u of users) {
-      if (String(u.role || '').toUpperCase() === 'ADMIN') admin += 1;
-      else consumer += 1;
-    }
-    return { total: users.length, consumer, admin };
-  }, [users]);
-
   const handleUgcResolve = async (
     report: UgcContentReport,
     action: 'dismiss' | 'remove_message' | 'ban_reported_user' | 'remove_message_and_ban'
@@ -4331,9 +4321,9 @@ export function AdminDashboard({
                 <div className="flex rounded-lg bg-stone-100 p-1">
                   {(
                     [
-                      { id: 'all' as const, label: `All (${userRoleFilterStats.total})` },
-                      { id: 'consumer' as const, label: `Consumer (${userRoleFilterStats.consumer})` },
-                      { id: 'admin' as const, label: `Admin (${userRoleFilterStats.admin})` },
+                      { id: 'all' as const, label: 'All' },
+                      { id: 'consumer' as const, label: 'Consumer' },
+                      { id: 'admin' as const, label: 'Admin' },
                     ]
                   ).map((opt) => (
                     <button
@@ -4352,14 +4342,6 @@ export function AdminDashboard({
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setUserRoleFilter('all')}
-              >
-                Clear filters
-              </Button>
               <Button type="button" className="w-full" onClick={() => setShowUserFilters(false)}>
                 Done
               </Button>
