@@ -339,6 +339,8 @@ export function AdminDashboard({
   const USERS_PAGE_SIZE = 40;
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'consumer' | 'admin'>('all');
+  const [showUserFilters, setShowUserFilters] = useState(false);
   const [ugcReports, setUgcReports] = useState<UgcContentReport[]>([]);
   const [ugcReportStatusFilter, setUgcReportStatusFilter] = useState<UgcReportStatusFilter>('open');
   const [isLoadingUgcReports, setIsLoadingUgcReports] = useState(false);
@@ -926,15 +928,33 @@ export function AdminDashboard({
   };
   
   const filteredUsers = useMemo(() => {
-    if (!userSearchQuery) return users;
-    
+    let list = users;
+    if (userRoleFilter === 'consumer') {
+      list = list.filter((u) => String(u.role || 'CONSUMER').toUpperCase() === 'CONSUMER');
+    } else if (userRoleFilter === 'admin') {
+      list = list.filter((u) => String(u.role || '').toUpperCase() === 'ADMIN');
+    }
+    if (!userSearchQuery.trim()) return list;
     const query = userSearchQuery.toLowerCase();
-    return users.filter(u => 
-      u.first_name.toLowerCase().includes(query) || 
-      u.last_name.toLowerCase().includes(query) ||
-      u.email.toLowerCase().includes(query)
+    return list.filter(
+      (u) =>
+        u.first_name.toLowerCase().includes(query) ||
+        u.last_name.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query)
     );
-  }, [users, userSearchQuery]);
+  }, [users, userSearchQuery, userRoleFilter]);
+
+  const userRoleFilterActive = userRoleFilter !== 'all';
+
+  const userRoleFilterStats = useMemo(() => {
+    let consumer = 0;
+    let admin = 0;
+    for (const u of users) {
+      if (String(u.role || '').toUpperCase() === 'ADMIN') admin += 1;
+      else consumer += 1;
+    }
+    return { total: users.length, consumer, admin };
+  }, [users]);
 
   const handleUgcResolve = async (
     report: UgcContentReport,
@@ -3666,7 +3686,9 @@ export function AdminDashboard({
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">Users</h3>
               <span className="text-xs text-gray-500">
-                {totalUsersCount} total
+                {userRoleFilterActive || userSearchQuery.trim()
+                  ? `${filteredUsers.length} shown`
+                  : `${totalUsersCount} total`}
               </span>
             </div>
             
@@ -3680,6 +3702,24 @@ export function AdminDashboard({
                 placeholder="Search users…"
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setShowUserFilters(true)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  userRoleFilterActive
+                    ? 'border-gray-900 bg-gray-900 text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                Filters
+                {userRoleFilterActive && (
+                  <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                )}
+              </button>
             </div>
             
             {isLoadingUsers ? (
@@ -3716,7 +3756,7 @@ export function AdminDashboard({
                     <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 ))}
-                {usersHasMore && !userSearchQuery.trim() && (
+                {usersHasMore && !userSearchQuery.trim() && !userRoleFilterActive && (
                   <button
                     type="button"
                     onClick={() => void loadMoreUsers()}
@@ -4254,6 +4294,73 @@ export function AdminDashboard({
                 Clear filters
               </Button>
               <Button type="button" className="w-full" onClick={() => setShowOnboardingFilters(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Users role filters sheet */}
+      {showUserFilters && (
+        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            aria-label="Dismiss user filters"
+            onClick={() => setShowUserFilters(false)}
+          />
+          <div className="relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4">
+            <div className="flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between border-b border-stone-200 shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">Filters</h3>
+              <button
+                type="button"
+                onClick={() => setShowUserFilters(false)}
+                className="p-2 hover:bg-stone-100 rounded-full"
+                aria-label="Close filters"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Role</p>
+                <div className="flex rounded-lg bg-stone-100 p-1">
+                  {(
+                    [
+                      { id: 'all' as const, label: `All (${userRoleFilterStats.total})` },
+                      { id: 'consumer' as const, label: `Consumer (${userRoleFilterStats.consumer})` },
+                      { id: 'admin' as const, label: `Admin (${userRoleFilterStats.admin})` },
+                    ]
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setUserRoleFilter(opt.id)}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
+                        userRoleFilter === opt.id
+                          ? 'bg-white shadow-sm text-gray-900'
+                          : 'text-gray-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setUserRoleFilter('all')}
+              >
+                Clear filters
+              </Button>
+              <Button type="button" className="w-full" onClick={() => setShowUserFilters(false)}>
                 Done
               </Button>
             </div>
