@@ -3481,7 +3481,7 @@ export function AdminDashboard({
             </button>
             
             {/* Consumer Header */}
-            <div className="flex items-center gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
               <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {selectedConsumer.avatar_url ? (
                   <img src={selectedConsumer.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -3497,28 +3497,25 @@ export function AdminDashboard({
                 <h3 className="text-lg font-bold text-gray-900">
                   {selectedConsumer.first_name} {selectedConsumer.last_name}
                 </h3>
-                <p className="text-sm text-gray-500 flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  {selectedConsumer.email}
+                <p className="text-sm text-gray-500 flex items-center gap-1 min-w-0">
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{selectedConsumer.email}</span>
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {selectedConsumer.role || 'CONSUMER'}
                   {selectedConsumer.campus_name ? ` · ${selectedConsumer.campus_name}` : ''}
                 </p>
               </div>
-            </div>
-
-            {selectedConsumer.id !== currentAdminId &&
-              ['CONSUMER', 'ADMIN'].includes(
-                String(selectedConsumer.role || 'CONSUMER').toUpperCase()
-              ) && (
-              <div className="mb-6">
-                {String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
+              {selectedConsumer.id !== currentAdminId &&
+                ['CONSUMER', 'ADMIN'].includes(
+                  String(selectedConsumer.role || 'CONSUMER').toUpperCase()
+                ) && (
+                String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
                   <button
                     type="button"
                     onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
                     disabled={isUpdatingUserRole}
-                    className="w-full py-2.5 text-sm font-semibold text-gray-700 border border-stone-200 rounded-xl hover:bg-stone-50 disabled:opacity-50"
+                    className="shrink-0 px-3 py-2 text-xs font-semibold text-gray-700 border border-stone-200 rounded-lg hover:bg-white disabled:opacity-50 whitespace-nowrap"
                   >
                     {isUpdatingUserRole ? 'Updating…' : 'Remove Admin'}
                   </button>
@@ -3527,16 +3524,13 @@ export function AdminDashboard({
                     type="button"
                     onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
                     disabled={isUpdatingUserRole}
-                    className="w-full py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-800 disabled:opacity-50"
+                    className="shrink-0 px-3 py-2 text-xs font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 whitespace-nowrap"
                   >
                     {isUpdatingUserRole ? 'Updating…' : 'Make Admin'}
                   </button>
-                )}
-                <p className="text-[11px] text-gray-400 mt-2 text-center">
-                  Admins do not need a barber profile.
-                </p>
-              </div>
-            )}
+                )
+              )}
+            </div>
             
             {/* Booking History */}
             <div className="flex items-center justify-between mb-3">
