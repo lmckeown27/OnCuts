@@ -27,7 +27,7 @@ import PullToRefresh from './PullToRefresh';
 import {
   ServicesManagementPanel,
 } from './AdminCampusPanels';
-
+import { useAuthStore } from '../store/useAuthStore';
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -246,7 +246,7 @@ interface PlatformUser {
   campus_name: string | null;
   created_at: string;
   is_active: boolean;
-  customer_number: number;
+  customer_number: number | null;
 }
 
 interface AdminDashboardProps {
@@ -376,6 +376,8 @@ export function AdminDashboard({
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
   const [consumerBookings, setConsumerBookings] = useState<ConsumerBooking[]>([]);
   const [isLoadingConsumerBookings, setIsLoadingConsumerBookings] = useState(false);
+  const [isUpdatingUserRole, setIsUpdatingUserRole] = useState(false);
+  const currentAdminId = useAuthStore((s) => s.user?.id);
   
   // Barber view state (shared between all-barbers and campus-specific views)
   const [barberViewTab, setBarberViewTab] = useState<'barbers' | 'applications' | 'availability'>('barbers');
@@ -1379,6 +1381,35 @@ export function AdminDashboard({
     setConsumerBookings([]);
     setSelectedBookingId(null);
     setSelectedBookingMessages([]);
+  };
+
+  const handleUpdateUserRole = async (user: PlatformUser, role: 'ADMIN' | 'CONSUMER') => {
+    if (user.id === currentAdminId) {
+      toast.error('You cannot change your own role');
+      return;
+    }
+    const confirmMsg =
+      role === 'ADMIN'
+        ? `Make ${user.first_name} ${user.last_name} a platform Admin? They do not need to be a barber.`
+        : `Remove Admin access for ${user.first_name} ${user.last_name}? They will become a consumer again.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsUpdatingUserRole(true);
+    try {
+      await api.put(`/admin/users/${user.id}/role`, { role });
+      const next = { ...user, role };
+      setSelectedConsumer(next);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? next : u)));
+      toast.success(role === 'ADMIN' ? 'User is now an Admin' : 'Admin access removed');
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          'Failed to update role'
+      );
+    } finally {
+      setIsUpdatingUserRole(false);
+    }
   };
   
   // Prepare chart data
@@ -3440,13 +3471,15 @@ export function AdminDashboard({
             </button>
             
             {/* Consumer Header */}
-            <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
               <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {selectedConsumer.avatar_url ? (
                   <img src={selectedConsumer.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-lg font-bold text-primary-600">
-                    #{selectedConsumer.customer_number}
+                    {selectedConsumer.customer_number != null
+                      ? `#${selectedConsumer.customer_number}`
+                      : (selectedConsumer.first_name?.charAt(0) || 'U')}
                   </span>
                 )}
               </div>
@@ -3458,13 +3491,42 @@ export function AdminDashboard({
                   <Mail className="w-3.5 h-3.5" />
                   {selectedConsumer.email}
                 </p>
-                {selectedConsumer.campus_name && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {selectedConsumer.campus_name}
-                  </p>
-                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  {selectedConsumer.role || 'CONSUMER'}
+                  {selectedConsumer.campus_name ? ` · ${selectedConsumer.campus_name}` : ''}
+                </p>
               </div>
             </div>
+
+            {selectedConsumer.id !== currentAdminId &&
+              ['CONSUMER', 'ADMIN'].includes(
+                String(selectedConsumer.role || 'CONSUMER').toUpperCase()
+              ) && (
+              <div className="mb-6">
+                {String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
+                    disabled={isUpdatingUserRole}
+                    className="w-full py-2.5 text-sm font-semibold text-gray-700 border border-stone-200 rounded-xl hover:bg-stone-50 disabled:opacity-50"
+                  >
+                    {isUpdatingUserRole ? 'Updating…' : 'Remove Admin'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
+                    disabled={isUpdatingUserRole}
+                    className="w-full py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {isUpdatingUserRole ? 'Updating…' : 'Make Admin'}
+                  </button>
+                )}
+                <p className="text-[11px] text-gray-400 mt-2 text-center">
+                  Admins do not need a barber profile.
+                </p>
+              </div>
+            )}
             
             {/* Booking History */}
             <div className="flex items-center justify-between mb-3">
@@ -3635,7 +3697,9 @@ export function AdminDashboard({
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                         <span className="text-xs font-bold text-primary-600">
-                          #{user.customer_number}
+                          {user.customer_number != null
+                            ? `#${user.customer_number}`
+                            : (user.first_name?.charAt(0) || 'U')}
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">

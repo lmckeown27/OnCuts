@@ -49,7 +49,7 @@ function mapBackendUser(responseUser: Record<string, unknown>): User {
     user_type: mappedRole as 'student' | 'barber' | 'admin',
     is_verified: (responseUser.emailVerified ?? responseUser.is_verified ?? true) as boolean,
     is_admin: isAdmin,
-    has_barber_profile: (responseUser.hasBarberProfile ?? false) as boolean,
+    has_barber_profile: (responseUser.hasBarberProfile ?? responseUser.has_barber_profile ?? false) as boolean,
     created_at: (responseUser.created_at as string) || new Date().toISOString(),
     campus_id: (responseUser.campusId || responseUser.campus_id)?.toString(),
     profile_picture_url: (responseUser.profile_picture_url || responseUser.avatarUrl) as string | undefined,

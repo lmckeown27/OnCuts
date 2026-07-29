@@ -2295,7 +2295,7 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
 };
 
 /**
- * Get all consumers (user signups) for a specific campus
+ * Get consumers and platform admins (for role management). Does not require a barber profile.
  * GET /api/admin/users?campusId=xxx
  */
 export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -2311,21 +2311,20 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const offset = (page - 1) * limit;
     const campusId = req.query.campusId as string | undefined;
 
-    // Determine consumer's "primary campus" based on which university's barbers they book with most
-    // If no bookings, fall back to their campusId (signup campus)
-    // Build query based on whether campusId filter is provided
-    let whereClause = 'WHERE u.role = \'CONSUMER\'';
+    // Consumers (+ platform ADMIN accounts so they can be assigned/revoked without a barber profile)
+    let whereClause = `WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     const params: (string | number)[] = [limit, offset];
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      // Filter by primary campus (booking-based) or fallback to signup campus
-      whereClause += ' AND COALESCE(pc.primary_campus_id, u."campusId") = $3::uuid';
+      // Campus filter applies to consumers; platform admins always included
+      whereClause = `WHERE (
+        (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $3::uuid)
+        OR u.role = 'ADMIN'
+      )`;
       params.push(campusId);
     }
 
-    // Get consumers with their primary campus (based on booking history) and global customer number
-    // Primary campus = campus of barbers they've booked with most frequently
-    // Falls back to signup campus if no bookings
+    // Get consumers/admins with primary campus (booking-based) and global customer number
     const result = await pool.query(`
       WITH numbered_consumers AS (
         SELECT 
@@ -2372,11 +2371,11 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
       LEFT JOIN campuses pc_campus ON pc.primary_campus_id = pc_campus.id
       LEFT JOIN numbered_consumers nc ON u.id = nc.id
       ${whereClause}
-      ORDER BY u."createdAt" DESC
+      ORDER BY CASE WHEN u.role = 'ADMIN' THEN 0 ELSE 1 END, u."createdAt" DESC
       LIMIT $1 OFFSET $2
     `, params);
 
-    // Get total count of consumers (with same filter based on primary campus)
+    // Get total count (same role + campus filter)
     let countParams: string[] = [];
     let countQuery: string;
     
@@ -2403,12 +2402,14 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         SELECT COUNT(*) as total 
         FROM users u
         LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
-        WHERE u.role = 'CONSUMER'
-          AND COALESCE(pc.primary_campus_id, u."campusId") = $1::uuid
+        WHERE (
+          (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $1::uuid)
+          OR u.role = 'ADMIN'
+        )
       `;
       countParams.push(campusId);
     } else {
-      countQuery = 'SELECT COUNT(*) as total FROM users u WHERE u.role = \'CONSUMER\'';
+      countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     }
     
     const countResult = await pool.query(countQuery, countParams);
@@ -2813,6 +2814,76 @@ export const unbanUser = async (req: AuthRequest, res: Response, next: NextFunct
     await pool.query(`UPDATE users SET "isBanned" = false, "updatedAt" = NOW() WHERE id = $1::uuid`, [userId]);
     logger.info('admin_unban_user', { userId, adminId: req.user!.userId });
     res.json({ success: true, data: { ok: true, wasBanned: true }, message: 'User unbanned' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/admin/users/:userId/role
+ * Assign or revoke platform ADMIN. Does not require a barber profile.
+ * Allowed transitions: CONSUMER ↔ ADMIN only (operators stay on barber flows).
+ */
+export const updateUserRole = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const actorRole = req.user!.role?.toUpperCase();
+    if (actorRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const { userId } = req.params;
+    const rawRole = typeof req.body?.role === 'string' ? req.body.role.trim().toUpperCase() : '';
+    if (rawRole !== 'ADMIN' && rawRole !== 'CONSUMER') {
+      throw new ApiError(400, 'role must be ADMIN or CONSUMER');
+    }
+
+    if (userId === req.user!.userId) {
+      throw new ApiError(400, 'You cannot change your own role');
+    }
+
+    const check = await pool.query(
+      `SELECT id, role, email FROM users WHERE id = $1::uuid`,
+      [userId]
+    );
+    if (check.rows.length === 0) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const currentRole = String(check.rows[0].role || '').toUpperCase();
+    if (currentRole !== 'CONSUMER' && currentRole !== 'ADMIN') {
+      throw new ApiError(
+        400,
+        `Only CONSUMER or ADMIN accounts can be updated here (current role: ${currentRole})`
+      );
+    }
+
+    if (currentRole === rawRole) {
+      res.json({
+        success: true,
+        data: { id: userId, role: rawRole },
+        message: `User is already ${rawRole}`,
+      });
+      return;
+    }
+
+    await pool.query(
+      `UPDATE users SET role = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2::uuid`,
+      [rawRole, userId]
+    );
+
+    logger.info('admin_update_user_role', {
+      userId,
+      email: check.rows[0].email,
+      from: currentRole,
+      to: rawRole,
+      adminId: req.user!.userId,
+    });
+
+    res.json({
+      success: true,
+      data: { id: userId, role: rawRole },
+      message: rawRole === 'ADMIN' ? 'User promoted to ADMIN' : 'Admin access revoked',
+    });
   } catch (error) {
     next(error);
   }

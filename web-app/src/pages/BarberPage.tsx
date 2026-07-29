@@ -160,7 +160,12 @@ export default function BarberPage() {
     user?.has_barber_profile;
 
   const stripeGate = useStripeOnboardingGate({
-    enabled: !isAuthLoading && isAuthorizedForBarberPage && Boolean(barberId),
+    // Admin-only accounts (no barber profile) must not be blocked by Stripe onboarding
+    enabled:
+      !isAuthLoading &&
+      isAuthorizedForBarberPage &&
+      Boolean(barberId) &&
+      Boolean(user?.has_barber_profile || user?.user_type === 'barber'),
   });
   
   // Lock body scroll when any modal is open

@@ -803,10 +803,10 @@ export const checkEmail = async (req: AuthRequest, res: Response, next: NextFunc
       const row = existingUser.rows[0];
       const role = String(row.role ?? '').toUpperCase();
       const hasActiveBarberProfile = row.has_active_barber_profile === true;
+      // Platform ADMIN without a barber profile is not an operator — they use consumer + Admin UI.
       isOperator =
         hasActiveBarberProfile ||
         role === 'BARBER' ||
-        role === 'ADMIN' ||
         role === 'CAMPUS_MANAGER';
     }
 

@@ -266,7 +266,12 @@ export default function AuthPage() {
     }
 
     if (result.isAdmin || currentUser?.user_type === 'barber') {
-      navigate('/web/barber');
+      // Admin without a barber profile stays on consumer (Admin UI lives there)
+      if (result.isAdmin && !currentUser?.has_barber_profile && currentUser?.user_type !== 'barber') {
+        navigate('/web/consumer');
+      } else {
+        navigate('/web/barber');
+      }
     } else {
       navigate('/web/consumer');
     }

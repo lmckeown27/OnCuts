@@ -8,6 +8,7 @@ import Button from '../components/Button';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import BarberApplicationModal from '../components/BarberApplicationModal';
+import { AdminDashboard } from '../components/AdminDashboard';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService, { type BarberListMeta } from '../services/barber.service';
 import providerService from '../services/provider.service';
@@ -216,6 +217,8 @@ export default function ConsumerPage() {
   } | null>(null);
   const [showAlternativeBarbersModal, setShowAlternativeBarbersModal] = useState(false);
   const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
   const [alternativeBarbersData, setAlternativeBarbersData] = useState<{
     scheduledTime: string;
     serviceType: string;
@@ -235,12 +238,13 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showBookingsModal || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showBookingsModal || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal || showAdminDashboard;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
   useBodyScrollLock(showBlockedProvidersModal);
   useBodyScrollLock(showBookingsModal);
+  useBodyScrollLock(showAdminDashboard);
   
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void, setVisible?: (v: boolean) => void) => {
@@ -266,6 +270,17 @@ export default function ConsumerPage() {
       setShowProfileEditor(false);
     }, 150);
   };
+
+  const openAdminDashboard = () => {
+    scrollToTopAndOpen(setShowAdminDashboard, setIsAdminDashboardVisible);
+  };
+
+  const closeAdminDashboard = () => {
+    setIsAdminDashboardVisible(false);
+    setTimeout(() => {
+      setShowAdminDashboard(false);
+    }, 150);
+  };
   
   // Determine platform prefix based on current route
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
@@ -273,6 +288,9 @@ export default function ConsumerPage() {
   // Get consumer ID from auth
   const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
   const consumerId = user?.id || '';
+  const isAdmin = user?.is_admin || user?.user_type === 'admin';
+  const isOperator =
+    user?.user_type === 'barber' || Boolean(user?.has_barber_profile);
   
   // NOTE: isAuthLoading check is moved to the return statement below
   // to avoid violating React's Rules of Hooks (no early returns before hooks)
@@ -747,8 +765,18 @@ export default function ConsumerPage() {
           <div className="flex items-center justify-between relative">
             {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Barber button - different behavior based on user role */}
-              {user?.user_type === 'barber' || user?.user_type === 'admin' || user?.has_barber_profile ? (
+              {/* Admin-only (no barber): Admin. Operators: Barber View. Consumers: Become a Barber. */}
+              {isAdmin && !isOperator ? (
+                <button
+                  type="button"
+                  onClick={openAdminDashboard}
+                  className="px-3 py-2 sm:px-4 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors border border-gray-200"
+                  title="Admin"
+                  aria-label="Admin"
+                >
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">Admin</span>
+                </button>
+              ) : isOperator || isAdmin ? (
                 <button
                   onClick={() => navigate('/web/barber')}
                   className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
@@ -958,6 +986,44 @@ export default function ConsumerPage() {
             <div className="p-6">
               <ConsumerProfileEditor ref={profileEditorRef} userId={consumerId} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Dashboard — consumer-admins (no barber profile required) */}
+      {isAdmin && showAdminDashboard && (
+        <div
+          className={`fixed inset-0 z-50 min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
+            isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeAdminDashboard}
+        >
+          <div
+            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[94dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+              isAdminDashboardVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin"
+          >
+            <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
+            <div className="relative px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
+              <button
+                type="button"
+                onClick={closeAdminDashboard}
+                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            <AdminDashboard hideHeader={false} />
           </div>
         </div>
       )}

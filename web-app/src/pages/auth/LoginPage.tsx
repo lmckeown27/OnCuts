@@ -88,8 +88,11 @@ export default function LoginPage() {
       // Get the user from the store after login to check their role
       const currentUser = useAuthStore.getState().user;
       
-      // Redirect based on user role
-      if (result.isAdmin || currentUser?.user_type === 'barber') {
+      // Redirect based on user role — admin-only (no barber profile) stays on consumer
+      if (
+        (result.isAdmin || currentUser?.user_type === 'barber') &&
+        (currentUser?.has_barber_profile || currentUser?.user_type === 'barber')
+      ) {
         navigate('/web/barber');
       } else {
         navigate('/web/consumer');

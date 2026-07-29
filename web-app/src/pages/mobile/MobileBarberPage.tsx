@@ -88,7 +88,11 @@ export default function MobileBarberPage() {
     user?.has_barber_profile;
 
   const stripeGate = useStripeOnboardingGate({
-    enabled: !isAuthLoading && isAuthorizedForBarberPage && Boolean(user?.id),
+    enabled:
+      !isAuthLoading &&
+      isAuthorizedForBarberPage &&
+      Boolean(user?.id) &&
+      Boolean(user?.has_barber_profile || user?.user_type === 'barber'),
   });
 
   useEffect(() => {

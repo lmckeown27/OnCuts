@@ -183,8 +183,15 @@ sudo -u postgres psql -d oncuts -c "DELETE FROM messages WHERE conversation_id I
 # ============================================================================
 # PROMOTE TO ADMIN
 # ============================================================================
-# Admins have campus manager privileges at ALL campuses automatically
+# Admins have campus manager privileges at ALL campuses automatically.
+# A consumer can be made ADMIN without creating a barber profile.
 sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'ADMIN', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+# Or from Admin → Users → open user → Make Admin (API: PUT /api/admin/users/:userId/role).
+
+# ============================================================================
+# REVOKE ADMIN (back to consumer; no barber required)
+# ============================================================================
+sudo -u postgres psql -d oncuts -c "UPDATE users SET role = 'CONSUMER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
 # ============================================================================
 # REVOKE CAMPUS_MANAGER (keep as BARBER)
