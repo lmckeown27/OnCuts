@@ -869,6 +869,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."totalPaidCents",
         b."paymentMethod",
         b."paymentRequestedAt",
+        b.commission_free_applied,
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
@@ -927,6 +928,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       totalPaidCents: row.totalPaidCents,
       paymentMethod: row.paymentMethod || null,
       paymentRequestedAt: row.paymentRequestedAt || null,
+      commissionFreeApplied: row.commission_free_applied === true,
       location: mergeConversationLocation(row.conv_location, row.conv_location_details),
       locationDetails: row.conv_location_details || null,
       notes: row.conv_notes,
@@ -1505,6 +1507,7 @@ router.get('/', authenticate, async (req, res, next) => {
         b."createdAt",
         b."paymentRequestedAt",
         b."paidAt",
+        b.commission_free_applied,
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
@@ -1576,6 +1579,7 @@ router.get('/', authenticate, async (req, res, next) => {
           // Payment tracking fields
           paymentRequestedAt: row.paymentRequestedAt || null,
           paidAt: row.paidAt || null,
+          commissionFreeApplied: row.commission_free_applied === true,
           // Review data (from consumer after service completion)
           review: row.reviewRating ? {
             rating: row.reviewRating,

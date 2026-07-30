@@ -430,6 +430,7 @@ export default function BarberPage() {
     serviceLongitude?: number | null;
     serviceLocationSource?: string | null;
     serviceLocationWebOnly?: boolean;
+    commissionFreeBookingsRemaining?: number;
   } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -469,7 +470,7 @@ export default function BarberPage() {
     fetchCampuses();
   }, [isAdmin, user?.campus_id]);
 
-  // Fetch barber profile data for walk-in modal
+  // Fetch barber profile data for walk-in modal + commissionless remaining
   useEffect(() => {
     const fetchBarberProfile = async () => {
       if (!barberId) return;
@@ -477,6 +478,11 @@ export default function BarberPage() {
         const response = await api.get(`/barbers/user/${barberId}`);
         if (response) {
           const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber';
+          const remaining = Number(
+            response.commissionFreeBookingsRemaining ??
+              response.commission_free_bookings_remaining ??
+              0
+          );
           setBarberProfile({
             id: response.id || '',
             name: response.name || fullName || 'Barber',
@@ -488,6 +494,9 @@ export default function BarberPage() {
             serviceLongitude: response.service_longitude ?? null,
             serviceLocationSource: response.service_location_source ?? null,
             serviceLocationWebOnly: response.service_location_web_only === true,
+            commissionFreeBookingsRemaining: Number.isFinite(remaining)
+              ? Math.max(0, Math.floor(remaining))
+              : 0,
           });
         }
       } catch (error) {
@@ -495,7 +504,7 @@ export default function BarberPage() {
       }
     };
     fetchBarberProfile();
-  }, [barberId, user]);
+  }, [barberId, user, bookingsRefreshKey]);
 
   // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
@@ -652,6 +661,7 @@ export default function BarberPage() {
           onRefreshBookings={handleBookingUpdated} 
           refreshKey={bookingsRefreshKey} 
           campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'}
+          commissionFreeBookingsRemaining={barberProfile?.commissionFreeBookingsRemaining ?? 0}
           onBlockTime={(date, startTime, endTime) => {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
@@ -1171,6 +1181,8 @@ interface DashboardViewProps {
   onRefreshBookings?: () => void; // Callback to trigger refresh without opening modal
   refreshKey?: number;
   campusTimezone?: string;
+  /** Remaining commission-free card bookings; hide UI when 0. */
+  commissionFreeBookingsRemaining?: number;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
   onOpenPayoutSettings?: () => void; // Open Stripe Connect / Payout Settings
   onOpenBookings?: () => void; // Open bookings list (e.g. awaiting payment)
@@ -1210,6 +1222,7 @@ interface ConfirmedBooking {
   status: string;
   createdAt: string;
   paidAt?: string;
+  commissionFreeApplied?: boolean;
   // Consumer-provided input data
   location?: string;
   notes?: string;
@@ -1229,7 +1242,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenPayoutSettings, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', commissionFreeBookingsRemaining = 0, onBlockTime, onOpenPayoutSettings, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1989,6 +2002,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         <div className="flex flex-col items-center gap-3 mb-4">
           {serviceLocationField}
 
+          {commissionFreeBookingsRemaining > 0 && (
+            <div className="w-full max-w-md px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                Commissionless bookings left
+              </p>
+              <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                {commissionFreeBookingsRemaining}{' '}
+                {commissionFreeBookingsRemaining === 1 ? 'booking' : 'bookings'}
+              </p>
+            </div>
+          )}
+
           {awaitingPaymentBookings.length > 0 && (
             <div className="w-full max-w-md space-y-2">
               {awaitingPaymentBookings.map((booking) => {
@@ -2368,6 +2393,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           <h3 className="font-bold text-gray-900 text-lg">
                             {selectedBookingInline.consumer.firstName} {selectedBookingInline.consumer.lastName}
                           </h3>
+                          {selectedBookingInline.commissionFreeApplied && (
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                              Commissionless
+                            </span>
+                          )}
                           {selectedBookingInline.consumer.email && (
                             <p className="text-sm text-gray-500 flex items-center gap-1">
                               <Mail className="w-3 h-3" />
@@ -3011,6 +3041,9 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
     return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Confirmed</span>;
   };
 
+  const isCommissionFreeBooking = (booking: any) =>
+    booking.commissionFreeApplied === true || booking.commission_free_applied === true;
+
   return (
     <div 
       className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
@@ -3126,7 +3159,14 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                     </div>
                       </div>
                       <div className="text-right">
-                        {getStatusBadge(booking)}
+                        <div className="flex flex-col items-end gap-1">
+                          {getStatusBadge(booking)}
+                          {isCommissionFreeBooking(booking) && (
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">
+                              Commissionless
+                            </span>
+                          )}
+                        </div>
                         <p className="font-bold text-green-600 mt-1">{formatPrice(booking.priceUsdCents)}</p>
                       </div>
                     </div>

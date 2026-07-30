@@ -372,9 +372,16 @@ export default function BookingDetailsModal({
         <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Booking Details</h2>
-            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
-              {booking.status}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
+                {booking.status}
+              </span>
+              {(booking.commissionFreeApplied === true || booking.commission_free_applied === true) && (
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                  Commissionless
+                </span>
+              )}
+            </div>
           </div>
           <button
             onClick={handleClose}

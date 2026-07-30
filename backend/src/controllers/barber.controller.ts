@@ -513,6 +513,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."isActive" as is_active,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
+        b.commission_free_bookings_remaining,
         b.service_latitude,
         b.service_longitude,
         b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
@@ -652,10 +653,13 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
+    const commissionFreeBookingsRemaining =
+      Math.max(0, parseInt(String(barber.commission_free_bookings_remaining ?? '0'), 10) || 0);
     res.json({
       success: true,
       data: {
         ...barber,
+        commissionFreeBookingsRemaining,
         pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
       },
