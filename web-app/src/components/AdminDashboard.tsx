@@ -1930,10 +1930,10 @@ export function AdminDashboard({
           {metricsDisplayMode === 'graph'
             ? (
                 [
-                  { key: 'daily' as const, label: 'Daily' },
-                  { key: 'weekly' as const, label: 'Weekly' },
-                  { key: 'monthly' as const, label: 'Monthly' },
                   { key: 'yearly' as const, label: 'Yearly' },
+                  { key: 'monthly' as const, label: 'Monthly' },
+                  { key: 'weekly' as const, label: 'Weekly' },
+                  { key: 'daily' as const, label: 'Daily' },
                 ] as const
               ).map(({ key, label }) => (
                 <button
