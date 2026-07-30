@@ -1955,93 +1955,98 @@ export function AdminDashboard({
       {/* Performance Chart & Summary */}
       {deferredAdminView === 'performance' && (
       <>
-      {/* Global platform commission */}
-      <div className="p-3 bg-white rounded-lg border border-gray-200">
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-base font-bold text-gray-900">Platform commission</p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 whitespace-nowrap">Commission %: </span>
-              <div className="relative w-28">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  readOnly={!isEditingPlatformFee}
-                  disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
-                  value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
-                  onChange={(e) => setPlatformFeeInput(e.target.value)}
-                  className={`w-full rounded-md border px-2.5 py-1.5 pr-7 text-sm transition-colors ${
-                    isEditingPlatformFee
-                      ? 'border-gray-300 bg-white text-gray-900'
-                      : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
-                  }`}
-                  aria-label="Commission percent"
-                />
-                <span
-                  className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm ${
-                    isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
-                  }`}
-                  aria-hidden="true"
-                >
-                  %
-                </span>
-              </div>
-            </label>
-            {isEditingPlatformFee ? (
-              <>
+      {/* Platform commission (left) + compact totals (right) */}
+      <div className="p-2.5 sm:p-3 bg-white rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex flex-col items-start gap-1.5">
+            <p className="text-sm font-bold text-gray-900">Platform commission</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-600 whitespace-nowrap">Commission %:</span>
+                <div className="relative w-20">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    readOnly={!isEditingPlatformFee}
+                    disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                    value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
+                    onChange={(e) => setPlatformFeeInput(e.target.value)}
+                    className={`w-full rounded-md border px-2 py-1 pr-6 text-sm transition-colors ${
+                      isEditingPlatformFee
+                        ? 'border-gray-300 bg-white text-gray-900'
+                        : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                    }`}
+                    aria-label="Commission percent"
+                  />
+                  <span
+                    className={`pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs ${
+                      isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    %
+                  </span>
+                </div>
+              </label>
+              {isEditingPlatformFee ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                    onClick={() => void handleSavePlatformFee()}
+                  >
+                    {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isSavingPlatformFee}
+                    onClick={handleCancelEditPlatformFee}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
                 <Button
                   type="button"
                   size="sm"
-                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                  onClick={() => void handleSavePlatformFee()}
+                  disabled={isLoadingPlatformFee}
+                  onClick={handleStartEditPlatformFee}
                 >
-                  {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                  Edit
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSavingPlatformFee}
-                  onClick={handleCancelEditPlatformFee}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                disabled={isLoadingPlatformFee}
-                onClick={handleStartEditPlatformFee}
-              >
-                Edit
-              </Button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Platform totals */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
-          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
-          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {platformUsersCount}
-          </p>
-        </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
-          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Bookings</p>
-          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {isLoadingPerformance ? '…' : performance?.totalBookings ?? 0}
-          </p>
-        </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
-          <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Operators</p>
-          <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {isLoadingPerformance ? '…' : performance?.totalBarbers ?? 0}
-          </p>
+          <div className="shrink-0 flex items-stretch divide-x divide-stone-200 rounded-lg border border-stone-200 overflow-hidden">
+            {(
+              [
+                { label: 'Users', value: platformUsersCount },
+                {
+                  label: 'Bookings',
+                  value: isLoadingPerformance ? '…' : performance?.totalBookings ?? 0,
+                },
+                {
+                  label: 'Operators',
+                  value: isLoadingPerformance ? '…' : performance?.totalBarbers ?? 0,
+                },
+              ] as const
+            ).map(({ label, value }) => (
+              <div key={label} className="px-2.5 py-1.5 text-center min-w-[3.75rem]">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide leading-none">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums leading-none">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
