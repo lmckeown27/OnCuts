@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus, List, LineChart
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -1800,33 +1800,34 @@ export function AdminDashboard({
       </div>
 
       {/* Graph / List — between platform totals and performance output */}
-      <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
-        {(
-          [
-            { key: 'graph' as const, label: 'Graph', Icon: LineChart },
-            { key: 'list' as const, label: 'List', Icon: List },
-          ]
-        ).map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => {
-              setMetricsDisplayMode(key);
-              if (key === 'list') {
-                setIsChartHovered(false);
-                setHoveredDataPoint(null);
-              }
-            }}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              metricsDisplayMode === key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" aria-hidden />
-            {label}
-          </button>
-        ))}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-full bg-stone-100 p-1">
+          {(
+            [
+              { key: 'graph' as const, label: 'Graph' },
+              { key: 'list' as const, label: 'List' },
+            ]
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setMetricsDisplayMode(key);
+                if (key === 'list') {
+                  setIsChartHovered(false);
+                  setHoveredDataPoint(null);
+                }
+              }}
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
+                metricsDisplayMode === key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
