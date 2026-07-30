@@ -373,11 +373,12 @@ export function AdminDashboard({
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('list');
-  const [metricsListEvents, setMetricsListEvents] = useState<
-    MetricsListBookingEvent[] | MetricsListSignupEvent[]
-  >([]);
+  const [metricsListBookings, setMetricsListBookings] = useState<MetricsListBookingEvent[]>([]);
+  const [metricsListSignups, setMetricsListSignups] = useState<MetricsListSignupEvent[]>([]);
+  const [metricsListBookingsReady, setMetricsListBookingsReady] = useState(false);
+  const [metricsListSignupsReady, setMetricsListSignupsReady] = useState(false);
+  const metricsListEventsCacheKeyRef = useRef<string>('');
   const [metricsListSortOrder, setMetricsListSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [isLoadingMetricsListEvents, setIsLoadingMetricsListEvents] = useState(false);
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
   
@@ -716,22 +717,29 @@ export function AdminDashboard({
     return listWindowCommitted?.label ?? 'All time';
   }, [listWindowCommitted]);
 
+  const metricsListEventsReady =
+    metricsListView === 'bookings'
+      ? metricsListBookingsReady
+      : metricsListView === 'signups'
+        ? metricsListSignupsReady
+        : true;
+
   const sortedMetricsListEvents = useMemo(() => {
     if (metricsListView === 'profit') return [];
     const direction = metricsListSortOrder === 'desc' ? -1 : 1;
     if (metricsListView === 'bookings') {
-      return [...(metricsListEvents as MetricsListBookingEvent[])].sort((a, b) => {
+      return [...metricsListBookings].sort((a, b) => {
         const aTime = a.paid_at ? new Date(a.paid_at).getTime() : 0;
         const bTime = b.paid_at ? new Date(b.paid_at).getTime() : 0;
         return (aTime - bTime) * direction;
       });
     }
-    return [...(metricsListEvents as MetricsListSignupEvent[])].sort((a, b) => {
+    return [...metricsListSignups].sort((a, b) => {
       const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
       const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
       return (aTime - bTime) * direction;
     });
-  }, [metricsListEvents, metricsListSortOrder, metricsListView]);
+  }, [metricsListBookings, metricsListSignups, metricsListSortOrder, metricsListView]);
 
   const listPickerTitle = useMemo(() => {
     const titles: Record<Exclude<MetricsListPeriod, 'all'>, string> = {
@@ -892,46 +900,65 @@ export function AdminDashboard({
     refreshSignal,
   ]);
 
-  // List view: fetch individual bookings or sign-ups for the committed window
+  // List view: prefetch bookings + sign-ups together so Bookings ↔ Sign-ups is instant
   useEffect(() => {
-    if (metricsDisplayMode !== 'list' || metricsListView === 'profit') return;
+    if (metricsDisplayMode !== 'list') return;
 
-    const fetchEvents = async () => {
-      setIsLoadingMetricsListEvents(true);
+    const cacheKey = [
+      selectedCampusId ?? 'aggregate',
+      listWindowCommitted?.start ?? 'all',
+      listWindowCommitted?.end ?? 'all',
+      String(refreshSignal),
+    ].join('|');
+    metricsListEventsCacheKeyRef.current = cacheKey;
+    setMetricsListBookings([]);
+    setMetricsListSignups([]);
+    setMetricsListBookingsReady(false);
+    setMetricsListSignupsReady(false);
+
+    let cancelled = false;
+    const url = selectedCampusId
+      ? `/admin/campuses/${selectedCampusId}/metrics/events`
+      : '/admin/campuses/aggregate/metrics/events';
+    const baseParams = !listWindowCommitted
+      ? { period: 'snapshot_all' as const }
+      : {
+          start: listWindowCommitted.start,
+          end: listWindowCommitted.end,
+        };
+
+    const fetchType = async (type: 'bookings' | 'signups') => {
       try {
-        const url = selectedCampusId
-          ? `/admin/campuses/${selectedCampusId}/metrics/events`
-          : '/admin/campuses/aggregate/metrics/events';
-        const params = !listWindowCommitted
-            ? {
-                period: 'snapshot_all',
-                type: metricsListView,
-              }
-            : {
-                type: metricsListView,
-                start: listWindowCommitted.start,
-                end: listWindowCommitted.end,
-              };
         const response = await api.get<{
           events: MetricsListBookingEvent[] | MetricsListSignupEvent[];
-        }>(url, params);
-        setMetricsListEvents(response.events || []);
+        }>(url, { ...baseParams, type });
+        if (cancelled || metricsListEventsCacheKeyRef.current !== cacheKey) return;
+        if (type === 'bookings') {
+          setMetricsListBookings((response.events || []) as MetricsListBookingEvent[]);
+          setMetricsListBookingsReady(true);
+        } else {
+          setMetricsListSignups((response.events || []) as MetricsListSignupEvent[]);
+          setMetricsListSignupsReady(true);
+        }
       } catch (error) {
-        console.error('Failed to fetch metrics list events:', error);
-        setMetricsListEvents([]);
-      } finally {
-        setIsLoadingMetricsListEvents(false);
+        console.error(`Failed to fetch metrics list ${type}:`, error);
+        if (cancelled || metricsListEventsCacheKeyRef.current !== cacheKey) return;
+        if (type === 'bookings') {
+          setMetricsListBookings([]);
+          setMetricsListBookingsReady(true);
+        } else {
+          setMetricsListSignups([]);
+          setMetricsListSignupsReady(true);
+        }
       }
     };
 
-    void fetchEvents();
-  }, [
-    metricsDisplayMode,
-    metricsListView,
-    listWindowCommitted,
-    selectedCampusId,
-    refreshSignal,
-  ]);
+    void Promise.all([fetchType('bookings'), fetchType('signups')]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [metricsDisplayMode, listWindowCommitted, selectedCampusId, refreshSignal]);
   
   // Fetch all-accounts count for Performance Users card (matches Sign-ups)
   useEffect(() => {
@@ -2268,10 +2295,12 @@ export function AdminDashboard({
                   key={key}
                   type="button"
                   onClick={() => {
-                    setMetricsListView(key);
-                    if (key === 'profit') {
-                      setListPickerOpen(false);
-                    }
+                    startTransition(() => {
+                      setMetricsListView(key);
+                      if (key === 'profit') {
+                        setListPickerOpen(false);
+                      }
+                    });
                   }}
                   className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     metricsListView === key
@@ -2598,18 +2627,18 @@ export function AdminDashboard({
           </div>
           </div>
           )
-        ) : isLoadingMetricsListEvents ? (
-          <div className="flex items-center justify-center py-12">
+        ) : !metricsListEventsReady ? (
+          <div className="flex items-center justify-center min-h-[28rem] py-12">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
-        ) : metricsListEvents.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+        ) : sortedMetricsListEvents.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[28rem] py-12 text-gray-500 text-sm">
             <AlertCircle className="w-4 h-4 mr-2" />
             No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
             {metricsListWindowLabel.toLowerCase()}
           </div>
         ) : (
-          <div className="max-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
+          <div className="max-h-[28rem] min-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
             <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0 flex items-center justify-between gap-2">
               <p>
                 {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
