@@ -1799,38 +1799,38 @@ export function AdminDashboard({
         </div>
       </div>
 
+      {/* Graph / List — between platform totals and performance output */}
+      <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
+        {(
+          [
+            { key: 'graph' as const, label: 'Graph', Icon: LineChart },
+            { key: 'list' as const, label: 'List', Icon: List },
+          ]
+        ).map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setMetricsDisplayMode(key);
+              if (key === 'list') {
+                setIsChartHovered(false);
+                setHoveredDataPoint(null);
+              }
+            }}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              metricsDisplayMode === key
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" aria-hidden />
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
         <h3 className="text-center text-base font-semibold text-gray-900">Performance over time</h3>
-
-        {/* Graph / List */}
-        <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
-          {(
-            [
-              { key: 'graph' as const, label: 'Graph', Icon: LineChart },
-              { key: 'list' as const, label: 'List', Icon: List },
-            ]
-          ).map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => {
-                setMetricsDisplayMode(key);
-                if (key === 'list') {
-                  setIsChartHovered(false);
-                  setHoveredDataPoint(null);
-                }
-              }}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                metricsDisplayMode === key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
 
         {/* Timeline */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
