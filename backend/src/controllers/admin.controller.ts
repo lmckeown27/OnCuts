@@ -2209,7 +2209,8 @@ const GRANULARITY_TRUNC: Record<MetricsEventsGranularity, string> = {
 const GRANULARITY_LABEL_FMT: Record<MetricsEventsGranularity, string> = {
   year: 'YYYY',
   month: 'Mon YYYY',
-  week: '"Week of" Mon FMDD, YYYY',
+  // Week labels are built as start–end ranges in SQL (not via this format).
+  week: 'Mon FMDD, YYYY',
   day: 'Mon FMDD, YYYY',
 };
 
@@ -2346,12 +2347,24 @@ async function buildMetricsWindowOptions(params: {
       WHERE (SELECT start_local FROM clipped) <= (SELECT end_local FROM clipped)
     )
     SELECT
-      to_char(bucket_local, $6) AS label,
+      CASE
+        WHEN $1 = 'week' THEN
+          to_char(DATE_TRUNC('week', bucket_local), 'FMMM/FMDD')
+          || ' – '
+          || to_char(DATE_TRUNC('week', bucket_local) + INTERVAL '6 days', 'FMMM/FMDD/YYYY')
+        ELSE to_char(bucket_local, $6)
+      END AS label,
       to_char(bucket_local, 'YYYY') AS year_label,
       to_char(bucket_local, 'Mon') AS month_chip_label,
       to_char(bucket_local, 'Mon YYYY') AS month_label,
-      to_char(DATE_TRUNC('week', bucket_local), '"Week of" Mon FMDD, YYYY') AS week_label,
-      to_char(DATE_TRUNC('week', bucket_local), 'Mon FMDD') AS week_chip_label,
+      to_char(DATE_TRUNC('week', bucket_local), 'FMMM/FMDD')
+        || ' – '
+        || to_char(DATE_TRUNC('week', bucket_local) + INTERVAL '6 days', 'FMMM/FMDD/YYYY')
+        AS week_label,
+      to_char(DATE_TRUNC('week', bucket_local), 'FMMM/FMDD')
+        || ' – '
+        || to_char(DATE_TRUNC('week', bucket_local) + INTERVAL '6 days', 'FMMM/FMDD')
+        AS week_chip_label,
       to_char(bucket_local, 'Mon FMDD') AS day_chip_label,
       (bucket_local AT TIME ZONE $3) AS start_ts,
       ((bucket_local + $5::interval) AT TIME ZONE $3) AS end_ts,
