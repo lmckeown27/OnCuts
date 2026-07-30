@@ -2247,23 +2247,37 @@ async function queryEarliestMetricsEventTs(params: {
     return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
   }
 
-  const result = campusId
-    ? await pool.query(
-        `
-        SELECT MIN(u."createdAt") as earliest
-        FROM users u
-        WHERE u.role = 'CONSUMER'
-          AND u."campusId" = $1::uuid
-        `,
-        [campusId]
-      )
-    : await pool.query(
-        `
-        SELECT MIN(u."createdAt") as earliest
-        FROM users u
-        WHERE u.role = 'CONSUMER'
-        `
-      );
+  if (campusId) {
+    const result =
+      barberIds && barberIds.length > 0
+        ? await pool.query(
+            `
+            SELECT MIN(u."createdAt") as earliest
+            FROM users u
+            WHERE u."campusId" = $1::uuid
+               OR u.id IN (
+                 SELECT b."userId" FROM barbers b WHERE b.id = ANY($2::uuid[])
+               )
+            `,
+            [campusId, barberIds]
+          )
+        : await pool.query(
+            `
+            SELECT MIN(u."createdAt") as earliest
+            FROM users u
+            WHERE u."campusId" = $1::uuid
+            `,
+            [campusId]
+          );
+    return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
+  }
+
+  const result = await pool.query(
+    `
+    SELECT MIN(u."createdAt") as earliest
+    FROM users u
+    `
+  );
   return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
 }
 
@@ -2444,6 +2458,7 @@ const SIGNUP_EVENTS_SELECT = `
   u.first_name,
   u.last_name,
   u.email,
+  u.role,
   u."createdAt" as created_at,
   c.name as campus_name
 `;
@@ -2609,8 +2624,7 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         SELECT ${SIGNUP_EVENTS_SELECT}
         FROM users u
         LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
-          AND u."createdAt" >= $1::timestamptz
+        WHERE u."createdAt" >= $1::timestamptz
           AND u."createdAt" < $2::timestamptz
         ORDER BY u."createdAt" ASC
         `,
@@ -2622,8 +2636,7 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         SELECT ${SIGNUP_EVENTS_SELECT}
         FROM users u
         LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
-          AND u."createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+        WHERE u."createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
         ORDER BY u."createdAt" ASC
         `,
         [trunc, timezone]
@@ -2634,7 +2647,6 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         SELECT ${SIGNUP_EVENTS_SELECT}
         FROM users u
         LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
         ORDER BY u."createdAt" ASC
         `
       );
@@ -2762,46 +2774,90 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
       });
     }
 
+    const campusSignupWhere =
+      barberIds.length > 0
+        ? `(
+            u."campusId" = $1::uuid
+            OR u.id IN (SELECT b."userId" FROM barbers b WHERE b.id = ANY($2::uuid[]))
+          )`
+        : `u."campusId" = $1::uuid`;
+
     let result;
     if (range) {
-      result = await pool.query(
-        `
-        SELECT ${SIGNUP_EVENTS_SELECT}
-        FROM users u
-        LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
-          AND u."campusId" = $1::uuid
-          AND u."createdAt" >= $2::timestamptz
-          AND u."createdAt" < $3::timestamptz
-        ORDER BY u."createdAt" ASC
-        `,
-        [campusId, range.start.toISOString(), range.end.toISOString()]
-      );
+      result =
+        barberIds.length > 0
+          ? await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+                AND u."createdAt" >= $3::timestamptz
+                AND u."createdAt" < $4::timestamptz
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId, barberIds, range.start.toISOString(), range.end.toISOString()]
+            )
+          : await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+                AND u."createdAt" >= $2::timestamptz
+                AND u."createdAt" < $3::timestamptz
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId, range.start.toISOString(), range.end.toISOString()]
+            );
     } else if (trunc) {
-      result = await pool.query(
-        `
-        SELECT ${SIGNUP_EVENTS_SELECT}
-        FROM users u
-        LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
-          AND u."campusId" = $1::uuid
-          AND u."createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
-        ORDER BY u."createdAt" ASC
-        `,
-        [campusId, trunc, timezone]
-      );
+      result =
+        barberIds.length > 0
+          ? await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+                AND u."createdAt" >= (DATE_TRUNC($3, NOW() AT TIME ZONE $4) AT TIME ZONE $4)
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId, barberIds, trunc, timezone]
+            )
+          : await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+                AND u."createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId, trunc, timezone]
+            );
     } else {
-      result = await pool.query(
-        `
-        SELECT ${SIGNUP_EVENTS_SELECT}
-        FROM users u
-        LEFT JOIN campuses c ON c.id = u."campusId"
-        WHERE u.role = 'CONSUMER'
-          AND u."campusId" = $1::uuid
-        ORDER BY u."createdAt" ASC
-        `,
-        [campusId]
-      );
+      result =
+        barberIds.length > 0
+          ? await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId, barberIds]
+            )
+          : await pool.query(
+              `
+              SELECT ${SIGNUP_EVENTS_SELECT}
+              FROM users u
+              LEFT JOIN campuses c ON c.id = u."campusId"
+              WHERE ${campusSignupWhere}
+              ORDER BY u."createdAt" ASC
+              `,
+              [campusId]
+            );
     }
 
     res.json({

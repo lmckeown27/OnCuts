@@ -163,6 +163,7 @@ interface MetricsListSignupEvent {
   first_name: string;
   last_name: string;
   email: string;
+  role: string;
   created_at: string;
   campus_name: string | null;
 }
@@ -398,8 +399,6 @@ export function AdminDashboard({
   // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
-  /** Consumer-only count for Performance Users card (matches Sign-ups all-time). */
-  const [totalConsumersCount, setTotalConsumersCount] = useState(0);
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(false);
   const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
@@ -931,25 +930,25 @@ export function AdminDashboard({
     refreshSignal,
   ]);
   
-  // Fetch consumer count for Performance Users card (aligned with Sign-ups)
+  // Fetch users count (consumers + admins) for Performance Users card
   useEffect(() => {
-    const fetchConsumerCount = async () => {
+    const fetchUserCount = async () => {
       setIsLoadingUsers(true);
       try {
         const url = selectedCampusId
-          ? `/admin/users?campusId=${selectedCampusId}&role=consumer&limit=1`
-          : '/admin/users?role=consumer&limit=1';
+          ? `/admin/users?campusId=${selectedCampusId}&limit=1`
+          : '/admin/users?limit=1';
         const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
-        setTotalConsumersCount(response.pagination?.total || 0);
+        setTotalUsersCount(response.pagination?.total || 0);
       } catch (error) {
-        console.error('Failed to fetch consumer count:', error);
-        setTotalConsumersCount(0);
+        console.error('Failed to fetch user count:', error);
+        setTotalUsersCount(0);
       } finally {
         setIsLoadingUsers(false);
       }
     };
 
-    void fetchConsumerCount();
+    void fetchUserCount();
   }, [selectedCampusId]);
   
   // Fetch full user list when Users tab is selected
@@ -2030,7 +2029,9 @@ export function AdminDashboard({
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
           <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
           <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {isLoadingUsers ? '…' : totalConsumersCount}
+            {isLoadingPerformance || isLoadingUsers
+              ? '…'
+              : (performance?.totalBarbers ?? 0) + totalUsersCount}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
@@ -2375,6 +2376,11 @@ export function AdminDashboard({
                   <div key={event.id} className="px-3 py-2.5">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {event.first_name} {event.last_name}
+                      {event.role ? (
+                        <span className="ml-1.5 text-[11px] font-medium text-gray-500">
+                          · {event.role.toLowerCase()}
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-[11px] text-gray-500 truncate">{event.email}</p>
                     <p className="text-[11px] text-gray-400 mt-0.5">
