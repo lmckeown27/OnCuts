@@ -117,6 +117,20 @@ type MetricsListView = 'bookings' | 'signups';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
 
+interface MetricsListWindowOption {
+  id: string;
+  label: string;
+  start: string;
+  end: string;
+}
+
+interface MetricsListWindow {
+  id: string;
+  label: string;
+  start: string;
+  end: string;
+}
+
 interface MetricsListBookingEvent {
   id: string;
   status: string;
@@ -336,6 +350,11 @@ export function AdminDashboard({
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('yearly');
   const [metricsListPeriod, setMetricsListPeriod] = useState<MetricsListPeriod>('all');
+  const [listPickerOpen, setListPickerOpen] = useState(false);
+  const [listWindowOptions, setListWindowOptions] = useState<MetricsListWindowOption[]>([]);
+  const [isLoadingListWindowOptions, setIsLoadingListWindowOptions] = useState(false);
+  const [listWindowDraft, setListWindowDraft] = useState<MetricsListWindow | null>(null);
+  const [listWindowCommitted, setListWindowCommitted] = useState<MetricsListWindow | null>(null);
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
@@ -672,14 +691,17 @@ export function AdminDashboard({
   }, [metricsDisplayMode, metricsPeriod]);
 
   const metricsListWindowLabel = useMemo(() => {
-    const labels: Record<MetricsListPeriod, string> = {
-      day: 'Today',
-      week: 'This week',
-      month: 'This month',
-      year: 'This year',
-      all: 'All time',
+    return listWindowCommitted?.label ?? 'All time';
+  }, [listWindowCommitted]);
+
+  const listPickerTitle = useMemo(() => {
+    const titles: Record<Exclude<MetricsListPeriod, 'all'>, string> = {
+      year: 'Year',
+      month: 'Month',
+      week: 'Week',
+      day: 'Day',
     };
-    return labels[metricsListPeriod];
+    return metricsListPeriod === 'all' ? 'All time' : titles[metricsListPeriod];
   }, [metricsListPeriod]);
 
   // Fetch metrics when campus or period changes (or aggregate when none selected)
@@ -725,18 +747,65 @@ export function AdminDashboard({
     return () => clearInterval(intervalId);
   }, [selectedCampusId, metricsApiPeriod, refreshSignal, metricsDisplayMode]);
 
-  // List view: fetch individual bookings or sign-ups for the selected timeframe
+  // List view: load window options when the tag picker is open for a granularity
+  useEffect(() => {
+    if (metricsDisplayMode !== 'list' || !listPickerOpen || metricsListPeriod === 'all') {
+      return;
+    }
+
+    const fetchOptions = async () => {
+      setIsLoadingListWindowOptions(true);
+      try {
+        const url = selectedCampusId
+          ? `/admin/campuses/${selectedCampusId}/metrics/events/options`
+          : '/admin/campuses/aggregate/metrics/events/options';
+        const response = await api.get<{ options: MetricsListWindowOption[] }>(url, {
+          granularity: metricsListPeriod,
+          type: metricsListView,
+        });
+        const options = response.options || [];
+        setListWindowOptions(options);
+
+        // Prefill draft from committed window when still in the option set
+        if (
+          listWindowCommitted &&
+          options.some((option) => option.id === listWindowCommitted.id)
+        ) {
+          setListWindowDraft(listWindowCommitted);
+        } else if (options.length > 0) {
+          const first = options[0];
+          setListWindowDraft({
+            id: first.id,
+            label: first.label,
+            start: first.start,
+            end: first.end,
+          });
+        } else {
+          setListWindowDraft(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch metrics list window options:', error);
+        setListWindowOptions([]);
+        setListWindowDraft(null);
+      } finally {
+        setIsLoadingListWindowOptions(false);
+      }
+    };
+
+    void fetchOptions();
+  }, [
+    metricsDisplayMode,
+    listPickerOpen,
+    metricsListPeriod,
+    metricsListView,
+    listWindowCommitted,
+    selectedCampusId,
+    refreshSignal,
+  ]);
+
+  // List view: fetch individual bookings or sign-ups for the committed window
   useEffect(() => {
     if (metricsDisplayMode !== 'list') return;
-
-    const listMap: Record<MetricsListPeriod, string> = {
-      day: 'snapshot_day',
-      week: 'snapshot_week',
-      month: 'snapshot_month',
-      year: 'snapshot_year',
-      all: 'snapshot_all',
-    };
-    const periodParam = listMap[metricsListPeriod];
 
     const fetchEvents = async () => {
       setIsLoadingMetricsListEvents(true);
@@ -744,13 +813,21 @@ export function AdminDashboard({
         const url = selectedCampusId
           ? `/admin/campuses/${selectedCampusId}/metrics/events`
           : '/admin/campuses/aggregate/metrics/events';
+        const params = !listWindowCommitted
+            ? {
+                period: 'snapshot_all',
+                type: metricsListView,
+                limit: 100,
+              }
+            : {
+                type: metricsListView,
+                start: listWindowCommitted.start,
+                end: listWindowCommitted.end,
+                limit: 100,
+              };
         const response = await api.get<{
           events: MetricsListBookingEvent[] | MetricsListSignupEvent[];
-        }>(url, {
-          period: periodParam,
-          type: metricsListView,
-          limit: 100,
-        });
+        }>(url, params);
         setMetricsListEvents(response.events || []);
       } catch (error) {
         console.error('Failed to fetch metrics list events:', error);
@@ -763,8 +840,8 @@ export function AdminDashboard({
     void fetchEvents();
   }, [
     metricsDisplayMode,
-    metricsListPeriod,
     metricsListView,
+    listWindowCommitted,
     selectedCampusId,
     refreshSignal,
   ]);
@@ -1902,7 +1979,9 @@ export function AdminDashboard({
               type="button"
               onClick={() => {
                 setMetricsDisplayMode(key);
-                if (key === 'list') {
+                if (key === 'graph') {
+                  setListPickerOpen(false);
+                } else {
                   setIsChartHovered(false);
                   setHoveredDataPoint(null);
                   if (metricsView === 'bookings' || metricsView === 'signups') {
@@ -1923,52 +2002,126 @@ export function AdminDashboard({
           ))}
         </div>
 
-        <div className="flex min-w-0 flex-1 rounded-lg bg-stone-100 p-0.5 gap-0.5">
-          {metricsDisplayMode === 'graph'
-            ? (
-                [
-                  { key: 'yearly' as const, label: 'Yearly' },
-                  { key: 'monthly' as const, label: 'Monthly' },
-                  { key: 'weekly' as const, label: 'Weekly' },
-                  { key: 'daily' as const, label: 'Daily' },
-                ] as const
-              ).map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setMetricsPeriod(key)}
-                  className={`flex-1 px-1 sm:px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
-                    metricsPeriod === key
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))
-            : (
-                [
-                  { key: 'all' as const, label: 'All time' },
-                  { key: 'year' as const, label: 'Year' },
-                  { key: 'month' as const, label: 'Month' },
-                  { key: 'week' as const, label: 'Week' },
-                  { key: 'day' as const, label: 'Day' },
-                ] as const
-              ).map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setMetricsListPeriod(key)}
-                  className={`flex-1 px-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
-                    metricsListPeriod === key
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-        </div>
+        {metricsDisplayMode === 'graph' ? (
+          <div className="flex min-w-0 flex-1 rounded-lg bg-stone-100 p-0.5 gap-0.5">
+            {(
+              [
+                { key: 'yearly' as const, label: 'Yearly' },
+                { key: 'monthly' as const, label: 'Monthly' },
+                { key: 'weekly' as const, label: 'Weekly' },
+                { key: 'daily' as const, label: 'Daily' },
+              ] as const
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMetricsPeriod(key)}
+                className={`flex-1 px-1 sm:px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
+                  metricsPeriod === key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : listPickerOpen && metricsListPeriod !== 'all' ? (
+          <div
+            className="min-w-0 flex-1 rounded-2xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-3 py-2.5 sm:px-4 sm:py-3"
+            role="region"
+            aria-label={`${listPickerTitle} filter`}
+          >
+            <div className="relative flex items-center justify-center min-h-8 mb-2 px-10">
+              <p className="text-sm font-semibold text-gray-900 text-center">{listPickerTitle}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (listWindowDraft) {
+                    setListWindowCommitted(listWindowDraft);
+                  }
+                  setListPickerOpen(false);
+                }}
+                disabled={!listWindowDraft || isLoadingListWindowOptions}
+                className="absolute right-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95 disabled:opacity-40"
+                aria-label={`Done filtering by ${listPickerTitle.toLowerCase()}`}
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            </div>
+            {isLoadingListWindowOptions ? (
+              <div className="flex items-center justify-center py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+              </div>
+            ) : listWindowOptions.length === 0 ? (
+              <p className="text-center text-xs text-gray-500 py-1">No windows available</p>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {listWindowOptions.map((option) => {
+                  const isSelected = listWindowDraft?.id === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() =>
+                        setListWindowDraft({
+                          id: option.id,
+                          label: option.label,
+                          start: option.start,
+                          end: option.end,
+                        })
+                      }
+                      aria-pressed={isSelected}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
+                        isSelected
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-1 rounded-lg bg-stone-100 p-0.5 gap-0.5">
+            {(
+              [
+                { key: 'all' as const, label: 'All time' },
+                { key: 'year' as const, label: 'Year' },
+                { key: 'month' as const, label: 'Month' },
+                { key: 'week' as const, label: 'Week' },
+                { key: 'day' as const, label: 'Day' },
+              ] as const
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (key === 'all') {
+                    setMetricsListPeriod('all');
+                    setListWindowCommitted(null);
+                    setListWindowDraft(null);
+                    setListWindowOptions([]);
+                    setListPickerOpen(false);
+                    return;
+                  }
+                  setMetricsListPeriod(key);
+                  setListPickerOpen(true);
+                }}
+                className={`flex-1 px-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
+                  metricsListPeriod === key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">

@@ -2158,9 +2158,265 @@ const SNAPSHOT_TRUNC: Record<string, string | null> = {
   snapshot_all: null,
 };
 
+const METRICS_EVENTS_GRANULARITIES = ['year', 'month', 'week', 'day'] as const;
+type MetricsEventsGranularity = (typeof METRICS_EVENTS_GRANULARITIES)[number];
+
+type MetricsEventsType = 'bookings' | 'signups';
+
+const parseMetricsEventsType = (raw: unknown): MetricsEventsType => {
+  const type = String(raw || 'bookings').toLowerCase();
+  if (type !== 'bookings' && type !== 'signups') {
+    throw new ApiError(400, 'type must be bookings or signups');
+  }
+  return type;
+};
+
+const parseMetricsEventsGranularity = (raw: unknown): MetricsEventsGranularity => {
+  const granularity = String(raw || '').toLowerCase();
+  if (!(METRICS_EVENTS_GRANULARITIES as readonly string[]).includes(granularity)) {
+    throw new ApiError(400, 'granularity must be year, month, week, or day');
+  }
+  return granularity as MetricsEventsGranularity;
+};
+
+const parseOptionalIsoRange = (startRaw: unknown, endRaw: unknown): { start: Date; end: Date } | null => {
+  if (startRaw == null || endRaw == null || startRaw === '' || endRaw === '') return null;
+  const start = new Date(String(startRaw));
+  const end = new Date(String(endRaw));
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new ApiError(400, 'start and end must be valid ISO timestamps');
+  }
+  if (start >= end) {
+    throw new ApiError(400, 'start must be before end');
+  }
+  return { start, end };
+};
+
+const GRANULARITY_INTERVAL: Record<MetricsEventsGranularity, string> = {
+  year: '1 year',
+  month: '1 month',
+  week: '1 week',
+  day: '1 day',
+};
+
+const GRANULARITY_TRUNC: Record<MetricsEventsGranularity, string> = {
+  year: 'year',
+  month: 'month',
+  week: 'week',
+  day: 'day',
+};
+
+const GRANULARITY_LABEL_FMT: Record<MetricsEventsGranularity, string> = {
+  year: 'YYYY',
+  month: 'Mon YYYY',
+  week: '"Week of" Mon FMDD, YYYY',
+  day: 'Mon FMDD, YYYY',
+};
+
+async function queryEarliestMetricsEventTs(params: {
+  type: MetricsEventsType;
+  campusId?: string;
+  barberIds?: string[];
+}): Promise<Date> {
+  const { type, campusId, barberIds } = params;
+
+  if (type === 'bookings') {
+    if (campusId && (!barberIds || barberIds.length === 0)) {
+      return new Date();
+    }
+    const result = barberIds && barberIds.length > 0
+      ? await pool.query(
+          `
+          SELECT MIN(bk."paidAt") as earliest
+          FROM bookings bk
+          WHERE bk."barberId" = ANY($1::uuid[])
+            AND bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+          `,
+          [barberIds]
+        )
+      : await pool.query(
+          `
+          SELECT MIN(bk."paidAt") as earliest
+          FROM bookings bk
+          WHERE bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+          `
+        );
+    return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
+  }
+
+  const result = campusId
+    ? await pool.query(
+        `
+        SELECT MIN(u."createdAt") as earliest
+        FROM users u
+        WHERE u.role = 'CONSUMER'
+          AND u."campusId" = $1::uuid
+        `,
+        [campusId]
+      )
+    : await pool.query(
+        `
+        SELECT MIN(u."createdAt") as earliest
+        FROM users u
+        WHERE u.role = 'CONSUMER'
+        `
+      );
+  return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
+}
+
+async function buildMetricsWindowOptions(params: {
+  granularity: MetricsEventsGranularity;
+  type: MetricsEventsType;
+  timezone: string;
+  campusId?: string;
+  barberIds?: string[];
+}): Promise<Array<{ id: string; label: string; start: string; end: string }>> {
+  const { granularity, type, timezone, campusId, barberIds } = params;
+  const earliest = await queryEarliestMetricsEventTs({ type, campusId, barberIds });
+  const trunc = GRANULARITY_TRUNC[granularity];
+  const interval = GRANULARITY_INTERVAL[granularity];
+  const labelFmt = GRANULARITY_LABEL_FMT[granularity];
+
+  // Day tags capped to most recent 90 calendar days in-range.
+  const result = await pool.query(
+    `
+    WITH bounds AS (
+      SELECT
+        DATE_TRUNC($1, $2::timestamptz AT TIME ZONE $3) AS start_local,
+        DATE_TRUNC($1, NOW() AT TIME ZONE $3) AS end_local
+    ),
+    clipped AS (
+      SELECT
+        CASE
+          WHEN $1 = 'day' THEN GREATEST(
+            (SELECT start_local FROM bounds),
+            (SELECT end_local FROM bounds) - INTERVAL '89 days'
+          )
+          ELSE (SELECT start_local FROM bounds)
+        END AS start_local,
+        (SELECT end_local FROM bounds) AS end_local
+    ),
+    series AS (
+      SELECT generate_series(
+        (SELECT start_local FROM clipped),
+        (SELECT end_local FROM clipped),
+        $4::interval
+      ) AS bucket_local
+    )
+    SELECT
+      to_char(bucket_local, $5) AS label,
+      (bucket_local AT TIME ZONE $3) AS start_ts,
+      ((bucket_local + $4::interval) AT TIME ZONE $3) AS end_ts
+    FROM series
+    ORDER BY bucket_local DESC
+    `,
+    [trunc, earliest.toISOString(), timezone, interval, labelFmt]
+  );
+
+  return result.rows.map((row) => {
+    const start = new Date(row.start_ts).toISOString();
+    const end = new Date(row.end_ts).toISOString();
+    return {
+      id: `${granularity}:${start}`,
+      label: row.label,
+      start,
+      end,
+    };
+  });
+}
+
+const BOOKING_EVENTS_SELECT = `
+  bk.id,
+  bk.status,
+  bk."serviceType" as service_type,
+  bk."totalPaidCents" as total_paid_cents,
+  bk."paidAt" as paid_at,
+  cu.first_name as consumer_first_name,
+  cu.last_name as consumer_last_name,
+  bu.first_name as barber_first_name,
+  bu.last_name as barber_last_name
+`;
+
+const SIGNUP_EVENTS_SELECT = `
+  u.id,
+  u.first_name,
+  u.last_name,
+  u.email,
+  u."createdAt" as created_at,
+  c.name as campus_name
+`;
+
+/**
+ * Time window options for List mode tag picker (platform-wide).
+ * GET /api/admin/campuses/aggregate/metrics/events/options?granularity=year&type=bookings
+ */
+export const getAggregateMetricsEventsOptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const type = parseMetricsEventsType(req.query.type);
+    const granularity = parseMetricsEventsGranularity(req.query.granularity);
+    const timezone = 'America/Los_Angeles';
+    const options = await buildMetricsWindowOptions({ granularity, type, timezone });
+    res.json({ granularity, type, options });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Time window options for List mode tag picker (campus-scoped).
+ * GET /api/admin/campuses/:campusId/metrics/events/options?granularity=year&type=bookings
+ */
+export const getCampusMetricsEventsOptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { campusId } = req.params;
+    await assertCampusMetricsAccess(req, campusId);
+
+    const type = parseMetricsEventsType(req.query.type);
+    const granularity = parseMetricsEventsGranularity(req.query.granularity);
+
+    const campusResult = await pool.query(
+      `
+      SELECT c.timezone,
+             (
+               SELECT COALESCE(array_agg(b.id), ARRAY[]::uuid[])
+               FROM barbers b
+               WHERE ${barberNearCampusByPinSql('b', '$1')}
+             ) as barber_ids
+      FROM campuses c
+      WHERE c.id = $1::uuid
+      `,
+      [campusId]
+    );
+    if (campusResult.rows.length === 0) {
+      throw new ApiError(404, 'Campus not found');
+    }
+
+    const timezone = campusResult.rows[0].timezone || 'America/Los_Angeles';
+    const barberIds = (campusResult.rows[0].barber_ids || []).filter((id: string | null) => id !== null);
+    const options = await buildMetricsWindowOptions({
+      granularity,
+      type,
+      timezone,
+      campusId,
+      barberIds,
+    });
+    res.json({ granularity, type, options });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * List individual bookings or consumer sign-ups for a snapshot window (platform-wide).
  * GET /api/admin/campuses/aggregate/metrics/events?period=snapshot_day&type=bookings|signups
+ * Optional: start + end ISO bounds for an explicit window.
  */
 export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -2169,110 +2425,127 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
       throw new ApiError(403, 'Admin access required');
     }
 
-    const period = String(req.query.period || 'snapshot_day');
-    const type = String(req.query.type || 'bookings').toLowerCase();
-    if (!(period in SNAPSHOT_TRUNC)) {
+    const type = parseMetricsEventsType(req.query.type);
+    const range = parseOptionalIsoRange(req.query.start, req.query.end);
+    const period = String(req.query.period || (range ? 'custom' : 'snapshot_day'));
+    if (!range && !(period in SNAPSHOT_TRUNC)) {
       throw new ApiError(400, 'Invalid period for list events');
     }
-    if (type !== 'bookings' && type !== 'signups') {
-      throw new ApiError(400, 'type must be bookings or signups');
-    }
 
-    const trunc = SNAPSHOT_TRUNC[period];
+    const trunc = range ? null : SNAPSHOT_TRUNC[period];
     const timezone = 'America/Los_Angeles';
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 200);
 
     if (type === 'bookings') {
-      const result = trunc
-        ? await pool.query(
-            `
-            SELECT
-              bk.id,
-              bk.status,
-              bk."serviceType" as service_type,
-              bk."totalPaidCents" as total_paid_cents,
-              bk."paidAt" as paid_at,
-              cu.first_name as consumer_first_name,
-              cu.last_name as consumer_last_name,
-              bu.first_name as barber_first_name,
-              bu.last_name as barber_last_name
-            FROM bookings bk
-            JOIN barbers b ON b.id = bk."barberId"
-            JOIN users bu ON bu.id = b."userId"
-            JOIN users cu ON cu.id = bk."consumerId"
-            WHERE bk."paidAt" IS NOT NULL
-              AND bk.status IN ('COMPLETED', 'PAID')
-              AND bk."paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
-            ORDER BY bk."paidAt" DESC
-            LIMIT $3
-            `,
-            [trunc, timezone, limit]
-          )
-        : await pool.query(
-            `
-            SELECT
-              bk.id,
-              bk.status,
-              bk."serviceType" as service_type,
-              bk."totalPaidCents" as total_paid_cents,
-              bk."paidAt" as paid_at,
-              cu.first_name as consumer_first_name,
-              cu.last_name as consumer_last_name,
-              bu.first_name as barber_first_name,
-              bu.last_name as barber_last_name
-            FROM bookings bk
-            JOIN barbers b ON b.id = bk."barberId"
-            JOIN users bu ON bu.id = b."userId"
-            JOIN users cu ON cu.id = bk."consumerId"
-            WHERE bk."paidAt" IS NOT NULL
-              AND bk.status IN ('COMPLETED', 'PAID')
-            ORDER BY bk."paidAt" DESC
-            LIMIT $1
-            `,
-            [limit]
-          );
-
-      return res.json({ period, type, events: result.rows });
-    }
-
-    const result = trunc
-      ? await pool.query(
+      let result;
+      if (range) {
+        result = await pool.query(
           `
-          SELECT
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u."createdAt" as created_at,
-            c.name as campus_name
-          FROM users u
-          LEFT JOIN campuses c ON c.id = u."campusId"
-          WHERE u.role = 'CONSUMER'
-            AND u."createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
-          ORDER BY u."createdAt" DESC
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+            AND bk."paidAt" >= $1::timestamptz
+            AND bk."paidAt" < $2::timestamptz
+          ORDER BY bk."paidAt" DESC
+          LIMIT $3
+          `,
+          [range.start.toISOString(), range.end.toISOString(), limit]
+        );
+      } else if (trunc) {
+        result = await pool.query(
+          `
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+            AND bk."paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+          ORDER BY bk."paidAt" DESC
           LIMIT $3
           `,
           [trunc, timezone, limit]
-        )
-      : await pool.query(
+        );
+      } else {
+        result = await pool.query(
           `
-          SELECT
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u."createdAt" as created_at,
-            c.name as campus_name
-          FROM users u
-          LEFT JOIN campuses c ON c.id = u."campusId"
-          WHERE u.role = 'CONSUMER'
-          ORDER BY u."createdAt" DESC
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+          ORDER BY bk."paidAt" DESC
           LIMIT $1
           `,
           [limit]
         );
+      }
 
-    res.json({ period, type, events: result.rows });
+      return res.json({
+        period,
+        type,
+        start: range?.start.toISOString() ?? null,
+        end: range?.end.toISOString() ?? null,
+        events: result.rows,
+      });
+    }
+
+    let result;
+    if (range) {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+          AND u."createdAt" >= $1::timestamptz
+          AND u."createdAt" < $2::timestamptz
+        ORDER BY u."createdAt" DESC
+        LIMIT $3
+        `,
+        [range.start.toISOString(), range.end.toISOString(), limit]
+      );
+    } else if (trunc) {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+          AND u."createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+        ORDER BY u."createdAt" DESC
+        LIMIT $3
+        `,
+        [trunc, timezone, limit]
+      );
+    } else {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+        ORDER BY u."createdAt" DESC
+        LIMIT $1
+        `,
+        [limit]
+      );
+    }
+
+    res.json({
+      period,
+      type,
+      start: range?.start.toISOString() ?? null,
+      end: range?.end.toISOString() ?? null,
+      events: result.rows,
+    });
   } catch (error) {
     next(error);
   }
@@ -2281,22 +2554,21 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
 /**
  * List individual bookings or consumer sign-ups for a snapshot window (campus-scoped).
  * GET /api/admin/campuses/:campusId/metrics/events?period=snapshot_day&type=bookings|signups
+ * Optional: start + end ISO bounds for an explicit window.
  */
 export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId } = req.params;
     await assertCampusMetricsAccess(req, campusId);
 
-    const period = String(req.query.period || 'snapshot_day');
-    const type = String(req.query.type || 'bookings').toLowerCase();
-    if (!(period in SNAPSHOT_TRUNC)) {
+    const type = parseMetricsEventsType(req.query.type);
+    const range = parseOptionalIsoRange(req.query.start, req.query.end);
+    const period = String(req.query.period || (range ? 'custom' : 'snapshot_day'));
+    if (!range && !(period in SNAPSHOT_TRUNC)) {
       throw new ApiError(400, 'Invalid period for list events');
     }
-    if (type !== 'bookings' && type !== 'signups') {
-      throw new ApiError(400, 'type must be bookings or signups');
-    }
 
-    const trunc = SNAPSHOT_TRUNC[period];
+    const trunc = range ? null : SNAPSHOT_TRUNC[period];
     const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 200);
 
     const campusResult = await pool.query(
@@ -2321,103 +2593,130 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
 
     if (type === 'bookings') {
       if (barberIds.length === 0) {
-        return res.json({ period, type, events: [] });
+        return res.json({
+          period,
+          type,
+          start: range?.start.toISOString() ?? null,
+          end: range?.end.toISOString() ?? null,
+          events: [],
+        });
       }
 
-      const result = trunc
-        ? await pool.query(
-            `
-            SELECT
-              bk.id,
-              bk.status,
-              bk."serviceType" as service_type,
-              bk."totalPaidCents" as total_paid_cents,
-              bk."paidAt" as paid_at,
-              cu.first_name as consumer_first_name,
-              cu.last_name as consumer_last_name,
-              bu.first_name as barber_first_name,
-              bu.last_name as barber_last_name
-            FROM bookings bk
-            JOIN barbers b ON b.id = bk."barberId"
-            JOIN users bu ON bu.id = b."userId"
-            JOIN users cu ON cu.id = bk."consumerId"
-            WHERE bk."barberId" = ANY($1::uuid[])
-              AND bk."paidAt" IS NOT NULL
-              AND bk.status IN ('COMPLETED', 'PAID')
-              AND bk."paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
-            ORDER BY bk."paidAt" DESC
-            LIMIT $4
-            `,
-            [barberIds, trunc, timezone, limit]
-          )
-        : await pool.query(
-            `
-            SELECT
-              bk.id,
-              bk.status,
-              bk."serviceType" as service_type,
-              bk."totalPaidCents" as total_paid_cents,
-              bk."paidAt" as paid_at,
-              cu.first_name as consumer_first_name,
-              cu.last_name as consumer_last_name,
-              bu.first_name as barber_first_name,
-              bu.last_name as barber_last_name
-            FROM bookings bk
-            JOIN barbers b ON b.id = bk."barberId"
-            JOIN users bu ON bu.id = b."userId"
-            JOIN users cu ON cu.id = bk."consumerId"
-            WHERE bk."barberId" = ANY($1::uuid[])
-              AND bk."paidAt" IS NOT NULL
-              AND bk.status IN ('COMPLETED', 'PAID')
-            ORDER BY bk."paidAt" DESC
-            LIMIT $2
-            `,
-            [barberIds, limit]
-          );
-
-      return res.json({ period, type, events: result.rows });
-    }
-
-    const result = trunc
-      ? await pool.query(
+      let result;
+      if (range) {
+        result = await pool.query(
           `
-          SELECT
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u."createdAt" as created_at,
-            c.name as campus_name
-          FROM users u
-          LEFT JOIN campuses c ON c.id = u."campusId"
-          WHERE u.role = 'CONSUMER'
-            AND u."campusId" = $1::uuid
-            AND u."createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
-          ORDER BY u."createdAt" DESC
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."barberId" = ANY($1::uuid[])
+            AND bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+            AND bk."paidAt" >= $2::timestamptz
+            AND bk."paidAt" < $3::timestamptz
+          ORDER BY bk."paidAt" DESC
           LIMIT $4
           `,
-          [campusId, trunc, timezone, limit]
-        )
-      : await pool.query(
+          [barberIds, range.start.toISOString(), range.end.toISOString(), limit]
+        );
+      } else if (trunc) {
+        result = await pool.query(
           `
-          SELECT
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u."createdAt" as created_at,
-            c.name as campus_name
-          FROM users u
-          LEFT JOIN campuses c ON c.id = u."campusId"
-          WHERE u.role = 'CONSUMER'
-            AND u."campusId" = $1::uuid
-          ORDER BY u."createdAt" DESC
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."barberId" = ANY($1::uuid[])
+            AND bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+            AND bk."paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+          ORDER BY bk."paidAt" DESC
+          LIMIT $4
+          `,
+          [barberIds, trunc, timezone, limit]
+        );
+      } else {
+        result = await pool.query(
+          `
+          SELECT ${BOOKING_EVENTS_SELECT}
+          FROM bookings bk
+          JOIN barbers b ON b.id = bk."barberId"
+          JOIN users bu ON bu.id = b."userId"
+          JOIN users cu ON cu.id = bk."consumerId"
+          WHERE bk."barberId" = ANY($1::uuid[])
+            AND bk."paidAt" IS NOT NULL
+            AND bk.status IN ('COMPLETED', 'PAID')
+          ORDER BY bk."paidAt" DESC
           LIMIT $2
           `,
-          [campusId, limit]
+          [barberIds, limit]
         );
+      }
 
-    res.json({ period, type, events: result.rows });
+      return res.json({
+        period,
+        type,
+        start: range?.start.toISOString() ?? null,
+        end: range?.end.toISOString() ?? null,
+        events: result.rows,
+      });
+    }
+
+    let result;
+    if (range) {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+          AND u."campusId" = $1::uuid
+          AND u."createdAt" >= $2::timestamptz
+          AND u."createdAt" < $3::timestamptz
+        ORDER BY u."createdAt" DESC
+        LIMIT $4
+        `,
+        [campusId, range.start.toISOString(), range.end.toISOString(), limit]
+      );
+    } else if (trunc) {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+          AND u."campusId" = $1::uuid
+          AND u."createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+        ORDER BY u."createdAt" DESC
+        LIMIT $4
+        `,
+        [campusId, trunc, timezone, limit]
+      );
+    } else {
+      result = await pool.query(
+        `
+        SELECT ${SIGNUP_EVENTS_SELECT}
+        FROM users u
+        LEFT JOIN campuses c ON c.id = u."campusId"
+        WHERE u.role = 'CONSUMER'
+          AND u."campusId" = $1::uuid
+        ORDER BY u."createdAt" DESC
+        LIMIT $2
+        `,
+        [campusId, limit]
+      );
+    }
+
+    res.json({
+      period,
+      type,
+      start: range?.start.toISOString() ?? null,
+      end: range?.end.toISOString() ?? null,
+      events: result.rows,
+    });
   } catch (error) {
     next(error);
   }

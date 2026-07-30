@@ -56,9 +56,11 @@ router.delete('/services/:id', adminController.deleteService);
 router.get('/campuses', adminController.getAllCampuses);
 router.get('/campuses/aggregate/performance', adminController.getAggregatePerformance);
 router.get('/campuses/aggregate/metrics', adminController.getAggregateMetrics);
+router.get('/campuses/aggregate/metrics/events/options', adminController.getAggregateMetricsEventsOptions);
 router.get('/campuses/aggregate/metrics/events', adminController.getAggregateMetricsEvents);
 router.get('/campuses/:campusId/performance', adminController.getCampusPerformance);
 router.get('/campuses/:campusId/metrics', adminController.getCampusMetrics);
+router.get('/campuses/:campusId/metrics/events/options', adminController.getCampusMetricsEventsOptions);
 router.get('/campuses/:campusId/metrics/events', adminController.getCampusMetricsEvents);
 router.get('/campuses/:campusId/barbers', adminController.getCampusBarbers);
 
