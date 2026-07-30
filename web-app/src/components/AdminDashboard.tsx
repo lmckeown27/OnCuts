@@ -2099,9 +2099,6 @@ export function AdminDashboard({
             role="region"
             aria-label={`${listPickerTitle} filter`}
           >
-            <div className="flex items-center justify-center min-h-8 mb-2">
-              <p className="text-sm font-semibold text-gray-900 text-center">{listPickerTitle}</p>
-            </div>
             {listParentWithin && (
               <p className="text-center text-[11px] text-gray-500 mb-1.5">
                 In {listParentWithin.label}
