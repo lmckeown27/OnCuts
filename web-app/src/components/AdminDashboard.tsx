@@ -370,7 +370,7 @@ export function AdminDashboard({
   const [listScope, setListScope] = useState<MetricsListScope>(EMPTY_LIST_SCOPE);
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
-  const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
+  const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('list');
   const [metricsListEvents, setMetricsListEvents] = useState<
     MetricsListBookingEvent[] | MetricsListSignupEvent[]
   >([]);
@@ -2032,13 +2032,13 @@ export function AdminDashboard({
         </div>
       </div>
 
-      {/* Graph/List (left) + timeframe (right) — above performance output */}
+      {/* List/Graph (left) + timeframe (right) — above performance output */}
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="inline-flex shrink-0 rounded-full bg-stone-100 p-1">
           {(
             [
-              { key: 'graph' as const, label: 'Graph' },
               { key: 'list' as const, label: 'List' },
+              { key: 'graph' as const, label: 'Graph' },
             ]
           ).map(({ key, label }) => (
             <button
