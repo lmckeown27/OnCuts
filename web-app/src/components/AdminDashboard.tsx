@@ -111,6 +111,7 @@ interface MetricsResponse {
 }
 
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
@@ -312,6 +313,7 @@ export function AdminDashboard({
   const [metricsTotalUsers, setMetricsTotalUsers] = useState<number>(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
+  const [metricsListPeriod, setMetricsListPeriod] = useState<MetricsListPeriod>('day');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
   const [isChartHovered, setIsChartHovered] = useState(false);
@@ -617,16 +619,41 @@ export function AdminDashboard({
     }
   };
   
+  const metricsApiPeriod = useMemo(() => {
+    if (metricsDisplayMode === 'graph') {
+      return metricsPeriod === 'yearly' ? '1y' : metricsPeriod;
+    }
+    const listMap: Record<MetricsListPeriod, string> = {
+      day: 'daily',
+      week: 'weekly',
+      month: 'monthly',
+      year: '1y',
+      all: 'alltime',
+    };
+    return listMap[metricsListPeriod];
+  }, [metricsDisplayMode, metricsPeriod, metricsListPeriod]);
+
+  const metricsBucketGrain = useMemo(() => {
+    if (metricsDisplayMode === 'graph') {
+      if (metricsPeriod === 'yearly') return 'week' as const;
+      if (metricsPeriod === 'weekly') return 'week' as const;
+      if (metricsPeriod === 'monthly') return 'month' as const;
+      return 'day' as const;
+    }
+    if (metricsListPeriod === 'week' || metricsListPeriod === 'year') return 'week' as const;
+    if (metricsListPeriod === 'month' || metricsListPeriod === 'all') return 'month' as const;
+    return 'day' as const;
+  }, [metricsDisplayMode, metricsPeriod, metricsListPeriod]);
+
   // Fetch metrics when campus or period changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
   useEffect(() => {
     const fetchMetrics = async (showLoading = true) => {
       if (showLoading) setIsLoadingMetrics(true);
       try {
-        const periodParam = metricsPeriod === 'yearly' ? '1y' : metricsPeriod;
         const url = selectedCampusId 
-          ? `/admin/campuses/${selectedCampusId}/metrics?period=${periodParam}`
-          : `/admin/campuses/aggregate/metrics?period=${periodParam}`;
+          ? `/admin/campuses/${selectedCampusId}/metrics?period=${metricsApiPeriod}`
+          : `/admin/campuses/aggregate/metrics?period=${metricsApiPeriod}`;
         // api.get extracts the data, which could be the full response or just the data array
         const response = await api.get<MetricsResponse | MetricsDataPoint[]>(url);
         
@@ -657,7 +684,7 @@ export function AdminDashboard({
     const intervalId = setInterval(() => fetchMetrics(false), 30000);
     
     return () => clearInterval(intervalId);
-  }, [selectedCampusId, metricsPeriod, refreshSignal]);
+  }, [selectedCampusId, metricsApiPeriod, refreshSignal]);
   
   // Fetch total user count whenever campus changes (for summary stats)
   useEffect(() => {
@@ -1489,11 +1516,11 @@ export function AdminDashboard({
       const month = monthNames[date.getUTCMonth()];
       const day = date.getUTCDate();
       const year = String(date.getUTCFullYear()).slice(-2);
-      if (metricsPeriod === 'daily') return `${month} ${day}`;
-      if (metricsPeriod === 'weekly') return `Wk ${month} ${day}`;
+      if (metricsBucketGrain === 'day') return `${month} ${day}`;
+      if (metricsBucketGrain === 'week') return `Wk ${month} ${day}`;
       return `${month} '${year}`;
     },
-    [metricsPeriod]
+    [metricsBucketGrain]
   );
 
   const chartData = useMemo(() => {
@@ -1833,29 +1860,52 @@ export function AdminDashboard({
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
         <h3 className="text-center text-base font-semibold text-gray-900">Performance over time</h3>
 
-        {/* Timeline */}
+        {/* Timeline: Graph = aggregate buckets; List = specific timeframes */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
-          {(
-            [
-              { key: 'daily', label: 'Daily' },
-              { key: 'weekly', label: 'Weekly' },
-              { key: 'monthly', label: 'Monthly' },
-              { key: 'yearly', label: 'Yearly' },
-            ] as const
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setMetricsPeriod(key)}
-              className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                metricsPeriod === key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {metricsDisplayMode === 'graph'
+            ? (
+                [
+                  { key: 'daily' as const, label: 'Daily' },
+                  { key: 'weekly' as const, label: 'Weekly' },
+                  { key: 'monthly' as const, label: 'Monthly' },
+                  { key: 'yearly' as const, label: 'Yearly' },
+                ] as const
+              ).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setMetricsPeriod(key)}
+                  className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    metricsPeriod === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))
+            : (
+                [
+                  { key: 'day' as const, label: 'Day' },
+                  { key: 'week' as const, label: 'Week' },
+                  { key: 'month' as const, label: 'Month' },
+                  { key: 'year' as const, label: 'Year' },
+                  { key: 'all' as const, label: 'All time' },
+                ] as const
+              ).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setMetricsListPeriod(key)}
+                  className={`flex-1 px-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
+                    metricsListPeriod === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
         </div>
 
         {/* Series */}
