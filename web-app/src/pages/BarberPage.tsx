@@ -1332,8 +1332,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         <div>
           {commissionFreeBookingsRemaining > 0 && (
             <p className="text-xs text-gray-500 text-center mb-1">
-              {commissionFreeBookingsRemaining} commissionless{' '}
-              {commissionFreeBookingsRemaining === 1 ? 'booking' : 'bookings'} left
+              Commissionless Bookings left:{' '}
+              <span className="font-bold text-gray-700">{commissionFreeBookingsRemaining}</span>
             </p>
           )}
           {serviceLocationWebOnly ? (
