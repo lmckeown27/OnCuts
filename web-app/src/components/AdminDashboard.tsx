@@ -2609,7 +2609,7 @@ export function AdminDashboard({
             {metricsListWindowLabel.toLowerCase()}
           </div>
         ) : (
-          <div className="max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
+          <div className="max-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
             <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0 flex items-center justify-between gap-2">
               <p>
                 {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
