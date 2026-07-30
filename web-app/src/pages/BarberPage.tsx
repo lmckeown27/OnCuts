@@ -781,7 +781,7 @@ export default function BarberPage() {
           onClick={closeAdminDashboard}
         >
           <div
-            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[94dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[98dvh] sm:max-h-[96vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
               isAdminDashboardVisible
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
