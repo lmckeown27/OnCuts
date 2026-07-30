@@ -1307,13 +1307,118 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 
 /**
  * Get time-series metrics for a campus
- * GET /api/admin/campuses/:campusId/metrics?period=daily|weekly|monthly
+ * GET /api/admin/campuses/:campusId/metrics?period=daily|weekly|monthly|snapshot_day|...
  */
 export const getCampusMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId } = req.params;
     const period = (req.query.period as string) || 'daily';
     await assertCampusMetricsAccess(req, campusId);
+
+    // Get campus timezone and barber IDs (operators near campus by service pin)
+    const campusResult = await pool.query(`
+      SELECT c.timezone,
+             (
+               SELECT COALESCE(array_agg(b.id), ARRAY[]::uuid[])
+               FROM barbers b
+               WHERE ${barberNearCampusByPinSql('b', '$1')}
+             ) as barber_ids
+      FROM campuses c
+      WHERE c.id = $1::uuid
+    `, [campusId]);
+
+    if (campusResult.rows.length === 0) {
+      throw new ApiError(404, 'Campus not found');
+    }
+
+    const campusTimezone = campusResult.rows[0].timezone || 'America/Los_Angeles';
+    const barberIds = (campusResult.rows[0].barber_ids || []).filter((id: string | null) => id !== null);
+
+    // List view: single totals for today / this week / this month / this year / all time
+    const snapshotTrunc: Record<string, string | null> = {
+      snapshot_day: 'day',
+      snapshot_week: 'week',
+      snapshot_month: 'month',
+      snapshot_year: 'year',
+      snapshot_all: null,
+    };
+    if (period in snapshotTrunc) {
+      const trunc = snapshotTrunc[period];
+      if (barberIds.length === 0) {
+        return res.json({
+          period,
+          snapshot: true,
+          data: [{ date: new Date().toISOString(), bookings: 0, revenue: 0, users: 0 }],
+          totalUsers: 0,
+        });
+      }
+
+      const bookingsResult = trunc
+        ? await pool.query(
+            `
+            SELECT
+              COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID'))::int as bookings,
+              COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0)::int as revenue
+            FROM bookings
+            WHERE "barberId" = ANY($1::uuid[])
+              AND "paidAt" IS NOT NULL
+              AND "paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+            `,
+            [barberIds, trunc, campusTimezone]
+          )
+        : await pool.query(
+            `
+            SELECT
+              COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID'))::int as bookings,
+              COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0)::int as revenue
+            FROM bookings
+            WHERE "barberId" = ANY($1::uuid[])
+              AND "paidAt" IS NOT NULL
+            `,
+            [barberIds]
+          );
+
+      const usersResult = trunc
+        ? await pool.query(
+            `
+            SELECT COUNT(*)::int as users
+            FROM users
+            WHERE role = 'CONSUMER'
+              AND "campusId" = $1::uuid
+              AND "createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+            `,
+            [campusId, trunc, campusTimezone]
+          )
+        : await pool.query(
+            `
+            SELECT COUNT(*)::int as users
+            FROM users
+            WHERE role = 'CONSUMER'
+              AND "campusId" = $1::uuid
+            `,
+            [campusId]
+          );
+
+      const windowStartResult = trunc
+        ? await pool.query(
+            `SELECT (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2) as window_start`,
+            [trunc, campusTimezone]
+          )
+        : null;
+
+      const bookings = parseInt(String(bookingsResult.rows[0]?.bookings ?? 0), 10);
+      const revenue = parseInt(String(bookingsResult.rows[0]?.revenue ?? 0), 10);
+      const users = parseInt(String(usersResult.rows[0]?.users ?? 0), 10);
+      const windowStart =
+        windowStartResult?.rows[0]?.window_start?.toISOString?.() || new Date(0).toISOString();
+
+      return res.json({
+        period,
+        snapshot: true,
+        data: [{ date: windowStart, bookings, revenue, users }],
+        totalUsers: users,
+      });
+    }
 
     // Determine date truncation and range based on period
     let dateTrunc: string;
@@ -1379,25 +1484,6 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         dateTrunc = 'day';
         interval = '28 days'; // Default to 4 weeks
     }
-
-    // Get campus timezone and barber IDs (operators near campus by service pin)
-    const campusResult = await pool.query(`
-      SELECT c.timezone,
-             (
-               SELECT COALESCE(array_agg(b.id), ARRAY[]::uuid[])
-               FROM barbers b
-               WHERE ${barberNearCampusByPinSql('b', '$1')}
-             ) as barber_ids
-      FROM campuses c
-      WHERE c.id = $1::uuid
-    `, [campusId]);
-
-    if (campusResult.rows.length === 0) {
-      throw new ApiError(404, 'Campus not found');
-    }
-
-    const campusTimezone = campusResult.rows[0].timezone || 'America/Los_Angeles';
-    const barberIds = (campusResult.rows[0].barber_ids || []).filter((id: string | null) => id !== null);
 
     if (barberIds.length === 0) {
       // No barbers, return empty data
@@ -1793,6 +1879,80 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
       throw new ApiError(403, 'Admin access required');
     }
 
+    const aggregateTimezone = 'America/Los_Angeles';
+
+    // List view: single totals for today / this week / this month / this year / all time
+    const snapshotTrunc: Record<string, string | null> = {
+      snapshot_day: 'day',
+      snapshot_week: 'week',
+      snapshot_month: 'month',
+      snapshot_year: 'year',
+      snapshot_all: null,
+    };
+    if (period in snapshotTrunc) {
+      const trunc = snapshotTrunc[period];
+
+      const bookingsResult = trunc
+        ? await pool.query(
+            `
+            SELECT
+              COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID'))::int as bookings,
+              COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0)::int as revenue
+            FROM bookings
+            WHERE "paidAt" IS NOT NULL
+              AND "paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+            `,
+            [trunc, aggregateTimezone]
+          )
+        : await pool.query(
+            `
+            SELECT
+              COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID'))::int as bookings,
+              COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0)::int as revenue
+            FROM bookings
+            WHERE "paidAt" IS NOT NULL
+            `
+          );
+
+      const usersResult = trunc
+        ? await pool.query(
+            `
+            SELECT COUNT(*)::int as users
+            FROM users
+            WHERE role = 'CONSUMER'
+              AND "createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+            `,
+            [trunc, aggregateTimezone]
+          )
+        : await pool.query(
+            `
+            SELECT COUNT(*)::int as users
+            FROM users
+            WHERE role = 'CONSUMER'
+            `
+          );
+
+      const windowStartResult = trunc
+        ? await pool.query(
+            `SELECT (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2) as window_start`,
+            [trunc, aggregateTimezone]
+          )
+        : null;
+
+      const bookings = parseInt(String(bookingsResult.rows[0]?.bookings ?? 0), 10);
+      const revenue = parseInt(String(bookingsResult.rows[0]?.revenue ?? 0), 10);
+      const users = parseInt(String(usersResult.rows[0]?.users ?? 0), 10);
+      const windowStart =
+        windowStartResult?.rows[0]?.window_start?.toISOString?.() || new Date(0).toISOString();
+
+      return res.json({
+        period,
+        snapshot: true,
+        data: [{ date: windowStart, bookings, revenue, users }],
+        totalUsers: users,
+      });
+    }
+
     // Determine date truncation and range based on period
     let dateTrunc: string;
     let interval: string | null;
@@ -1860,7 +2020,6 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
 
     // Get bookings and revenue grouped by period across all campuses
     // Use Pacific Time (America/Los_Angeles) since admins are based at Cal Poly SLO
-    const aggregateTimezone = 'America/Los_Angeles';
     let metricsResult;
     let usersResult;
     

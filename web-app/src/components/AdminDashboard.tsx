@@ -624,11 +624,11 @@ export function AdminDashboard({
       return metricsPeriod === 'yearly' ? '1y' : metricsPeriod;
     }
     const listMap: Record<MetricsListPeriod, string> = {
-      day: 'daily',
-      week: 'weekly',
-      month: 'monthly',
-      year: '1y',
-      all: 'alltime',
+      day: 'snapshot_day',
+      week: 'snapshot_week',
+      month: 'snapshot_month',
+      year: 'snapshot_year',
+      all: 'snapshot_all',
     };
     return listMap[metricsListPeriod];
   }, [metricsDisplayMode, metricsPeriod, metricsListPeriod]);
@@ -640,10 +640,20 @@ export function AdminDashboard({
       if (metricsPeriod === 'monthly') return 'month' as const;
       return 'day' as const;
     }
-    if (metricsListPeriod === 'week' || metricsListPeriod === 'year') return 'week' as const;
-    if (metricsListPeriod === 'month' || metricsListPeriod === 'all') return 'month' as const;
+    // List snapshots are single-window totals (not a series grain)
     return 'day' as const;
-  }, [metricsDisplayMode, metricsPeriod, metricsListPeriod]);
+  }, [metricsDisplayMode, metricsPeriod]);
+
+  const metricsListWindowLabel = useMemo(() => {
+    const labels: Record<MetricsListPeriod, string> = {
+      day: 'Today',
+      week: 'This week',
+      month: 'This month',
+      year: 'This year',
+      all: 'All time',
+    };
+    return labels[metricsListPeriod];
+  }, [metricsListPeriod]);
 
   // Fetch metrics when campus or period changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
@@ -1553,6 +1563,33 @@ export function AdminDashboard({
   }, [metrics, metricsView, formatMetricsBucketLabel]);
 
   const metricsListRows = useMemo(() => {
+    if (metricsDisplayMode === 'list') {
+      const totals = metrics.reduce(
+        (acc, m) => ({
+          bookings: acc.bookings + (m.bookings || 0),
+          revenue: acc.revenue + (m.revenue || 0),
+          users: acc.users + (m.users || 0),
+        }),
+        { bookings: 0, revenue: 0, users: 0 }
+      );
+      const value =
+        metricsView === 'revenue'
+          ? totals.revenue
+          : metricsView === 'bookings'
+            ? totals.bookings
+            : totals.users;
+      return [
+        {
+          date: metricsListPeriod,
+          label: metricsListWindowLabel,
+          value,
+          bookings: totals.bookings,
+          revenue: totals.revenue,
+          users: totals.users,
+        },
+      ];
+    }
+
     const rows = metrics.map((m) => {
       const value =
         metricsView === 'revenue'
@@ -1569,9 +1606,16 @@ export function AdminDashboard({
         users: m.users || 0,
       };
     });
-    // Newest first in list view
+    // Newest first in series list view
     return [...rows].reverse();
-  }, [metrics, metricsView, formatMetricsBucketLabel]);
+  }, [
+    metrics,
+    metricsView,
+    formatMetricsBucketLabel,
+    metricsDisplayMode,
+    metricsListPeriod,
+    metricsListWindowLabel,
+  ]);
   
   // Custom crosshair plugin for vertical line on hover
   const crosshairPlugin = useMemo(() => ({
@@ -1964,26 +2008,22 @@ export function AdminDashboard({
             )}
           </>
         ) : (
-          <div className="max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100">
+          <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-4 space-y-3">
             {metricsListRows.map((row) => (
-              <div
-                key={row.date}
-                className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{row.label}</p>
-                  <p className="text-[11px] text-gray-400 truncate">
-                    {formatCurrency(row.revenue)} · {row.bookings} bookings · {row.users} sign-ups
-                  </p>
-                </div>
-                <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+              <div key={row.date} className="space-y-2">
+                <p className="text-center text-sm font-semibold text-gray-900">{row.label}</p>
+                <p className="text-center text-2xl font-bold text-gray-900 tabular-nums">
                   {formatSeriesValue(row.value)}
+                </p>
+                <p className="text-center text-xs text-gray-500">
+                  {formatCurrency(row.revenue)} · {row.bookings} bookings · {row.users} sign-ups
                 </p>
               </div>
             ))}
           </div>
         )}
 
+        {metricsDisplayMode === 'graph' && (
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
             <p className="text-[11px] text-gray-500">Period average</p>
@@ -1998,6 +2038,7 @@ export function AdminDashboard({
             </p>
           </div>
         </div>
+        )}
       </div>
 
       <div>
