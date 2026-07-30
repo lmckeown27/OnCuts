@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus, List, LineChart
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -112,6 +112,7 @@ interface MetricsResponse {
 
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
+type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
 
 type UgcReportStatusFilter = 'open' | 'all' | 'dismissed' | 'resolved';
@@ -312,6 +313,7 @@ export function AdminDashboard({
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
+  const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
   
@@ -1480,23 +1482,22 @@ export function AdminDashboard({
   };
   
   // Prepare chart data
-  const chartData = useMemo(() => {
-    const labels = metrics.map(m => {
-      // Parse date as UTC but display the UTC values directly (backend already converted to Pacific Time)
-      const date = new Date(m.date);
-      // Use UTC methods to avoid local timezone conversion since backend already did the conversion
+  const formatMetricsBucketLabel = useCallback(
+    (dateStr: string) => {
+      const date = new Date(dateStr);
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const month = monthNames[date.getUTCMonth()];
       const day = date.getUTCDate();
       const year = String(date.getUTCFullYear()).slice(-2);
-      
-      // Daily / weekly buckets
-      if (metricsPeriod === 'daily' || metricsPeriod === 'weekly') {
-        return metricsPeriod === 'daily' ? `${month} ${day}` : `Wk ${month} ${day}`;
-      }
-      // Monthly / yearly
+      if (metricsPeriod === 'daily') return `${month} ${day}`;
+      if (metricsPeriod === 'weekly') return `Wk ${month} ${day}`;
       return `${month} '${year}`;
-    });
+    },
+    [metricsPeriod]
+  );
+
+  const chartData = useMemo(() => {
+    const labels = metrics.map((m) => formatMetricsBucketLabel(m.date));
     
     const dataValues = metrics.map((m) => {
       if (metricsView === 'revenue') return m.revenue / 100;
@@ -1522,7 +1523,28 @@ export function AdminDashboard({
         },
       ],
     };
-  }, [metrics, metricsPeriod, metricsView]);
+  }, [metrics, metricsView, formatMetricsBucketLabel]);
+
+  const metricsListRows = useMemo(() => {
+    const rows = metrics.map((m) => {
+      const value =
+        metricsView === 'revenue'
+          ? m.revenue
+          : metricsView === 'bookings'
+            ? m.bookings
+            : m.users || 0;
+      return {
+        date: m.date,
+        label: formatMetricsBucketLabel(m.date),
+        value,
+        bookings: m.bookings,
+        revenue: m.revenue,
+        users: m.users || 0,
+      };
+    });
+    // Newest first in list view
+    return [...rows].reverse();
+  }, [metrics, metricsView, formatMetricsBucketLabel]);
   
   // Custom crosshair plugin for vertical line on hover
   const crosshairPlugin = useMemo(() => ({
@@ -1780,6 +1802,36 @@ export function AdminDashboard({
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
         <h3 className="text-center text-base font-semibold text-gray-900">Performance over time</h3>
 
+        {/* Graph / List */}
+        <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
+          {(
+            [
+              { key: 'graph' as const, label: 'Graph', Icon: LineChart },
+              { key: 'list' as const, label: 'List', Icon: List },
+            ]
+          ).map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setMetricsDisplayMode(key);
+                if (key === 'list') {
+                  setIsChartHovered(false);
+                  setHoveredDataPoint(null);
+                }
+              }}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                metricsDisplayMode === key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Timeline */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
           {(
@@ -1829,37 +1881,56 @@ export function AdminDashboard({
           ))}
         </div>
         
-        {/* Chart */}
         {isLoadingMetrics ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
-        ) : metrics.length > 0 ? (
-          <div 
-            ref={chartContainerRef} 
-            className="h-40 sm:h-48"
-            onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
-            onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
-          >
-            <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
-          </div>
-        ) : (
+        ) : metrics.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
             <AlertCircle className="w-4 h-4 mr-2" />
             No data available for this period
           </div>
-        )}
-
-        {!hoveredDataPoint && metrics.length > 0 && (
-          <p className="text-center text-xs text-gray-400">
-            Press and drag on the chart to inspect a bucket.
-          </p>
-        )}
-        {hoveredDataPoint && (
-          <p className="text-center text-xs font-medium text-gray-600">
-            {hoveredDataPoint.label}: {formatCurrency(hoveredDataPoint.revenue)} ·{' '}
-            {hoveredDataPoint.bookings} bookings · {hoveredDataPoint.users} sign-ups
-          </p>
+        ) : metricsDisplayMode === 'graph' ? (
+          <>
+            <div 
+              ref={chartContainerRef} 
+              className="h-40 sm:h-48"
+              onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
+              onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
+            >
+              <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
+            </div>
+            {!hoveredDataPoint && (
+              <p className="text-center text-xs text-gray-400">
+                Press and drag on the chart to inspect a bucket.
+              </p>
+            )}
+            {hoveredDataPoint && (
+              <p className="text-center text-xs font-medium text-gray-600">
+                {hoveredDataPoint.label}: {formatCurrency(hoveredDataPoint.revenue)} ·{' '}
+                {hoveredDataPoint.bookings} bookings · {hoveredDataPoint.users} sign-ups
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100">
+            {metricsListRows.map((row) => (
+              <div
+                key={row.date}
+                className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{row.label}</p>
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {formatCurrency(row.revenue)} · {row.bookings} bookings · {row.users} sign-ups
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+                  {formatSeriesValue(row.value)}
+                </p>
+              </div>
+            ))}
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-2">
