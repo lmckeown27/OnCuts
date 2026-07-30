@@ -1888,9 +1888,9 @@ export function AdminDashboard({
         </div>
       </div>
 
-      {/* Graph / List — between platform totals and performance output */}
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-full bg-stone-100 p-1">
+      {/* Graph/List (left) + timeframe (right) — above performance output */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="inline-flex shrink-0 rounded-full bg-stone-100 p-1">
           {(
             [
               { key: 'graph' as const, label: 'Graph' },
@@ -1912,7 +1912,7 @@ export function AdminDashboard({
                   }
                 }
               }}
-              className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
+              className={`px-3.5 sm:px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
                 metricsDisplayMode === key
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
@@ -1922,11 +1922,8 @@ export function AdminDashboard({
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
-        {/* Timeline: Graph = aggregate buckets; List = specific timeframes */}
-        <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
+        <div className="flex min-w-0 flex-1 rounded-lg bg-stone-100 p-0.5 gap-0.5">
           {metricsDisplayMode === 'graph'
             ? (
                 [
@@ -1940,7 +1937,7 @@ export function AdminDashboard({
                   key={key}
                   type="button"
                   onClick={() => setMetricsPeriod(key)}
-                  className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                  className={`flex-1 px-1 sm:px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
                     metricsPeriod === key
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -1972,7 +1969,9 @@ export function AdminDashboard({
                 </button>
               ))}
         </div>
+      </div>
 
+      <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
         {/* Series */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
           {metricsDisplayMode === 'graph'
