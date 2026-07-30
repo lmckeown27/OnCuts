@@ -1952,6 +1952,33 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     }
   };
 
+  // Handle accepting a pending booking
+  const handleAcceptBooking = async () => {
+    if (!selectedBookingInline) return;
+
+    const acceptBarberId = barberId || selectedBookingInline.barberId;
+    if (!acceptBarberId) {
+      toast.error('Unable to accept booking — missing barber identity');
+      return;
+    }
+
+    setIsSavingBooking(true);
+    try {
+      await api.post(`/booking-requests/${selectedBookingInline.id}/accept`, {
+        barberId: acceptBarberId,
+        message: 'Looking forward to seeing you!',
+      });
+      toast.success('Booking accepted!');
+      closeDayModal();
+      if (onRefreshBookings) onRefreshBookings();
+    } catch (error: any) {
+      console.error('Failed to accept booking:', error);
+      toast.error(error.message || 'Failed to accept booking');
+    } finally {
+      setIsSavingBooking(false);
+    }
+  };
+
   // Handle undoing a completed booking (revert to ACCEPTED)
   const handleUndoComplete = async () => {
     if (!selectedBookingInline) return;
@@ -2497,16 +2524,36 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
                       {/* Action Buttons */}
                       {(() => {
+                        const canAccept = selectedBookingInline.status === 'PENDING';
                         const canEdit = selectedBookingInline.status === 'ACCEPTED';
                         const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
                         const canComplete = selectedBookingInline.status === 'ACCEPTED';
                         const canRemove = isAdmin && (selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID');
                         const canUndoComplete = selectedBookingInline.status === 'COMPLETED';
                         
-                        if (!canComplete && !canEdit && !canCancel && !canRemove && !canUndoComplete) return null;
+                        if (!canAccept && !canComplete && !canEdit && !canCancel && !canRemove && !canUndoComplete) return null;
                         
                         return (
                           <div className="space-y-3 pt-4 border-t border-gray-100">
+                            {canAccept && (
+                              <button
+                                onClick={handleAcceptBooking}
+                                disabled={isSavingBooking}
+                                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {isSavingBooking ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Accepting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Accept Booking
+                                  </>
+                                )}
+                              </button>
+                            )}
                             {canComplete && (
                               <button
                                 onClick={handleCompleteBooking}

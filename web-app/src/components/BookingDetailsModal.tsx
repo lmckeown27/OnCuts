@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import DatePicker from './DatePicker';
 import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Barber } from '../types';
 
 interface BookingDetailsModalProps {
@@ -33,11 +34,13 @@ export default function BookingDetailsModal({
   isAdmin = false
 }: BookingDetailsModalProps) {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isUndoingComplete, setIsUndoingComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
   const [isRespondingReschedule, setIsRespondingReschedule] = useState<'approve' | 'reject' | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   
@@ -347,6 +350,31 @@ export default function BookingDetailsModal({
     }
   };
 
+  const handleAcceptBooking = async () => {
+    const barberId = user?.id || booking.barber?.userId || booking.barberId;
+    if (!barberId) {
+      toast.error('Unable to accept booking — missing barber identity');
+      return;
+    }
+
+    setIsAccepting(true);
+    try {
+      await api.post(`/booking-requests/${booking.id}/accept`, {
+        barberId,
+        message: 'Looking forward to seeing you!',
+      });
+      toast.success('Booking accepted!');
+      handleClose();
+      onBookingUpdated?.();
+    } catch (error: any) {
+      console.error('Failed to accept booking:', error);
+      toast.error(error.message || 'Failed to accept booking');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  const canAccept = booking.status === 'PENDING';
   const canEdit = booking.status === 'ACCEPTED';
   const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
   const canComplete = booking.status === 'ACCEPTED';
@@ -751,8 +779,29 @@ export default function BookingDetailsModal({
               </div>
 
               {/* Action Buttons */}
-              {(canComplete || canEdit || canCancel) && (
+              {(canAccept || canComplete || canEdit || canCancel) && (
                 <div className="space-y-3 pt-4 border-t border-gray-100">
+                  {/* Accept pending booking */}
+                  {canAccept && (
+                    <button
+                      onClick={handleAcceptBooking}
+                      disabled={isAccepting}
+                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isAccepting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Accepting...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Accept Booking
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {/* Complete & Message Buttons */}
                   {canComplete && (
                     <div className="flex gap-3">
