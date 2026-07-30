@@ -117,19 +117,33 @@ type MetricsListView = 'bookings' | 'signups';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
 
-interface MetricsListWindowOption {
+interface MetricsListWindow {
   id: string;
   label: string;
+  chipLabel: string;
   start: string;
   end: string;
 }
 
-interface MetricsListWindow {
-  id: string;
-  label: string;
-  start: string;
-  end: string;
+interface MetricsListWindowOption extends MetricsListWindow {
+  year: MetricsListWindow | null;
+  month: MetricsListWindow | null;
+  week: MetricsListWindow | null;
 }
+
+interface MetricsListScope {
+  year: MetricsListWindow | null;
+  month: MetricsListWindow | null;
+  week: MetricsListWindow | null;
+  day: MetricsListWindow | null;
+}
+
+const EMPTY_LIST_SCOPE: MetricsListScope = {
+  year: null,
+  month: null,
+  week: null,
+  day: null,
+};
 
 interface MetricsListBookingEvent {
   id: string;
@@ -353,8 +367,8 @@ export function AdminDashboard({
   const [listPickerOpen, setListPickerOpen] = useState(false);
   const [listWindowOptions, setListWindowOptions] = useState<MetricsListWindowOption[]>([]);
   const [isLoadingListWindowOptions, setIsLoadingListWindowOptions] = useState(false);
-  const [listWindowDraft, setListWindowDraft] = useState<MetricsListWindow | null>(null);
-  const [listWindowCommitted, setListWindowCommitted] = useState<MetricsListWindow | null>(null);
+  const [listWindowDraft, setListWindowDraft] = useState<MetricsListWindowOption | null>(null);
+  const [listScope, setListScope] = useState<MetricsListScope>(EMPTY_LIST_SCOPE);
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
@@ -690,6 +704,10 @@ export function AdminDashboard({
     return 'day' as const;
   }, [metricsDisplayMode, metricsPeriod]);
 
+  const listWindowCommitted = useMemo(() => {
+    return listScope.day ?? listScope.week ?? listScope.month ?? listScope.year ?? null;
+  }, [listScope]);
+
   const metricsListWindowLabel = useMemo(() => {
     return listWindowCommitted?.label ?? 'All time';
   }, [listWindowCommitted]);
@@ -703,6 +721,70 @@ export function AdminDashboard({
     };
     return metricsListPeriod === 'all' ? 'All time' : titles[metricsListPeriod];
   }, [metricsListPeriod]);
+
+  const listChipLabels = useMemo(
+    () => ({
+      all: 'All time',
+      year: listScope.year?.chipLabel ?? 'Year',
+      month: listScope.month?.chipLabel ?? 'Month',
+      week: listScope.week?.chipLabel ?? 'Week',
+      day: listScope.day?.chipLabel ?? 'Day',
+    }),
+    [listScope]
+  );
+
+  const listParentWithin = useMemo(() => {
+    if (metricsListPeriod === 'month') {
+      return listScope.year;
+    }
+    if (metricsListPeriod === 'week') {
+      return listScope.month ?? listScope.year;
+    }
+    if (metricsListPeriod === 'day') {
+      return listScope.week ?? listScope.month ?? listScope.year;
+    }
+    return null;
+  }, [metricsListPeriod, listScope]);
+
+  const applyListWindowSelection = useCallback(
+    (level: Exclude<MetricsListPeriod, 'all'>, option: MetricsListWindowOption) => {
+      setListScope((prev) => {
+        const next: MetricsListScope = { ...prev };
+        const selected: MetricsListWindow = {
+          id: option.id,
+          label: option.label,
+          chipLabel: option.chipLabel,
+          start: option.start,
+          end: option.end,
+        };
+
+        if (level === 'year') {
+          next.year = selected;
+          next.month = null;
+          next.week = null;
+          next.day = null;
+        } else if (level === 'month') {
+          next.year = option.year ?? prev.year;
+          next.month = selected;
+          next.week = null;
+          next.day = null;
+        } else if (level === 'week') {
+          next.year = option.year ?? prev.year;
+          next.month = option.month ?? prev.month;
+          next.week = selected;
+          next.day = null;
+        } else {
+          next.year = option.year ?? prev.year;
+          next.month = option.month ?? prev.month;
+          next.week = option.week ?? prev.week;
+          next.day = selected;
+        }
+        return next;
+      });
+      setMetricsListPeriod(level);
+    },
+    []
+  );
 
   // Fetch metrics when campus or period changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
@@ -762,27 +844,29 @@ export function AdminDashboard({
         const response = await api.get<{ options: MetricsListWindowOption[] }>(url, {
           granularity: metricsListPeriod,
           type: metricsListView,
+          ...(listParentWithin
+            ? {
+                withinStart: listParentWithin.start,
+                withinEnd: listParentWithin.end,
+              }
+            : {}),
         });
         const options = response.options || [];
         setListWindowOptions(options);
 
-        // Prefill draft from committed window when still in the option set
-        if (
-          listWindowCommitted &&
-          options.some((option) => option.id === listWindowCommitted.id)
-        ) {
-          setListWindowDraft(listWindowCommitted);
-        } else if (options.length > 0) {
-          const first = options[0];
-          setListWindowDraft({
-            id: first.id,
-            label: first.label,
-            start: first.start,
-            end: first.end,
-          });
-        } else {
-          setListWindowDraft(null);
-        }
+        const currentAtLevel =
+          metricsListPeriod === 'year'
+            ? listScope.year
+            : metricsListPeriod === 'month'
+              ? listScope.month
+              : metricsListPeriod === 'week'
+                ? listScope.week
+                : listScope.day;
+
+        const matched = currentAtLevel
+          ? options.find((option) => option.id === currentAtLevel.id)
+          : undefined;
+        setListWindowDraft(matched ?? options[0] ?? null);
       } catch (error) {
         console.error('Failed to fetch metrics list window options:', error);
         setListWindowOptions([]);
@@ -798,7 +882,8 @@ export function AdminDashboard({
     listPickerOpen,
     metricsListPeriod,
     metricsListView,
-    listWindowCommitted,
+    listParentWithin,
+    listScope,
     selectedCampusId,
     refreshSignal,
   ]);
@@ -2037,8 +2122,8 @@ export function AdminDashboard({
               <button
                 type="button"
                 onClick={() => {
-                  if (listWindowDraft) {
-                    setListWindowCommitted(listWindowDraft);
+                  if (listWindowDraft && metricsListPeriod !== 'all') {
+                    applyListWindowSelection(metricsListPeriod, listWindowDraft);
                   }
                   setListPickerOpen(false);
                 }}
@@ -2049,12 +2134,21 @@ export function AdminDashboard({
                 <Check className="w-4 h-4" />
               </button>
             </div>
+            {listParentWithin && (
+              <p className="text-center text-[11px] text-gray-500 mb-1.5">
+                In {listParentWithin.label}
+              </p>
+            )}
             {isLoadingListWindowOptions ? (
               <div className="flex items-center justify-center py-2">
                 <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
               </div>
             ) : listWindowOptions.length === 0 ? (
-              <p className="text-center text-xs text-gray-500 py-1">No windows available</p>
+              <p className="text-center text-xs text-gray-500 py-1">
+                {listParentWithin
+                  ? `No ${listPickerTitle.toLowerCase()} options in ${listParentWithin.label}`
+                  : 'No windows available'}
+              </p>
             ) : (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {listWindowOptions.map((option) => {
@@ -2063,14 +2157,7 @@ export function AdminDashboard({
                     <button
                       key={option.id}
                       type="button"
-                      onClick={() =>
-                        setListWindowDraft({
-                          id: option.id,
-                          label: option.label,
-                          start: option.start,
-                          end: option.end,
-                        })
-                      }
+                      onClick={() => setListWindowDraft(option)}
                       aria-pressed={isSelected}
                       className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
                         isSelected
@@ -2089,37 +2176,61 @@ export function AdminDashboard({
           <div className="flex min-w-0 flex-1 rounded-lg bg-stone-100 p-0.5 gap-0.5">
             {(
               [
-                { key: 'all' as const, label: 'All time' },
-                { key: 'year' as const, label: 'Year' },
-                { key: 'month' as const, label: 'Month' },
-                { key: 'week' as const, label: 'Week' },
-                { key: 'day' as const, label: 'Day' },
+                { key: 'all' as const },
+                { key: 'year' as const },
+                { key: 'month' as const },
+                { key: 'week' as const },
+                { key: 'day' as const },
               ] as const
-            ).map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  if (key === 'all') {
-                    setMetricsListPeriod('all');
-                    setListWindowCommitted(null);
-                    setListWindowDraft(null);
-                    setListWindowOptions([]);
-                    setListPickerOpen(false);
-                    return;
+            ).map(({ key }) => {
+              const label = listChipLabels[key];
+              const hasSelection =
+                key === 'all'
+                  ? !listWindowCommitted
+                  : Boolean(
+                      key === 'year'
+                        ? listScope.year
+                        : key === 'month'
+                          ? listScope.month
+                          : key === 'week'
+                            ? listScope.week
+                            : listScope.day
+                    );
+              const isActive =
+                key === 'all' ? !listWindowCommitted : metricsListPeriod === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  title={
+                    key === 'all'
+                      ? 'All time'
+                      : listScope[key]?.label ?? label
                   }
-                  setMetricsListPeriod(key);
-                  setListPickerOpen(true);
-                }}
-                className={`flex-1 px-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors ${
-                  metricsListPeriod === key
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+                  onClick={() => {
+                    if (key === 'all') {
+                      setMetricsListPeriod('all');
+                      setListScope({ ...EMPTY_LIST_SCOPE });
+                      setListWindowDraft(null);
+                      setListWindowOptions([]);
+                      setListPickerOpen(false);
+                      return;
+                    }
+                    setMetricsListPeriod(key);
+                    setListPickerOpen(true);
+                  }}
+                  className={`flex-1 min-w-0 px-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-md transition-colors truncate ${
+                    isActive
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : hasSelection
+                        ? 'text-gray-800 hover:text-gray-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

@@ -2266,26 +2266,65 @@ async function queryEarliestMetricsEventTs(params: {
   return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
 }
 
+type MetricsWindowOption = {
+  id: string;
+  label: string;
+  start: string;
+  end: string;
+  chipLabel: string;
+  year: { id: string; label: string; chipLabel: string; start: string; end: string } | null;
+  month: { id: string; label: string; chipLabel: string; start: string; end: string } | null;
+  week: { id: string; label: string; chipLabel: string; start: string; end: string } | null;
+};
+
+const toWindowRef = (
+  granularity: MetricsEventsGranularity,
+  label: string,
+  chipLabel: string,
+  startTs: Date,
+  endTs: Date
+) => {
+  const start = startTs.toISOString();
+  const end = endTs.toISOString();
+  return {
+    id: `${granularity}:${start}`,
+    label,
+    chipLabel,
+    start,
+    end,
+  };
+};
+
 async function buildMetricsWindowOptions(params: {
   granularity: MetricsEventsGranularity;
   type: MetricsEventsType;
   timezone: string;
   campusId?: string;
   barberIds?: string[];
-}): Promise<Array<{ id: string; label: string; start: string; end: string }>> {
-  const { granularity, type, timezone, campusId, barberIds } = params;
+  withinStart?: Date | null;
+  withinEnd?: Date | null;
+}): Promise<MetricsWindowOption[]> {
+  const { granularity, type, timezone, campusId, barberIds, withinStart, withinEnd } = params;
   const earliest = await queryEarliestMetricsEventTs({ type, campusId, barberIds });
   const trunc = GRANULARITY_TRUNC[granularity];
   const interval = GRANULARITY_INTERVAL[granularity];
   const labelFmt = GRANULARITY_LABEL_FMT[granularity];
 
+  // Optional parent window (e.g. selected month) clips available child tags.
+  const rangeStart = withinStart && withinStart > earliest ? withinStart : earliest;
+  const rangeEnd = withinEnd && withinEnd < new Date() ? withinEnd : new Date();
+  if (rangeStart >= rangeEnd) {
+    return [];
+  }
+
   // Day tags capped to most recent 90 calendar days in-range.
+  // End bound uses the last instant inside the parent window so DATE_TRUNC stays in-range.
   const result = await pool.query(
     `
     WITH bounds AS (
       SELECT
         DATE_TRUNC($1, $2::timestamptz AT TIME ZONE $3) AS start_local,
-        DATE_TRUNC($1, NOW() AT TIME ZONE $3) AS end_local
+        DATE_TRUNC($1, ($4::timestamptz - INTERVAL '1 millisecond') AT TIME ZONE $3) AS end_local
     ),
     clipped AS (
       SELECT
@@ -2302,27 +2341,75 @@ async function buildMetricsWindowOptions(params: {
       SELECT generate_series(
         (SELECT start_local FROM clipped),
         (SELECT end_local FROM clipped),
-        $4::interval
+        $5::interval
       ) AS bucket_local
+      WHERE (SELECT start_local FROM clipped) <= (SELECT end_local FROM clipped)
     )
     SELECT
-      to_char(bucket_local, $5) AS label,
+      to_char(bucket_local, $6) AS label,
+      to_char(bucket_local, 'YYYY') AS year_label,
+      to_char(bucket_local, 'Mon') AS month_chip_label,
+      to_char(bucket_local, 'Mon YYYY') AS month_label,
+      to_char(DATE_TRUNC('week', bucket_local), '"Week of" Mon FMDD, YYYY') AS week_label,
+      to_char(DATE_TRUNC('week', bucket_local), 'Mon FMDD') AS week_chip_label,
+      to_char(bucket_local, 'Mon FMDD') AS day_chip_label,
       (bucket_local AT TIME ZONE $3) AS start_ts,
-      ((bucket_local + $4::interval) AT TIME ZONE $3) AS end_ts
+      ((bucket_local + $5::interval) AT TIME ZONE $3) AS end_ts,
+      (DATE_TRUNC('year', bucket_local) AT TIME ZONE $3) AS year_start_ts,
+      ((DATE_TRUNC('year', bucket_local) + INTERVAL '1 year') AT TIME ZONE $3) AS year_end_ts,
+      (DATE_TRUNC('month', bucket_local) AT TIME ZONE $3) AS month_start_ts,
+      ((DATE_TRUNC('month', bucket_local) + INTERVAL '1 month') AT TIME ZONE $3) AS month_end_ts,
+      (DATE_TRUNC('week', bucket_local) AT TIME ZONE $3) AS week_start_ts,
+      ((DATE_TRUNC('week', bucket_local) + INTERVAL '1 week') AT TIME ZONE $3) AS week_end_ts
     FROM series
     ORDER BY bucket_local DESC
     `,
-    [trunc, earliest.toISOString(), timezone, interval, labelFmt]
+    [trunc, rangeStart.toISOString(), timezone, rangeEnd.toISOString(), interval, labelFmt]
   );
 
   return result.rows.map((row) => {
-    const start = new Date(row.start_ts).toISOString();
-    const end = new Date(row.end_ts).toISOString();
+    const start = new Date(row.start_ts);
+    const end = new Date(row.end_ts);
+    const year = toWindowRef(
+      'year',
+      row.year_label,
+      row.year_label,
+      new Date(row.year_start_ts),
+      new Date(row.year_end_ts)
+    );
+    const month = toWindowRef(
+      'month',
+      row.month_label,
+      row.month_chip_label,
+      new Date(row.month_start_ts),
+      new Date(row.month_end_ts)
+    );
+    const week = toWindowRef(
+      'week',
+      row.week_label,
+      row.week_chip_label,
+      new Date(row.week_start_ts),
+      new Date(row.week_end_ts)
+    );
+
+    const chipLabel =
+      granularity === 'year'
+        ? row.year_label
+        : granularity === 'month'
+          ? row.month_chip_label
+          : granularity === 'week'
+            ? row.week_chip_label
+            : row.day_chip_label;
+
     return {
-      id: `${granularity}:${start}`,
+      id: `${granularity}:${start.toISOString()}`,
       label: row.label,
-      start,
-      end,
+      chipLabel,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      year: granularity === 'year' ? null : year,
+      month: granularity === 'year' || granularity === 'month' ? null : month,
+      week: granularity === 'day' ? week : null,
     };
   });
 }
@@ -2361,8 +2448,15 @@ export const getAggregateMetricsEventsOptions = async (req: AuthRequest, res: Re
 
     const type = parseMetricsEventsType(req.query.type);
     const granularity = parseMetricsEventsGranularity(req.query.granularity);
+    const within = parseOptionalIsoRange(req.query.withinStart, req.query.withinEnd);
     const timezone = 'America/Los_Angeles';
-    const options = await buildMetricsWindowOptions({ granularity, type, timezone });
+    const options = await buildMetricsWindowOptions({
+      granularity,
+      type,
+      timezone,
+      withinStart: within?.start ?? null,
+      withinEnd: within?.end ?? null,
+    });
     res.json({ granularity, type, options });
   } catch (error) {
     next(error);
@@ -2380,6 +2474,7 @@ export const getCampusMetricsEventsOptions = async (req: AuthRequest, res: Respo
 
     const type = parseMetricsEventsType(req.query.type);
     const granularity = parseMetricsEventsGranularity(req.query.granularity);
+    const within = parseOptionalIsoRange(req.query.withinStart, req.query.withinEnd);
 
     const campusResult = await pool.query(
       `
@@ -2406,6 +2501,8 @@ export const getCampusMetricsEventsOptions = async (req: AuthRequest, res: Respo
       timezone,
       campusId,
       barberIds,
+      withinStart: within?.start ?? null,
+      withinEnd: within?.end ?? null,
     });
     res.json({ granularity, type, options });
   } catch (error) {
