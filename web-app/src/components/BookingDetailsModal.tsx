@@ -376,13 +376,9 @@ export default function BookingDetailsModal({
               <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
                 {booking.status}
               </span>
-              {(booking.commissionFreeApplied === true || booking.commission_free_applied === true) ? (
+              {(booking.commissionFreeApplied === true || booking.commission_free_applied === true) && (
                 <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                   Commissionless
-                </span>
-              ) : (
-                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
-                  Standard commission
                 </span>
               )}
             </div>
@@ -584,18 +580,14 @@ export default function BookingDetailsModal({
                     {formatPrice(booking.priceUsdCents)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-sm text-gray-600">Commission</span>
-                  {(booking.commissionFreeApplied === true || booking.commission_free_applied === true) ? (
+                {(booking.commissionFreeApplied === true || booking.commission_free_applied === true) && (
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-sm text-gray-600">Commission</span>
                     <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                       Commissionless
                     </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                      Standard commission
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Date & Time */}

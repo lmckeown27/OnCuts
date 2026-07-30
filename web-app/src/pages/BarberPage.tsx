@@ -2407,18 +2407,14 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             ${(selectedBookingInline.priceUsdCents / 100).toFixed(2)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between px-1">
-                          <span className="text-sm text-gray-600">Commission</span>
-                          {selectedBookingInline.commissionFreeApplied ? (
+                        {selectedBookingInline.commissionFreeApplied && (
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-sm text-gray-600">Commission</span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                               Commissionless
                             </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                              Standard commission
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Date & Time */}
@@ -3162,13 +3158,9 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                       <div className="text-right">
                         <div className="flex flex-col items-end gap-1">
                           {getStatusBadge(booking)}
-                          {isCommissionFreeBooking(booking) ? (
+                          {isCommissionFreeBooking(booking) && (
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">
                               Commissionless
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                              Standard commission
                             </span>
                           )}
                         </div>
