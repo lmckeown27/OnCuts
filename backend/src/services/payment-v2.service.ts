@@ -14,13 +14,11 @@ import transactionService, { TransactionType } from './transaction.service';
 // ESCROW DISABLED - Direct payments only
 // import escrowService from './escrow.service';
 import auditService from './audit.service';
+import { getPlatformFeeRate } from '../utils/platform-commission';
 
 function stripeSdk(): Stripe {
   return getDefaultStripeClient();
 }
-
-// Platform fee rate (15% - covers Stripe's ~4% processing fee, nets ~11%)
-const PLATFORM_FEE_RATE = 0.15;
 
 export interface DepositInput {
   userId: string;
@@ -56,8 +54,9 @@ class PaymentServiceV2 {
     barberReceivesCents: number;
   }> {
     try {
-      // Calculate platform fee
-      const platformFeeCents = Math.floor(input.amountCents * PLATFORM_FEE_RATE);
+      // Calculate platform fee from Admin-configured platform_settings
+      const platformFeeRate = await getPlatformFeeRate();
+      const platformFeeCents = Math.floor(input.amountCents * platformFeeRate);
       const barberReceivesCents = input.amountCents - platformFeeCents;
 
       // Get barber's Stripe account ID (if they have one)
@@ -136,7 +135,8 @@ class PaymentServiceV2 {
     transactionId: number;
   }> {
     try {
-      const platformFeeCents = Math.floor(input.amountCents * PLATFORM_FEE_RATE);
+      const platformFeeRate = await getPlatformFeeRate();
+      const platformFeeCents = Math.floor(input.amountCents * platformFeeRate);
       const barberReceivesCents = input.amountCents - platformFeeCents;
 
       // 1. Record consumer payment transaction

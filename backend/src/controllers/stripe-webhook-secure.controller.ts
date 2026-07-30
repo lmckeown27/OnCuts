@@ -19,7 +19,7 @@ import {
 import { pool, query } from '../database/connection';
 import { logger } from '../utils/logger';
 import {
-  DEFAULT_PLATFORM_FEE_RATE,
+  getPlatformFeeRate,
   loadProviderCommissionSettings,
   releaseCommissionFreeBooking,
 } from '../utils/platform-commission';
@@ -166,7 +166,7 @@ async function initiateBarberPayout(
           ? paymentIntent.application_fee_amount
           : booking.platformFeeUsdCents != null
             ? booking.platformFeeUsdCents
-            : Math.round(serviceAmountCents * DEFAULT_PLATFORM_FEE_RATE);
+            : Math.round(serviceAmountCents * (await getPlatformFeeRate()));
       const barberEarnings = totalAmountCents - platformFeeCents;
       
       await client.query(
@@ -564,7 +564,7 @@ async function handleCheckoutSessionCompleted(
               : paymentIntent.metadata?.platform_fee_cents != null
                 ? parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0
                 : Math.round(
-                    Math.max(0, amountCents - tipCents) * DEFAULT_PLATFORM_FEE_RATE
+                    Math.max(0, amountCents - tipCents) * (await getPlatformFeeRate())
                   );
           const barberEarnings = Math.max(0, amountCents - platformFeeCents);
           await client.query(

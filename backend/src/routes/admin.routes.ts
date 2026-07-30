@@ -17,6 +17,10 @@ router.use(authenticate, refreshAccessRoleFromDb);
 router.get('/fees', adminController.getPlatformFees);
 router.post('/fees/withdraw', adminController.withdrawPlatformFees);
 
+// Global platform settings (commission %)
+router.get('/platform-settings', adminController.getPlatformSettings);
+router.put('/platform-settings', adminController.updatePlatformSettings);
+
 // Reconciliation
 router.post('/reconciliation/run', adminController.runReconciliation);
 router.get('/reconciliation/reports', adminController.getReconciliationReports);

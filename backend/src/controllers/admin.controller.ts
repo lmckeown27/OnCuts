@@ -22,6 +22,10 @@ import withdrawalBatchService from '../services/withdrawal-batch.service';
 import auditService from '../services/audit.service';
 import transactionService from '../services/transaction.service';
 import { logger } from '../utils/logger';
+import {
+  getPlatformFeePercent,
+  setPlatformFeePercent,
+} from '../utils/platform-commission';
 import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
 import {
   assertCampusMetricsAccess,
@@ -171,6 +175,64 @@ export const getPlatformFees = async (req: AuthRequest, res: Response, next: Nex
         available_count: parseInt(stats.available_count),
         withdrawn_count: parseInt(stats.withdrawn_count),
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/admin/platform-settings
+ * Global platform commission percent (Admin-editable).
+ */
+export const getPlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const platformFeePercent = await getPlatformFeePercent();
+    res.json({
+      success: true,
+      data: { platformFeePercent },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/admin/platform-settings
+ * Body: { platformFeePercent: number } — 0–100, one decimal place.
+ */
+export const updatePlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const raw = req.body?.platformFeePercent;
+    if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'platformFeePercent')) {
+      throw new ApiError(400, 'platformFeePercent is required');
+    }
+
+    const percent = typeof raw === 'number' ? raw : parseFloat(String(raw));
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      throw new ApiError(400, 'platformFeePercent must be a number between 0 and 100');
+    }
+
+    const platformFeePercent = await setPlatformFeePercent(percent, req.user!.userId);
+    logger.info('admin_update_platform_settings', {
+      adminId: req.user!.userId,
+      platformFeePercent,
+    });
+
+    res.json({
+      success: true,
+      data: { platformFeePercent },
+      message: 'Platform commission updated',
     });
   } catch (error) {
     next(error);
@@ -2527,8 +2589,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 /**
  * PUT /api/admin/barbers/:barberRecordId/commission
  * Set commission-free booking quota + platform-funded kickback percent
- * (platform fee rate remains hardcoded at 15%; kickback only pays out on
- * commissionless bookings).
+ * (global platform fee rate is Admin-set via /platform-settings; kickback only
+ * pays out on commissionless bookings).
  */
 export const updateBarberCommission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

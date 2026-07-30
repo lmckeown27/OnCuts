@@ -3,6 +3,7 @@ import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { getPlatformFeeRate } from '../utils/platform-commission';
 
 const SUI_ADDR = /^0x[0-9a-fA-F]{64}$/;
 
@@ -51,7 +52,6 @@ export async function getBarberPayoutStatus(req: AuthRequest, res: Response, nex
   }
 }
 
-const PLATFORM_FEE_RATE = 0.15;
 const DEFAULT_TIMEZONE = 'America/Los_Angeles';
 
 function num(v: unknown): number {
@@ -203,21 +203,22 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
       }
     }
 
+    const platformFeeRate = await getPlatformFeeRate();
     const [bookingRow, recentRow, opsRow, repeatRow] = await Promise.all([
       pool.query(
         `SELECT 
           COALESCE(SUM(
-            (b."priceUsdCents" - ROUND(b."priceUsdCents" * ${PLATFORM_FEE_RATE})::bigint)
+            (b."priceUsdCents" - ROUND(b."priceUsdCents" * $2)::bigint)
             + COALESCE(b."tipAmountCents", 0)::bigint
           ), 0)::bigint AS est_cents,
           COUNT(*)::int AS cnt
          FROM bookings b
          WHERE b."barberId" = $1 AND UPPER(b.status::text) = 'PAID'`,
-        [barberId]
+        [barberId, platformFeeRate]
       ),
       pool.query(
         `SELECT COALESCE(SUM(
-            (b."priceUsdCents" - ROUND(b."priceUsdCents" * ${PLATFORM_FEE_RATE})::bigint)
+            (b."priceUsdCents" - ROUND(b."priceUsdCents" * $2)::bigint)
             + COALESCE(b."tipAmountCents", 0)::bigint
           ), 0)::bigint AS est_cents
          FROM bookings b
@@ -227,7 +228,7 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
              (b."paidAt" IS NOT NULL AND b."paidAt" >= NOW() - INTERVAL '30 days')
              OR (b."paidAt" IS NULL AND b."updatedAt" >= NOW() - INTERVAL '30 days')
            )`,
-        [barberId]
+        [barberId, platformFeeRate]
       ),
       pool.query(
         `SELECT

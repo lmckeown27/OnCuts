@@ -252,8 +252,9 @@ class PaymentService {
     
     logger.info(`Captured payment ${escrow.stripePaymentIntentId}`);
     
-    // 2. Calculate platform fee
-    const platformFeePercent = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT || '5.0');
+    // 2. Calculate platform fee from Admin-configured platform_settings
+    const { getPlatformFeePercent } = await import('../utils/platform-commission');
+    const platformFeePercent = await getPlatformFeePercent();
     const platformFee = Math.round(escrow.amount * (platformFeePercent / 100) * 100);
     const barberAmount = (escrow.amount * 100) - platformFee;
     

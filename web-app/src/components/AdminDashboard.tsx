@@ -56,7 +56,7 @@ interface CampusPerformance {
   completedBookings: number;
   cancelledBookings: number;
   totalRevenue: number; // Total money in circulation (what customers paid)
-  totalPlatformFees: number; // Platform's gross cut (15%)
+  totalPlatformFees: number; // Platform's gross cut (Admin-configured %)
   totalBarberEarnings: number; // What barbers earned (85%)
   // Stripe fee breakdown
   stripeProcessingFees: number; // 2.9% + $0.30 per transaction
@@ -356,6 +356,11 @@ export function AdminDashboard({
   const [commissionFreeRemainingInput, setCommissionFreeRemainingInput] = useState('5');
   const [kickbackPercentInput, setKickbackPercentInput] = useState('0');
   const [isSavingCommission, setIsSavingCommission] = useState(false);
+  /** Global platform commission % from /admin/platform-settings */
+  const [platformFeePercent, setPlatformFeePercent] = useState(15);
+  const [platformFeeInput, setPlatformFeeInput] = useState('15');
+  const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
+  const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
   /** Within Operators tab: list vs onboarding bulk tools */
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
@@ -439,7 +444,47 @@ export function AdminDashboard({
   useEffect(() => {
     fetchCampuses();
   }, []);
-  
+
+  useEffect(() => {
+    const fetchPlatformSettings = async () => {
+      setIsLoadingPlatformFee(true);
+      try {
+        const data = await api.get<{ platformFeePercent: number }>('/admin/platform-settings');
+        const percent = Number(data?.platformFeePercent);
+        if (Number.isFinite(percent)) {
+          setPlatformFeePercent(percent);
+          setPlatformFeeInput(String(percent));
+        }
+      } catch (error) {
+        console.error('Failed to fetch platform settings:', error);
+      } finally {
+        setIsLoadingPlatformFee(false);
+      }
+    };
+    void fetchPlatformSettings();
+  }, []);
+
+  const handleSavePlatformFee = async () => {
+    const percent = parseFloat(platformFeeInput.trim());
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      toast.error('Platform commission must be between 0 and 100');
+      return;
+    }
+    setIsSavingPlatformFee(true);
+    try {
+      const data = await api.put<{ platformFeePercent: number }>('/admin/platform-settings', {
+        platformFeePercent: percent,
+      });
+      const next = Number(data?.platformFeePercent ?? percent);
+      setPlatformFeePercent(next);
+      setPlatformFeeInput(String(next));
+      toast.success(`Platform commission set to ${next}%`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update platform commission');
+    } finally {
+      setIsSavingPlatformFee(false);
+    }
+  };  
   // Fetch campus performance when campus changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
   useEffect(() => {
@@ -1786,12 +1831,43 @@ export function AdminDashboard({
               </div>
             )}
 
+            {/* Global platform commission */}
+            <div className="p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-medium text-gray-700">Platform commission</p>
+                <span className="text-[10px] text-gray-500">Applies to all operators · tips never commissioned</span>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="block">
+                  <span className="text-xs text-gray-600">Commission %</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                    value={platformFeeInput}
+                    onChange={(e) => setPlatformFeeInput(e.target.value)}
+                    className="mt-1 w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                  />
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                  onClick={() => void handleSavePlatformFee()}
+                >
+                  {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                </Button>
+              </div>
+            </div>
+
             {/* Platform Revenue */}
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs font-medium text-gray-700 mb-2">Platform Revenue</p>
               <div className="grid grid-cols-3 gap-2 text-center mb-3">
                 <div>
-                  <p className="text-[10px] text-gray-500">Gross (15%)</p>
+                  <p className="text-[10px] text-gray-500">Gross ({platformFeePercent}%)</p>
                   <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.totalPlatformFees || 0)}</p>
                 </div>
                 <div>
@@ -1894,7 +1970,7 @@ export function AdminDashboard({
               <p className="text-xs font-medium text-gray-700 mb-2">Platform Profit Summary</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Gross Platform Fees (15%)</span>
+                  <span className="text-gray-600">Gross Platform Fees ({platformFeePercent}%)</span>
                   <span className="text-gray-900 font-medium">{formatCurrency(performance.totalPlatformFees || 0)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -1937,7 +2013,7 @@ export function AdminDashboard({
               <p className="text-xs font-medium text-gray-700 mb-2">Campus Revenue Summary</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Gross Revenue (15% of {formatCampusName(selectedCampus.name)})</span>
+                  <span className="text-gray-600">Gross Revenue ({platformFeePercent}% of {formatCampusName(selectedCampus.name)})</span>
                   <span className="text-gray-900 font-medium">{formatCurrency(performance.totalPlatformFees || 0)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -2118,14 +2194,37 @@ export function AdminDashboard({
               </div>
             </div>
 
-            {/* Payment settings — commission-free quota + platform kickback */}
+            {/* Payment settings — global commission shown; free quota + kickback per operator */}
             <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
                 <span className="text-[10px] text-gray-500">
-                  Platform commission 15% · tips never commissioned
+                  Platform commission {platformFeePercent}% · tips never commissioned
                 </span>
               </div>
+              <label className="block max-w-sm mb-3">
+                <span className="text-xs text-gray-600">Platform commission % (all operators)</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                    value={platformFeeInput}
+                    onChange={(e) => setPlatformFeeInput(e.target.value)}
+                    className="w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                    onClick={() => void handleSavePlatformFee()}
+                  >
+                    {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save %'}
+                  </Button>
+                </div>
+              </label>
               <label className="block max-w-sm">
                 <span className="text-xs text-gray-600">Commission-free bookings remaining</span>
                 <input
@@ -2137,7 +2236,7 @@ export function AdminDashboard({
                   className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
                 />
                 <span className="mt-0.5 block text-[10px] text-gray-500">
-                  Next N card bookings take $0 platform fee (default 5 for every provider), then 15% applies
+                  Next N card bookings take $0 platform fee (default 5 for every provider), then {platformFeePercent}% applies
                 </span>
               </label>
               <label className="mt-3 block max-w-sm">
@@ -2154,7 +2253,7 @@ export function AdminDashboard({
                 <span className="mt-0.5 block text-[10px] text-gray-500">
                   Only on commissionless bookings: platform pays this % of service (not tip) from its
                   Stripe balance to the provider. Example: $25 cut + 10% = +$2.50 ($27.50 total). Not
-                  applied when the normal 15% commission is charged.
+                  applied when the normal {platformFeePercent}% commission is charged.
                 </span>
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-2">

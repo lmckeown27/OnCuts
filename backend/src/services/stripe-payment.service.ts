@@ -10,7 +10,7 @@ import { getDefaultStripeClient, getOptionalStatementDescriptor } from '../confi
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 import {
-  DEFAULT_PLATFORM_FEE_RATE,
+  getPlatformFeeRate,
   loadProviderCommissionSettingsByUserId,
 } from '../utils/platform-commission';
 
@@ -100,7 +100,7 @@ class StripePaymentService {
           platformFeeCents = Math.round(serviceAmountCents * settings.effectiveFeeRate);
         }
       } else {
-        platformFeeCents = Math.round(serviceAmountCents * DEFAULT_PLATFORM_FEE_RATE);
+        platformFeeCents = Math.round(serviceAmountCents * (await getPlatformFeeRate()));
       }
 
       const barberAmountCents = amountCents - platformFeeCents;

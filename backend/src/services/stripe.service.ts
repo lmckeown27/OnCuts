@@ -544,13 +544,14 @@ class StripeService {
   }
 
   /**
-   * Calculate platform fee (15%)
+   * Calculate platform fee using Admin-configured rate (or explicit feeRate override).
    */
-  calculateFees(
+  async calculateFees(
     amount: number,
-    feeRate: number = 0.15
-  ): { platformFee: number; barberPayout: number } {
-    const rate = Math.min(1, Math.max(0, feeRate));
+    feeRate?: number
+  ): Promise<{ platformFee: number; barberPayout: number }> {
+    const { getPlatformFeeRate } = await import('../utils/platform-commission');
+    const rate = Math.min(1, Math.max(0, feeRate ?? (await getPlatformFeeRate())));
     const platformFee = Math.round(amount * rate);
     const barberPayout = amount - platformFee;
 

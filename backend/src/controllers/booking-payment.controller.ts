@@ -179,8 +179,8 @@ export const handlePaymentSuccess = async (
 
     const booking = bookingResult.rows[0];
 
-    // 3. Calculate fees (Step 6: Distribute payment minus 15%)
-    const { platformFee, barberPayout } = stripeService.calculateFees(amountCents);
+    // 3. Calculate fees
+    const { platformFee, barberPayout } = await stripeService.calculateFees(amountCents);
 
     logger.info('Payment distribution', {
       total: amountCents / 100,
