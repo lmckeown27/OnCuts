@@ -399,6 +399,8 @@ export function AdminDashboard({
   // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+  /** All accounts — Performance Users card (aligned with Sign-ups). */
+  const [platformUsersCount, setPlatformUsersCount] = useState(0);
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(false);
   const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
@@ -930,26 +932,23 @@ export function AdminDashboard({
     refreshSignal,
   ]);
   
-  // Fetch users count (consumers + admins) for Performance Users card
+  // Fetch all-accounts count for Performance Users card (matches Sign-ups)
   useEffect(() => {
-    const fetchUserCount = async () => {
-      setIsLoadingUsers(true);
+    const fetchPlatformUserCount = async () => {
       try {
         const url = selectedCampusId
-          ? `/admin/users?campusId=${selectedCampusId}&limit=1`
-          : '/admin/users?limit=1';
+          ? `/admin/users?campusId=${selectedCampusId}&role=everyone&limit=1`
+          : '/admin/users?role=everyone&limit=1';
         const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
-        setTotalUsersCount(response.pagination?.total || 0);
+        setPlatformUsersCount(response.pagination?.total || 0);
       } catch (error) {
-        console.error('Failed to fetch user count:', error);
-        setTotalUsersCount(0);
-      } finally {
-        setIsLoadingUsers(false);
+        console.error('Failed to fetch platform user count:', error);
+        setPlatformUsersCount(0);
       }
     };
 
-    void fetchUserCount();
-  }, [selectedCampusId]);
+    void fetchPlatformUserCount();
+  }, [selectedCampusId, refreshSignal]);
   
   // Fetch full user list when Users tab is selected
   useEffect(() => {
@@ -2029,9 +2028,7 @@ export function AdminDashboard({
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
           <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
           <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {isLoadingPerformance || isLoadingUsers
-              ? '…'
-              : (performance?.totalBarbers ?? 0) + totalUsersCount}
+            {platformUsersCount}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">

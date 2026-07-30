@@ -3253,19 +3253,30 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = (page - 1) * limit;
     const campusId = req.query.campusId as string | undefined;
-    const roleFilter = String(req.query.role || 'all').toLowerCase();
+    const roleFilter = String(req.query.role || 'managed').toLowerCase();
     const consumersOnly = roleFilter === 'consumer';
+    // everyone = every account (matches Performance Sign-ups). managed = consumers + admins (Users tab).
+    const everyone = roleFilter === 'everyone';
 
-    // Default: consumers (+ platform ADMIN accounts so they can be assigned/revoked).
-    // role=consumer: consumers only (matches Performance Sign-ups).
-    let whereClause = consumersOnly
-      ? `WHERE u.role = 'CONSUMER'`
-      : `WHERE u.role IN ('CONSUMER', 'ADMIN')`;
+    let whereClause = everyone
+      ? `WHERE TRUE`
+      : consumersOnly
+        ? `WHERE u.role = 'CONSUMER'`
+        : `WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     const params: (string | number)[] = [limit, offset];
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      if (consumersOnly) {
-        // Match sign-ups list: filter by signup campus
+      if (everyone) {
+        // Match campus Sign-ups: signup campus OR operator near campus
+        whereClause = `WHERE (
+          u."campusId" = $3::uuid
+          OR u.id IN (
+            SELECT b."userId"
+            FROM barbers b
+            WHERE ${barberNearCampusByPinSql('b', '$3')}
+          )
+        )`;
+      } else if (consumersOnly) {
         whereClause = `WHERE u.role = 'CONSUMER' AND u."campusId" = $3::uuid`;
       } else {
         // Campus filter applies to consumers; platform admins always included
@@ -3333,7 +3344,18 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     let countQuery: string;
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      if (consumersOnly) {
+      if (everyone) {
+        countQuery = `
+          SELECT COUNT(*) as total
+          FROM users u
+          WHERE u."campusId" = $1::uuid
+             OR u.id IN (
+               SELECT b."userId"
+               FROM barbers b
+               WHERE ${barberNearCampusByPinSql('b', '$1')}
+             )
+        `;
+      } else if (consumersOnly) {
         countQuery = `
           SELECT COUNT(*) as total
           FROM users u
@@ -3370,10 +3392,12 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         `;
       }
       countParams.push(campusId);
+    } else if (everyone) {
+      countQuery = `SELECT COUNT(*) as total FROM users u`;
+    } else if (consumersOnly) {
+      countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.role = 'CONSUMER'`;
     } else {
-      countQuery = consumersOnly
-        ? `SELECT COUNT(*) as total FROM users u WHERE u.role = 'CONSUMER'`
-        : `SELECT COUNT(*) as total FROM users u WHERE u.role IN ('CONSUMER', 'ADMIN')`;
+      countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     }
     
     const countResult = await pool.query(countQuery, countParams);
