@@ -751,31 +751,39 @@ export function AdminDashboard({
 
     const windowSlug = slugifyForFilename(metricsListWindowLabel);
     const dateSlug = new Date().toISOString().slice(0, 10);
-    const formatCsvDateTime = (value: string | null | undefined) => {
-      if (!value) return '';
+    const splitCsvDateTime = (value: string | null | undefined) => {
+      if (!value) return { month: '', day: '', year: '', time: '' };
       const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '';
-      return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      });
+      if (Number.isNaN(date.getTime())) return { month: '', day: '', year: '', time: '' };
+      return {
+        month: date.toLocaleString('en-US', { month: 'long' }),
+        day: String(date.getDate()),
+        year: String(date.getFullYear()),
+        time: date.toLocaleString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        }),
+      };
     };
 
     if (metricsListView === 'bookings') {
-      const rows = (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => [
-        event.id,
-        event.status,
-        event.service_type,
-        ((event.total_paid_cents || 0) / 100).toFixed(2),
-        formatCsvDateTime(event.paid_at),
-        event.consumer_first_name,
-        event.consumer_last_name,
-        event.barber_first_name,
-        event.barber_last_name,
-      ]);
+      const rows = (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => {
+        const paidAt = splitCsvDateTime(event.paid_at);
+        return [
+          event.id,
+          event.status,
+          event.service_type,
+          ((event.total_paid_cents || 0) / 100).toFixed(2),
+          paidAt.month,
+          paidAt.year,
+          paidAt.day,
+          paidAt.time,
+          event.consumer_first_name,
+          event.consumer_last_name,
+          event.barber_first_name,
+          event.barber_last_name,
+        ];
+      });
       downloadCsv(
         `oncuts-bookings-${windowSlug}-${dateSlug}.csv`,
         [
@@ -783,7 +791,10 @@ export function AdminDashboard({
           'Status',
           'Service',
           'Amount (USD)',
-          'Paid At',
+          'Month',
+          'Year',
+          'Date',
+          'Time',
           'Consumer First Name',
           'Consumer Last Name',
           'Operator First Name',
@@ -792,15 +803,21 @@ export function AdminDashboard({
         rows
       );
     } else {
-      const rows = (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => [
-        event.id,
-        event.first_name,
-        event.last_name,
-        event.email,
-        event.role,
-        event.campus_name,
-        formatCsvDateTime(event.created_at),
-      ]);
+      const rows = (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => {
+        const signedUpAt = splitCsvDateTime(event.created_at);
+        return [
+          event.id,
+          event.first_name,
+          event.last_name,
+          event.email,
+          event.role,
+          event.campus_name,
+          signedUpAt.month,
+          signedUpAt.year,
+          signedUpAt.day,
+          signedUpAt.time,
+        ];
+      });
       downloadCsv(
         `oncuts-signups-${windowSlug}-${dateSlug}.csv`,
         [
@@ -810,7 +827,10 @@ export function AdminDashboard({
           'Email',
           'Role',
           'Campus',
-          'Signed Up At',
+          'Month',
+          'Year',
+          'Date',
+          'Time',
         ],
         rows
       );
