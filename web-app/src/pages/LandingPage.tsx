@@ -471,7 +471,7 @@ export default function LandingPage() {
 
           {/* Team join */}
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
-            <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">Wanna join the Team?</h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">Wanna join the Corporate Team?</h3>
             <button
               onClick={openContactPopup}
               className="mt-8 inline-flex items-center justify-center px-12 py-5 sm:px-14 sm:py-6 bg-brand-500 font-semibold text-xl sm:text-2xl md:text-3xl text-white rounded-2xl shadow-md transition-colors hover:bg-brand-600"
@@ -500,7 +500,7 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">Wanna join the Team?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Wanna join the Corporate Team?</h2>
               <button
                 onClick={closeContactPopup}
                 className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
