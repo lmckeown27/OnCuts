@@ -3,7 +3,8 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus
+  Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus,
+  ArrowDown, ArrowUp
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -374,6 +375,7 @@ export function AdminDashboard({
   const [metricsListEvents, setMetricsListEvents] = useState<
     MetricsListBookingEvent[] | MetricsListSignupEvent[]
   >([]);
+  const [metricsListSortOrder, setMetricsListSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isLoadingMetricsListEvents, setIsLoadingMetricsListEvents] = useState(false);
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
@@ -710,6 +712,22 @@ export function AdminDashboard({
   const metricsListWindowLabel = useMemo(() => {
     return listWindowCommitted?.label ?? 'All time';
   }, [listWindowCommitted]);
+
+  const sortedMetricsListEvents = useMemo(() => {
+    const direction = metricsListSortOrder === 'desc' ? -1 : 1;
+    if (metricsListView === 'bookings') {
+      return [...(metricsListEvents as MetricsListBookingEvent[])].sort((a, b) => {
+        const aTime = a.paid_at ? new Date(a.paid_at).getTime() : 0;
+        const bTime = b.paid_at ? new Date(b.paid_at).getTime() : 0;
+        return (aTime - bTime) * direction;
+      });
+    }
+    return [...(metricsListEvents as MetricsListSignupEvent[])].sort((a, b) => {
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return (aTime - bTime) * direction;
+    });
+  }, [metricsListEvents, metricsListSortOrder, metricsListView]);
 
   const listPickerTitle = useMemo(() => {
     const titles: Record<Exclude<MetricsListPeriod, 'all'>, string> = {
@@ -2298,12 +2316,35 @@ export function AdminDashboard({
           </div>
         ) : (
           <div className="max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
-            <p className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0">
-              {metricsListWindowLabel} · {metricsListEvents.length}{' '}
-              {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
-            </p>
+            <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0 flex items-center justify-between gap-2">
+              <p>
+                {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
+                {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setMetricsListSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
+                }
+                className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
+                aria-label={
+                  metricsListSortOrder === 'desc'
+                    ? 'Showing latest first. Switch to earliest first.'
+                    : 'Showing earliest first. Switch to latest first.'
+                }
+                title={
+                  metricsListSortOrder === 'desc' ? 'Latest first' : 'Earliest first'
+                }
+              >
+                {metricsListSortOrder === 'desc' ? (
+                  <ArrowDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ArrowUp className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
             {metricsListView === 'bookings'
-              ? (metricsListEvents as MetricsListBookingEvent[]).map((event) => (
+              ? (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => (
                   <div key={event.id} className="px-3 py-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -2331,7 +2372,7 @@ export function AdminDashboard({
                     </div>
                   </div>
                 ))
-              : (metricsListEvents as MetricsListSignupEvent[]).map((event) => (
+              : (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => (
                   <div key={event.id} className="px-3 py-2.5">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {event.first_name} {event.last_name}
