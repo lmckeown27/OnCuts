@@ -1675,12 +1675,12 @@ export function AdminDashboard({
       <>
       {/* Global platform commission */}
       <div className="p-3 bg-white rounded-lg border border-gray-200">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <p className="text-xs font-medium text-gray-700 self-center">Platform commission</p>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="block">
-              <span className="text-xs text-gray-600">Commission %: </span>
-              <div className="relative mt-1 w-28">
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-base font-bold text-gray-900">Platform commission</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <label className="flex items-center gap-2">
+              <span className="text-xs text-gray-600 whitespace-nowrap">Commission %: </span>
+              <div className="relative w-28">
                 <input
                   type="number"
                   min={0}
