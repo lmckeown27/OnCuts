@@ -2375,7 +2375,7 @@ async function buildMetricsWindowOptions(params: {
       (DATE_TRUNC('week', bucket_local) AT TIME ZONE $3) AS week_start_ts,
       ((DATE_TRUNC('week', bucket_local) + INTERVAL '1 week') AT TIME ZONE $3) AS week_end_ts
     FROM series
-    ORDER BY bucket_local DESC
+    ORDER BY bucket_local ASC
     `,
     [trunc, rangeStart.toISOString(), timezone, rangeEnd.toISOString(), interval, labelFmt]
   );

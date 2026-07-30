@@ -2119,19 +2119,35 @@ export function AdminDashboard({
               </p>
             ) : (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {listWindowOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => {
-                      applyListWindowSelection(metricsListPeriod, option);
-                      setListPickerOpen(false);
-                    }}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 border border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-50"
-                  >
-                    {option.label}
-                  </button>
-                ))}
+                {listWindowOptions.map((option) => {
+                  const selectedAtLevel =
+                    metricsListPeriod === 'year'
+                      ? listScope.year
+                      : metricsListPeriod === 'month'
+                        ? listScope.month
+                        : metricsListPeriod === 'week'
+                          ? listScope.week
+                          : listScope.day;
+                  const isSelected = selectedAtLevel?.id === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => {
+                        applyListWindowSelection(metricsListPeriod, option);
+                        setListPickerOpen(false);
+                      }}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 border ${
+                        isSelected
+                          ? 'border-gray-900 bg-gray-900 text-white'
+                          : 'border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
