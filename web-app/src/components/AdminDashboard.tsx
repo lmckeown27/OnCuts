@@ -1925,8 +1925,6 @@ export function AdminDashboard({
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
-        <h3 className="text-center text-base font-semibold text-gray-900">Performance over time</h3>
-
         {/* Timeline: Graph = aggregate buckets; List = specific timeframes */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
           {metricsDisplayMode === 'graph'
@@ -1953,11 +1951,11 @@ export function AdminDashboard({
               ))
             : (
                 [
-                  { key: 'day' as const, label: 'Day' },
-                  { key: 'week' as const, label: 'Week' },
-                  { key: 'month' as const, label: 'Month' },
-                  { key: 'year' as const, label: 'Year' },
                   { key: 'all' as const, label: 'All time' },
+                  { key: 'year' as const, label: 'Year' },
+                  { key: 'month' as const, label: 'Month' },
+                  { key: 'week' as const, label: 'Week' },
+                  { key: 'day' as const, label: 'Day' },
                 ] as const
               ).map(({ key, label }) => (
                 <button
