@@ -4,7 +4,7 @@ import {
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
   Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus,
-  ArrowDown, ArrowUp
+  ArrowDown, ArrowUp, Download
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -29,6 +29,7 @@ import {
   ServicesManagementPanel,
 } from './AdminCampusPanels';
 import { useAuthStore } from '../store/useAuthStore';
+import { downloadCsv, slugifyForFilename } from '../utils/csv';
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -740,6 +741,71 @@ export function AdminDashboard({
       return (aTime - bTime) * direction;
     });
   }, [metricsListBookings, metricsListSignups, metricsListSortOrder, metricsListView]);
+
+  const exportMetricsListCsv = useCallback(() => {
+    if (metricsListView !== 'bookings' && metricsListView !== 'signups') return;
+    if (sortedMetricsListEvents.length === 0) {
+      toast.error(`No ${metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} to export`);
+      return;
+    }
+
+    const windowSlug = slugifyForFilename(metricsListWindowLabel);
+    const dateSlug = new Date().toISOString().slice(0, 10);
+
+    if (metricsListView === 'bookings') {
+      const rows = (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => [
+        event.id,
+        event.status,
+        event.service_type,
+        ((event.total_paid_cents || 0) / 100).toFixed(2),
+        event.paid_at ? new Date(event.paid_at).toISOString() : '',
+        event.consumer_first_name,
+        event.consumer_last_name,
+        event.barber_first_name,
+        event.barber_last_name,
+      ]);
+      downloadCsv(
+        `oncuts-bookings-${windowSlug}-${dateSlug}.csv`,
+        [
+          'Booking ID',
+          'Status',
+          'Service',
+          'Amount (USD)',
+          'Paid At (UTC)',
+          'Consumer First Name',
+          'Consumer Last Name',
+          'Operator First Name',
+          'Operator Last Name',
+        ],
+        rows
+      );
+    } else {
+      const rows = (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => [
+        event.id,
+        event.first_name,
+        event.last_name,
+        event.email,
+        event.role,
+        event.campus_name,
+        event.created_at ? new Date(event.created_at).toISOString() : '',
+      ]);
+      downloadCsv(
+        `oncuts-signups-${windowSlug}-${dateSlug}.csv`,
+        [
+          'User ID',
+          'First Name',
+          'Last Name',
+          'Email',
+          'Role',
+          'Campus',
+          'Signed Up At (UTC)',
+        ],
+        rows
+      );
+    }
+
+    toast.success('CSV downloaded');
+  }, [metricsListView, metricsListWindowLabel, sortedMetricsListEvents]);
 
   const listPickerTitle = useMemo(() => {
     const titles: Record<Exclude<MetricsListPeriod, 'all'>, string> = {
@@ -2632,10 +2698,28 @@ export function AdminDashboard({
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
         ) : sortedMetricsListEvents.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[28rem] py-12 text-gray-500 text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
-            {metricsListWindowLabel.toLowerCase()}
+          <div className="min-h-[28rem] rounded-xl border border-stone-100 bg-white overflow-hidden flex flex-col">
+            <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 flex items-center justify-between gap-2 border-b border-stone-100">
+              <p>
+                {metricsListWindowLabel} · 0{' '}
+                {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+              </p>
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-400 cursor-not-allowed"
+                aria-label="Export CSV"
+                title="No rows to export"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center py-12 text-gray-500 text-sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
+              {metricsListWindowLabel.toLowerCase()}
+            </div>
           </div>
         ) : (
           <div className="max-h-[28rem] min-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
@@ -2644,27 +2728,39 @@ export function AdminDashboard({
                 {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
                 {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
               </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setMetricsListSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
-                }
-                className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
-                aria-label={
-                  metricsListSortOrder === 'desc'
-                    ? 'Showing latest first. Switch to earliest first.'
-                    : 'Showing earliest first. Switch to latest first.'
-                }
-                title={
-                  metricsListSortOrder === 'desc' ? 'Latest first' : 'Earliest first'
-                }
-              >
-                {metricsListSortOrder === 'desc' ? (
-                  <ArrowDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ArrowUp className="w-3.5 h-3.5" />
-                )}
-              </button>
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={exportMetricsListCsv}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
+                  aria-label={`Export ${metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} CSV`}
+                  title="Export CSV for Excel or Sheets"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMetricsListSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
+                  }
+                  className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
+                  aria-label={
+                    metricsListSortOrder === 'desc'
+                      ? 'Showing latest first. Switch to earliest first.'
+                      : 'Showing earliest first. Switch to latest first.'
+                  }
+                  title={
+                    metricsListSortOrder === 'desc' ? 'Latest first' : 'Earliest first'
+                  }
+                >
+                  {metricsListSortOrder === 'desc' ? (
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
             </div>
             {metricsListView === 'bookings'
               ? (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => (
