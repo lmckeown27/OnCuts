@@ -113,8 +113,30 @@ interface MetricsResponse {
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
+type MetricsListView = 'bookings' | 'signups';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
+
+interface MetricsListBookingEvent {
+  id: string;
+  status: string;
+  service_type: string;
+  total_paid_cents: number;
+  paid_at: string;
+  consumer_first_name: string;
+  consumer_last_name: string;
+  barber_first_name: string;
+  barber_last_name: string;
+}
+
+interface MetricsListSignupEvent {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  created_at: string;
+  campus_name: string | null;
+}
 
 type UgcReportStatusFilter = 'open' | 'all' | 'dismissed' | 'resolved';
 
@@ -315,7 +337,12 @@ export function AdminDashboard({
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
   const [metricsListPeriod, setMetricsListPeriod] = useState<MetricsListPeriod>('day');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
+  const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
+  const [metricsListEvents, setMetricsListEvents] = useState<
+    MetricsListBookingEvent[] | MetricsListSignupEvent[]
+  >([]);
+  const [isLoadingMetricsListEvents, setIsLoadingMetricsListEvents] = useState(false);
   const [isChartHovered, setIsChartHovered] = useState(false);
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
   
@@ -658,6 +685,8 @@ export function AdminDashboard({
   // Fetch metrics when campus or period changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
   useEffect(() => {
+    if (metricsDisplayMode !== 'graph') return;
+
     const fetchMetrics = async (showLoading = true) => {
       if (showLoading) setIsLoadingMetrics(true);
       try {
@@ -694,7 +723,51 @@ export function AdminDashboard({
     const intervalId = setInterval(() => fetchMetrics(false), 30000);
     
     return () => clearInterval(intervalId);
-  }, [selectedCampusId, metricsApiPeriod, refreshSignal]);
+  }, [selectedCampusId, metricsApiPeriod, refreshSignal, metricsDisplayMode]);
+
+  // List view: fetch individual bookings or sign-ups for the selected timeframe
+  useEffect(() => {
+    if (metricsDisplayMode !== 'list') return;
+
+    const listMap: Record<MetricsListPeriod, string> = {
+      day: 'snapshot_day',
+      week: 'snapshot_week',
+      month: 'snapshot_month',
+      year: 'snapshot_year',
+      all: 'snapshot_all',
+    };
+    const periodParam = listMap[metricsListPeriod];
+
+    const fetchEvents = async () => {
+      setIsLoadingMetricsListEvents(true);
+      try {
+        const url = selectedCampusId
+          ? `/admin/campuses/${selectedCampusId}/metrics/events`
+          : '/admin/campuses/aggregate/metrics/events';
+        const response = await api.get<{
+          events: MetricsListBookingEvent[] | MetricsListSignupEvent[];
+        }>(url, {
+          period: periodParam,
+          type: metricsListView,
+          limit: 100,
+        });
+        setMetricsListEvents(response.events || []);
+      } catch (error) {
+        console.error('Failed to fetch metrics list events:', error);
+        setMetricsListEvents([]);
+      } finally {
+        setIsLoadingMetricsListEvents(false);
+      }
+    };
+
+    void fetchEvents();
+  }, [
+    metricsDisplayMode,
+    metricsListPeriod,
+    metricsListView,
+    selectedCampusId,
+    refreshSignal,
+  ]);
   
   // Fetch total user count whenever campus changes (for summary stats)
   useEffect(() => {
@@ -1562,61 +1635,6 @@ export function AdminDashboard({
     };
   }, [metrics, metricsView, formatMetricsBucketLabel]);
 
-  const metricsListRows = useMemo(() => {
-    if (metricsDisplayMode === 'list') {
-      const totals = metrics.reduce(
-        (acc, m) => ({
-          bookings: acc.bookings + (m.bookings || 0),
-          revenue: acc.revenue + (m.revenue || 0),
-          users: acc.users + (m.users || 0),
-        }),
-        { bookings: 0, revenue: 0, users: 0 }
-      );
-      const value =
-        metricsView === 'revenue'
-          ? totals.revenue
-          : metricsView === 'bookings'
-            ? totals.bookings
-            : totals.users;
-      return [
-        {
-          date: metricsListPeriod,
-          label: metricsListWindowLabel,
-          value,
-          bookings: totals.bookings,
-          revenue: totals.revenue,
-          users: totals.users,
-        },
-      ];
-    }
-
-    const rows = metrics.map((m) => {
-      const value =
-        metricsView === 'revenue'
-          ? m.revenue
-          : metricsView === 'bookings'
-            ? m.bookings
-            : m.users || 0;
-      return {
-        date: m.date,
-        label: formatMetricsBucketLabel(m.date),
-        value,
-        bookings: m.bookings,
-        revenue: m.revenue,
-        users: m.users || 0,
-      };
-    });
-    // Newest first in series list view
-    return [...rows].reverse();
-  }, [
-    metrics,
-    metricsView,
-    formatMetricsBucketLabel,
-    metricsDisplayMode,
-    metricsListPeriod,
-    metricsListWindowLabel,
-  ]);
-  
   // Custom crosshair plugin for vertical line on hover
   const crosshairPlugin = useMemo(() => ({
     id: 'crosshair',
@@ -1887,6 +1905,11 @@ export function AdminDashboard({
                 if (key === 'list') {
                   setIsChartHovered(false);
                   setHoveredDataPoint(null);
+                  if (metricsView === 'bookings' || metricsView === 'signups') {
+                    setMetricsListView(metricsView);
+                  } else {
+                    setMetricsListView('bookings');
+                  }
                 }
               }}
               className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors ${
@@ -1954,72 +1977,146 @@ export function AdminDashboard({
 
         {/* Series */}
         <div className="flex rounded-lg bg-stone-100 p-0.5 gap-0.5">
-          {(
-            [
-              { key: 'revenue', label: 'Revenue' },
-              { key: 'bookings', label: 'Bookings' },
-              { key: 'signups', label: 'Sign-ups' },
-            ] as const
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setMetricsView(key)}
-              className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                metricsView === key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {metricsDisplayMode === 'graph'
+            ? (
+                [
+                  { key: 'revenue' as const, label: 'Revenue' },
+                  { key: 'bookings' as const, label: 'Bookings' },
+                  { key: 'signups' as const, label: 'Sign-ups' },
+                ] as const
+              ).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setMetricsView(key)}
+                  className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    metricsView === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))
+            : (
+                [
+                  { key: 'bookings' as const, label: 'Bookings' },
+                  { key: 'signups' as const, label: 'Sign-ups' },
+                ] as const
+              ).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setMetricsListView(key)}
+                  className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    metricsListView === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
         </div>
         
-        {isLoadingMetrics ? (
+        {metricsDisplayMode === 'graph' ? (
+          isLoadingMetrics ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+            </div>
+          ) : metrics.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              No data available for this period
+            </div>
+          ) : (
+            <>
+              <div 
+                ref={chartContainerRef} 
+                className="h-40 sm:h-48"
+                onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
+                onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
+              >
+                <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
+              </div>
+              {!hoveredDataPoint && (
+                <p className="text-center text-xs text-gray-400">
+                  Press and drag on the chart to inspect a bucket.
+                </p>
+              )}
+              {hoveredDataPoint && (
+                <p className="text-center text-xs font-medium text-gray-600">
+                  {hoveredDataPoint.label}: {formatCurrency(hoveredDataPoint.revenue)} ·{' '}
+                  {hoveredDataPoint.bookings} bookings · {hoveredDataPoint.users} sign-ups
+                </p>
+              )}
+            </>
+          )
+        ) : isLoadingMetricsListEvents ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
-        ) : metrics.length === 0 ? (
+        ) : metricsListEvents.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
             <AlertCircle className="w-4 h-4 mr-2" />
-            No data available for this period
+            No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
+            {metricsListWindowLabel.toLowerCase()}
           </div>
-        ) : metricsDisplayMode === 'graph' ? (
-          <>
-            <div 
-              ref={chartContainerRef} 
-              className="h-40 sm:h-48"
-              onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
-              onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
-            >
-              <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
-            </div>
-            {!hoveredDataPoint && (
-              <p className="text-center text-xs text-gray-400">
-                Press and drag on the chart to inspect a bucket.
-              </p>
-            )}
-            {hoveredDataPoint && (
-              <p className="text-center text-xs font-medium text-gray-600">
-                {hoveredDataPoint.label}: {formatCurrency(hoveredDataPoint.revenue)} ·{' '}
-                {hoveredDataPoint.bookings} bookings · {hoveredDataPoint.users} sign-ups
-              </p>
-            )}
-          </>
         ) : (
-          <div className="rounded-xl border border-stone-100 bg-stone-50 px-4 py-4 space-y-3">
-            {metricsListRows.map((row) => (
-              <div key={row.date} className="space-y-2">
-                <p className="text-center text-sm font-semibold text-gray-900">{row.label}</p>
-                <p className="text-center text-2xl font-bold text-gray-900 tabular-nums">
-                  {formatSeriesValue(row.value)}
-                </p>
-                <p className="text-center text-xs text-gray-500">
-                  {formatCurrency(row.revenue)} · {row.bookings} bookings · {row.users} sign-ups
-                </p>
-              </div>
-            ))}
+          <div className="max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
+            <p className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0">
+              {metricsListWindowLabel} · {metricsListEvents.length}{' '}
+              {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+            </p>
+            {metricsListView === 'bookings'
+              ? (metricsListEvents as MetricsListBookingEvent[]).map((event) => (
+                  <div key={event.id} className="px-3 py-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {event.consumer_first_name} {event.consumer_last_name}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          with {event.barber_first_name} {event.barber_last_name}
+                          {event.service_type ? ` · ${event.service_type}` : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {event.paid_at
+                            ? new Date(event.paid_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })
+                            : '—'}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+                        {formatCurrency(event.total_paid_cents || 0)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              : (metricsListEvents as MetricsListSignupEvent[]).map((event) => (
+                  <div key={event.id} className="px-3 py-2.5">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {event.first_name} {event.last_name}
+                    </p>
+                    <p className="text-[11px] text-gray-500 truncate">{event.email}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {event.created_at
+                        ? new Date(event.created_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                      {event.campus_name ? ` · ${event.campus_name}` : ''}
+                    </p>
+                  </div>
+                ))}
           </div>
         )}
 
