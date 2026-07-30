@@ -1330,6 +1330,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md space-y-3">
         <div>
+          {commissionFreeBookingsRemaining > 0 && (
+            <p className="text-xs text-gray-500 text-center mb-1">
+              {commissionFreeBookingsRemaining} commissionless{' '}
+              {commissionFreeBookingsRemaining === 1 ? 'booking' : 'bookings'} left
+            </p>
+          )}
           {serviceLocationWebOnly ? (
             <PlaceSearchInput
               value={locationDraft}
@@ -2001,18 +2007,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         <div className="touch-pan-y p-4 pb-0">
         <div className="flex flex-col items-center gap-3 mb-4">
           {serviceLocationField}
-
-          {commissionFreeBookingsRemaining > 0 && (
-            <div className="w-full max-w-md px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                Commissionless bookings left
-              </p>
-              <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                {commissionFreeBookingsRemaining}{' '}
-                {commissionFreeBookingsRemaining === 1 ? 'booking' : 'bookings'}
-              </p>
-            </div>
-          )}
 
           {awaitingPaymentBookings.length > 0 && (
             <div className="w-full max-w-md space-y-2">
