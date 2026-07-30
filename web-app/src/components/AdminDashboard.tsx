@@ -2122,7 +2122,7 @@ export function AdminDashboard({
               <button
                 type="button"
                 onClick={() => {
-                  if (listWindowDraft && metricsListPeriod !== 'all') {
+                  if (listWindowDraft) {
                     applyListWindowSelection(metricsListPeriod, listWindowDraft);
                   }
                   setListPickerOpen(false);
