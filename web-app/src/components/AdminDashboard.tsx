@@ -1702,13 +1702,17 @@ export function AdminDashboard({
                   disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
                   value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
                   onChange={(e) => setPlatformFeeInput(e.target.value)}
-                  className={`w-full rounded-md border border-gray-300 px-2.5 py-1.5 pr-7 text-sm ${
-                    isEditingPlatformFee ? 'bg-white' : 'bg-gray-50 text-gray-700 cursor-default'
+                  className={`w-full rounded-md border px-2.5 py-1.5 pr-7 text-sm transition-colors ${
+                    isEditingPlatformFee
+                      ? 'border-gray-300 bg-white text-gray-900'
+                      : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                   }`}
                   aria-label="Commission percent"
                 />
                 <span
-                  className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm text-gray-500"
+                  className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm ${
+                    isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
+                  }`}
                   aria-hidden="true"
                 >
                   %
@@ -2249,25 +2253,63 @@ export function AdminDashboard({
               </div>
               <label className="block max-w-sm mb-3">
                 <span className="text-xs text-gray-600">Platform commission % (all operators)</span>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                    value={platformFeeInput}
-                    onChange={(e) => setPlatformFeeInput(e.target.value)}
-                    className="w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                    onClick={() => void handleSavePlatformFee()}
-                  >
-                    {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save %'}
-                  </Button>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <div className="relative w-28">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      readOnly={!isEditingPlatformFee}
+                      disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                      value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
+                      onChange={(e) => setPlatformFeeInput(e.target.value)}
+                      className={`w-full rounded-md border px-2.5 py-1.5 pr-7 text-sm transition-colors ${
+                        isEditingPlatformFee
+                          ? 'border-gray-300 bg-white text-gray-900'
+                          : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                      }`}
+                      aria-label="Platform commission percent"
+                    />
+                    <span
+                      className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm ${
+                        isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      %
+                    </span>
+                  </div>
+                  {isEditingPlatformFee ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                        onClick={() => void handleSavePlatformFee()}
+                      >
+                        {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isSavingPlatformFee}
+                        onClick={handleCancelEditPlatformFee}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isLoadingPlatformFee}
+                      onClick={handleStartEditPlatformFee}
+                    >
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </label>
               <label className="block max-w-sm">
