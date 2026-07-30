@@ -334,8 +334,8 @@ export function AdminDashboard({
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
   const [metricsTotalUsers, setMetricsTotalUsers] = useState<number>(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
-  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
-  const [metricsListPeriod, setMetricsListPeriod] = useState<MetricsListPeriod>('day');
+  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('yearly');
+  const [metricsListPeriod, setMetricsListPeriod] = useState<MetricsListPeriod>('all');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
   const [metricsDisplayMode, setMetricsDisplayMode] = useState<MetricsDisplayMode>('graph');
