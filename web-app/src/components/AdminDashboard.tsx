@@ -1679,17 +1679,26 @@ export function AdminDashboard({
           <p className="text-xs font-medium text-gray-700 self-center">Platform commission</p>
           <div className="flex flex-wrap items-end gap-2">
             <label className="block">
-              <span className="text-xs text-gray-600">Commission %</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.1}
-                disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                value={platformFeeInput}
-                onChange={(e) => setPlatformFeeInput(e.target.value)}
-                className="mt-1 w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-              />
+              <span className="text-xs text-gray-600">Commission %: </span>
+              <div className="relative mt-1 w-28">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                  value={platformFeeInput}
+                  onChange={(e) => setPlatformFeeInput(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 pr-7 text-sm"
+                  aria-label="Commission percent"
+                />
+                <span
+                  className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm text-gray-500"
+                  aria-hidden="true"
+                >
+                  %
+                </span>
+              </div>
             </label>
             <Button
               type="button"
