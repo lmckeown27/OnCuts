@@ -751,6 +751,18 @@ export function AdminDashboard({
 
     const windowSlug = slugifyForFilename(metricsListWindowLabel);
     const dateSlug = new Date().toISOString().slice(0, 10);
+    const formatCsvDateTime = (value: string | null | undefined) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    };
 
     if (metricsListView === 'bookings') {
       const rows = (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => [
@@ -758,7 +770,7 @@ export function AdminDashboard({
         event.status,
         event.service_type,
         ((event.total_paid_cents || 0) / 100).toFixed(2),
-        event.paid_at ? new Date(event.paid_at).toISOString() : '',
+        formatCsvDateTime(event.paid_at),
         event.consumer_first_name,
         event.consumer_last_name,
         event.barber_first_name,
@@ -771,7 +783,7 @@ export function AdminDashboard({
           'Status',
           'Service',
           'Amount (USD)',
-          'Paid At (UTC)',
+          'Paid At',
           'Consumer First Name',
           'Consumer Last Name',
           'Operator First Name',
@@ -787,7 +799,7 @@ export function AdminDashboard({
         event.email,
         event.role,
         event.campus_name,
-        event.created_at ? new Date(event.created_at).toISOString() : '',
+        formatCsvDateTime(event.created_at),
       ]);
       downloadCsv(
         `oncuts-signups-${windowSlug}-${dateSlug}.csv`,
@@ -798,7 +810,7 @@ export function AdminDashboard({
           'Email',
           'Role',
           'Campus',
-          'Signed Up At (UTC)',
+          'Signed Up At',
         ],
         rows
       );
