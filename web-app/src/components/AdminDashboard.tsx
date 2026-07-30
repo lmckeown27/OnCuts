@@ -398,6 +398,8 @@ export function AdminDashboard({
   // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+  /** Consumer-only count for Performance Users card (matches Sign-ups all-time). */
+  const [totalConsumersCount, setTotalConsumersCount] = useState(0);
   const [usersPage, setUsersPage] = useState(1);
   const [usersHasMore, setUsersHasMore] = useState(false);
   const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState(false);
@@ -929,26 +931,25 @@ export function AdminDashboard({
     refreshSignal,
   ]);
   
-  // Fetch total user count whenever campus changes (for summary stats)
+  // Fetch consumer count for Performance Users card (aligned with Sign-ups)
   useEffect(() => {
-    const fetchUserCount = async () => {
+    const fetchConsumerCount = async () => {
       setIsLoadingUsers(true);
       try {
-        // If no campus selected, fetch all consumers; otherwise filter by campus
-        const url = selectedCampusId 
-          ? `/admin/users?campusId=${selectedCampusId}`
-          : '/admin/users';
+        const url = selectedCampusId
+          ? `/admin/users?campusId=${selectedCampusId}&role=consumer&limit=1`
+          : '/admin/users?role=consumer&limit=1';
         const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
-        setTotalUsersCount(response.pagination?.total || response.users?.length || 0);
+        setTotalConsumersCount(response.pagination?.total || 0);
       } catch (error) {
-        console.error('Failed to fetch user count:', error);
-        setTotalUsersCount(0);
+        console.error('Failed to fetch consumer count:', error);
+        setTotalConsumersCount(0);
       } finally {
         setIsLoadingUsers(false);
       }
     };
-    
-    fetchUserCount();
+
+    void fetchConsumerCount();
   }, [selectedCampusId]);
   
   // Fetch full user list when Users tab is selected
@@ -2029,9 +2030,7 @@ export function AdminDashboard({
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
           <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Users</p>
           <p className="mt-0.5 text-lg font-semibold text-gray-900 tabular-nums">
-            {isLoadingPerformance || isLoadingUsers
-              ? '…'
-              : (performance?.totalBarbers ?? 0) + totalUsersCount}
+            {isLoadingUsers ? '…' : totalConsumersCount}
           </p>
         </div>
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">

@@ -3197,17 +3197,27 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = (page - 1) * limit;
     const campusId = req.query.campusId as string | undefined;
+    const roleFilter = String(req.query.role || 'all').toLowerCase();
+    const consumersOnly = roleFilter === 'consumer';
 
-    // Consumers (+ platform ADMIN accounts so they can be assigned/revoked without a barber profile)
-    let whereClause = `WHERE u.role IN ('CONSUMER', 'ADMIN')`;
+    // Default: consumers (+ platform ADMIN accounts so they can be assigned/revoked).
+    // role=consumer: consumers only (matches Performance Sign-ups).
+    let whereClause = consumersOnly
+      ? `WHERE u.role = 'CONSUMER'`
+      : `WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     const params: (string | number)[] = [limit, offset];
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      // Campus filter applies to consumers; platform admins always included
-      whereClause = `WHERE (
-        (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $3::uuid)
-        OR u.role = 'ADMIN'
-      )`;
+      if (consumersOnly) {
+        // Match sign-ups list: filter by signup campus
+        whereClause = `WHERE u.role = 'CONSUMER' AND u."campusId" = $3::uuid`;
+      } else {
+        // Campus filter applies to consumers; platform admins always included
+        whereClause = `WHERE (
+          (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $3::uuid)
+          OR u.role = 'ADMIN'
+        )`;
+      }
       params.push(campusId);
     }
 
@@ -3267,36 +3277,47 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     let countQuery: string;
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      countQuery = `
-        WITH consumer_booking_campuses AS (
-          SELECT 
-            bk."consumerId",
-            bu."campusId" as barber_campus_id,
-            COUNT(*) as booking_count
-          FROM bookings bk
-          JOIN barbers b ON bk."barberId" = b.id
-          JOIN users bu ON b."userId" = bu.id
-          WHERE bk.status IN ('COMPLETED', 'PAID', 'ACCEPTED', 'IN_PROGRESS')
-          GROUP BY bk."consumerId", bu."campusId"
-        ),
-        primary_campus AS (
-          SELECT DISTINCT ON ("consumerId")
-            "consumerId",
-            barber_campus_id as primary_campus_id
-          FROM consumer_booking_campuses
-          ORDER BY "consumerId", booking_count DESC
-        )
-        SELECT COUNT(*) as total 
-        FROM users u
-        LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
-        WHERE (
-          (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $1::uuid)
-          OR u.role = 'ADMIN'
-        )
-      `;
+      if (consumersOnly) {
+        countQuery = `
+          SELECT COUNT(*) as total
+          FROM users u
+          WHERE u.role = 'CONSUMER'
+            AND u."campusId" = $1::uuid
+        `;
+      } else {
+        countQuery = `
+          WITH consumer_booking_campuses AS (
+            SELECT 
+              bk."consumerId",
+              bu."campusId" as barber_campus_id,
+              COUNT(*) as booking_count
+            FROM bookings bk
+            JOIN barbers b ON bk."barberId" = b.id
+            JOIN users bu ON b."userId" = bu.id
+            WHERE bk.status IN ('COMPLETED', 'PAID', 'ACCEPTED', 'IN_PROGRESS')
+            GROUP BY bk."consumerId", bu."campusId"
+          ),
+          primary_campus AS (
+            SELECT DISTINCT ON ("consumerId")
+              "consumerId",
+              barber_campus_id as primary_campus_id
+            FROM consumer_booking_campuses
+            ORDER BY "consumerId", booking_count DESC
+          )
+          SELECT COUNT(*) as total 
+          FROM users u
+          LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
+          WHERE (
+            (u.role = 'CONSUMER' AND COALESCE(pc.primary_campus_id, u."campusId") = $1::uuid)
+            OR u.role = 'ADMIN'
+          )
+        `;
+      }
       countParams.push(campusId);
     } else {
-      countQuery = `SELECT COUNT(*) as total FROM users u WHERE u.role IN ('CONSUMER', 'ADMIN')`;
+      countQuery = consumersOnly
+        ? `SELECT COUNT(*) as total FROM users u WHERE u.role = 'CONSUMER'`
+        : `SELECT COUNT(*) as total FROM users u WHERE u.role IN ('CONSUMER', 'ADMIN')`;
     }
     
     const countResult = await pool.query(countQuery, countParams);
