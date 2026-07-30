@@ -152,6 +152,7 @@ interface MetricsListBookingEvent {
   status: string;
   service_type: string;
   total_paid_cents: number;
+  tip_cents: number;
   paid_at: string;
   consumer_first_name: string;
   consumer_last_name: string;
@@ -774,6 +775,7 @@ export function AdminDashboard({
           event.status,
           event.service_type,
           ((event.total_paid_cents || 0) / 100).toFixed(2),
+          ((event.tip_cents || 0) / 100).toFixed(2),
           paidAt.month,
           paidAt.year,
           paidAt.day,
@@ -791,6 +793,7 @@ export function AdminDashboard({
           'Status',
           'Service',
           'Amount (USD)',
+          'Tip (USD)',
           'Month',
           'Year',
           'Date',
@@ -2817,9 +2820,16 @@ export function AdminDashboard({
                             : '—'}
                         </p>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
-                        {formatCurrency(event.total_paid_cents || 0)}
-                      </p>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                          {formatCurrency(event.total_paid_cents || 0)}
+                        </p>
+                        {(event.tip_cents || 0) > 0 && (
+                          <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">
+                            +{formatCurrency(event.tip_cents)} tip
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))

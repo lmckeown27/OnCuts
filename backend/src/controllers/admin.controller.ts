@@ -2446,6 +2446,7 @@ const BOOKING_EVENTS_SELECT = `
   bk.status,
   bk."serviceType" as service_type,
   bk."totalPaidCents" as total_paid_cents,
+  COALESCE(bk."tipAmountCents", 0) as tip_cents,
   bk."paidAt" as paid_at,
   cu.first_name as consumer_first_name,
   cu.last_name as consumer_last_name,
