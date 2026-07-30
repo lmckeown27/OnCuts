@@ -38,12 +38,29 @@ function formatCompletionTime(
 ): string {
   if (!start) return '';
   const end = new Date(new Date(start).getTime() + durationMinutes * 60 * 1000);
+  if (Number.isNaN(end.getTime())) return '';
   return end.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZone,
   });
+}
+
+/** Normalize PG timestamps (incl. "YYYY-MM-DD HH:mm:ss") to ISO for clients. */
+function toIsoTimestamp(value: Date | string | null | undefined): string | null {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  const raw = String(value).trim();
+  if (!raw) return null;
+  // Prefer space→T so Safari/JS accept Postgres timestamp-without-tz strings.
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(raw)
+    ? raw.replace(' ', 'T')
+    : raw;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 function resolvePendingRequestDurationMinutes(
@@ -203,7 +220,7 @@ interface BookingRequest {
   customerProfile: any;
   barberId: string;
   serviceType: string;
-  requestedDate: Date;
+  requestedDate: string | null;
   requestedTime: string;
   durationMinutes: number;
   expectedCompletionTime: string;
@@ -211,7 +228,7 @@ interface BookingRequest {
   location?: string | null;
   message?: string;
   status: string;
-  requestedAt: Date;
+  requestedAt: string | null;
 }
 
 export class BookingRequestService {
@@ -343,8 +360,8 @@ export class BookingRequestService {
           b."barberId" as barber_id,
           b."serviceType" as service_type,
           c.service_name as original_service_name,
-          COALESCE(c.scheduled_time, b."requestedAt") as requested_date,
-          COALESCE(c.scheduled_time, b."requestedAt") as requested_time,
+          COALESCE(b."requestedAt", c.scheduled_time) as requested_date,
+          COALESCE(b."requestedAt", c.scheduled_time) as requested_time,
           b."priceUsdCents" / 100.0 as price,
           b.status,
           b."createdAt" as requested_at,
@@ -384,8 +401,9 @@ export class BookingRequestService {
         // Use campus timezone for correct local time display
         const formatTime = (date: Date | string) => {
           if (!date) return '';
-          const d = new Date(date);
-          return d.toLocaleTimeString('en-US', { 
+          const iso = toIsoTimestamp(date);
+          if (!iso) return '';
+          return new Date(iso).toLocaleTimeString('en-US', { 
             hour: 'numeric', 
             minute: '2-digit', 
             hour12: true,
@@ -393,7 +411,8 @@ export class BookingRequestService {
           });
         };
         
-        logger.info(`Pending request time: raw=${row.requested_time}, formatted=${formatTime(row.requested_time)}, timezone=${campusTimezone}`);
+        const scheduledIso = toIsoTimestamp(row.requested_date);
+        logger.info(`Pending request time: raw=${row.requested_time}, iso=${scheduledIso}, formatted=${formatTime(row.requested_time)}, timezone=${campusTimezone}`);
         
         // Prefer original service name from conversation, fallback to formatted enum
         const displayServiceType = row.original_service_name || formatServiceType(row.service_type);
@@ -424,11 +443,11 @@ export class BookingRequestService {
           },
           barberId: row.barber_id,
           serviceType: displayServiceType,
-          requestedDate: row.requested_date,
+          requestedDate: scheduledIso,
           requestedTime: formatTime(row.requested_time),
           durationMinutes,
           expectedCompletionTime: formatCompletionTime(
-            row.requested_time,
+            scheduledIso || row.requested_time,
             durationMinutes,
             campusTimezone
           ),
@@ -436,7 +455,7 @@ export class BookingRequestService {
           location: mergeConversationLocation(row.booking_location, row.booking_location_details),
           message: row.booking_notes || '',
           status: row.status,
-          requestedAt: row.requested_at,
+          requestedAt: toIsoTimestamp(row.requested_at),
         });
       });
 
@@ -522,13 +541,23 @@ export class BookingRequestService {
             },
             barberId: barberId,
             serviceType: row.service_name || 'Haircut',
-            requestedDate: row.scheduled_time || row.created_at,
+            requestedDate: toIsoTimestamp(row.scheduled_time || row.created_at),
             requestedTime: row.scheduled_time 
-              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: barberCampusTimezone })
+              ? (() => {
+                  const iso = toIsoTimestamp(row.scheduled_time);
+                  return iso
+                    ? new Date(iso).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: barberCampusTimezone,
+                      })
+                    : '';
+                })()
               : '',
             durationMinutes,
             expectedCompletionTime: formatCompletionTime(
-              row.scheduled_time,
+              toIsoTimestamp(row.scheduled_time) || row.scheduled_time,
               durationMinutes,
               barberCampusTimezone
             ),
@@ -536,7 +565,7 @@ export class BookingRequestService {
             location: mergeConversationLocation(row.location, row.location_details),
             message: row.notes || '',
             status: 'pending',
-            requestedAt: row.created_at,
+            requestedAt: toIsoTimestamp(row.created_at),
           });
         }
       });
@@ -577,14 +606,14 @@ export class BookingRequestService {
         },
         barberId,
         serviceType: 'Fade',
-        requestedDate: new Date(Date.now() + 86400000), // Tomorrow
+        requestedDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
         requestedTime: '14:00',
         durationMinutes: 45,
         expectedCompletionTime: '2:45 PM',
         price: 35.00,
         message: 'Hey! Looking for a clean mid-fade. Can we do it at the campus center?',
         status: 'pending',
-        requestedAt: new Date(Date.now() - 3600000), // 1 hour ago
+        requestedAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
       },
       {
         bookingId: 'mock-booking-2',
@@ -607,14 +636,14 @@ export class BookingRequestService {
         },
         barberId,
         serviceType: 'Haircut',
-        requestedDate: new Date(Date.now() + 172800000), // 2 days from now
+        requestedDate: new Date(Date.now() + 172800000).toISOString(), // 2 days from now
         requestedTime: '10:30',
         durationMinutes: 30,
         expectedCompletionTime: '11:00 AM',
         price: 30.00,
         message: 'Need a professional cut for job interviews. Can you help?',
         status: 'pending',
-        requestedAt: new Date(Date.now() - 7200000), // 2 hours ago
+        requestedAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
       },
       {
         bookingId: 'mock-booking-3',
@@ -637,14 +666,14 @@ export class BookingRequestService {
         },
         barberId,
         serviceType: 'Full Service',
-        requestedDate: new Date(Date.now() + 259200000), // 3 days from now
+        requestedDate: new Date(Date.now() + 259200000).toISOString(), // 3 days from now
         requestedTime: '16:00',
         durationMinutes: 60,
         expectedCompletionTime: '5:00 PM',
         price: 50.00,
         message: 'Haircut and beard trim please. My dorm room works.',
         status: 'pending',
-        requestedAt: new Date(Date.now() - 10800000), // 3 hours ago
+        requestedAt: new Date(Date.now() - 10800000).toISOString(), // 3 hours ago
       },
     ];
 

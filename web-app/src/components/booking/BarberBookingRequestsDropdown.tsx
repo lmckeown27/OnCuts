@@ -28,10 +28,10 @@ interface BookingRequest {
   customerName: string;
   customerProfile: CustomerProfile;
   serviceType: string;
-  requestedDate: string;
+  requestedDate: string | null;
   requestedTime: string;
-  durationMinutes: number;
-  expectedCompletionTime: string;
+  durationMinutes?: number;
+  expectedCompletionTime?: string;
   price: number;
   location?: string;
   message?: string;
@@ -288,12 +288,31 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const getRequestDurationMinutes = (request: BookingRequest) =>
     request.durationMinutes ?? resolveServiceDurationMinutes(request.serviceType);
 
+  const parseRequestDate = (value: string | null | undefined): Date | null => {
+    if (!value) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+    const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(raw)
+      ? raw.replace(' ', 'T')
+      : raw;
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const formatRequestedDate = (
+    value: string | null | undefined,
+    options: Intl.DateTimeFormatOptions
+  ) => {
+    const date = parseRequestDate(value);
+    return date ? date.toLocaleDateString('en-US', options) : 'Date TBD';
+  };
+
   const getExpectedCompletionTime = (request: BookingRequest) => {
     if (request.expectedCompletionTime) {
       return request.expectedCompletionTime;
     }
-    if (!request.requestedDate) return '';
-    const start = new Date(request.requestedDate);
+    const start = parseRequestDate(request.requestedDate);
+    if (!start) return '';
     const end = new Date(start.getTime() + getRequestDurationMinutes(request) * 60 * 1000);
     return end.toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -390,7 +409,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   <div className="space-y-1.5 mb-3 text-sm">
                     <div className="flex items-center gap-2 text-gray-700">
                       <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>{new Date(request.requestedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      <span>{formatRequestedDate(request.requestedDate, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       <span className="text-gray-400">at</span>
                       <span>{request.requestedTime}</span>
                     </div>
@@ -498,11 +517,11 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Requested Date</span>
                       <span className="text-sm font-semibold text-gray-900">
-                        {new Date(viewingRequest.requestedDate).toLocaleDateString('en-US', { 
+                        {formatRequestedDate(viewingRequest.requestedDate, {
                           weekday: 'short',
-                          month: 'short', 
+                          month: 'short',
                           day: 'numeric',
-                          year: 'numeric'
+                          year: 'numeric',
                         })}
                       </span>
                     </div>
