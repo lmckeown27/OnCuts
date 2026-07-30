@@ -114,7 +114,7 @@ interface MetricsResponse {
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
-type MetricsListView = 'bookings' | 'signups';
+type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
 
@@ -717,6 +717,7 @@ export function AdminDashboard({
   }, [listWindowCommitted]);
 
   const sortedMetricsListEvents = useMemo(() => {
+    if (metricsListView === 'profit') return [];
     const direction = metricsListSortOrder === 'desc' ? -1 : 1;
     if (metricsListView === 'bookings') {
       return [...(metricsListEvents as MetricsListBookingEvent[])].sort((a, b) => {
@@ -893,7 +894,7 @@ export function AdminDashboard({
 
   // List view: fetch individual bookings or sign-ups for the committed window
   useEffect(() => {
-    if (metricsDisplayMode !== 'list') return;
+    if (metricsDisplayMode !== 'list' || metricsListView === 'profit') return;
 
     const fetchEvents = async () => {
       setIsLoadingMetricsListEvents(true);
@@ -2071,6 +2072,8 @@ export function AdminDashboard({
                   setHoveredDataPoint(null);
                   if (metricsView === 'bookings' || metricsView === 'signups') {
                     setMetricsListView(metricsView);
+                  } else if (metricsListView === 'profit') {
+                    // keep Profit/Loss when returning from Graph
                   } else {
                     setMetricsListView('bookings');
                   }
@@ -2111,6 +2114,8 @@ export function AdminDashboard({
               </button>
             ))}
           </div>
+        ) : metricsListView === 'profit' ? (
+          <div className="min-w-0 flex-1" />
         ) : listPickerOpen && metricsListPeriod !== 'all' ? (
           <div
             className="min-w-0 flex-1 rounded-2xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-3 py-2.5 sm:px-4 sm:py-3"
@@ -2256,12 +2261,18 @@ export function AdminDashboard({
                 [
                   { key: 'bookings' as const, label: 'Bookings' },
                   { key: 'signups' as const, label: 'Sign-ups' },
+                  { key: 'profit' as const, label: 'Profit/Loss' },
                 ] as const
               ).map(({ key, label }) => (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setMetricsListView(key)}
+                  onClick={() => {
+                    setMetricsListView(key);
+                    if (key === 'profit') {
+                      setListPickerOpen(false);
+                    }
+                  }}
                   className={`flex-1 px-1.5 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     metricsListView === key
                       ? 'bg-white text-gray-900 shadow-sm'
@@ -2306,127 +2317,18 @@ export function AdminDashboard({
               )}
             </>
           )
-        ) : isLoadingMetricsListEvents ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-          </div>
-        ) : metricsListEvents.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
-            {metricsListWindowLabel.toLowerCase()}
-          </div>
-        ) : (
-          <div className="max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
-            <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0 flex items-center justify-between gap-2">
-              <p>
-                {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
-                {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
-              </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setMetricsListSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
-                }
-                className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
-                aria-label={
-                  metricsListSortOrder === 'desc'
-                    ? 'Showing latest first. Switch to earliest first.'
-                    : 'Showing earliest first. Switch to latest first.'
-                }
-                title={
-                  metricsListSortOrder === 'desc' ? 'Latest first' : 'Earliest first'
-                }
-              >
-                {metricsListSortOrder === 'desc' ? (
-                  <ArrowDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ArrowUp className="w-3.5 h-3.5" />
-                )}
-              </button>
+        ) : metricsListView === 'profit' ? (
+          isLoadingPerformance ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
             </div>
-            {metricsListView === 'bookings'
-              ? (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => (
-                  <div key={event.id} className="px-3 py-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {event.consumer_first_name} {event.consumer_last_name}
-                        </p>
-                        <p className="text-[11px] text-gray-500 truncate">
-                          with {event.barber_first_name} {event.barber_last_name}
-                          {event.service_type ? ` · ${event.service_type}` : ''}
-                        </p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
-                          {event.paid_at
-                            ? new Date(event.paid_at).toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })
-                            : '—'}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
-                        {formatCurrency(event.total_paid_cents || 0)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              : (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => (
-                  <div key={event.id} className="px-3 py-2.5">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {event.first_name} {event.last_name}
-                      {event.role ? (
-                        <span className="ml-1.5 text-[11px] font-medium text-gray-500">
-                          · {event.role.toLowerCase()}
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="text-[11px] text-gray-500 truncate">{event.email}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      {event.created_at
-                        ? new Date(event.created_at).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })
-                        : '—'}
-                      {event.campus_name ? ` · ${event.campus_name}` : ''}
-                    </p>
-                  </div>
-                ))}
-          </div>
-        )}
-
-        {metricsDisplayMode === 'graph' && (
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
-            <p className="text-[11px] text-gray-500">Period average</p>
-            <p className="text-sm font-semibold text-gray-900 tabular-nums">
-              {formatSeriesValue(periodAverage)}
-            </p>
-          </div>
-          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
-            <p className="text-[11px] text-gray-500">Best bucket</p>
-            <p className="text-sm font-semibold text-gray-900 tabular-nums">
-              {formatSeriesValue(bestBucketValue)}
-            </p>
-          </div>
-        </div>
-        )}
-      </div>
-
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-2 px-0.5">
-          {selectedCampus ? 'Campus performance' : 'Aggregate performance'}
-        </h3>
-        
-        {/* Performance Summary - Below chart */}
-        {performance && (
+          ) : !performance ? (
+            <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              No profit/loss data available
+            </div>
+          ) : (
+          <div className="max-h-[28rem] overflow-y-auto overscroll-contain">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             {/* Payment Methods - Card vs Cash (All Time) */}
             {(performance.cardCount > 0 || performance.cashCount > 0) && (
@@ -2694,8 +2596,122 @@ export function AdminDashboard({
               </div>
             </div>
           </div>
+          </div>
+          )
+        ) : isLoadingMetricsListEvents ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+          </div>
+        ) : metricsListEvents.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            No {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'} for{' '}
+            {metricsListWindowLabel.toLowerCase()}
+          </div>
+        ) : (
+          <div className="max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-stone-100 divide-y divide-stone-100 bg-white">
+            <div className="px-3 py-2 text-[11px] font-medium text-gray-500 bg-stone-50 sticky top-0 flex items-center justify-between gap-2">
+              <p>
+                {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
+                {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setMetricsListSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
+                }
+                className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-stone-200/70 transition-colors"
+                aria-label={
+                  metricsListSortOrder === 'desc'
+                    ? 'Showing latest first. Switch to earliest first.'
+                    : 'Showing earliest first. Switch to latest first.'
+                }
+                title={
+                  metricsListSortOrder === 'desc' ? 'Latest first' : 'Earliest first'
+                }
+              >
+                {metricsListSortOrder === 'desc' ? (
+                  <ArrowDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ArrowUp className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+            {metricsListView === 'bookings'
+              ? (sortedMetricsListEvents as MetricsListBookingEvent[]).map((event) => (
+                  <div key={event.id} className="px-3 py-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {event.consumer_first_name} {event.consumer_last_name}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          with {event.barber_first_name} {event.barber_last_name}
+                          {event.service_type ? ` · ${event.service_type}` : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {event.paid_at
+                            ? new Date(event.paid_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })
+                            : '—'}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+                        {formatCurrency(event.total_paid_cents || 0)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              : (sortedMetricsListEvents as MetricsListSignupEvent[]).map((event) => (
+                  <div key={event.id} className="px-3 py-2.5">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {event.first_name} {event.last_name}
+                      {event.role ? (
+                        <span className="ml-1.5 text-[11px] font-medium text-gray-500">
+                          · {event.role.toLowerCase()}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-[11px] text-gray-500 truncate">{event.email}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {event.created_at
+                        ? new Date(event.created_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                      {event.campus_name ? ` · ${event.campus_name}` : ''}
+                    </p>
+                  </div>
+                ))}
+          </div>
+        )}
+
+        {metricsDisplayMode === 'graph' && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+            <p className="text-[11px] text-gray-500">Period average</p>
+            <p className="text-sm font-semibold text-gray-900 tabular-nums">
+              {formatSeriesValue(periodAverage)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-stone-50 border border-stone-100 px-3 py-2.5">
+            <p className="text-[11px] text-gray-500">Best bucket</p>
+            <p className="text-sm font-semibold text-gray-900 tabular-nums">
+              {formatSeriesValue(bestBucketValue)}
+            </p>
+          </div>
+        </div>
         )}
       </div>
+
       </>
       )}
       
