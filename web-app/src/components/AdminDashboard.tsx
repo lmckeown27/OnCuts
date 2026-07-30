@@ -884,13 +884,11 @@ export function AdminDashboard({
             ? {
                 period: 'snapshot_all',
                 type: metricsListView,
-                limit: 100,
               }
             : {
                 type: metricsListView,
                 start: listWindowCommitted.start,
                 end: listWindowCommitted.end,
-                limit: 100,
               };
         const response = await api.get<{
           events: MetricsListBookingEvent[] | MetricsListSignupEvent[];

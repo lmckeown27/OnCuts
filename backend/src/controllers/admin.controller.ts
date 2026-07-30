@@ -2544,7 +2544,6 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
 
     const trunc = range ? null : SNAPSHOT_TRUNC[period];
     const timezone = 'America/Los_Angeles';
-    const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 200);
 
     if (type === 'bookings') {
       let result;
@@ -2560,10 +2559,9 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
             AND bk.status IN ('COMPLETED', 'PAID')
             AND bk."paidAt" >= $1::timestamptz
             AND bk."paidAt" < $2::timestamptz
-          ORDER BY bk."paidAt" DESC
-          LIMIT $3
+          ORDER BY bk."paidAt" ASC
           `,
-          [range.start.toISOString(), range.end.toISOString(), limit]
+          [range.start.toISOString(), range.end.toISOString()]
         );
       } else if (trunc) {
         result = await pool.query(
@@ -2576,10 +2574,9 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
             AND bk."paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
-          ORDER BY bk."paidAt" DESC
-          LIMIT $3
+          ORDER BY bk."paidAt" ASC
           `,
-          [trunc, timezone, limit]
+          [trunc, timezone]
         );
       } else {
         result = await pool.query(
@@ -2591,10 +2588,8 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
           JOIN users cu ON cu.id = bk."consumerId"
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
-          ORDER BY bk."paidAt" DESC
-          LIMIT $1
-          `,
-          [limit]
+          ORDER BY bk."paidAt" ASC
+          `
         );
       }
 
@@ -2617,10 +2612,9 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         WHERE u.role = 'CONSUMER'
           AND u."createdAt" >= $1::timestamptz
           AND u."createdAt" < $2::timestamptz
-        ORDER BY u."createdAt" DESC
-        LIMIT $3
+        ORDER BY u."createdAt" ASC
         `,
-        [range.start.toISOString(), range.end.toISOString(), limit]
+        [range.start.toISOString(), range.end.toISOString()]
       );
     } else if (trunc) {
       result = await pool.query(
@@ -2630,10 +2624,9 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         LEFT JOIN campuses c ON c.id = u."campusId"
         WHERE u.role = 'CONSUMER'
           AND u."createdAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
-        ORDER BY u."createdAt" DESC
-        LIMIT $3
+        ORDER BY u."createdAt" ASC
         `,
-        [trunc, timezone, limit]
+        [trunc, timezone]
       );
     } else {
       result = await pool.query(
@@ -2642,10 +2635,8 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
         FROM users u
         LEFT JOIN campuses c ON c.id = u."campusId"
         WHERE u.role = 'CONSUMER'
-        ORDER BY u."createdAt" DESC
-        LIMIT $1
-        `,
-        [limit]
+        ORDER BY u."createdAt" ASC
+        `
       );
     }
 
@@ -2679,7 +2670,6 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
     }
 
     const trunc = range ? null : SNAPSHOT_TRUNC[period];
-    const limit = Math.min(parseInt(String(req.query.limit || '100'), 10) || 100, 200);
 
     const campusResult = await pool.query(
       `
@@ -2726,10 +2716,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
             AND bk.status IN ('COMPLETED', 'PAID')
             AND bk."paidAt" >= $2::timestamptz
             AND bk."paidAt" < $3::timestamptz
-          ORDER BY bk."paidAt" DESC
-          LIMIT $4
+          ORDER BY bk."paidAt" ASC
           `,
-          [barberIds, range.start.toISOString(), range.end.toISOString(), limit]
+          [barberIds, range.start.toISOString(), range.end.toISOString()]
         );
       } else if (trunc) {
         result = await pool.query(
@@ -2743,10 +2732,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
             AND bk."paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
-          ORDER BY bk."paidAt" DESC
-          LIMIT $4
+          ORDER BY bk."paidAt" ASC
           `,
-          [barberIds, trunc, timezone, limit]
+          [barberIds, trunc, timezone]
         );
       } else {
         result = await pool.query(
@@ -2759,10 +2747,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
           WHERE bk."barberId" = ANY($1::uuid[])
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
-          ORDER BY bk."paidAt" DESC
-          LIMIT $2
+          ORDER BY bk."paidAt" ASC
           `,
-          [barberIds, limit]
+          [barberIds]
         );
       }
 
@@ -2786,10 +2773,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
           AND u."campusId" = $1::uuid
           AND u."createdAt" >= $2::timestamptz
           AND u."createdAt" < $3::timestamptz
-        ORDER BY u."createdAt" DESC
-        LIMIT $4
+        ORDER BY u."createdAt" ASC
         `,
-        [campusId, range.start.toISOString(), range.end.toISOString(), limit]
+        [campusId, range.start.toISOString(), range.end.toISOString()]
       );
     } else if (trunc) {
       result = await pool.query(
@@ -2800,10 +2786,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
         WHERE u.role = 'CONSUMER'
           AND u."campusId" = $1::uuid
           AND u."createdAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
-        ORDER BY u."createdAt" DESC
-        LIMIT $4
+        ORDER BY u."createdAt" ASC
         `,
-        [campusId, trunc, timezone, limit]
+        [campusId, trunc, timezone]
       );
     } else {
       result = await pool.query(
@@ -2813,10 +2798,9 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
         LEFT JOIN campuses c ON c.id = u."campusId"
         WHERE u.role = 'CONSUMER'
           AND u."campusId" = $1::uuid
-        ORDER BY u."createdAt" DESC
-        LIMIT $2
+        ORDER BY u."createdAt" ASC
         `,
-        [campusId, limit]
+        [campusId]
       );
     }
 
