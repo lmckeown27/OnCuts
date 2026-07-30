@@ -47,6 +47,7 @@ import {
   releaseCommissionFreeBooking,
   resolveBookingPlatformFee,
 } from '../utils/platform-commission';
+import { processProviderKickback } from '../utils/platform-kickback';
 
 const router = express.Router();
 
@@ -2063,10 +2064,33 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
            "paymentMethod" = 'card',
+           payment_intent_id = COALESCE(payment_intent_id, $4),
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $3`,
-      [tipAmountCents, totalAmountCents, id]
+      [tipAmountCents, totalAmountCents, id, paymentIntentId]
     );
+
+    // Platform-funded kickback (idempotent). Webhooks may also call this; safe either way.
+    try {
+      const destinationRaw = paymentIntent.transfer_data?.destination;
+      const connectedAccountId =
+        typeof destinationRaw === 'string'
+          ? destinationRaw
+          : destinationRaw?.id || null;
+      await processProviderKickback({
+        client: pool,
+        bookingId: id,
+        barberRecordId: booking.barberId,
+        serviceAmountCents: booking.priceUsdCents,
+        connectedAccountId,
+        paymentIntentId,
+        livemode: !!paymentIntent.livemode,
+      });
+    } catch (kickbackError: any) {
+      logger.warn(
+        `Kickback soft-failed on confirm-payment for ${id}: ${kickbackError?.message || kickbackError}`
+      );
+    }
 
     // Archive messages for admin viewing, then delete the conversation
     try {

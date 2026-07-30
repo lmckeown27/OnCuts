@@ -20,6 +20,7 @@
     "postinstall": "npx prisma generate",
     "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts",
     "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts",
+    "backfill-kickbacks": "npx ts-node src/scripts/backfill-provider-kickbacks.ts",
     "clear-stripe-connect": "npx ts-node src/scripts/clear-stripe-connect.ts"
   },
   "keywords": [

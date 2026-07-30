@@ -47,27 +47,34 @@ async function maybeAttemptInstantPayout(
   if (!isInstantPayoutsEnabled()) return;
 
   try {
-    const existing = await client.query(
-      `SELECT instant_payout_id, instant_payout_status
-       FROM payments
-       WHERE payment_intent_id = $1`,
-      [params.paymentIntentId]
-    );
-    const row = existing.rows[0];
-    if (row?.instant_payout_status === 'instant' && row?.instant_payout_id) {
-      return;
+    try {
+      const existing = await client.query(
+        `SELECT instant_payout_id, instant_payout_status
+         FROM payments
+         WHERE payment_intent_id = $1`,
+        [params.paymentIntentId]
+      );
+      const row = existing.rows[0];
+      if (row?.instant_payout_status === 'instant' && row?.instant_payout_id) {
+        return;
+      }
+    } catch {
+      // Columns may be missing pre-migration; still attempt Instant and log.
     }
-  } catch {
-    // Columns may be missing pre-migration; still attempt Instant and log.
-  }
 
-  const result = await attemptInstantPayout({
-    connectedAccountId: params.connectedAccountId,
-    amountCents: params.amountCents,
-    bookingId: params.bookingId,
-    livemode: params.livemode,
-  });
-  await persistInstantPayoutOutcome(client, params.paymentIntentId, result);
+    const result = await attemptInstantPayout({
+      connectedAccountId: params.connectedAccountId,
+      amountCents: params.amountCents,
+      bookingId: params.bookingId,
+      livemode: params.livemode,
+    });
+    await persistInstantPayoutOutcome(client, params.paymentIntentId, result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.warn(
+      `Instant payout soft-failed for booking ${params.bookingId}: ${message}`
+    );
+  }
 }
 
 /**
