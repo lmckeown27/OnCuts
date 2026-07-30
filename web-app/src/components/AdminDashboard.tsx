@@ -367,7 +367,6 @@ export function AdminDashboard({
   const [listPickerOpen, setListPickerOpen] = useState(false);
   const [listWindowOptions, setListWindowOptions] = useState<MetricsListWindowOption[]>([]);
   const [isLoadingListWindowOptions, setIsLoadingListWindowOptions] = useState(false);
-  const [listWindowDraft, setListWindowDraft] = useState<MetricsListWindowOption | null>(null);
   const [listScope, setListScope] = useState<MetricsListScope>(EMPTY_LIST_SCOPE);
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [metricsListView, setMetricsListView] = useState<MetricsListView>('bookings');
@@ -851,26 +850,10 @@ export function AdminDashboard({
               }
             : {}),
         });
-        const options = response.options || [];
-        setListWindowOptions(options);
-
-        const currentAtLevel =
-          metricsListPeriod === 'year'
-            ? listScope.year
-            : metricsListPeriod === 'month'
-              ? listScope.month
-              : metricsListPeriod === 'week'
-                ? listScope.week
-                : listScope.day;
-
-        const matched = currentAtLevel
-          ? options.find((option) => option.id === currentAtLevel.id)
-          : undefined;
-        setListWindowDraft(matched ?? options[0] ?? null);
+        setListWindowOptions(response.options || []);
       } catch (error) {
         console.error('Failed to fetch metrics list window options:', error);
         setListWindowOptions([]);
-        setListWindowDraft(null);
       } finally {
         setIsLoadingListWindowOptions(false);
       }
@@ -883,7 +866,6 @@ export function AdminDashboard({
     metricsListPeriod,
     metricsListView,
     listParentWithin,
-    listScope,
     selectedCampusId,
     refreshSignal,
   ]);
@@ -2117,22 +2099,8 @@ export function AdminDashboard({
             role="region"
             aria-label={`${listPickerTitle} filter`}
           >
-            <div className="relative flex items-center justify-center min-h-8 mb-2 px-10">
+            <div className="flex items-center justify-center min-h-8 mb-2">
               <p className="text-sm font-semibold text-gray-900 text-center">{listPickerTitle}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (listWindowDraft) {
-                    applyListWindowSelection(metricsListPeriod, listWindowDraft);
-                  }
-                  setListPickerOpen(false);
-                }}
-                disabled={!listWindowDraft || isLoadingListWindowOptions}
-                className="absolute right-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95 disabled:opacity-40"
-                aria-label={`Done filtering by ${listPickerTitle.toLowerCase()}`}
-              >
-                <Check className="w-4 h-4" />
-              </button>
             </div>
             {listParentWithin && (
               <p className="text-center text-[11px] text-gray-500 mb-1.5">
@@ -2151,24 +2119,19 @@ export function AdminDashboard({
               </p>
             ) : (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {listWindowOptions.map((option) => {
-                  const isSelected = listWindowDraft?.id === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setListWindowDraft(option)}
-                      aria-pressed={isSelected}
-                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
-                        isSelected
-                          ? 'bg-gray-900 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
+                {listWindowOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      applyListWindowSelection(metricsListPeriod, option);
+                      setListPickerOpen(false);
+                    }}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 border border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -2211,7 +2174,6 @@ export function AdminDashboard({
                     if (key === 'all') {
                       setMetricsListPeriod('all');
                       setListScope({ ...EMPTY_LIST_SCOPE });
-                      setListWindowDraft(null);
                       setListWindowOptions([]);
                       setListPickerOpen(false);
                       return;
