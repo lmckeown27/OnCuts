@@ -1673,6 +1673,37 @@ export function AdminDashboard({
       {/* Performance Chart & Summary */}
       {deferredAdminView === 'performance' && (
       <>
+      {/* Global platform commission */}
+      <div className="p-3 bg-white rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-xs font-medium text-gray-700">Platform commission</p>
+          <span className="text-[10px] text-gray-500">Applies to all operators · tips never commissioned</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="block">
+            <span className="text-xs text-gray-600">Commission %</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              disabled={isLoadingPlatformFee || isSavingPlatformFee}
+              value={platformFeeInput}
+              onChange={(e) => setPlatformFeeInput(e.target.value)}
+              className="mt-1 w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            />
+          </label>
+          <Button
+            type="button"
+            size="sm"
+            disabled={isLoadingPlatformFee || isSavingPlatformFee}
+            onClick={() => void handleSavePlatformFee()}
+          >
+            {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+          </Button>
+        </div>
+      </div>
+
       {/* Platform totals */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
@@ -1830,37 +1861,6 @@ export function AdminDashboard({
                 </div>
               </div>
             )}
-
-            {/* Global platform commission */}
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-xs font-medium text-gray-700">Platform commission</p>
-                <span className="text-[10px] text-gray-500">Applies to all operators · tips never commissioned</span>
-              </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <label className="block">
-                  <span className="text-xs text-gray-600">Commission %</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                    value={platformFeeInput}
-                    onChange={(e) => setPlatformFeeInput(e.target.value)}
-                    className="mt-1 w-28 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                  />
-                </label>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                  onClick={() => void handleSavePlatformFee()}
-                >
-                  {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                </Button>
-              </div>
-            </div>
 
             {/* Platform Revenue */}
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
