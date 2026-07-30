@@ -361,6 +361,7 @@ export function AdminDashboard({
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
   const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
+  const [isEditingPlatformFee, setIsEditingPlatformFee] = useState(false);
   /** Within Operators tab: list vs onboarding bulk tools */
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
@@ -478,12 +479,23 @@ export function AdminDashboard({
       const next = Number(data?.platformFeePercent ?? percent);
       setPlatformFeePercent(next);
       setPlatformFeeInput(String(next));
+      setIsEditingPlatformFee(false);
       toast.success(`Platform commission set to ${next}%`);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update platform commission');
     } finally {
       setIsSavingPlatformFee(false);
     }
+  };
+
+  const handleStartEditPlatformFee = () => {
+    setPlatformFeeInput(String(platformFeePercent));
+    setIsEditingPlatformFee(true);
+  };
+
+  const handleCancelEditPlatformFee = () => {
+    setPlatformFeeInput(String(platformFeePercent));
+    setIsEditingPlatformFee(false);
   };  
   // Fetch campus performance when campus changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
@@ -1686,10 +1698,13 @@ export function AdminDashboard({
                   min={0}
                   max={100}
                   step={0.1}
-                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                  value={platformFeeInput}
+                  readOnly={!isEditingPlatformFee}
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                  value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
                   onChange={(e) => setPlatformFeeInput(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 pr-7 text-sm"
+                  className={`w-full rounded-md border border-gray-300 px-2.5 py-1.5 pr-7 text-sm ${
+                    isEditingPlatformFee ? 'bg-white' : 'bg-gray-50 text-gray-700 cursor-default'
+                  }`}
                   aria-label="Commission percent"
                 />
                 <span
@@ -1700,14 +1715,36 @@ export function AdminDashboard({
                 </span>
               </div>
             </label>
-            <Button
-              type="button"
-              size="sm"
-              disabled={isLoadingPlatformFee || isSavingPlatformFee}
-              onClick={() => void handleSavePlatformFee()}
-            >
-              {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-            </Button>
+            {isEditingPlatformFee ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                  onClick={() => void handleSavePlatformFee()}
+                >
+                  {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSavingPlatformFee}
+                  onClick={handleCancelEditPlatformFee}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={isLoadingPlatformFee}
+                onClick={handleStartEditPlatformFee}
+              >
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       </div>
