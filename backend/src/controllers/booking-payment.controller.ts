@@ -223,11 +223,18 @@ export const handlePaymentSuccess = async (
     });
 
     // Update booking payment status
+    // Stamp both paid_at and "paidAt" so bookings-simple / iOS Paid lists see a payment time.
     await client.query(
       `UPDATE bookings 
        SET payment_status = 'paid',
            stripe_transfer_id = $1,
-           paid_at = NOW()
+           paid_at = NOW(),
+           "paidAt" = COALESCE("paidAt", NOW()),
+           status = CASE
+             WHEN status IN ('ACCEPTED', 'COMPLETED') THEN 'PAID'
+             ELSE status
+           END,
+           "updatedAt" = NOW()
        WHERE id = $2`,
       [transferId, bookingId]
     );

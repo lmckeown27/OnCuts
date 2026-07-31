@@ -730,7 +730,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
         b.status,
         b."createdAt",
-        b."paidAt",
+        COALESCE(b."paidAt", b.paid_at) AS "paidAt",
         b."completedAt",
         b."paymentMethod",
         b."reviewRating",
@@ -865,7 +865,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         ${BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV} as "scheduledTime",
         b.status,
         b."createdAt",
-        b."paidAt",
+        COALESCE(b."paidAt", b.paid_at) AS "paidAt",
         b."tipAmountCents",
         b."totalPaidCents",
         b."paymentMethod",
@@ -1507,7 +1507,7 @@ router.get('/', authenticate, async (req, res, next) => {
         b.status,
         b."createdAt",
         b."paymentRequestedAt",
-        b."paidAt",
+        COALESCE(b."paidAt", b.paid_at) AS "paidAt",
         b.commission_free_applied,
         b."reviewRating",
         b."reviewComment",
@@ -2056,6 +2056,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
     }
 
     // Update booking with payment info and mark as PAID
+    // Stamp both "paidAt" and paid_at — list/detail APIs and legacy readers use either.
     await pool.query(
       `UPDATE bookings 
        SET status = 'PAID',
@@ -2063,6 +2064,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
            "tipAmountCents" = $1,
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
+           paid_at = CURRENT_TIMESTAMP,
            "paymentMethod" = 'card',
            payment_intent_id = COALESCE(payment_intent_id, $4),
            "updatedAt" = CURRENT_TIMESTAMP
@@ -2226,12 +2228,14 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     const totalAmountCents = booking.priceUsdCents + tipAmountCents;
 
     // Update booking with payment info and set status to PAID
+    // Stamp both "paidAt" and paid_at — list/detail APIs and legacy readers use either.
     await pool.query(
       `UPDATE bookings 
        SET status = 'PAID',
            "tipAmountCents" = $1,
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
+           paid_at = CURRENT_TIMESTAMP,
            "paymentMethod" = $3,
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $4`,
