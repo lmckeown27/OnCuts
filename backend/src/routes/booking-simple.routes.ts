@@ -105,6 +105,38 @@ function normalizeApiTimestamp(value: unknown): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+/**
+ * Explicit payment-time contract for clients (iOS Paid must not fall back to schedule).
+ * Always ISO-8601 strings. Includes snake_case `paid_at` alias for dual-key decoding.
+ */
+function formatBookingPaymentTimeFields(row: {
+  paidAt?: unknown;
+  status?: unknown;
+  totalPaidCents?: unknown;
+}) {
+  const paidAt = normalizeApiTimestamp(row.paidAt);
+  const status = String(row.status || '').toUpperCase();
+  const totalPaidCents = Number(row.totalPaidCents);
+  const looksSettled =
+    status === 'PAID' ||
+    paidAt != null ||
+    (Number.isFinite(totalPaidCents) && totalPaidCents > 0);
+
+  if (looksSettled && !paidAt) {
+    logger.warn('Settled booking missing paidAt after COALESCE', {
+      status,
+      totalPaidCents: Number.isFinite(totalPaidCents) ? totalPaidCents : null,
+    });
+  }
+
+  return {
+    paidAt,
+    paid_at: paidAt,
+    displayTime: paidAt,
+    displayTimeKind: paidAt ? ('paid' as const) : ('scheduled' as const),
+  };
+}
+
 function formatPendingRescheduleRequest(row: Record<string, unknown> | null | undefined) {
   if (!row?.rr_id) return null;
   const proposedScheduledTime = normalizeApiTimestamp(row.rr_requested_time);
@@ -793,9 +825,9 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           totalPaidCents: row.totalPaidCents || null,
           scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
-          createdAt: row.createdAt,
-          paidAt: row.paidAt,
-          completedAt: row.completedAt || null,
+          createdAt: normalizeApiTimestamp(row.createdAt) ?? row.createdAt,
+          ...formatBookingPaymentTimeFields(row),
+          completedAt: normalizeApiTimestamp(row.completedAt),
           paymentMethod: row.paymentMethod || null,
           location: mergeConversationLocation(row.conv_location, row.conv_location_details),
           locationDetails: row.conv_location_details || null,
@@ -803,7 +835,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           review: row.reviewRating ? {
             rating: row.reviewRating,
             comment: row.reviewComment || null,
-            reviewedAt: row.reviewedAt,
+            reviewedAt: normalizeApiTimestamp(row.reviewedAt),
           } : null,
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
           barberAvatar: row.barber_avatar || null,
@@ -923,12 +955,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
       durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
       scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
       status: row.status,
-      createdAt: row.createdAt,
-      paidAt: row.paidAt,
+      createdAt: normalizeApiTimestamp(row.createdAt) ?? row.createdAt,
+      ...formatBookingPaymentTimeFields(row),
       tipAmountCents: row.tipAmountCents,
       totalPaidCents: row.totalPaidCents,
       paymentMethod: row.paymentMethod || null,
-      paymentRequestedAt: row.paymentRequestedAt || null,
+      paymentRequestedAt: normalizeApiTimestamp(row.paymentRequestedAt),
       commissionFreeApplied: row.commission_free_applied === true,
       location: mergeConversationLocation(row.conv_location, row.conv_location_details),
       locationDetails: row.conv_location_details || null,
@@ -1508,6 +1540,9 @@ router.get('/', authenticate, async (req, res, next) => {
         b."createdAt",
         b."paymentRequestedAt",
         COALESCE(b."paidAt", b.paid_at) AS "paidAt",
+        b."tipAmountCents",
+        b."totalPaidCents",
+        b."paymentMethod",
         b.commission_free_applied,
         b."reviewRating",
         b."reviewComment",
@@ -1571,21 +1606,24 @@ router.get('/', authenticate, async (req, res, next) => {
           durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
           scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
-          createdAt: row.createdAt,
+          createdAt: normalizeApiTimestamp(row.createdAt) ?? row.createdAt,
           // Consumer-provided input data from conversation
           location: mergeConversationLocation(row.conv_location, row.conv_location_details),
           locationDetails: row.conv_location_details || null,
           notes: row.conv_notes || null,
           serviceName: row.conv_service_name || null,
-          // Payment tracking fields
-          paymentRequestedAt: row.paymentRequestedAt || null,
-          paidAt: row.paidAt || null,
+          // Payment tracking fields (ISO paidAt; Paid UI must not substitute schedule)
+          paymentRequestedAt: normalizeApiTimestamp(row.paymentRequestedAt),
+          tipAmountCents: row.tipAmountCents ?? null,
+          totalPaidCents: row.totalPaidCents ?? null,
+          paymentMethod: row.paymentMethod || null,
+          ...formatBookingPaymentTimeFields(row),
           commissionFreeApplied: row.commission_free_applied === true,
           // Review data (from consumer after service completion)
           review: row.reviewRating ? {
             rating: row.reviewRating,
             comment: row.reviewComment || null,
-            reviewedAt: row.reviewedAt,
+            reviewedAt: normalizeApiTimestamp(row.reviewedAt),
           } : null,
           // Full barber name for display
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
