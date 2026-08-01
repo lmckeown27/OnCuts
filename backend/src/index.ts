@@ -105,6 +105,7 @@ import barberApplicationRoutes from './routes/barber-application.routes';
 // Simple Booking Routes (matches production schema)
 import bookingSimpleRoutes from './routes/booking-simple.routes';
 import publicStripeRoutes from './routes/public-stripe.routes';
+import publicPlatformRoutes from './routes/public-platform.routes';
 
 // Google Calendar Integration (disabled)
 // import googleCalendarRoutes from './routes/google-calendar.routes';
@@ -369,6 +370,7 @@ app.post('/api/create-stripe-login-link', ...stripeConnectLoginLinkRoute);
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
 app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
 app.use('/api/v1/stripe', publicStripeRoutes); // Public publishable key bootstrap for native clients
+app.use('/api/v1/platform', publicPlatformRoutes); // Public frontend controls (cash / home mode)
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/campus', campusRoutes);

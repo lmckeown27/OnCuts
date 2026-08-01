@@ -23,9 +23,10 @@ import auditService from '../services/audit.service';
 import transactionService from '../services/transaction.service';
 import { logger } from '../utils/logger';
 import {
-  getPlatformFeePercent,
-  setPlatformFeePercent,
-} from '../utils/platform-commission';
+  getPlatformSettingsPayload,
+  updatePlatformSettingsPartial,
+  type ConsumerHomeMode,
+} from '../utils/platform-frontend-settings';
 import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
 import {
   assertCampusMetricsAccess,
@@ -183,7 +184,7 @@ export const getPlatformFees = async (req: AuthRequest, res: Response, next: Nex
 
 /**
  * GET /api/admin/platform-settings
- * Global platform commission percent (Admin-editable).
+ * Global commission + frontend controls (Admin-editable).
  */
 export const getPlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -192,10 +193,10 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
       throw new ApiError(403, 'Admin access required');
     }
 
-    const platformFeePercent = await getPlatformFeePercent();
+    const data = await getPlatformSettingsPayload();
     res.json({
       success: true,
-      data: { platformFeePercent },
+      data,
     });
   } catch (error) {
     next(error);
@@ -204,7 +205,11 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
 
 /**
  * PUT /api/admin/platform-settings
- * Body: { platformFeePercent: number } — 0–100, one decimal place.
+ * Partial body allowed:
+ *   platformFeePercent?: number (0–100)
+ *   cashPaymentEnabled?: boolean
+ *   consumerHomeMode?: 'providers' | 'waitlist'
+ * At least one field required.
  */
 export const updatePlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -213,26 +218,57 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       throw new ApiError(403, 'Admin access required');
     }
 
-    const raw = req.body?.platformFeePercent;
-    if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'platformFeePercent')) {
-      throw new ApiError(400, 'platformFeePercent is required');
+    const body = req.body ?? {};
+    const hasFee = Object.prototype.hasOwnProperty.call(body, 'platformFeePercent');
+    const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
+    const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
+
+    if (!hasFee && !hasCash && !hasMode) {
+      throw new ApiError(
+        400,
+        'Provide at least one of platformFeePercent, cashPaymentEnabled, consumerHomeMode'
+      );
     }
 
-    const percent = typeof raw === 'number' ? raw : parseFloat(String(raw));
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-      throw new ApiError(400, 'platformFeePercent must be a number between 0 and 100');
+    const patch: {
+      platformFeePercent?: number;
+      cashPaymentEnabled?: boolean;
+      consumerHomeMode?: ConsumerHomeMode;
+    } = {};
+
+    if (hasFee) {
+      const percent =
+        typeof body.platformFeePercent === 'number'
+          ? body.platformFeePercent
+          : parseFloat(String(body.platformFeePercent));
+      if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+        throw new ApiError(400, 'platformFeePercent must be a number between 0 and 100');
+      }
+      patch.platformFeePercent = percent;
     }
 
-    const platformFeePercent = await setPlatformFeePercent(percent, req.user!.userId);
+    if (hasCash) {
+      patch.cashPaymentEnabled = Boolean(body.cashPaymentEnabled);
+    }
+
+    if (hasMode) {
+      const mode = String(body.consumerHomeMode);
+      if (mode !== 'providers' && mode !== 'waitlist') {
+        throw new ApiError(400, "consumerHomeMode must be 'providers' or 'waitlist'");
+      }
+      patch.consumerHomeMode = mode;
+    }
+
+    const data = await updatePlatformSettingsPartial(patch, req.user!.userId);
     logger.info('admin_update_platform_settings', {
       adminId: req.user!.userId,
-      platformFeePercent,
+      ...patch,
     });
 
     res.json({
       success: true,
-      data: { platformFeePercent },
-      message: 'Platform commission updated',
+      data,
+      message: 'Platform settings updated',
     });
   } catch (error) {
     next(error);

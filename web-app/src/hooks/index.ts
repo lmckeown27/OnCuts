@@ -15,3 +15,6 @@ export type { GeolocationState, UseGeolocationReturn } from './useGeolocation';
 export { useStripeOnboardingGate } from './useStripeOnboardingGate';
 
 export { useDynamicViewportHeight } from './useDynamicViewportHeight';
+
+export { useFrontendConfig, invalidateFrontendConfigCache } from './useFrontendConfig';
+export type { FrontendConfig, ConsumerHomeMode } from './useFrontendConfig';

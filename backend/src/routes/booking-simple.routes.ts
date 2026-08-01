@@ -48,6 +48,7 @@ import {
   resolveBookingPlatformFee,
 } from '../utils/platform-commission';
 import { processProviderKickback } from '../utils/platform-kickback';
+import { isCashPaymentEnabled } from '../utils/platform-frontend-settings';
 
 const router = express.Router();
 
@@ -2231,6 +2232,16 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
         success: false,
         error: 'Invalid payment method. Must be "card" or "cash"'
       });
+    }
+
+    if (paymentMethod === 'cash') {
+      const cashEnabled = await isCashPaymentEnabled();
+      if (!cashEnabled) {
+        return res.status(403).json({
+          success: false,
+          error: 'Cash payments are currently disabled',
+        });
+      }
     }
 
     // Verify user is the consumer for this booking

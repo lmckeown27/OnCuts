@@ -4,7 +4,7 @@ import {
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
   Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus,
-  ArrowDown, ArrowUp, Download
+  ArrowDown, ArrowUp, Download, SlidersHorizontal
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -30,6 +30,7 @@ import {
 } from './AdminCampusPanels';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
+import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -117,7 +118,8 @@ type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
-type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation';
+type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
+type ConsumerHomeMode = 'providers' | 'waitlist';
 
 interface MetricsListWindow {
   id: string;
@@ -429,6 +431,9 @@ export function AdminDashboard({
   const [isSavingCommission, setIsSavingCommission] = useState(false);
   /** Global platform commission % from /admin/platform-settings */
   const [platformFeePercent, setPlatformFeePercent] = useState(15);
+  const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
+  const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
+  const [isSavingControls, setIsSavingControls] = useState(false);
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
   const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
@@ -521,12 +526,18 @@ export function AdminDashboard({
     const fetchPlatformSettings = async () => {
       setIsLoadingPlatformFee(true);
       try {
-        const data = await api.get<{ platformFeePercent: number }>('/admin/platform-settings');
+        const data = await api.get<{
+          platformFeePercent: number;
+          cashPaymentEnabled?: boolean;
+          consumerHomeMode?: string;
+        }>('/admin/platform-settings');
         const percent = Number(data?.platformFeePercent);
         if (Number.isFinite(percent)) {
           setPlatformFeePercent(percent);
           setPlatformFeeInput(String(percent));
         }
+        setCashPaymentEnabled(data?.cashPaymentEnabled === true);
+        setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
       } catch (error) {
         console.error('Failed to fetch platform settings:', error);
       } finally {
@@ -556,6 +567,36 @@ export function AdminDashboard({
       toast.error(error?.message || 'Failed to update platform commission');
     } finally {
       setIsSavingPlatformFee(false);
+    }
+  };
+
+  const handleSaveControls = async (next: {
+    cashPaymentEnabled: boolean;
+    consumerHomeMode: ConsumerHomeMode;
+  }) => {
+    setIsSavingControls(true);
+    const prevCash = cashPaymentEnabled;
+    const prevMode = consumerHomeMode;
+    setCashPaymentEnabled(next.cashPaymentEnabled);
+    setConsumerHomeMode(next.consumerHomeMode);
+    try {
+      const data = await api.put<{
+        cashPaymentEnabled?: boolean;
+        consumerHomeMode?: string;
+      }>('/admin/platform-settings', {
+        cashPaymentEnabled: next.cashPaymentEnabled,
+        consumerHomeMode: next.consumerHomeMode,
+      });
+      setCashPaymentEnabled(data?.cashPaymentEnabled === true);
+      setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
+      invalidateFrontendConfigCache();
+      toast.success('Controls saved');
+    } catch (error: any) {
+      setCashPaymentEnabled(prevCash);
+      setConsumerHomeMode(prevMode);
+      toast.error(error?.message || 'Failed to update controls');
+    } finally {
+      setIsSavingControls(false);
     }
   };
 
@@ -2040,14 +2081,15 @@ export function AdminDashboard({
           <p className="text-center text-xs text-red-600">{campusLoadError}</p>
         )}
 
-        {/* Main tabs — Safety lives under Users, not as a top-level tab */}
-        <nav className="grid grid-cols-4 gap-0.5 rounded-xl bg-stone-200/70 p-1">
+        {/* Main tabs — Safety lives under Users; Controls is the 5th slot */}
+        <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
           {(
             [
               { view: 'performance' as const, label: 'Performance', Icon: Activity },
               { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
               { view: 'users' as const, label: 'Users', Icon: Users },
               { view: 'services' as const, label: 'Services', Icon: Scissors },
+              { view: 'controls' as const, label: 'Controls', Icon: SlidersHorizontal },
             ] as const
           ).map(({ view, label, Icon }) => {
             const active =
@@ -4955,6 +4997,91 @@ export function AdminDashboard({
               </div>
             )}
           </section>
+        </div>
+      )}
+
+      {deferredAdminView === 'controls' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-5">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Controls</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Consumer-facing payment and home layout switches.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Allow cash payments</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  When off, consumers can only pay by card.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={cashPaymentEnabled}
+                disabled={isLoadingPlatformFee || isSavingControls}
+                onClick={() =>
+                  void handleSaveControls({
+                    cashPaymentEnabled: !cashPaymentEnabled,
+                    consumerHomeMode,
+                  })
+                }
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  cashPaymentEnabled ? 'bg-brand-500' : 'bg-stone-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    cashPaymentEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-gray-900 mb-2">Consumer home</p>
+              <div className="flex rounded-lg bg-stone-100 p-1">
+                {(
+                  [
+                    { id: 'providers' as const, label: 'Provider cards' },
+                    { id: 'waitlist' as const, label: 'Waitlist' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={isLoadingPlatformFee || isSavingControls}
+                    onClick={() => {
+                      if (opt.id === consumerHomeMode) return;
+                      void handleSaveControls({
+                        cashPaymentEnabled,
+                        consumerHomeMode: opt.id,
+                      });
+                    }}
+                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors disabled:opacity-50 ${
+                      consumerHomeMode === opt.id
+                        ? 'bg-white shadow-sm text-gray-900'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Waitlist replaces the provider grid with a live consumer count.
+              </p>
+            </div>
+
+            {(isLoadingPlatformFee || isSavingControls) && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {isSavingControls ? 'Saving…' : 'Loading…'}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

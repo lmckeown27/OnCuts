@@ -25,7 +25,7 @@ import toast from 'react-hot-toast';
 import { TivelaPlatformsLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
-import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight, useGeolocation } from '../hooks';
+import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight, useGeolocation, useFrontendConfig } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -1623,6 +1623,11 @@ function DiscoveryView({
   }) => void;
 }) {
   const location = useLocation();
+  const {
+    consumerHomeMode,
+    consumerUserCount,
+    isLoading: isFrontendConfigLoading,
+  } = useFrontendConfig();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2011,8 +2016,84 @@ function DiscoveryView({
     });
   };
 
-  if (!townHydrated) {
+  if (!townHydrated || isFrontendConfigLoading) {
     return <Loading />;
+  }
+
+  if (consumerHomeMode === 'waitlist') {
+    const countLabel = consumerUserCount.toLocaleString();
+    return (
+      <>
+        {pendingPaymentBookings.length > 0 && (
+          <div className="mb-4 flex flex-col items-center gap-2">
+            {pendingPaymentBookings.map((booking) => {
+              const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
+              const dateStr = when
+                ? when.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : null;
+              const timeStr = when
+                ? when.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : null;
+              const price =
+                booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
+
+              return (
+                <button
+                  key={booking.bookingId}
+                  type="button"
+                  onClick={() => onOpenPayment?.(booking)}
+                  className="w-full max-w-md px-4 py-5 bg-white border border-gray-200 rounded-xl text-left hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <Avatar
+                      src={booking.barberAvatar || undefined}
+                      alt={booking.barberName}
+                      size="xl"
+                      className="!rounded-md"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-base font-semibold text-gray-900 truncate leading-tight">
+                          {booking.barberName}
+                        </p>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
+                          Awaiting payment
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
+                      <p className="text-sm text-gray-500 mt-1.5">
+                        {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-6 sm:mt-10 flex flex-col items-center text-center px-2">
+          <div className="w-full max-w-lg rounded-2xl bg-gradient-to-b from-stone-100 to-white border border-stone-200 px-6 py-12 sm:py-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-4">
+              OnCuts Waitlist
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
+              Join {countLabel} consumer{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
+            </h2>
+            <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
+              Provider browsing is paused while we prepare the next release. You&apos;re already counted — hang tight.
+            </p>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
