@@ -2040,18 +2040,18 @@ export function AdminDashboard({
           <p className="text-center text-xs text-red-600">{campusLoadError}</p>
         )}
 
-        {/* Five-tab bar */}
-        <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
+        {/* Main tabs — Safety lives under Users, not as a top-level tab */}
+        <nav className="grid grid-cols-4 gap-0.5 rounded-xl bg-stone-200/70 p-1">
           {(
             [
               { view: 'performance' as const, label: 'Performance', Icon: Activity },
               { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
               { view: 'users' as const, label: 'Users', Icon: Users },
               { view: 'services' as const, label: 'Services', Icon: Scissors },
-              { view: 'moderation' as const, label: 'Safety', Icon: Shield },
             ] as const
           ).map(({ view, label, Icon }) => {
-            const active = adminView === view;
+            const active =
+              adminView === view || (view === 'users' && adminView === 'moderation');
             return (
               <button
                 key={view}
@@ -4627,6 +4627,16 @@ export function AdminDashboard({
                   <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  startTransition(() => setAdminView('moderation'));
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Safety
+              </button>
             </div>
             
             {isLoadingUsers ? (
@@ -4695,6 +4705,19 @@ export function AdminDashboard({
 
       {deferredAdminView === 'moderation' && (
         <div className="space-y-8">
+          <button
+            type="button"
+            onClick={() => {
+              startTransition(() => {
+                setUsersPanelMounted(true);
+                setAdminView('users');
+              });
+            }}
+            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to users
+          </button>
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900">Reports</h3>
             <div className="flex flex-wrap items-center gap-2">
