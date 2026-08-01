@@ -9,10 +9,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, Check, Clock, DollarSign, User, Calendar,
-  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Banknote, Undo2
+  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Undo2, Wallet
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -60,17 +60,21 @@ interface BookingDetails {
   };
 }
 
+type PaymentEntryMode = 'manual' | 'wallet';
+
 // Payment Form Component (wrapped in Elements with clientSecret)
 function PaymentFormInner({ 
   booking,
   tipAmount,
   totalAmount,
+  paymentEntry,
   onSuccess,
   isUpdatingIntent = false,
 }: { 
   booking: BookingDetails;
   tipAmount: number;
   totalAmount: number;
+  paymentEntry: PaymentEntryMode;
   onSuccess: () => void;
   isUpdatingIntent?: boolean;
 }) {
@@ -78,10 +82,18 @@ function PaymentFormInner({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletAvailable, setWalletAvailable] = useState(true);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const finishSucceededPayment = async (paymentIntentId: string) => {
+    await api.post(`/bookings-simple/${booking.id}/confirm-payment`, {
+      paymentIntentId,
+      tipAmountCents: Math.round(tipAmount * 100),
+    });
+    toast.success('Payment successful!');
+    onSuccess();
+  };
 
+  const confirmWithStripe = async () => {
     if (!stripe || !elements) {
       setError('Payment system not ready. Please try again.');
       return;
@@ -91,13 +103,12 @@ function PaymentFormInner({
     setError(null);
 
     try {
-      // Confirm payment with Stripe - PaymentElement handles all payment methods
       const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.href, // Fallback for redirect-based payments
+          return_url: window.location.href,
         },
-        redirect: 'if_required', // Only redirect if payment method requires it
+        redirect: 'if_required',
       });
 
       if (stripeError) {
@@ -105,14 +116,7 @@ function PaymentFormInner({
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        // Confirm payment on backend
-        await api.post(`/bookings-simple/${booking.id}/confirm-payment`, {
-          paymentIntentId: paymentIntent.id,
-          tipAmountCents: Math.round(tipAmount * 100),
-        });
-
-        toast.success('Payment successful!');
-        onSuccess();
+        await finishSucceededPayment(paymentIntent.id);
       }
     } catch (err: any) {
       console.error('Payment error:', err);
@@ -122,20 +126,57 @@ function PaymentFormInner({
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await confirmWithStripe();
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Payment options: Apple Pay (for Apple Wallet cards) + Card input */}
-      <div>
-        <PaymentElement 
-          options={{
-            layout: 'tabs',
-            wallets: {
-              applePay: 'auto',
-              googlePay: 'auto',
-            },
-          }}
-        />
-      </div>
+      {paymentEntry === 'manual' ? (
+        <div>
+          <PaymentElement
+            key="manual-card"
+            options={{
+              layout: 'tabs',
+              wallets: {
+                applePay: 'never',
+                googlePay: 'never',
+              },
+            }}
+          />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <ExpressCheckoutElement
+            key="wallet-pay"
+            options={{
+              paymentMethods: {
+                applePay: 'always',
+                googlePay: 'always',
+                link: 'never',
+                paypal: 'never',
+                amazonPay: 'never',
+                klarna: 'never',
+              },
+            }}
+            onReady={({ availablePaymentMethods }) => {
+              const hasWallet = Boolean(
+                availablePaymentMethods?.applePay || availablePaymentMethods?.googlePay
+              );
+              setWalletAvailable(hasWallet);
+            }}
+            onConfirm={async () => {
+              await confirmWithStripe();
+            }}
+          />
+          {!walletAvailable && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Apple Pay / Google Pay isn’t available in this browser. Choose Manual card input instead.
+            </p>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
@@ -144,32 +185,35 @@ function PaymentFormInner({
         </div>
       )}
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={!stripe || isProcessing || isUpdatingIntent}
-        className="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isUpdatingIntent ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Updating total...
-          </>
-        ) : isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-5 h-5" />
-            Pay ${totalAmount.toFixed(2)}
-          </>
-        )}
-      </button>
+      {paymentEntry === 'manual' && (
+        <button
+          type="submit"
+          disabled={!stripe || isProcessing || isUpdatingIntent}
+          className="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isUpdatingIntent ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Updating total...
+            </>
+          ) : isProcessing ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <CreditCard className="w-5 h-5" />
+              Pay ${totalAmount.toFixed(2)}
+            </>
+          )}
+        </button>
+      )}
 
       <p className="text-center text-xs text-gray-500">
-        Secured by Stripe. Tap Apple Pay or Google Pay to use your saved cards.
+        {paymentEntry === 'manual'
+          ? 'Secured by Stripe. Enter your card details to pay.'
+          : 'Secured by Stripe. Use Apple Pay or Google Pay with your saved wallet cards.'}
       </p>
     </form>
   );
@@ -185,12 +229,11 @@ function PaymentForm({
 }) {
   const [selectedTip, setSelectedTip] = useState<number>(0);
   const [customTip, setCustomTip] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
+  const [paymentEntry, setPaymentEntry] = useState<PaymentEntryMode>('manual');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [intentError, setIntentError] = useState<string | null>(null);
-  const [isProcessingCash, setIsProcessingCash] = useState(false);
 
   const baseAmount = booking.priceUsdCents / 100;
   const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
@@ -202,10 +245,7 @@ function PaymentForm({
     { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
   ];
 
-  // Create payment intent when component mounts or tip changes (only for card payments)
   const createPaymentIntent = async () => {
-    if (paymentMethod === 'cash') return; // Skip for cash payments
-    
     setIsCreatingIntent(true);
     setIntentError(null);
     
@@ -224,41 +264,20 @@ function PaymentForm({
     }
   };
 
-  // Handle cash payment
-  const handleCashPayment = async () => {
-    setIsProcessingCash(true);
-    try {
-      await api.post(`/bookings-simple/${booking.id}/pay`, {
-        tipAmountCents: Math.round(tipAmount * 100),
-        paymentMethod: 'cash',
-      });
-      toast.success('Cash payment recorded!');
-      onSuccess();
-    } catch (err: any) {
-      console.error('Cash payment failed:', err);
-      toast.error(err.message || 'Failed to record cash payment');
-    } finally {
-      setIsProcessingCash(false);
-    }
-  };
-
-  // Create initial payment intent (only for card)
+  // Create initial payment intent once
   useEffect(() => {
-    if (paymentMethod === 'card') {
-      createPaymentIntent();
-    }
-  }, [paymentMethod]);
+    createPaymentIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bootstrap
+  }, []);
 
-  // Update payment intent when tip changes (debounced, only for card)
-  // Note: We use a ref to track if we should update (not recreate) to avoid remounting PaymentElement
+  // Update payment intent when tip changes (debounced)
+  // Avoid recreating the intent so Elements / wallets don't remount unexpectedly
   const [isUpdatingTip, setIsUpdatingTip] = useState(false);
   
   useEffect(() => {
-    if (paymentMethod !== 'card' || !paymentIntentId) return;
+    if (!paymentIntentId) return;
     
     const timer = setTimeout(async () => {
-      // Update the existing payment intent instead of creating a new one
-      // This avoids remounting the PaymentElement which would deselect Apple Pay
       setIsUpdatingTip(true);
       try {
         await api.post(`/bookings-simple/${booking.id}/update-payment-intent`, {
@@ -272,9 +291,9 @@ function PaymentForm({
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [tipAmount, paymentIntentId, paymentMethod, booking.id]);
+  }, [tipAmount, paymentIntentId, booking.id]);
 
-  if (paymentMethod === 'card' && isCreatingIntent && !clientSecret) {
+  if (isCreatingIntent && !clientSecret) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-4" />
@@ -283,7 +302,7 @@ function PaymentForm({
     );
   }
 
-  if (paymentMethod === 'card' && intentError) {
+  if (intentError) {
     return (
       <div className="text-center py-8">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
@@ -322,128 +341,91 @@ function PaymentForm({
         </div>
       </div>
 
-      {/* Payment Method Selection — cash temporarily disabled */}
+      {/* Payment Method Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to pay?</label>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setPaymentMethod('card')}
+            onClick={() => setPaymentEntry('manual')}
             className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-              paymentMethod === 'card'
+              paymentEntry === 'manual'
                 ? 'border-gray-900 bg-primary-50 text-primary-700'
                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
             }`}
           >
             <CreditCard className="w-6 h-6" />
-            <span className="font-semibold text-sm">Pay with Card</span>
+            <span className="font-semibold text-sm text-center">Manual card input</span>
           </button>
-          {/* Cash option temporarily disabled
           <button
             type="button"
-            onClick={() => {
-              setPaymentMethod('cash');
-              setSelectedTip(0);
-              setCustomTip('');
-            }}
+            onClick={() => setPaymentEntry('wallet')}
             className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-              paymentMethod === 'cash'
-                ? 'border-green-500 bg-green-50 text-green-700'
+              paymentEntry === 'wallet'
+                ? 'border-gray-900 bg-primary-50 text-primary-700'
                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
             }`}
           >
-            <Banknote className="w-6 h-6" />
-            <span className="font-semibold text-sm">Pay with Cash</span>
+            <Wallet className="w-6 h-6" />
+            <span className="font-semibold text-sm text-center">Apple / Google Pay</span>
           </button>
-          */}
         </div>
-        {/* Cash option temporarily disabled
-        {paymentMethod === 'cash' && (
-          <p className="mt-2 text-sm text-green-600 text-center">
-            Please give cash directly to {booking.barber.firstName}
-          </p>
-        )}
-        */}
       </div>
 
-      {/* Tip Selection - only show for card payments */}
-      {paymentMethod === 'card' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {tipOptions.map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                onClick={() => {
-                  // Toggle: if already selected, deselect (set to 0)
-                  if (selectedTip === option.value && !customTip) {
-                    setSelectedTip(0);
-                  } else {
-                    setSelectedTip(option.value);
-                    setCustomTip('');
-                  }
-                }}
-                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
-                  selectedTip === option.value && !customTip
-                    ? 'border-gray-900 bg-primary-50 text-primary-600'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Custom tip amount"
-              value={customTip}
-              onChange={(e) => {
-                // Prevent negative values
-                const value = e.target.value;
-                if (value === '' || parseFloat(value) >= 0) {
-                  setCustomTip(value);
+      {/* Tip Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {tipOptions.map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => {
+                // Toggle: if already selected, deselect (set to 0)
+                if (selectedTip === option.value && !customTip) {
                   setSelectedTip(0);
+                } else {
+                  setSelectedTip(option.value);
+                  setCustomTip('');
                 }
               }}
-              className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
-                customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
+              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                selectedTip === option.value && !customTip
+                  ? 'border-gray-900 bg-primary-50 text-primary-600'
+                  : 'border-gray-300 hover:border-gray-400'
               }`}
-            />
-          </div>
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
-      )}
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Custom tip amount"
+            value={customTip}
+            onChange={(e) => {
+              // Prevent negative values
+              const value = e.target.value;
+              if (value === '' || parseFloat(value) >= 0) {
+                setCustomTip(value);
+                setSelectedTip(0);
+              }
+            }}
+            className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
+              customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
+            }`}
+          />
+        </div>
+      </div>
 
-      {/* Cash Payment Button — temporarily disabled
-      {paymentMethod === 'cash' && (
-        <button
-          onClick={handleCashPayment}
-          disabled={isProcessingCash}
-          className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isProcessingCash ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <Banknote className="w-5 h-5" />
-              Confirm Cash Payment ${totalAmount.toFixed(2)}
-            </>
-          )}
-        </button>
-      )}
-      */}
-
-      {/* Card Payment Form with Elements Provider */}
-      {paymentMethod === 'card' && clientSecret && (
+      {/* Stripe Payment Form */}
+      {clientSecret && (
         <Elements 
-          key={booking.id} // Use stable key so PaymentElement doesn't remount when tip changes
+          key={booking.id} // Stable key so Elements doesn't remount when tip changes
           stripe={stripePromise} 
           options={{
             clientSecret,
@@ -460,6 +442,7 @@ function PaymentForm({
             booking={booking} 
             tipAmount={tipAmount}
             totalAmount={totalAmount}
+            paymentEntry={paymentEntry}
             onSuccess={onSuccess}
             isUpdatingIntent={isCreatingIntent || isUpdatingTip}
           />
