@@ -5003,13 +5003,6 @@ export function AdminDashboard({
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-5">
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Controls</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Consumer-facing payment and home layout switches.
-              </p>
-            </div>
-
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900">Allow cash payments</p>
