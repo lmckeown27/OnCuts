@@ -322,10 +322,10 @@ function PaymentForm({
         </div>
       </div>
 
-      {/* Payment Method Selection */}
+      {/* Payment Method Selection — cash temporarily disabled */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to pay?</label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <button
             type="button"
             onClick={() => setPaymentMethod('card')}
@@ -338,6 +338,7 @@ function PaymentForm({
             <CreditCard className="w-6 h-6" />
             <span className="font-semibold text-sm">Pay with Card</span>
           </button>
+          {/* Cash option temporarily disabled
           <button
             type="button"
             onClick={() => {
@@ -354,12 +355,15 @@ function PaymentForm({
             <Banknote className="w-6 h-6" />
             <span className="font-semibold text-sm">Pay with Cash</span>
           </button>
+          */}
         </div>
+        {/* Cash option temporarily disabled
         {paymentMethod === 'cash' && (
           <p className="mt-2 text-sm text-green-600 text-center">
             Please give cash directly to {booking.barber.firstName}
           </p>
         )}
+        */}
       </div>
 
       {/* Tip Selection - only show for card payments */}
@@ -414,7 +418,7 @@ function PaymentForm({
         </div>
       )}
 
-      {/* Cash Payment Button */}
+      {/* Cash Payment Button — temporarily disabled
       {paymentMethod === 'cash' && (
         <button
           onClick={handleCashPayment}
@@ -434,6 +438,7 @@ function PaymentForm({
           )}
         </button>
       )}
+      */}
 
       {/* Card Payment Form with Elements Provider */}
       {paymentMethod === 'card' && clientSecret && (

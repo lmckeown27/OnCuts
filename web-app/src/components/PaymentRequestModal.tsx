@@ -155,10 +155,10 @@ export default function PaymentRequestModal({
                 <p className="text-4xl font-bold text-gray-900">${baseAmountDollars.toFixed(2)}</p>
               </div>
 
-              {/* Payment Method Selection */}
+              {/* Payment Method Selection — cash temporarily disabled */}
               <div>
                 <p className="font-semibold text-gray-900 mb-3">How would you like to pay?</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <button
                     onClick={() => setPaymentMethod('card')}
                     className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
@@ -170,6 +170,7 @@ export default function PaymentRequestModal({
                     <CreditCard className="w-6 h-6" />
                     <span className="font-semibold">Pay with Card</span>
                   </button>
+                  {/* Cash option temporarily disabled
                   <button
                     onClick={() => {
                       setPaymentMethod('cash');
@@ -185,20 +186,22 @@ export default function PaymentRequestModal({
                     <Banknote className="w-6 h-6" />
                     <span className="font-semibold">Pay with Cash</span>
                   </button>
+                  */}
                 </div>
+                {/* Cash option temporarily disabled
                 {paymentMethod === 'cash' && (
                   <p className="mt-2 text-sm text-green-600 text-center">
                     Please give cash directly to {barberName.split(' ')[0]}
                   </p>
                 )}
+                */}
               </div>
 
-              {/* Tip Selection - only show for cash payments (card payments handle tips on the Stripe page) */}
+              {/* Tip Selection - only show for cash payments (card payments handle tips on the Stripe page)
               {paymentMethod === 'cash' && (
                 <div>
                   <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {/* No Tip Option */}
                     <button
                       onClick={() => {
                         setSelectedTip(0);
@@ -230,7 +233,6 @@ export default function PaymentRequestModal({
                     ))}
                   </div>
                   
-                  {/* Custom tip input */}
                   <div className="mt-3 relative">
                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -240,7 +242,6 @@ export default function PaymentRequestModal({
                       placeholder="Custom tip amount"
                       value={customTip}
                       onChange={(e) => {
-                        // Prevent negative values
                         const value = e.target.value;
                         if (value === '' || parseFloat(value) >= 0) {
                           setCustomTip(value);
@@ -254,9 +255,11 @@ export default function PaymentRequestModal({
                   </div>
                 </div>
               )}
+              */}
 
-              {/* Total - show tip breakdown only for cash, base amount for card */}
+              {/* Total */}
               <div className="py-4 border-t border-gray-200">
+                {/* Cash tip breakdown temporarily disabled
                 {paymentMethod === 'cash' ? (
                   <div className="space-y-2">
                     {tipAmount > 0 && (
@@ -277,15 +280,16 @@ export default function PaymentRequestModal({
                     </div>
                   </div>
                 ) : (
+                */}
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-semibold text-gray-700">Service Total</span>
                     <span className="text-2xl font-bold text-primary-600">${baseAmountDollars.toFixed(2)}</span>
                   </div>
-                )}
+                {/* )} */}
               </div>
 
-              {/* Pay Button - different behavior based on payment method */}
-              {paymentMethod === 'cash' ? (
+              {/* Pay Button — cash temporarily disabled; card only */}
+              {/* {paymentMethod === 'cash' ? (
                 <button
                   onClick={handleCashPayment}
                   disabled={isProcessing}
@@ -303,7 +307,7 @@ export default function PaymentRequestModal({
                     </>
                   )}
                 </button>
-              ) : (
+              ) : ( */}
                 <button
                   onClick={handleCardPayment}
                   className="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
@@ -311,7 +315,7 @@ export default function PaymentRequestModal({
                   <CreditCard className="w-5 h-5" />
                   Continue to Pay ${baseAmountDollars.toFixed(2)}
                 </button>
-              )}
+              {/* )} */}
 
               <button
                 type="button"
