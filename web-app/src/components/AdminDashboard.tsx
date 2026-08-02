@@ -5069,40 +5069,41 @@ export function AdminDashboard({
 
             {controlsPage === 'main' && (
               <div className="space-y-3 pt-1">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 mb-2">Consumer home</p>
-                  <div className="flex rounded-lg bg-stone-100 p-1">
-                    {(
-                      [
-                        { id: 'providers' as const, label: 'Provider cards' },
-                        { id: 'waitlist' as const, label: 'Waitlist' },
-                      ] as const
-                    ).map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
+                <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
+                  <legend className="text-sm font-semibold text-gray-900 mb-1">
+                    Consumer home
+                  </legend>
+                  {(
+                    [
+                      { id: 'providers' as const, label: 'Provider cards' },
+                      { id: 'waitlist' as const, label: 'Waitlist' },
+                    ] as const
+                  ).map((opt) => (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center gap-3 cursor-pointer ${
+                        isLoadingPlatformFee || isSavingControls ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="consumer-home-mode"
+                        value={opt.id}
+                        checked={consumerHomeMode === opt.id}
                         disabled={isLoadingPlatformFee || isSavingControls}
-                        onClick={() => {
+                        onChange={() => {
                           if (opt.id === consumerHomeMode) return;
                           void handleSaveControls({
                             cashPaymentEnabled,
                             consumerHomeMode: opt.id,
                           });
                         }}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors disabled:opacity-50 ${
-                          consumerHomeMode === opt.id
-                            ? 'bg-white shadow-sm text-gray-900'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Waitlist replaces the provider grid with a live consumer count.
-                  </p>
-                </div>
+                        className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="text-sm text-gray-900">{opt.label}</span>
+                    </label>
+                  ))}
+                </fieldset>
               </div>
             )}
 
