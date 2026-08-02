@@ -5037,9 +5037,9 @@ export function AdminDashboard({
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">Allow cash payments</p>
+                    <p className="text-sm font-semibold text-gray-900">Cash Option</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      When off, consumers can only pay by card.
+                      toggle off = no cash option
                     </p>
                   </div>
                   <button
