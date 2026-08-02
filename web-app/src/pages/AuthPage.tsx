@@ -200,6 +200,13 @@ export default function AuthPage() {
         signupData.password === signupData.confirmPassword;
 
   useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup' || modeParam === 'register') {
+      setMode('signup');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const pending = readSessionStorageWithMigration(PENDING_SIGNUP_PHONE_KEY, [
       LEGACY_PENDING_SIGNUP_PHONE_KEY,
     ]);
@@ -231,6 +238,14 @@ export default function AuthPage() {
           navigate(`/web/consumer/book/${redirect.barberId}`, {
             state: { barber: redirect.barber },
           });
+          return;
+        }
+        if (redirect.type === 'waitlist') {
+          navigate(
+            typeof redirect.path === 'string' && redirect.path.startsWith('/')
+              ? redirect.path
+              : '/web/consumer'
+          );
           return;
         }
       } catch {

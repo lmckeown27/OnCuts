@@ -2022,6 +2022,17 @@ function DiscoveryView({
 
   if (consumerHomeMode === 'waitlist') {
     const countLabel = consumerUserCount.toLocaleString();
+    const waitlistPlatformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+    const handleJoinWaitlist = () => {
+      const redirect = `${waitlistPlatformPrefix}/consumer`;
+      // Survives email-verify step (VerifyEmailPage reads this after registration).
+      localStorage.setItem(
+        'postLoginRedirect',
+        JSON.stringify({ type: 'waitlist', path: redirect })
+      );
+      navigate(`/web?mode=signup&redirect=${encodeURIComponent(redirect)}`);
+    };
+
     return (
       <>
         {pendingPaymentBookings.length > 0 && (
@@ -2084,12 +2095,33 @@ function DiscoveryView({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-4">
               OnCuts Waitlist
             </p>
-            <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
-              Join {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
-            </h2>
-            <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
-              Provider browsing is paused while we prepare the next release. You&apos;re already counted — hang tight.
-            </p>
+            {isAuthenticated ? (
+              <>
+                <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
+                  You&apos;re on the waitlist
+                </h2>
+                <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
+                  {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts.
+                  Provider browsing is paused while we prepare the next release — hang tight.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
+                  Join {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
+                </h2>
+                <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
+                  Create an account to join the waitlist. Provider browsing is paused while we prepare the next release.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleJoinWaitlist}
+                  className="mt-8 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors shadow-md hover:shadow-lg active:scale-[0.98]"
+                >
+                  Join Waitlist
+                </button>
+              </>
+            )}
           </div>
         </div>
       </>

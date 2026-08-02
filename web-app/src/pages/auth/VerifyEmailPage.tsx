@@ -96,6 +96,14 @@ export default function VerifyEmailPage() {
           });
           return;
         }
+        if (redirect.type === 'waitlist') {
+          navigate(
+            typeof redirect.path === 'string' && redirect.path.startsWith('/')
+              ? redirect.path
+              : '/web/consumer'
+          );
+          return;
+        }
       } catch (e) {
         localStorage.removeItem('postLoginRedirect');
       }
