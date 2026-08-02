@@ -240,10 +240,15 @@ function PaymentForm({
   const [isProcessingCash, setIsProcessingCash] = useState(false);
 
   const baseAmount = booking.priceUsdCents / 100;
-  const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
-  const totalAmount = baseAmount + tipAmount;
   const effectiveEntry =
     paymentEntry === 'cash' && !cashPaymentEnabled ? 'manual' : paymentEntry;
+  const tipAmount =
+    effectiveEntry === 'cash'
+      ? 0
+      : customTip
+        ? parseFloat(customTip) || 0
+        : selectedTip;
+  const totalAmount = baseAmount + tipAmount;
 
   const tipOptions = [
     { label: '15%', value: Math.round(baseAmount * 0.15 * 100) / 100 },
@@ -398,7 +403,11 @@ function PaymentForm({
           {cashPaymentEnabled && (
             <button
               type="button"
-              onClick={() => setPaymentEntry('cash')}
+              onClick={() => {
+                setPaymentEntry('cash');
+                setSelectedTip(0);
+                setCustomTip('');
+              }}
               className={`py-4 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                 effectiveEntry === 'cash'
                   ? 'border-green-500 bg-green-50 text-green-700'
@@ -417,55 +426,57 @@ function PaymentForm({
         )}
       </div>
 
-      {/* Tip Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {tipOptions.map((option) => (
-            <button
-              key={option.label}
-              type="button"
-              onClick={() => {
-                // Toggle: if already selected, deselect (set to 0)
-                if (selectedTip === option.value && !customTip) {
+      {/* Tip Selection — card / wallet only (not shown for cash) */}
+      {effectiveEntry !== 'cash' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {tipOptions.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => {
+                  // Toggle: if already selected, deselect (set to 0)
+                  if (selectedTip === option.value && !customTip) {
+                    setSelectedTip(0);
+                  } else {
+                    setSelectedTip(option.value);
+                    setCustomTip('');
+                  }
+                }}
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  selectedTip === option.value && !customTip
+                    ? 'border-gray-900 bg-primary-50 text-primary-600'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Custom tip amount"
+              value={customTip}
+              onChange={(e) => {
+                // Prevent negative values
+                const value = e.target.value;
+                if (value === '' || parseFloat(value) >= 0) {
+                  setCustomTip(value);
                   setSelectedTip(0);
-                } else {
-                  setSelectedTip(option.value);
-                  setCustomTip('');
                 }
               }}
-              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
-                selectedTip === option.value && !customTip
-                  ? 'border-gray-900 bg-primary-50 text-primary-600'
-                  : 'border-gray-300 hover:border-gray-400'
+              className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
+                customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
               }`}
-            >
-              {option.label}
-            </button>
-          ))}
+            />
+          </div>
         </div>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Custom tip amount"
-            value={customTip}
-            onChange={(e) => {
-              // Prevent negative values
-              const value = e.target.value;
-              if (value === '' || parseFloat(value) >= 0) {
-                setCustomTip(value);
-                setSelectedTip(0);
-              }
-            }}
-            className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
-              customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
-            }`}
-          />
-        </div>
-      </div>
+      )}
 
       {effectiveEntry === 'cash' ? (
         <button

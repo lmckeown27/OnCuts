@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, DollarSign, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
+import { X, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -33,8 +33,6 @@ export default function PaymentRequestModal({
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { cashPaymentEnabled } = useFrontendConfig();
   const [step, setStep] = useState<'payment' | 'tip' | 'review' | 'complete'>('payment');
-  const [selectedTip, setSelectedTip] = useState<number>(0);
-  const [customTip, setCustomTip] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [rating, setRating] = useState<number>(0);
   const [reviewComment, setReviewComment] = useState('');
@@ -43,15 +41,7 @@ export default function PaymentRequestModal({
   if (!isOpen) return null;
 
   const baseAmountDollars = amount / 100;
-  const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
-  const totalAmount = baseAmountDollars + tipAmount;
   const effectiveMethod = cashPaymentEnabled ? paymentMethod : 'card';
-
-  const tipOptions = [
-    { label: '15%', value: Math.round(baseAmountDollars * 0.15 * 100) / 100 },
-    { label: '20%', value: Math.round(baseAmountDollars * 0.20 * 100) / 100 },
-    { label: '25%', value: Math.round(baseAmountDollars * 0.25 * 100) / 100 },
-  ];
 
   const handlePayLater = () => {
     onPayLater?.();
@@ -69,7 +59,7 @@ export default function PaymentRequestModal({
     setIsProcessing(true);
     try {
       await api.post(`/bookings-simple/${bookingId}/pay`, {
-        tipAmountCents: Math.round(tipAmount * 100),
+        tipAmountCents: 0,
         paymentMethod: 'cash',
       });
       
@@ -175,11 +165,7 @@ export default function PaymentRequestModal({
                   </button>
                   {cashPaymentEnabled && (
                     <button
-                      onClick={() => {
-                        setPaymentMethod('cash');
-                        setSelectedTip(0);
-                        setCustomTip('');
-                      }}
+                      onClick={() => setPaymentMethod('cash')}
                       className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                         effectiveMethod === 'cash'
                           ? 'border-green-500 bg-green-50 text-green-700'
@@ -198,92 +184,18 @@ export default function PaymentRequestModal({
                 )}
               </div>
 
-              {/* Tip Selection - only show for cash payments (card payments handle tips on the Stripe page) */}
-              {cashPaymentEnabled && effectiveMethod === 'cash' && (
-                <div>
-                  <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedTip(0);
-                        setCustomTip('');
-                      }}
-                      className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
-                        selectedTip === 0 && !customTip
-                          ? 'border-gray-900 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      No Tip
-                    </button>
-                    {tipOptions.map((option) => (
-                      <button
-                        key={option.label}
-                        onClick={() => {
-                          setSelectedTip(option.value);
-                          setCustomTip('');
-                        }}
-                        className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
-                          selectedTip === option.value && !customTip
-                            ? 'border-gray-900 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-3 relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Custom tip amount"
-                      value={customTip}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || parseFloat(value) >= 0) {
-                          setCustomTip(value);
-                          setSelectedTip(0);
-                        }
-                      }}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 ${
-                        customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
-                      }`}
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Total */}
               <div className="py-4 border-t border-gray-200">
-                {cashPaymentEnabled && effectiveMethod === 'cash' ? (
-                  <div className="space-y-2">
-                    {tipAmount > 0 && (
-                      <>
-                        <div className="flex justify-between text-gray-600">
-                          <span>Service</span>
-                          <span>${baseAmountDollars.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-green-600">
-                          <span>Tip</span>
-                          <span>+${tipAmount.toFixed(2)}</span>
-                        </div>
-                      </>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-semibold text-gray-700">Total</span>
-                      <span className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-700">Service Total</span>
-                    <span className="text-2xl font-bold text-primary-600">${baseAmountDollars.toFixed(2)}</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-gray-700">Service Total</span>
+                  <span
+                    className={`text-2xl font-bold ${
+                      effectiveMethod === 'cash' ? 'text-green-600' : 'text-primary-600'
+                    }`}
+                  >
+                    ${baseAmountDollars.toFixed(2)}
+                  </span>
+                </div>
               </div>
 
               {/* Pay Button */}
@@ -301,7 +213,7 @@ export default function PaymentRequestModal({
                   ) : (
                     <>
                       <Banknote className="w-5 h-5" />
-                      Confirm Cash Payment ${totalAmount.toFixed(2)}
+                      Confirm Cash Payment ${baseAmountDollars.toFixed(2)}
                     </>
                   )}
                 </button>
