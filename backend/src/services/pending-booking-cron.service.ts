@@ -497,7 +497,7 @@ export class PendingBookingCronService {
 
   /**
    * Auto-cancel ACCEPTED bookings that were never paid:
-   * - 60 minutes after accept, or
+   * - 24 hours after accept, or
    * - scheduled start has passed while still unpaid
    */
   async processUnpaidAcceptedCancellations(): Promise<void> {

@@ -8,8 +8,8 @@ import notificationService from './notification.service';
 import pushNotificationService from './pushNotification.service';
 import { getSocketIO } from '../index';
 
-/** Unpaid ACCEPTED bookings auto-cancel after this many minutes. */
-export const UNPAID_ACCEPTED_CANCEL_AFTER_MINUTES = 60;
+/** Unpaid ACCEPTED bookings auto-cancel after this many minutes (24 hours). */
+export const UNPAID_ACCEPTED_CANCEL_AFTER_MINUTES = 24 * 60;
 
 export function bookingPaymentUrl(bookingId: string): string {
   return `${getFrontendBaseUrl()}/web/payment/${bookingId}`;
