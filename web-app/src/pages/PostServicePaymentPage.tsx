@@ -620,7 +620,7 @@ function TipPaymentForm({
                 setSelectedTip(option.value);
                 setCustomTip('');
               }}
-              className={`py-2.5 px-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`py-3 px-2 rounded-lg border text-xl font-semibold transition-colors ${
                 selectedTip === option.value && !customTip
                   ? 'border-gray-900 bg-primary-50 text-primary-600'
                   : 'border-gray-300 hover:border-gray-400'
