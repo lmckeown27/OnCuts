@@ -1148,14 +1148,14 @@ export default function PostServicePaymentPage() {
                   <Clock className="w-10 h-10 text-primary-500 animate-pulse" />
                 </div>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className={`text-2xl font-bold text-gray-900 ${awaitingTip ? 'mb-6' : 'mb-2'}`}>
                   {awaitingTip ? 'Waiting for Tip' : 'Waiting for Payment'}
                 </h2>
-                <p className="text-gray-600 mb-6">
-                  {awaitingTip
-                    ? `${booking.consumer.firstName} was asked to choose a tip (including $0).`
-                    : `${booking.consumer.firstName} needs to pay for the service to confirm this booking.`}
-                </p>
+                {!awaitingTip && (
+                  <p className="text-gray-600 mb-6">
+                    {booking.consumer.firstName} needs to pay for the service to confirm this booking.
+                  </p>
+                )}
               </>
             )}
 
