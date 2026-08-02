@@ -631,7 +631,7 @@ function TipPaymentForm({
       </div>
 
       {!tipChosen && (
-        <p className="text-sm text-gray-500 text-center">Choose a tip amount when you&apos;re ready</p>
+        <p className="text-sm text-gray-500 text-center">Pick a tip amount to complete the booking</p>
       )}
 
       {tipChosen && tipAmount === 0 && (
