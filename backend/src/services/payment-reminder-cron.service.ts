@@ -79,11 +79,9 @@ export class PaymentReminderCronService {
     try {
       logger.debug('Checking for bookings awaiting payment...');
 
-      // Find bookings that:
-      // 1. Are in 'COMPLETED' status (service done, awaiting payment)
-      // 2. Were completed at least REMINDER_DELAY_HOURS ago
-      // 3. Have not already had a payment reminder sent
-      // 4. Consumer has email_notifications enabled (or default true if not set)
+      // Remind for:
+      // 1) ACCEPTED unpaid (pay-on-accept) after acceptedAt delay
+      // 2) COMPLETED without tipDecidedAt (tip decision pending)
       const result = await pool.query(`
         SELECT 
           b.id,
@@ -92,8 +90,12 @@ export class PaymentReminderCronService {
           b."serviceType",
           b."priceUsdCents",
           b."requestedAt" as scheduled_time,
-          b."completedAt" as completed_time,
+          COALESCE(b."tipRequestedAt", b."completedAt", b."acceptedAt") as completed_time,
           b.status,
+          CASE
+            WHEN b.status = 'ACCEPTED' THEN 'service'
+            ELSE 'tip'
+          END as reminder_phase,
           c.location,
           c.service_name,
           consumer.email as consumer_email,
@@ -109,11 +111,23 @@ export class PaymentReminderCronService {
         LEFT JOIN barbers barber ON b."barberId" = barber.id
         LEFT JOIN users barber_user ON barber."userId" = barber_user.id
         LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
-        WHERE b.status = 'COMPLETED'
-          AND b."completedAt" IS NOT NULL
-          AND b."completedAt" < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
-          AND b.payment_reminder_sent IS NOT TRUE
+        WHERE b.payment_reminder_sent IS NOT TRUE
           AND consumer.email IS NOT NULL
+          AND (
+            (
+              b.status = 'ACCEPTED'
+              AND b."paidAt" IS NULL
+              AND b.paid_at IS NULL
+              AND b."acceptedAt" IS NOT NULL
+              AND b."acceptedAt" < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
+            )
+            OR (
+              b.status = 'COMPLETED'
+              AND b."tipDecidedAt" IS NULL
+              AND COALESCE(b."tipRequestedAt", b."completedAt") IS NOT NULL
+              AND COALESCE(b."tipRequestedAt", b."completedAt") < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
+            )
+          )
       `);
 
       if (result.rows.length === 0) {

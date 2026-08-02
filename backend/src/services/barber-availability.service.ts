@@ -38,7 +38,7 @@ export const BOOKING_STATUSES_THAT_BLOCK_SCHEDULE = [
   'PENDING',
   'ACCEPTED',
   'IN_PROGRESS',
-  'COMPLETED',
+  'PAID',
 ] as const;
 
 /** SQL predicate, e.g. `AND ${bookingStatusBlocksScheduleSql('status')}` */

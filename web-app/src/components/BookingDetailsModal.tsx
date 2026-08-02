@@ -338,15 +338,13 @@ export default function BookingDetailsModal({
 
   const handleCompleteBooking = async () => {
     try {
-      // Request payment from consumer - this sends them a notification
       await api.post(`/bookings-simple/${booking.id}/request-payment`, {});
-      toast.success('Payment request sent to customer');
+      toast.success('Tip request sent to customer');
       handleClose();
-      // Navigate to barber's payment waiting page
       navigate(`/web/payment/${booking.id}`);
     } catch (error: any) {
-      console.error('Failed to request payment:', error);
-      toast.error(error.message || 'Failed to request payment');
+      console.error('Failed to mark complete:', error);
+      toast.error(error.message || 'Failed to mark complete — customer must pay first');
     }
   };
 
@@ -375,11 +373,14 @@ export default function BookingDetailsModal({
   };
 
   const canAccept = booking.status === 'PENDING';
-  const canEdit = booking.status === 'ACCEPTED';
-  const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
-  const canComplete = booking.status === 'ACCEPTED';
+  const canEdit = booking.status === 'ACCEPTED' || booking.status === 'PAID';
+  const canCancel =
+    booking.status === 'ACCEPTED' ||
+    booking.status === 'PENDING' ||
+    booking.status === 'PAID';
+  const canComplete = booking.status === 'PAID';
   const canRemove = isAdmin && (booking.status === 'COMPLETED' || booking.status === 'PAID');
-  const canUndoComplete = booking.status === 'COMPLETED';
+  const canUndoComplete = booking.status === 'COMPLETED' && !(booking as any).tipDecidedAt;
 
   return (
     <div
@@ -809,7 +810,7 @@ export default function BookingDetailsModal({
                       onClick={handleCompleteBooking}
                         className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Request Payment
+                      Mark Complete
                     </button>
                       <button
                         onClick={() => {

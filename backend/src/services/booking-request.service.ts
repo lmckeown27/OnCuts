@@ -20,6 +20,7 @@ import {
   BarberPricingEntry,
 } from '../utils/service-duration.utils';
 import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
+import { notifyConsumerPayAfterAccept } from './booking-payment-lifecycle.service';
 
 function mergeConversationLocation(
   loc: string | null | undefined,
@@ -726,14 +727,18 @@ export class BookingRequestService {
 
         // Also update the linked booking record if it exists
         const linkedBookingId = updateResult.rows[0].booking_id;
+        let linkedPriceCents: number | null = null;
         if (linkedBookingId) {
-          await client.query(`
+          const linkedUpdate = await client.query(`
             UPDATE bookings
             SET 
               status = 'ACCEPTED',
+              "acceptedAt" = COALESCE("acceptedAt", NOW()),
               "updatedAt" = CURRENT_TIMESTAMP
             WHERE id = $1
+            RETURNING "priceUsdCents"
           `, [linkedBookingId]);
+          linkedPriceCents = linkedUpdate.rows[0]?.priceUsdCents ?? null;
           logger.info(`Linked booking ${linkedBookingId} also marked as ACCEPTED`);
         }
 
@@ -755,22 +760,27 @@ export class BookingRequestService {
           userId: consumerUserId,
           type: 'booking_accepted',
           title: 'Booking Accepted!',
-          message: `${barberName} accepted your booking request`,
-          data: { conversationId, bookingId: linkedBookingId },
+          message: `${barberName} accepted your booking request. Pay now to confirm.`,
+          data: { conversationId, bookingId: linkedBookingId, phase: 'service' },
         });
         await pushNotificationService.sendMirrorPush(
           consumerUserId,
           'Booking Accepted!',
-          `${barberName} accepted your booking request`,
+          `${barberName} accepted your booking request. Pay now to confirm.`,
           'booking_accepted',
-          { conversationId, bookingId: linkedBookingId }
+          { conversationId, bookingId: linkedBookingId, phase: 'service' }
         );
 
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
 
-        // Send confirmation emails if there's a linked booking (non-blocking)
         if (linkedBookingId) {
+          void notifyConsumerPayAfterAccept({
+            bookingId: linkedBookingId,
+            consumerId: consumerUserId,
+            barberName,
+            priceUsdCents: linkedPriceCents,
+          });
           this.sendBookingConfirmationEmailsAsync(linkedBookingId).catch(err => {
             logger.error(`Failed to send booking confirmation emails for ${linkedBookingId}:`, err);
           });
@@ -804,7 +814,7 @@ export class BookingRequestService {
           "acceptedAt" = NOW(),
           "updatedAt" = NOW()
         WHERE id = $1 AND status = 'PENDING'
-        RETURNING "consumerId"
+        RETURNING "consumerId", "priceUsdCents"
       `,
         [bookingId]
       );
@@ -814,6 +824,7 @@ export class BookingRequestService {
       }
 
       const consumerId = updateResult.rows[0].consumerId;
+      const priceUsdCents = updateResult.rows[0].priceUsdCents ?? null;
       
       // Also update any linked conversation's booking_status
       await client.query(`
@@ -838,19 +849,26 @@ export class BookingRequestService {
         userId: consumerId,
         type: 'booking_accepted',
         title: 'Booking Accepted!',
-        message: `${barberName} accepted your booking request`,
-        data: { bookingId },
+        message: `${barberName} accepted your booking request. Pay now to confirm.`,
+        data: { bookingId, phase: 'service' },
       });
       await pushNotificationService.sendMirrorPush(
         consumerId,
         'Booking Accepted!',
-        `${barberName} accepted your booking request`,
+        `${barberName} accepted your booking request. Pay now to confirm.`,
         'booking_accepted',
-        { bookingId }
+        { bookingId, phase: 'service' }
       );
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
+
+      void notifyConsumerPayAfterAccept({
+        bookingId,
+        consumerId,
+        barberName,
+        priceUsdCents,
+      });
 
       // Send confirmation emails to both consumer and barber (non-blocking)
       this.sendBookingConfirmationEmailsAsync(bookingId).catch(err => {

@@ -122,10 +122,10 @@ const PAID_OR_COMPLETED_STATUSES = new Set(['COMPLETED', 'PAID']);
 const formatBookingStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     PENDING: 'Pending',
-    ACCEPTED: 'Accepted',
+    ACCEPTED: 'Awaiting payment',
     PAID: 'Paid',
     IN_PROGRESS: 'In progress',
-    COMPLETED: 'Awaiting payment',
+    COMPLETED: 'Awaiting tip',
     DISPUTED: 'Disputed',
     CANCELLED: 'Cancelled',
     REFUNDED: 'Refunded',

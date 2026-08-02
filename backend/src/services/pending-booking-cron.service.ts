@@ -60,12 +60,15 @@ export class PendingBookingCronService {
       try {
         await this.processPendingWarnings();
         await this.processStalePendingCancellations();
+        await this.processUnpaidAcceptedCancellations();
       } finally {
         this.isRunning = false;
       }
     });
 
-    logger.info('📧 Pending booking cron job started (warnings + stale auto-cancel, every 5 minutes)');
+    logger.info(
+      '📧 Pending booking cron job started (warnings + stale pending + unpaid accepted auto-cancel, every 5 minutes)'
+    );
   }
 
   /**
@@ -489,6 +492,144 @@ export class PendingBookingCronService {
       }
     } catch (error: any) {
       logger.error('Error processing stale pending auto-cancellations:', error.message);
+    }
+  }
+
+  /**
+   * Auto-cancel ACCEPTED bookings that were never paid:
+   * - 60 minutes after accept, or
+   * - scheduled start has passed while still unpaid
+   */
+  async processUnpaidAcceptedCancellations(): Promise<void> {
+    const { UNPAID_ACCEPTED_CANCEL_AFTER_MINUTES } = await import(
+      './booking-payment-lifecycle.service'
+    );
+    const reason =
+      'Automatically cancelled because payment was not completed after the booking was accepted.';
+    let cancelledCount = 0;
+
+    try {
+      const result = await pool.query(
+        `
+        SELECT
+          b.id,
+          b."consumerId",
+          b."barberId",
+          b."serviceType",
+          b."priceUsdCents",
+          b."requestedAt" as scheduled_time,
+          b."acceptedAt",
+          c.location,
+          c.service_name,
+          consumer.first_name as consumer_first_name,
+          consumer.last_name as consumer_last_name,
+          consumer.email as consumer_email,
+          barber_user.id as barber_user_id,
+          barber_user.first_name as barber_first_name,
+          barber_user.last_name as barber_last_name,
+          barber_user.email as barber_email
+        FROM bookings b
+        LEFT JOIN conversations c ON c.booking_id = b.id
+        LEFT JOIN users consumer ON b."consumerId" = consumer.id
+        LEFT JOIN barbers barber ON b."barberId" = barber.id
+        LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+        WHERE b.status = 'ACCEPTED'
+          AND b."paidAt" IS NULL
+          AND b.paid_at IS NULL
+          AND (
+            (
+              b."acceptedAt" IS NOT NULL
+              AND b."acceptedAt" < NOW() - ($1::int * INTERVAL '1 minute')
+            )
+            OR (
+              b."requestedAt" IS NOT NULL
+              AND b."requestedAt" < NOW()
+            )
+          )
+        `,
+        [UNPAID_ACCEPTED_CANCEL_AFTER_MINUTES]
+      );
+
+      if (result.rows.length === 0) return;
+
+      logger.info(`Found ${result.rows.length} unpaid accepted booking(s) to auto-cancel`);
+
+      for (const booking of result.rows) {
+        try {
+          const updated = await pool.query(
+            `UPDATE bookings
+             SET status = 'CANCELLED',
+                 "cancelledAt" = NOW(),
+                 "cancellationReason" = $2,
+                 "updatedAt" = NOW()
+             WHERE id = $1 AND status = 'ACCEPTED'
+               AND "paidAt" IS NULL AND paid_at IS NULL
+             RETURNING id`,
+            [booking.id, reason]
+          );
+          if (updated.rows.length === 0) continue;
+
+          await cancelPendingRescheduleRequestsForBooking(booking.id, null);
+          await pool.query(
+            `DELETE FROM messages
+             WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+            [booking.id]
+          );
+          await pool.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking.id]);
+
+          const serviceName =
+            booking.service_name || formatServiceType(booking.serviceType) || 'Haircut';
+          const consumerMsg = `Your ${serviceName} booking was cancelled because payment was not completed in time.`;
+          const barberMsg = `A ${serviceName} booking was auto-cancelled because the customer did not pay after accept.`;
+
+          if (booking.consumerId) {
+            await notificationService.saveNotification({
+              userId: booking.consumerId,
+              type: 'booking_cancelled',
+              title: 'Booking Cancelled',
+              message: consumerMsg,
+              data: { bookingId: booking.id, reason, cancelledBy: 'system' },
+            });
+            await pushNotificationService.sendMirrorPush(
+              booking.consumerId,
+              'Booking Cancelled',
+              consumerMsg,
+              'booking_cancelled',
+              { bookingId: booking.id, reason, cancelledBy: 'system' }
+            );
+          }
+          if (booking.barber_user_id) {
+            await notificationService.saveNotification({
+              userId: booking.barber_user_id,
+              type: 'booking_cancelled',
+              title: 'Booking Auto-Cancelled',
+              message: barberMsg,
+              data: { bookingId: booking.id, reason, cancelledBy: 'system' },
+            });
+            await pushNotificationService.sendMirrorPush(
+              booking.barber_user_id,
+              'Booking Auto-Cancelled',
+              barberMsg,
+              'booking_cancelled',
+              { bookingId: booking.id, reason, cancelledBy: 'system' }
+            );
+          }
+
+          cancelledCount++;
+          logger.info(`✅ Auto-cancelled unpaid accepted booking ${booking.id}`);
+        } catch (error: any) {
+          logger.error(
+            `Failed to auto-cancel unpaid accepted booking ${booking.id}:`,
+            error.message
+          );
+        }
+      }
+
+      if (cancelledCount > 0) {
+        logger.info(`🚫 Unpaid accepted auto-cancellations processed: ${cancelledCount}`);
+      }
+    } catch (error: any) {
+      logger.error('Error processing unpaid accepted auto-cancellations:', error.message);
     }
   }
 }

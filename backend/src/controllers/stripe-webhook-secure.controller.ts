@@ -495,17 +495,18 @@ async function handleCheckoutSessionCompleted(
 
     const updateBookingResult = await client.query(
       `UPDATE bookings 
-       SET status = 'COMPLETED',
+       SET status = 'PAID',
            payment_intent_id = COALESCE($1, payment_intent_id),
            paid_at = NOW(),
            "paidAt" = NOW(),
-           tip_amount_cents = $2,
-           "tipAmountCents" = $2,
-           "totalPaidCents" = $3,
+           tip_amount_cents = 0,
+           "tipAmountCents" = 0,
+           "totalPaidCents" = $2,
+           "paymentMethod" = COALESCE("paymentMethod", 'card'),
            "updatedAt" = NOW()
-       WHERE id = $4
+       WHERE id = $3
        RETURNING *`,
-      [paymentIntentId || null, 0, amountCents, booking_id]
+      [paymentIntentId || null, amountCents, booking_id]
     );
 
     if (updateBookingResult.rowCount === 0) {
@@ -513,18 +514,7 @@ async function handleCheckoutSessionCompleted(
     }
 
     const booking = updateBookingResult.rows[0];
-
-    try {
-      await archiveBookingMessages(booking_id, client);
-      await client.query(
-        `DELETE FROM messages 
-         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-        [booking_id]
-      );
-      await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
-    } catch {
-      logger.debug(`No conversation to delete for booking ${booking_id}`);
-    }
+    // Pay-on-accept: keep conversation open until tip decision.
 
     if (paymentIntentId) {
       await client.query(
@@ -660,14 +650,17 @@ async function handlePaymentIntentSucceeded(
     return;
   }
 
-  const { booking_id, consumer_id, barber_id, tip_amount_cents } = paymentIntent.metadata;
+  const { booking_id, consumer_id, barber_id, tip_amount_cents, payment_kind } =
+    paymentIntent.metadata;
   const amountCents = paymentIntent.amount_received;
+  const isTipPayment = payment_kind === 'tip';
 
   logger.info(`💰 Processing payment success: ${paymentIntent.id}`, {
     bookingId: booking_id,
     amount: `$${amountCents / 100}`,
     consumerId: consumer_id,
     barberId: barber_id,
+    paymentKind: payment_kind || 'service',
   });
 
   if (!booking_id) {
@@ -699,72 +692,103 @@ async function handlePaymentIntentSucceeded(
   try {
     await client.query('BEGIN');
 
-    // 1. Update booking to COMPLETED status (with payment info)
-    // Stamp paymentMethod as card when unset so Stripe settlements aren't null for analytics
-    const updateBookingResult = await client.query(
-      `UPDATE bookings 
-       SET status = 'COMPLETED',
-           payment_intent_id = $1,
-           paid_at = NOW(),
-           "paidAt" = NOW(),
-           tip_amount_cents = $2,
-           "tipAmountCents" = $2,
-           "totalPaidCents" = $3,
-           "paymentMethod" = COALESCE("paymentMethod", 'card'),
-           "updatedAt" = NOW()
-       WHERE id = $4
-       RETURNING *`,
-      [paymentIntent.id, parseInt(tip_amount_cents || '0'), amountCents, booking_id]
-    );
+    let booking: any;
+    const tipCents = parseInt(tip_amount_cents || '0', 10) || (isTipPayment ? amountCents : 0);
 
-    if (updateBookingResult.rowCount === 0) {
-      throw new Error(`Booking ${booking_id} not found`);
-    }
-
-    const booking = updateBookingResult.rows[0];
-    logger.info(`✅ Booking ${booking_id} marked as COMPLETED (paid)`);
-
-    // Sync stored fee from Stripe (including $0 commission-free)
-    const tipCents = parseInt(tip_amount_cents || '0', 10) || 0;
-    const syncedPlatformFee =
-      paymentIntent.application_fee_amount != null
-        ? paymentIntent.application_fee_amount
-        : paymentIntent.metadata?.platform_fee_cents != null
-          ? parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0
-          : booking.platformFeeUsdCents;
-    if (syncedPlatformFee != null) {
-      const serviceCents = Math.max(0, (booking.priceUsdCents ?? amountCents - tipCents) as number);
-      await client.query(
+    if (isTipPayment) {
+      const tipUpdate = await client.query(
         `UPDATE bookings
-         SET "platformFeeUsdCents" = $1,
-             "barberEarningsUsdCents" = $2,
+         SET "tipAmountCents" = $1,
+             tip_amount_cents = $1,
+             "totalPaidCents" = COALESCE("totalPaidCents", "priceUsdCents", 0) + $1,
+             "tipDecidedAt" = COALESCE("tipDecidedAt", NOW()),
+             "paymentMethod" = COALESCE("paymentMethod", 'card'),
              "updatedAt" = NOW()
-         WHERE id = $3::uuid`,
-        [syncedPlatformFee, Math.max(0, serviceCents - syncedPlatformFee), booking_id]
+         WHERE id = $2
+         RETURNING *`,
+        [tipCents, booking_id]
       );
-      booking.platformFeeUsdCents = syncedPlatformFee;
-      booking.barberEarningsUsdCents = Math.max(0, serviceCents - syncedPlatformFee);
+      if (tipUpdate.rowCount === 0) {
+        throw new Error(`Booking ${booking_id} not found`);
+      }
+      booking = tipUpdate.rows[0];
+      logger.info(`✅ Tip recorded via webhook for booking ${booking_id}`);
+
+      try {
+        await archiveBookingMessages(booking_id, client);
+        await client.query(
+          `DELETE FROM messages
+           WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+          [booking_id]
+        );
+        await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
+      } catch {
+        logger.debug(`No conversation to delete for tip on booking ${booking_id}`);
+      }
+    } else {
+      // Service payment (pay-on-accept) → PAID; keep conversation open
+      const updateBookingResult = await client.query(
+        `UPDATE bookings 
+         SET status = 'PAID',
+             payment_intent_id = $1,
+             paid_at = NOW(),
+             "paidAt" = NOW(),
+             tip_amount_cents = 0,
+             "tipAmountCents" = 0,
+             "totalPaidCents" = $2,
+             "paymentMethod" = COALESCE("paymentMethod", 'card'),
+             "updatedAt" = NOW()
+         WHERE id = $3
+           AND status IN ('ACCEPTED', 'PENDING', 'PAID')
+         RETURNING *`,
+        [paymentIntent.id, amountCents, booking_id]
+      );
+
+      if (updateBookingResult.rowCount === 0) {
+        // Already further along — still stamp paidAt if missing
+        const fallback = await client.query(
+          `UPDATE bookings
+           SET payment_intent_id = COALESCE(payment_intent_id, $1),
+               paid_at = COALESCE(paid_at, NOW()),
+               "paidAt" = COALESCE("paidAt", NOW()),
+               "totalPaidCents" = COALESCE(NULLIF("totalPaidCents", 0), $2),
+               "paymentMethod" = COALESCE("paymentMethod", 'card'),
+               "updatedAt" = NOW()
+           WHERE id = $3
+           RETURNING *`,
+          [paymentIntent.id, amountCents, booking_id]
+        );
+        if (fallback.rowCount === 0) {
+          throw new Error(`Booking ${booking_id} not found`);
+        }
+        booking = fallback.rows[0];
+      } else {
+        booking = updateBookingResult.rows[0];
+      }
+      logger.info(`✅ Booking ${booking_id} marked as PAID (service)`);
+
+      const syncedPlatformFee =
+        paymentIntent.application_fee_amount != null
+          ? paymentIntent.application_fee_amount
+          : paymentIntent.metadata?.platform_fee_cents != null
+            ? parseInt(String(paymentIntent.metadata.platform_fee_cents), 10) || 0
+            : booking.platformFeeUsdCents;
+      if (syncedPlatformFee != null) {
+        const serviceCents = Math.max(0, (booking.priceUsdCents ?? amountCents) as number);
+        await client.query(
+          `UPDATE bookings
+           SET "platformFeeUsdCents" = $1,
+               "barberEarningsUsdCents" = $2,
+               "updatedAt" = NOW()
+           WHERE id = $3::uuid`,
+          [syncedPlatformFee, Math.max(0, serviceCents - syncedPlatformFee), booking_id]
+        );
+        booking.platformFeeUsdCents = syncedPlatformFee;
+        booking.barberEarningsUsdCents = Math.max(0, serviceCents - syncedPlatformFee);
+      }
     }
 
-    // Archive messages for admin viewing, then delete the conversation
-    try {
-      await archiveBookingMessages(booking_id, client);
-      await client.query(
-        `DELETE FROM messages 
-         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-        [booking_id]
-      );
-      await client.query(
-        `DELETE FROM conversations WHERE booking_id = $1`,
-        [booking_id]
-      );
-      logger.info(`Archived and deleted conversation for paid booking ${booking_id}`);
-    } catch (convError: any) {
-      // Conversation may already be deleted - that's fine
-      logger.debug(`No conversation to delete for booking ${booking_id}`);
-    }
-
-    // 2. Create payment record for audit trail
+    // Create payment record for audit trail
     await client.query(
       `INSERT INTO payments (
         booking_id, 
@@ -784,14 +808,14 @@ async function handlePaymentIntentSucceeded(
         barber_id || booking.barberId,
         paymentIntent.id,
         amountCents,
-        parseInt(tip_amount_cents || '0'),
+        isTipPayment ? tipCents : 0,
         paymentIntent.currency.toUpperCase(),
         'succeeded'
       ]
     );
 
-    // 3. Trigger payout to barber via Stripe Connect
-    const tipAmountCents = parseInt(tip_amount_cents || '0');
+    // Trigger payout / kickback helpers for service payments
+    const tipAmountCents = isTipPayment ? tipCents : 0;
     await initiateBarberPayout(
       client,
       booking,

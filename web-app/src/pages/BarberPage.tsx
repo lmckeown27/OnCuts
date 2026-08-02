@@ -1222,6 +1222,7 @@ interface ConfirmedBooking {
   status: string;
   createdAt: string;
   paidAt?: string;
+  tipDecidedAt?: string | null;
   commissionFreeApplied?: boolean;
   // Consumer-provided input data
   location?: string;
@@ -1444,9 +1445,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     [confirmedBookings, hiddenPaidBookingIds]
   );
 
-  /** Statuses that occupy schedule slots. COMPLETED (awaiting payment) stays until PAID. Matches backend busy list. */
+  /** Occupies schedule until service is marked complete. COMPLETED frees the slot (tip may still be pending). */
   const SCHEDULE_OCCUPYING_STATUSES = useMemo(
-    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED']),
+    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'PAID']),
     []
   );
 
@@ -1459,7 +1460,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   );
 
   const awaitingPaymentBookings = useMemo(
-    () => visibleConfirmedBookings.filter(b => b.status === 'COMPLETED'),
+    () =>
+      visibleConfirmedBookings.filter(
+        (b) =>
+          (b.status === 'ACCEPTED' && !b.paidAt) ||
+          (b.status === 'COMPLETED' && !b.tipDecidedAt)
+      ),
     [visibleConfirmedBookings]
   );
 
@@ -1588,7 +1594,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        // PENDING/ACCEPTED/IN_PROGRESS/COMPLETED occupy the schedule; PAID is fetched for history but not shown on calendar
+        // PENDING/ACCEPTED/PAID occupy schedule; COMPLETED is post-service (tip may be pending)
         const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
           role: 'barber',
           status: 'PENDING,ACCEPTED,COMPLETED,PAID',
@@ -1943,12 +1949,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     try {
       await api.post(`/bookings-simple/${selectedBookingInline.id}/request-payment`, {});
-      toast.success('Payment request sent to customer');
+      toast.success('Tip request sent to customer');
       closeDayModal();
       navigate(`/web/payment/${selectedBookingInline.id}`);
     } catch (error: any) {
-      console.error('Failed to request payment:', error);
-      toast.error(error.message || 'Failed to request payment');
+      console.error('Failed to request tip:', error);
+      toast.error(error.message || 'Failed to mark complete — customer must pay first');
     }
   };
 
@@ -2068,7 +2074,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-semibold text-gray-900 truncate">{consumerName}</p>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0">
-                        Awaiting payment
+                        {booking.status === 'COMPLETED' ? 'Awaiting tip' : 'Awaiting payment'}
                       </span>
                     </div>
                     <p className="text-xs text-gray-700 mt-1 truncate">{serviceLabel}</p>
@@ -2525,11 +2531,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       {/* Action Buttons */}
                       {(() => {
                         const canAccept = selectedBookingInline.status === 'PENDING';
-                        const canEdit = selectedBookingInline.status === 'ACCEPTED';
-                        const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
-                        const canComplete = selectedBookingInline.status === 'ACCEPTED';
+                        const canEdit =
+                          selectedBookingInline.status === 'ACCEPTED' ||
+                          selectedBookingInline.status === 'PAID';
+                        const canCancel =
+                          selectedBookingInline.status === 'ACCEPTED' ||
+                          selectedBookingInline.status === 'PENDING' ||
+                          selectedBookingInline.status === 'PAID';
+                        const canComplete = selectedBookingInline.status === 'PAID';
                         const canRemove = isAdmin && (selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID');
-                        const canUndoComplete = selectedBookingInline.status === 'COMPLETED';
+                        const canUndoComplete =
+                          selectedBookingInline.status === 'COMPLETED' &&
+                          !selectedBookingInline.tipDecidedAt;
                         
                         if (!canAccept && !canComplete && !canEdit && !canCancel && !canRemove && !canUndoComplete) return null;
                         
@@ -2560,7 +2573,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                               >
                                 <CreditCard className="w-4 h-4" />
-                                Request Payment
+                                Mark Complete
                               </button>
                             )}
                             {(canEdit || canCancel) && (
@@ -3071,12 +3084,16 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   };
 
   const getStatusBadge = (booking: any) => {
-    // Check for payment by status OR paidAt field
-    if (booking.status === 'PAID' || booking.paidAt) {
-      return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Paid</span>;
+    if (booking.tipDecidedAt) {
+      return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Complete</span>;
     }
     if (booking.status === 'COMPLETED') {
-      // COMPLETED means awaiting payment
+      return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Tip</span>;
+    }
+    if (booking.status === 'PAID' || booking.paidAt) {
+      return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">Paid</span>;
+    }
+    if (booking.status === 'ACCEPTED') {
       return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Payment</span>;
     }
     if (isPaymentDue(booking)) {
@@ -3158,8 +3175,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
             <div className="space-y-3">
               {filteredBookings.map((booking) => {
                 const { date, time } = formatDateTime(booking.scheduledTime);
-                // Show "Mark Complete" for all ACCEPTED bookings - barber can trigger payment at any time
-                const showMarkComplete = booking.status === 'ACCEPTED';
+                // Mark complete only after service is paid (pay-on-accept)
+                const showMarkComplete = booking.status === 'PAID';
                 
                 return (
                   <div 

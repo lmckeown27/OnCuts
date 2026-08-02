@@ -1047,28 +1047,24 @@ export default function ConsumerBookingStatusPage() {
 
         {/* Payment Required Alert */}
         {(() => {
-          // Check if payment is required:
-          // - Status is COMPLETED (barber marked service complete) and not paid
-          // - OR status is ACCEPTED and (payment requested OR 15 mins past scheduled time)
-          const scheduledDate = new Date(booking.scheduledTime);
-          const fifteenMinsAfter = new Date(scheduledDate.getTime() + 15 * 60 * 1000);
-          const now = new Date();
-          const isPaymentRequired = !booking.paidAt && (
-            booking.status === 'COMPLETED' ||
-            (booking.status === 'ACCEPTED' && (booking.paymentRequestedAt || now >= fifteenMinsAfter))
-          );
+          // Service pay on accept, or tip decision after complete
+          const needsServicePay = booking.status === 'ACCEPTED' && !booking.paidAt;
+          const needsTip =
+            booking.status === 'COMPLETED' && !(booking as any).tipDecidedAt;
+          const isPaymentRequired = needsServicePay || needsTip;
           
           if (!isPaymentRequired) return null;
           
           return (
             <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-400 p-6 mb-6">
               <div className="flex flex-col items-center text-center">
-                <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
+                <h3 className="font-bold text-gray-900 mb-2">
+                  {needsTip ? 'Tip Required' : 'Payment Required'}
+                </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  {(booking.status === 'COMPLETED' || booking.paymentRequestedAt)
-                    ? `${booking.barberName} has marked your service as complete. Please complete your payment.`
-                    : `Your appointment time has passed. Please complete your payment to ${booking.barberName}.`
-                  }
+                  {needsTip
+                    ? `${booking.barberName} completed your service. Please choose a tip (including $0).`
+                    : `${booking.barberName} accepted your booking. Pay now to confirm.`}
                 </p>
                 
                 <button
@@ -1078,7 +1074,7 @@ export default function ConsumerBookingStatusPage() {
                   }}
                   className="px-12 py-4 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
-                  Pay ${(booking.priceUsdCents / 100).toFixed(2)}
+                  {needsTip ? 'Choose Tip' : `Pay $${(booking.priceUsdCents / 100).toFixed(2)}`}
                 </button>
               </div>
             </div>

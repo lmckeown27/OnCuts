@@ -329,12 +329,16 @@ export default function ConsumerPage() {
     try {
       const response = await api.get('/bookings-simple', {
         role: 'consumer',
-        status: 'COMPLETED',
+        status: 'ACCEPTED,COMPLETED',
       });
       const bookings = response.bookings || [];
       setPendingPaymentBookings(
         bookings
-          .filter((b: any) => b.status === 'COMPLETED' && !b.paidAt)
+          .filter(
+            (b: any) =>
+              (b.status === 'ACCEPTED' && !b.paidAt) ||
+              (b.status === 'COMPLETED' && !b.tipDecidedAt)
+          )
           .map((b: any) => ({
             bookingId: b.id,
             barberName:
