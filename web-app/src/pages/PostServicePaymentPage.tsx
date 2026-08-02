@@ -504,10 +504,9 @@ function TipPaymentForm({
   const allowCashTip = cashPaymentEnabled && booking.paymentMethod === 'cash';
 
   const tipOptions = [
-    { label: '$0', value: 0 },
-    { label: '15%', value: Math.round(baseAmount * 0.15 * 100) / 100 },
-    { label: '20%', value: Math.round(baseAmount * 0.2 * 100) / 100 },
-    { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
+    { label: '$4', value: 4 },
+    { label: '$5', value: 5 },
+    { label: '$6', value: 6 },
   ];
 
   const createTipIntent = async (cents: number) => {
@@ -587,10 +586,27 @@ function TipPaymentForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Choose a tip (required — including $0)
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Consider a tip for the service
         </label>
-        <div className="grid grid-cols-4 gap-2 mb-3">
+        <p className="text-sm text-gray-500 mb-3">
+          Tips are optional, but a little extra goes a long way. Pick an amount below to continue.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedTip(0);
+            setCustomTip('');
+          }}
+          className={`w-full py-2.5 px-3 mb-2 rounded-lg border text-sm font-medium transition-colors ${
+            selectedTip === 0 && !customTip
+              ? 'border-gray-900 bg-primary-50 text-primary-600'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          $0
+        </button>
+        <div className="grid grid-cols-3 gap-2 mb-3">
           {tipOptions.map((option) => (
             <button
               key={option.label}
@@ -599,7 +615,7 @@ function TipPaymentForm({
                 setSelectedTip(option.value);
                 setCustomTip('');
               }}
-              className={`py-2 px-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`py-2.5 px-2 rounded-lg border text-sm font-medium transition-colors ${
                 selectedTip === option.value && !customTip
                   ? 'border-gray-900 bg-primary-50 text-primary-600'
                   : 'border-gray-300 hover:border-gray-400'
@@ -630,7 +646,7 @@ function TipPaymentForm({
       </div>
 
       {!tipChosen && (
-        <p className="text-sm text-gray-500 text-center">Select a tip amount to continue</p>
+        <p className="text-sm text-gray-500 text-center">Choose a tip amount when you&apos;re ready</p>
       )}
 
       {tipChosen && tipAmount === 0 && (
@@ -1300,11 +1316,11 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
               <h1 className="text-xl font-bold mb-1">
-                {consumerMode === 'tip' ? 'Add a Tip' : 'Pay to Confirm Booking'}
+                {consumerMode === 'tip' ? 'Consider a Tip' : 'Pay to Confirm Booking'}
               </h1>
               <p className="text-white/80">
                 {consumerMode === 'tip'
-                  ? 'Choose a tip amount, including $0, to finish.'
+                  ? 'If you enjoyed the service, consider leaving a tip for your barber.'
                   : 'If using Apple Pay or Google Pay, confirm with Face ID / biometrics before payment completes.'}
               </p>
             </div>
