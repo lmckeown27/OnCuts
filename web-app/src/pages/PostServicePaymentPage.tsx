@@ -584,22 +584,26 @@ function TipPaymentForm({
               setSelectedTip(0);
               setCustomTip('');
             }}
-            className={`w-20 shrink-0 py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors ${
+            className={`w-20 shrink-0 py-2.5 px-3 rounded-lg border text-sm font-semibold transition-colors ${
               selectedTip === 0 && !customTip
-                ? 'border-gray-900 bg-primary-50 text-primary-600'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-brand-500 bg-brand-500 text-white'
+                : 'border-brand-300 text-brand-700 hover:border-brand-400 hover:bg-brand-50'
             }`}
           >
             $0
           </button>
           <div className="relative min-w-0 flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-500">$</span>
             <input
               type="number"
               min="0"
               step="0.01"
               placeholder="Custom tip"
               value={customTip}
+              onFocus={() => {
+                // Custom entry is exclusive — clear any preset tip selection
+                setSelectedTip(null);
+              }}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '' || parseFloat(value) >= 0) {
@@ -607,7 +611,11 @@ function TipPaymentForm({
                   setSelectedTip(null);
                 }
               }}
-              className="w-full pl-7 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400"
+              className={`w-full pl-7 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 ${
+                customTip !== ''
+                  ? 'border-brand-500 bg-brand-50'
+                  : 'border-brand-300'
+              }`}
             />
           </div>
         </div>
@@ -622,8 +630,8 @@ function TipPaymentForm({
               }}
               className={`py-3 px-2 rounded-lg border text-xl font-semibold transition-colors ${
                 selectedTip === option.value && !customTip
-                  ? 'border-gray-900 bg-primary-50 text-primary-600'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-brand-500 bg-brand-500 text-white'
+                  : 'border-brand-300 text-brand-700 hover:border-brand-400 hover:bg-brand-50'
               }`}
             >
               {option.label}
@@ -1301,7 +1309,7 @@ export default function PostServicePaymentPage() {
         ) : (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {/* Booking Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
+            <div className="bg-gradient-to-r from-brand-500 to-brand-600 p-6 text-white">
               <h1
                 className={
                   consumerMode === 'tip'
