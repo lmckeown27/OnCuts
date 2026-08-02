@@ -2471,8 +2471,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           </span>
                         </div>
                         {selectedBookingInline.commissionFreeApplied && (
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-sm text-gray-600">Commission</span>
+                          <div className="px-1">
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                               Commissionless
                             </span>
