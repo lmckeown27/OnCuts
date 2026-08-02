@@ -574,9 +574,6 @@ function TipPaymentForm({
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Consider a tip for the service
-        </label>
         <p className="text-sm text-gray-500 mb-3">
           Tips are optional, but a little extra goes a long way. Pick an amount below to continue.
         </p>
@@ -1303,14 +1300,20 @@ export default function PostServicePaymentPage() {
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
-              <h1 className="text-xl font-bold mb-1">
+              <h1
+                className={
+                  consumerMode === 'tip'
+                    ? 'text-3xl font-bold text-center'
+                    : 'text-xl font-bold mb-1'
+                }
+              >
                 {consumerMode === 'tip' ? 'Consider a Tip' : 'Pay to Confirm Booking'}
               </h1>
-              <p className="text-white/80">
-                {consumerMode === 'tip'
-                  ? 'If you enjoyed the service, consider leaving a tip for your barber.'
-                  : 'If using Apple Pay or Google Pay, confirm with Face ID / biometrics before payment completes.'}
-              </p>
+              {consumerMode !== 'tip' && (
+                <p className="text-white/80">
+                  If using Apple Pay or Google Pay, confirm with Face ID / biometrics before payment completes.
+                </p>
+              )}
             </div>
 
             {/* Barber Info */}
