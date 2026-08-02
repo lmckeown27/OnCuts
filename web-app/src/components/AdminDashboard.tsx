@@ -120,6 +120,7 @@ type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
 type ConsumerHomeMode = 'providers' | 'waitlist';
+type ControlsPage = 'payment' | 'main';
 
 interface MetricsListWindow {
   id: string;
@@ -434,6 +435,8 @@ export function AdminDashboard({
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
   const [isSavingControls, setIsSavingControls] = useState(false);
+  /** Within Controls tab: Payment vs Main page settings */
+  const [controlsPage, setControlsPage] = useState<ControlsPage>('payment');
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
   const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
@@ -5002,71 +5005,106 @@ export function AdminDashboard({
 
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
-          <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900">Allow cash payments</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  When off, consumers can only pay by card.
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={cashPaymentEnabled}
-                disabled={isLoadingPlatformFee || isSavingControls}
-                onClick={() =>
-                  void handleSaveControls({
-                    cashPaymentEnabled: !cashPaymentEnabled,
-                    consumerHomeMode,
-                  })
-                }
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                  cashPaymentEnabled ? 'bg-brand-500' : 'bg-stone-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                    cashPaymentEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
+          <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
             <div>
-              <p className="text-sm font-semibold text-gray-900 mb-2">Consumer home</p>
-              <div className="flex rounded-lg bg-stone-100 p-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Pages
+              </p>
+              <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1">
                 {(
                   [
-                    { id: 'providers' as const, label: 'Provider cards' },
-                    { id: 'waitlist' as const, label: 'Waitlist' },
+                    { id: 'payment' as const, label: 'Payment' },
+                    { id: 'main' as const, label: 'Main' },
                   ] as const
-                ).map((opt) => (
+                ).map((page) => (
                   <button
-                    key={opt.id}
+                    key={page.id}
                     type="button"
-                    disabled={isLoadingPlatformFee || isSavingControls}
-                    onClick={() => {
-                      if (opt.id === consumerHomeMode) return;
-                      void handleSaveControls({
-                        cashPaymentEnabled,
-                        consumerHomeMode: opt.id,
-                      });
-                    }}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors disabled:opacity-50 ${
-                      consumerHomeMode === opt.id
-                        ? 'bg-white shadow-sm text-gray-900'
+                    onClick={() => setControlsPage(page.id)}
+                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                      controlsPage === page.id
+                        ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    {opt.label}
+                    {page.label}
                   </button>
                 ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Waitlist replaces the provider grid with a live consumer count.
-              </p>
+              </nav>
             </div>
+
+            {controlsPage === 'payment' && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Allow cash payments</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      When off, consumers can only pay by card.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={cashPaymentEnabled}
+                    disabled={isLoadingPlatformFee || isSavingControls}
+                    onClick={() =>
+                      void handleSaveControls({
+                        cashPaymentEnabled: !cashPaymentEnabled,
+                        consumerHomeMode,
+                      })
+                    }
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                      cashPaymentEnabled ? 'bg-brand-500' : 'bg-stone-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        cashPaymentEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {controlsPage === 'main' && (
+              <div className="space-y-3 pt-1">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">Consumer home</p>
+                  <div className="flex rounded-lg bg-stone-100 p-1">
+                    {(
+                      [
+                        { id: 'providers' as const, label: 'Provider cards' },
+                        { id: 'waitlist' as const, label: 'Waitlist' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        disabled={isLoadingPlatformFee || isSavingControls}
+                        onClick={() => {
+                          if (opt.id === consumerHomeMode) return;
+                          void handleSaveControls({
+                            cashPaymentEnabled,
+                            consumerHomeMode: opt.id,
+                          });
+                        }}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors disabled:opacity-50 ${
+                          consumerHomeMode === opt.id
+                            ? 'bg-white shadow-sm text-gray-900'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Waitlist replaces the provider grid with a live consumer count.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {(isLoadingPlatformFee || isSavingControls) && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
