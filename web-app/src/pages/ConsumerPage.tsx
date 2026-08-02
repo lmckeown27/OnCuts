@@ -2098,11 +2098,10 @@ function DiscoveryView({
             {isAuthenticated ? (
               <>
                 <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
-                  You&apos;re on the waitlist
+                  You and {countLabel} user{consumerUserCount === 1 ? '' : 's'}
                 </h2>
                 <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
-                  {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts.
-                  Provider browsing is paused while we prepare the next release — hang tight.
+                  Are patiently waiting for OnCuts to officially launch
                 </p>
               </>
             ) : (
