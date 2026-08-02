@@ -550,7 +550,7 @@ httpServer.listen(PORT, async () => {
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
   await marketplaceCronService.startAllJobs();
 
-  // Booking reminders: push at 24h / 12h / 3h / 1h before accepted appointments (see booking-reminder-cron.service)
+  // Booking reminders: push at 24h / 12h / 3h / 1h before ACCEPTED/PAID appointments (see booking-reminder-cron.service)
   bookingReminderCronService.start();
 
   // Start barber check-in cron job (sends check-ins 1 hour after appointments if not updated)

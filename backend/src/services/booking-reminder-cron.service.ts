@@ -1,7 +1,8 @@
 /**
  * Booking Reminder Cron Service
  *
- * Sends APNs/FCM push reminders at 24h, 12h, 3h, and 1h before accepted bookings.
+ * Sends APNs/FCM push reminders at 24h, 12h, 3h, and 1h before upcoming bookings
+ * (ACCEPTED or PAID — service may already be paid). COMPLETED is never reminded.
  * Respects booking_reminders and push_notifications (defaults true). No SMTP.
  *
  * Schedule: every 5 minutes; each tier uses a ±5 minute window around the target lead time.
@@ -125,7 +126,7 @@ export class BookingReminderCronService {
           LEFT JOIN barbers barber ON b."barberId" = barber.id
           LEFT JOIN users barber_user ON barber."userId" = barber_user.id
           LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
-          WHERE b.status = 'ACCEPTED'
+          WHERE b.status IN ('ACCEPTED', 'PAID')
             AND b."requestedAt" BETWEEN NOW() + ($1::integer * INTERVAL '1 hour') - INTERVAL '5 minutes'
                                     AND NOW() + ($1::integer * INTERVAL '1 hour') + INTERVAL '5 minutes'
             AND b."${tier.column}" IS NOT TRUE
