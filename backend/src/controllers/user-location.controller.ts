@@ -20,6 +20,10 @@ import {
   warnIfBarberServiceLocationWebOnlyMissing,
 } from '../services/barber-location-schema.service';
 import { reverseGeocodeCoarse, coarsenPublicLocationLabel } from '../services/geocode.service';
+import {
+  haversineDistanceKm,
+  MAX_DEVICE_SERVICE_LOCATION_JUMP_KM,
+} from '../utils/geo-distance';
 
 interface UpdateLocationBody {
   latitude: number;
@@ -432,6 +436,84 @@ export const updateBarberServiceLocation = async (
           ignoredDeviceUpdate: true,
         }),
       });
+    }
+
+    // Ignore device GPS teleports (bad iOS/CLLocation / VPN / spoof) that would move
+    // the public pin across continents. Accept if close to the existing service pin
+    // OR the account location (so a bad pin can still be corrected by a real device fix).
+    if (
+      source === 'device' &&
+      typeof latitude === 'number' &&
+      typeof longitude === 'number'
+    ) {
+      const anchors = await pool.query(
+        `SELECT b.service_latitude, b.service_longitude,
+                u.latitude AS user_latitude, u.longitude AS user_longitude
+         FROM barbers b
+         JOIN users u ON u.id = b."userId"
+         WHERE b.id = $1`,
+        [barberId]
+      );
+      const anchorRow = anchors.rows[0] as
+        | {
+            service_latitude: unknown;
+            service_longitude: unknown;
+            user_latitude: unknown;
+            user_longitude: unknown;
+          }
+        | undefined;
+      const prevLat =
+        anchorRow?.service_latitude != null ? Number(anchorRow.service_latitude) : NaN;
+      const prevLng =
+        anchorRow?.service_longitude != null ? Number(anchorRow.service_longitude) : NaN;
+      const uLat =
+        anchorRow?.user_latitude != null ? Number(anchorRow.user_latitude) : NaN;
+      const uLng =
+        anchorRow?.user_longitude != null ? Number(anchorRow.user_longitude) : NaN;
+      const hasServiceAnchor = Number.isFinite(prevLat) && Number.isFinite(prevLng);
+      const hasUserAnchor = Number.isFinite(uLat) && Number.isFinite(uLng);
+      if (hasServiceAnchor || hasUserAnchor) {
+        const jumpFromServiceKm = hasServiceAnchor
+          ? haversineDistanceKm(prevLat, prevLng, latitude, longitude)
+          : null;
+        const jumpFromUserKm = hasUserAnchor
+          ? haversineDistanceKm(uLat, uLng, latitude, longitude)
+          : null;
+        const nearService =
+          jumpFromServiceKm != null &&
+          jumpFromServiceKm <= MAX_DEVICE_SERVICE_LOCATION_JUMP_KM;
+        const nearUser =
+          jumpFromUserKm != null && jumpFromUserKm <= MAX_DEVICE_SERVICE_LOCATION_JUMP_KM;
+        if (!nearService && !nearUser) {
+          logger.warn('Ignoring implausible device service-location jump', {
+            barberId,
+            userId,
+            maxKm: MAX_DEVICE_SERVICE_LOCATION_JUMP_KM,
+            jumpFromServiceKm:
+              jumpFromServiceKm != null ? Math.round(jumpFromServiceKm) : null,
+            jumpFromUserKm: jumpFromUserKm != null ? Math.round(jumpFromUserKm) : null,
+            to: { lat: latitude, lng: longitude },
+          });
+          const snap = await pool.query(
+            `SELECT service_latitude, service_longitude, service_radius_km
+                    ${hasLabelColumn ? ', service_location_label' : ''}
+                    ${hasSourceColumn ? ', service_location_source, service_location_updated_at' : ''}
+                    ${hasWebOnlyColumn ? ', service_location_web_only' : ', false AS service_location_web_only'}
+             FROM barbers WHERE id = $1`,
+            [barberId]
+          );
+          return res.json({
+            success: true,
+            message: 'Device location ignored; implausible jump from previous location',
+            data: mapServiceLocationRow(snap.rows[0], {
+              hasLabelColumn,
+              hasSourceColumn,
+              hasWebOnlyColumn,
+              ignoredDeviceUpdate: true,
+            }),
+          });
+        }
+      }
     }
 
     // Device GPS: keep an existing manual privacy label; only coarse reverse-geocode if none set
