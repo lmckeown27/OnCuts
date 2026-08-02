@@ -1,10 +1,8 @@
 /**
  * Booking Confirmation Page
- * 
- * Simple booking confirmation flow:
- * 1. Consumer reviews service details (receipt)
- * 2. Consumer confirms booking
- * 3. Payment is handled directly between consumer and barber
+ *
+ * Consumer reviews service details and submits a booking request.
+ * Service payment is collected in-app after the barber accepts; tip after complete.
  */
 
 import { useState } from 'react';
@@ -393,7 +391,7 @@ export default function BookingPaymentPage() {
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 text-right">
-              Pay directly to barber after service
+              Paid in-app after the barber accepts
             </p>
           </div>
         </Card>
@@ -432,9 +430,12 @@ export default function BookingPaymentPage() {
 
         {/* Info Text */}
         <div className="text-xs text-gray-500 text-center mt-4 space-y-1">
-          <p>No payment is required until after your service is complete.</p>
-          <p>By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName?.split(' ')[0] || 'your barber'} upon completion.</p>
-          <p>A receipt will be sent to your registered email.</p>
+          <p>
+            No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your barber'} accepts your request.
+          </p>
+          <p>
+            By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} in the app after acceptance to lock in your appointment.
+          </p>
         </div>
       </div>
     </div>
