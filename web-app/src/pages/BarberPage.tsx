@@ -3356,46 +3356,54 @@ const createDefaultAvailability = (): WeeklyAvailability => ({
 });
 
 // Migrate old format (single start/end) to new format (intervals array)
-const migrateSchedule = (schedule: Record<string, unknown>): WeeklyAvailability => {
+const migrateSchedule = (raw: unknown): WeeklyAvailability => {
   const days: DayKey[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const migrated = createDefaultAvailability();
-  
-  for (const day of days) {
-    const dayData = schedule[day] as { enabled?: boolean; start?: string; end?: string; intervals?: TimeInterval[] } | undefined;
-    if (!dayData) continue;
-    
-    // If already has intervals array, use it
-    if (dayData.intervals && Array.isArray(dayData.intervals) && dayData.intervals.length > 0) {
-      // Filter out invalid intervals and provide defaults for missing fields
-      const validIntervals = dayData.intervals
-        .filter(i => i && (i.start || i.end)) // Keep intervals that have at least one time
-        .map(i => ({
-          id: i.id || generateId(),
-          start: i.start || '09:00',
-          end: i.end || '17:00'
-        }));
-      
-      migrated[day] = {
-        enabled: dayData.enabled ?? (validIntervals.length > 0),
-        intervals: validIntervals
-      };
-    } 
-    // Migrate from old single start/end format
-    else if (dayData.start && dayData.end && dayData.enabled) {
-      migrated[day] = {
-        enabled: true,
-        intervals: [{ id: generateId(), start: dayData.start, end: dayData.end }]
-      };
-    } 
-    // Disabled day
-    else {
-      migrated[day] = {
-        enabled: dayData.enabled ?? false,
-        intervals: []
-      };
+
+  let schedule: Record<string, unknown> | null = null;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        schedule = parsed as Record<string, unknown>;
+      }
+    } catch {
+      return migrated;
     }
+  } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    schedule = raw as Record<string, unknown>;
   }
-  
+  if (!schedule) return migrated;
+
+  for (const day of days) {
+    const dayData = schedule[day] as
+      | { enabled?: boolean; start?: string; end?: string; intervals?: TimeInterval[] }
+      | undefined;
+    if (!dayData || typeof dayData !== 'object') continue;
+
+    const fromIntervals =
+      dayData.intervals && Array.isArray(dayData.intervals)
+        ? dayData.intervals
+            .filter((i) => i && (i.start || i.end))
+            .map((i) => ({
+              id: i.id || generateId(),
+              start: i.start || '09:00',
+              end: i.end || '17:00',
+            }))
+        : [];
+    const fromLegacy =
+      fromIntervals.length === 0 && dayData.start && dayData.end
+        ? [{ id: generateId(), start: dayData.start, end: dayData.end }]
+        : [];
+    const intervals = fromIntervals.length > 0 ? fromIntervals : fromLegacy;
+    const hasHours = intervals.length > 0;
+    // Explicit false stays off; missing enabled with hours counts as available (legacy rows).
+    const enabled =
+      dayData.enabled === false ? false : dayData.enabled === true ? true : hasHours;
+
+    migrated[day] = { enabled, intervals };
+  }
+
   return migrated;
 };
 
@@ -3497,6 +3505,8 @@ function AvailabilityModal({
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const skipAutosaveRef = useRef(true);
+  const scheduleHydratedRef = useRef(false);
+  const loadGenerationRef = useRef(0);
   const toastTimerRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
 
@@ -3523,6 +3533,7 @@ function AvailabilityModal({
   useEffect(() => {
     if (isVisible && userId) {
       skipAutosaveRef.current = true;
+      scheduleHydratedRef.current = false;
       setSaveToast(null);
       setSaveError(null);
       void loadSchedule();
@@ -3535,7 +3546,7 @@ function AvailabilityModal({
 
   // Autosave when schedule changes (debounced), matching iOS weekly editor
   useEffect(() => {
-    if (!isVisible || !barberId || isLoading) return;
+    if (!isVisible || !barberId || isLoading || !scheduleHydratedRef.current) return;
     if (skipAutosaveRef.current) {
       skipAutosaveRef.current = false;
       return;
@@ -3560,7 +3571,10 @@ function AvailabilityModal({
 
   const loadSchedule = async () => {
     if (!userId) return;
-    
+
+    const loadGen = ++loadGenerationRef.current;
+    scheduleHydratedRef.current = false;
+    skipAutosaveRef.current = true;
     setIsLoading(true);
     try {
       const response = await fetch(`/api/v1/barbers/user/${userId}`, {
@@ -3568,7 +3582,9 @@ function AvailabilityModal({
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
-      
+
+      if (loadGen !== loadGenerationRef.current) return;
+
       if (response.ok) {
         const data = await response.json();
         if (data.data) {
@@ -3578,6 +3594,8 @@ function AvailabilityModal({
           } else {
             setAvailability(createDefaultAvailability());
           }
+          scheduleHydratedRef.current = true;
+          skipAutosaveRef.current = true;
         }
       } else {
         setSaveError('Could not load schedule.');
@@ -3586,8 +3604,10 @@ function AvailabilityModal({
       console.error('Failed to load schedule:', error);
       setSaveError('Could not load schedule.');
     } finally {
-      setIsLoading(false);
-      skipAutosaveRef.current = true;
+      if (loadGen === loadGenerationRef.current) {
+        setIsLoading(false);
+        skipAutosaveRef.current = true;
+      }
     }
   };
 

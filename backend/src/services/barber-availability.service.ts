@@ -69,9 +69,11 @@ export function getIntervalsForDay(
   dayName: (typeof DAY_NAMES)[number]
 ): TimeInterval[] {
   const daySchedule = weeklySchedule[dayName];
-  if (!daySchedule?.enabled) return [];
+  if (!daySchedule) return [];
+  // Explicit false = unavailable. Missing enabled still allows legacy start/end or intervals.
+  if (daySchedule.enabled === false) return [];
 
-  if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+  if (daySchedule.intervals && Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0) {
     return daySchedule.intervals;
   }
   if (daySchedule.start && daySchedule.end) {
