@@ -498,7 +498,6 @@ function TipPaymentForm({
   const [isSubmittingZero, setIsSubmittingZero] = useState(false);
   const [isUpdatingTip, setIsUpdatingTip] = useState(false);
 
-  const baseAmount = booking.priceUsdCents / 100;
   const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip ?? 0;
   const tipChosen = selectedTip !== null || customTip !== '';
   const allowCashTip = cashPaymentEnabled && booking.paymentMethod === 'cash';
@@ -574,17 +573,6 @@ function TipPaymentForm({
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Service (already paid)</span>
-          <span className="font-semibold">${baseAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-lg border-t pt-2">
-          <span className="font-bold">Your tip</span>
-          <span className="font-bold text-primary-600">${tipAmount.toFixed(2)}</span>
-        </div>
-      </div>
-
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Consider a tip for the service
