@@ -315,9 +315,6 @@ function ServicePaymentForm({
 
   return (
     <div className="space-y-6">
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-900">
-        Pay now to confirm your booking. Tips are requested after the service is complete.
-      </div>
       <div className="bg-gray-50 rounded-xl p-4 space-y-3">
         <div className="flex justify-between">
           <span className="text-gray-600">Service</span>
@@ -1307,20 +1304,9 @@ export default function PostServicePaymentPage() {
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-brand-500 to-brand-600 p-6 text-white">
-              <h1
-                className={
-                  consumerMode === 'tip'
-                    ? 'text-3xl font-bold text-center'
-                    : 'text-xl font-bold mb-1'
-                }
-              >
+              <h1 className="text-3xl font-bold text-center">
                 {consumerMode === 'tip' ? 'Consider a Tip' : 'Pay to Confirm Booking'}
               </h1>
-              {consumerMode !== 'tip' && (
-                <p className="text-white/80">
-                  If using Apple Pay or Google Pay, confirm with Face ID / biometrics before payment completes.
-                </p>
-              )}
             </div>
 
             {/* Barber Info */}
