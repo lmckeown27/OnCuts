@@ -2388,7 +2388,7 @@ router.post('/:id/create-tip-intent', authenticate, async (req, res, next) => {
 
 /**
  * POST /api/v1/bookings-simple/:id/confirm-tip
- * Record tip decision ($0 or charged tip PI / cash tip).
+ * Record tip decision ($0 or charged tip PI). Tips are card-only (never cash).
  */
 router.post('/:id/confirm-tip', authenticate, async (req, res, next) => {
   try {
@@ -2431,28 +2431,24 @@ router.post('/:id/confirm-tip', authenticate, async (req, res, next) => {
 
     if (tipAmountCents > 0) {
       if (paymentMethod === 'cash') {
-        const cashEnabled = await isCashPaymentEnabled();
-        if (!cashEnabled || booking.service_payment_method !== 'cash') {
-          return res.status(403).json({
-            success: false,
-            error: 'Cash tips are only allowed when cash payments are enabled and the service was paid in cash',
-          });
-        }
-      } else {
-        if (!paymentIntentId) {
-          return res.status(400).json({
-            success: false,
-            error: 'paymentIntentId is required for card tips',
-          });
-        }
-        const stripe = getDefaultStripeClient();
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        if (paymentIntent.status !== 'succeeded') {
-          return res.status(400).json({ success: false, error: 'Tip payment has not been completed' });
-        }
-        if (paymentIntent.metadata?.payment_kind !== 'tip' || paymentIntent.metadata?.booking_id !== id) {
-          return res.status(400).json({ success: false, error: 'Invalid tip payment intent' });
-        }
+        return res.status(400).json({
+          success: false,
+          error: 'Tips must be paid by card (or Apple Pay / Google Pay)',
+        });
+      }
+      if (!paymentIntentId) {
+        return res.status(400).json({
+          success: false,
+          error: 'paymentIntentId is required for card tips',
+        });
+      }
+      const stripe = getDefaultStripeClient();
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (paymentIntent.status !== 'succeeded') {
+        return res.status(400).json({ success: false, error: 'Tip payment has not been completed' });
+      }
+      if (paymentIntent.metadata?.payment_kind !== 'tip' || paymentIntent.metadata?.booking_id !== id) {
+        return res.status(400).json({ success: false, error: 'Invalid tip payment intent' });
       }
     }
 

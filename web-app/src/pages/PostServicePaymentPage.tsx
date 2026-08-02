@@ -488,7 +488,6 @@ function TipPaymentForm({
   booking: BookingDetails;
   onSuccess: () => void;
 }) {
-  const { cashPaymentEnabled } = useFrontendConfig();
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState('');
   const [customTipActive, setCustomTipActive] = useState(false);
@@ -501,7 +500,6 @@ function TipPaymentForm({
 
   const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip ?? 0;
   const tipChosen = selectedTip !== null || customTip !== '';
-  const allowCashTip = cashPaymentEnabled && booking.paymentMethod === 'cash';
 
   const tipOptions = [
     { label: '$4', value: 4 },
@@ -528,8 +526,9 @@ function TipPaymentForm({
     }
   };
 
+  // Tips are always card (manual / Apple Pay / Google Pay) — never cash.
   useEffect(() => {
-    if (!tipChosen || tipAmount <= 0 || allowCashTip) {
+    if (!tipChosen || tipAmount <= 0) {
       setClientSecret(null);
       setPaymentIntentId(null);
       return;
@@ -554,16 +553,16 @@ function TipPaymentForm({
     }, 400);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipAmount, tipChosen, allowCashTip]);
+  }, [tipAmount, tipChosen]);
 
-  const submitZeroOrCashTip = async () => {
+  const submitZeroTip = async () => {
     setIsSubmittingZero(true);
     try {
       await api.post(`/bookings-simple/${booking.id}/confirm-tip`, {
-        tipAmountCents: Math.round(tipAmount * 100),
-        paymentMethod: tipAmount > 0 && allowCashTip ? 'cash' : 'card',
+        tipAmountCents: 0,
+        paymentMethod: 'card',
       });
-      toast.success(tipAmount > 0 ? 'Tip submitted!' : 'Tip recorded ($0)');
+      toast.success('Tip recorded ($0)');
       onSuccess();
     } catch (err: any) {
       toast.error(err.message || 'Could not submit tip');
@@ -656,7 +655,7 @@ function TipPaymentForm({
       {tipChosen && tipAmount === 0 && (
         <button
           type="button"
-          onClick={() => void submitZeroOrCashTip()}
+          onClick={() => void submitZeroTip()}
           disabled={isSubmittingZero}
           className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl disabled:opacity-50"
         >
@@ -664,18 +663,7 @@ function TipPaymentForm({
         </button>
       )}
 
-      {tipChosen && tipAmount > 0 && allowCashTip && (
-        <button
-          type="button"
-          onClick={() => void submitZeroOrCashTip()}
-          disabled={isSubmittingZero}
-          className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl disabled:opacity-50"
-        >
-          {isSubmittingZero ? 'Submitting…' : `Confirm cash tip $${tipAmount.toFixed(2)}`}
-        </button>
-      )}
-
-      {tipChosen && tipAmount > 0 && !allowCashTip && (
+      {tipChosen && tipAmount > 0 && (
         <>
           {(isCreatingIntent || isUpdatingTip) && !clientSecret && (
             <div className="flex justify-center py-6">
@@ -703,7 +691,7 @@ function TipPaymentForm({
                 appearance: {
                   theme: 'stripe',
                   variables: {
-                    colorPrimary: '#059669',
+                    colorPrimary: '#708d81',
                     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
                   },
                 },
