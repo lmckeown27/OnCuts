@@ -575,7 +575,7 @@ function TipPaymentForm({
     <div className="space-y-6">
       <div>
         <p className="text-sm text-gray-500 mb-3">
-          Tips are optional, but consider leaving a tip that best represents the quality of service
+          Consider leaving a tip that best represents the quality of service
         </p>
         <div className="flex items-center gap-2 mb-2">
           <button
