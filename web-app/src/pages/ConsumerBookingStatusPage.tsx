@@ -596,25 +596,16 @@ export default function ConsumerBookingStatusPage() {
       
       const scheduledTimePayload = `${editDate}T${editTime}:00`;
 
-      if (booking.status === 'PENDING') {
-        await api.put(`/bookings-simple/${booking.id}`, {
-          scheduledTime: scheduledTimePayload,
-          location: editLocation,
-          notes: editNotes,
-        });
-        toast.success('Booking updated!');
-      } else {
-        await api.post(`/bookings-simple/${booking.id}/reschedule-request`, {
-          scheduledTime: scheduledTimePayload,
-          location: editLocation,
-          notes: editNotes,
-        });
-        toast.success('Schedule change request sent! Waiting for provider approval.');
-      }
+      await api.put(`/bookings-simple/${booking.id}`, {
+        scheduledTime: scheduledTimePayload,
+        location: editLocation,
+        notes: editNotes,
+      });
+      toast.success(booking.status === 'PENDING' ? 'Booking updated!' : 'Appointment rescheduled!');
       setShowEditModal(false);
       fetchActiveBooking();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to submit schedule change request');
+      toast.error(error.message || 'Failed to update booking');
     } finally {
       setIsSaving(false);
     }
@@ -1174,24 +1165,6 @@ export default function ConsumerBookingStatusPage() {
             </div>
           </div>
 
-          {booking.pendingRescheduleRequest && (
-            <div className="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-amber-900">Schedule change pending approval</p>
-                  <p className="text-sm text-amber-800 mt-1">
-                    Requested: {formatDate(booking.pendingRescheduleRequest.requestedTime)} at{' '}
-                    {formatTime(booking.pendingRescheduleRequest.requestedTime)}
-                  </p>
-                  <p className="text-xs text-amber-700 mt-1">
-                    Your current appointment time stays active until your provider approves this change.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          
           {/* Location */}
           {booking.location && (
             <div className="p-4 bg-gray-50 rounded-xl mb-4">
@@ -1233,9 +1206,7 @@ export default function ConsumerBookingStatusPage() {
                 className="py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-amber-200"
               >
                 <Pencil className="w-4 h-4" />
-                {isPending
-                  ? 'Edit'
-                  : (booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
+                {isPending ? 'Edit' : 'Reschedule'}
               </button>
               <button
                 onClick={() => setShowCancelConfirm(true)}
@@ -1268,12 +1239,12 @@ export default function ConsumerBookingStatusPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-primary-500" />
-              {isPending ? 'Edit Booking' : 'Request Schedule Change'}
+              {isPending ? 'Edit Booking' : 'Reschedule Appointment'}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
               {isPending
                 ? 'Update your appointment details. Changes apply immediately while your request is still pending.'
-                : 'Your provider must approve date and time changes. Your current appointment stays as-is until then.'}
+                : 'Pick a new date and time. Your appointment updates right away and your barber is notified.'}
             </p>
             
             <div className="space-y-4">
@@ -1351,7 +1322,7 @@ export default function ConsumerBookingStatusPage() {
                     Saving...
                   </>
                 ) : (
-                  isPending ? 'Save Changes' : 'Submit Request'
+                  isPending ? 'Save Changes' : 'Reschedule'
                 )}
               </button>
             </div>

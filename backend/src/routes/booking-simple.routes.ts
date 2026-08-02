@@ -97,9 +97,6 @@ function parseScheduledTimePacificToUtc(scheduledTime: string | undefined): Date
 const BOOKING_SLOT_CONFLICT_MESSAGE =
   'This time slot is no longer available. The barber already has an appointment at this time. Please choose a different time.';
 
-const RESCHEDULE_REQUIRES_APPROVAL_MESSAGE =
-  'Date and time changes require provider approval. Submit a schedule change request instead.';
-
 /** Bookings list/detail: prefer booking row, fall back to conversation cache. */
 const BOOKING_EFFECTIVE_SCHEDULED_TIME = `COALESCE(b."requestedAt", c.scheduled_time)`;
 const BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV = `COALESCE(b."requestedAt", conv.scheduled_time)`;
@@ -2981,7 +2978,7 @@ router.post('/:id/reschedule-request/reject', authenticate, async (req, res, nex
 
 /**
  * PUT /api/v1/bookings-simple/:id
- * Edit booking details (barber may change schedule directly; consumers edit PENDING directly, ACCEPTED via reschedule-request)
+ * Edit booking details (barber or consumer may change schedule directly on PENDING/ACCEPTED/PAID).
  * - scheduledTime updates the bookings table ("requestedAt" column)
  * - location, locationDetails, and notes update the linked conversations table
  */
@@ -3018,20 +3015,11 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const isBarber = sameUuid(booking.barber_user_id, userId);
     const isConsumer = sameUuid(booking.consumerId, userId);
 
-    // Only allow editing PENDING or ACCEPTED bookings
-    if (booking.status !== 'ACCEPTED' && booking.status !== 'PENDING') {
+    // Only allow editing upcoming bookings (not after mark-complete)
+    if (!['PENDING', 'ACCEPTED', 'PAID'].includes(booking.status)) {
       return res.status(400).json({ 
         success: false, 
         error: `Cannot edit a ${booking.status.toLowerCase()} booking` 
-      });
-    }
-
-    // ACCEPTED bookings require the reschedule-request flow; PENDING can be edited directly.
-    if (isConsumer && scheduledTime !== undefined && booking.status !== 'PENDING') {
-      return res.status(403).json({
-        success: false,
-        error: RESCHEDULE_REQUIRES_APPROVAL_MESSAGE,
-        code: 'RESCHEDULE_REQUIRES_APPROVAL',
       });
     }
 
@@ -3087,7 +3075,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
       logger.info(`Updated booking ${id} scheduledTime to ${parsedTime.toISOString()}`);
 
       // Direct schedule edits supersede any pending consumer reschedule request.
-      if (isBarber || (isConsumer && booking.status === 'PENDING')) {
+      if (isBarber || isConsumer) {
         const cancelledCount = await cancelPendingRescheduleRequestsForBooking(id, userId);
         if (cancelledCount > 0) {
           clearedPendingRescheduleRequest = true;
