@@ -1223,6 +1223,8 @@ interface ConfirmedBooking {
   createdAt: string;
   paidAt?: string;
   tipDecidedAt?: string | null;
+  /** Set when service was marked complete (also set on legacy post-service PAID). */
+  completedAt?: string | null;
   commissionFreeApplied?: boolean;
   // Consumer-provided input data
   location?: string;
@@ -1445,18 +1447,22 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     [confirmedBookings, hiddenPaidBookingIds]
   );
 
-  /** Occupies schedule until service is marked complete. COMPLETED frees the slot (tip may still be pending). */
-  const SCHEDULE_OCCUPYING_STATUSES = useMemo(
-    () => new Set(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'PAID']),
-    []
-  );
-
+  /** Occupies schedule until service is marked complete. Legacy PAID (completedAt set) stays off the calendar. */
   const scheduleBookings = useMemo(
     () =>
-      visibleConfirmedBookings.filter(b =>
-        SCHEDULE_OCCUPYING_STATUSES.has(String(b.status || '').toUpperCase())
-      ),
-    [visibleConfirmedBookings, SCHEDULE_OCCUPYING_STATUSES]
+      visibleConfirmedBookings.filter((b) => {
+        const status = String(b.status || '').toUpperCase();
+        if (status === 'PENDING' || status === 'ACCEPTED' || status === 'IN_PROGRESS') {
+          return true;
+        }
+        // Pay-on-accept: PAID before mark-complete still occupies the slot.
+        // Old system: PAID meant fully settled and stamped completedAt — hide those.
+        if (status === 'PAID') {
+          return !b.completedAt && !b.tipDecidedAt;
+        }
+        return false;
+      }),
+    [visibleConfirmedBookings]
   );
 
   const awaitingPaymentBookings = useMemo(
@@ -1693,22 +1699,46 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     socketService.onBookingConfirmed(handleBookingConfirmed);
     
-    // Listen for payment received events (when consumer pays)
+    // Listen for payment received events (service pay keeps the slot; tip settles the booking)
     const handlePaymentReceived = (data: {
       bookingId: string;
-      consumerName: string;
-      totalFormatted: string;
+      consumerName?: string;
+      totalFormatted?: string;
       tipFormatted?: string;
+      phase?: 'service' | 'tip';
     }) => {
       console.log('💰 Received payment-received event:', data);
-      toast.success(
-        `Payment received from ${data.consumerName}: ${data.totalFormatted}${data.tipFormatted ? ` (includes ${data.tipFormatted} tip)` : ''}`,
-        { duration: 5000 }
-      );
-      
-      // Remove the booking from the dashboard since it's now completed
-      setConfirmedBookings(prevBookings => 
-        prevBookings.filter(b => b.id !== data.bookingId)
+      if (data.phase === 'tip') {
+        if (data.tipFormatted) {
+          toast.success(`Tip received: ${data.tipFormatted}`, { duration: 5000 });
+        } else {
+          toast.success('Customer submitted tip decision', { duration: 4000 });
+        }
+        setConfirmedBookings((prev) =>
+          prev.map((b) =>
+            b.id === data.bookingId
+              ? { ...b, tipDecidedAt: b.tipDecidedAt || new Date().toISOString() }
+              : b
+          )
+        );
+        return;
+      }
+
+      // Service payment (pay-on-accept): stay on calendar as PAID until mark-complete
+      if (data.consumerName && data.totalFormatted) {
+        toast.success(
+          `Payment received from ${data.consumerName}: ${data.totalFormatted}`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success('Service payment received', { duration: 4000 });
+      }
+      setConfirmedBookings((prev) =>
+        prev.map((b) =>
+          b.id === data.bookingId
+            ? { ...b, status: 'PAID', paidAt: b.paidAt || new Date().toISOString() }
+            : b
+        )
       );
     };
     

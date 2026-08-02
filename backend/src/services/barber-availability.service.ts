@@ -30,9 +30,10 @@ export const BOOKING_SLOT_INCREMENT_MINUTES = 15;
 export const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
 
 /**
- * Reservations that occupy the calendar / block new bookings.
- * COMPLETED (request-for-payment) stays busy until PAID; PAID, cancellations,
- * and rejections free the slot.
+ * Statuses that occupy the calendar / block new bookings.
+ * PAID only blocks while the appointment is still upcoming (pay-on-accept,
+ * not yet marked complete). Legacy post-service PAID rows have "completedAt"
+ * set and must not occupy the schedule.
  */
 export const BOOKING_STATUSES_THAT_BLOCK_SCHEDULE = [
   'PENDING',
@@ -43,8 +44,14 @@ export const BOOKING_STATUSES_THAT_BLOCK_SCHEDULE = [
 
 /** SQL predicate, e.g. `AND ${bookingStatusBlocksScheduleSql('status')}` */
 export function bookingStatusBlocksScheduleSql(statusColumn = 'status'): string {
-  const list = BOOKING_STATUSES_THAT_BLOCK_SCHEDULE.map((s) => `'${s}'`).join(', ');
-  return `UPPER(${statusColumn}::text) IN (${list})`;
+  return `(
+    UPPER(${statusColumn}::text) IN ('PENDING', 'ACCEPTED', 'IN_PROGRESS')
+    OR (
+      UPPER(${statusColumn}::text) = 'PAID'
+      AND "completedAt" IS NULL
+      AND "tipDecidedAt" IS NULL
+    )
+  )`;
 }
 
 export function timeToMinutes(time: string): number {
@@ -228,7 +235,8 @@ type DbQueryable = Pick<typeof pool, 'query'>;
 
 /**
  * Returns the conflicting booking start time when another active reservation overlaps.
- * PAID/CANCELLED/REJECTED bookings are ignored; COMPLETED (awaiting payment) still conflicts.
+ * Legacy PAID (completedAt set), COMPLETED, CANCELLED, REJECTED do not conflict;
+ * upcoming PAID (service paid, not yet complete) still does.
  */
 export async function assertNoBarberSlotConflict(
   client: DbQueryable,
