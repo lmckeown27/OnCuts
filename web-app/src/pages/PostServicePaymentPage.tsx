@@ -657,7 +657,7 @@ function TipPaymentForm({
           type="button"
           onClick={() => void submitZeroTip()}
           disabled={isSubmittingZero}
-          className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl disabled:opacity-50"
+          className="w-full py-4 bg-brand-100 hover:bg-brand-200 text-brand-800 font-bold rounded-xl disabled:opacity-50 border border-brand-200"
         >
           {isSubmittingZero ? 'Submitting…' : 'Confirm $0 tip'}
         </button>
