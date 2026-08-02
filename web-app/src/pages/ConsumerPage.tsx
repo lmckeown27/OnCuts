@@ -2109,9 +2109,6 @@ function DiscoveryView({
                 <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
                   Join {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
                 </h2>
-                <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
-                  Create an account to join the waitlist. Provider browsing is paused while we prepare the next release.
-                </p>
                 <button
                   type="button"
                   onClick={handleJoinWaitlist}
