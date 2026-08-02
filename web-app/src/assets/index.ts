@@ -28,6 +28,11 @@ export { default as ScissorsIcon } from './icons/scissors.svg';
 export { default as BarberPoleIcon } from './icons/barber-pole.svg';
 export { default as CalendarIcon } from './icons/calendar.svg';
 
+// ============ FACE ICONS (satisfaction rating) ============
+export { default as SadFaceIcon } from './face_icons/sad_face.png';
+export { default as NeutralFaceIcon } from './face_icons/neutral_face.png';
+export { default as SmileyFaceIcon } from './face_icons/smiley_face.png';
+
 // ============ IMAGES ============
 export { default as PlaceholderBarber } from './images/placeholder-barber.svg';
 export { default as PlaceholderPortfolio } from './images/placeholder-portfolio.svg';

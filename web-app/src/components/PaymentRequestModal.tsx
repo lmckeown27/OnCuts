@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, DollarSign, Star, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
+import { X, DollarSign, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import SatisfactionRating from './SatisfactionRating';
 
 interface PaymentRequestModalProps {
   isOpen: boolean;
@@ -38,7 +39,6 @@ export default function PaymentRequestModal({
   const [rating, setRating] = useState<number>(0);
   const [reviewComment, setReviewComment] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [hoveredStar, setHoveredStar] = useState(0);
 
   if (!isOpen) return null;
 
@@ -85,7 +85,7 @@ export default function PaymentRequestModal({
 
   const handleSubmitReview = async () => {
     if (rating === 0) {
-      toast.error('Please select a rating');
+      toast.error('Please select a satisfaction rating');
       return;
     }
 
@@ -96,7 +96,7 @@ export default function PaymentRequestModal({
         comment: reviewComment.trim() || null,
       });
       
-      toast.success('Thank you for your review!');
+      toast.success('Thank you for your feedback!');
       setStep('complete');
       
       // Auto-close after success
@@ -106,7 +106,7 @@ export default function PaymentRequestModal({
       }, 2000);
     } catch (error: any) {
       console.error('Review submission failed:', error);
-      toast.error(error.message || 'Failed to submit review');
+      toast.error(error.message || 'Failed to submit feedback');
     } finally {
       setIsProcessing(false);
     }
@@ -135,7 +135,7 @@ export default function PaymentRequestModal({
             <h2 className="text-xl font-bold text-white">
               {step === 'payment' && 'Complete Payment'}
               {step === 'tip' && 'Add a Tip'}
-              {step === 'review' && 'Leave a Review'}
+              {step === 'review' && 'Rate Your Experience'}
               {step === 'complete' && 'All Done!'}
             </h2>
             <p className="text-white/80 text-sm">{barberName} • {serviceName}</p>
@@ -339,39 +339,14 @@ export default function PaymentRequestModal({
                   <Check className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Complete!</h3>
-                <p className="text-gray-600">How was your experience with {barberName}?</p>
+                <p className="text-gray-600">How satisfied were you with {barberName}?</p>
               </div>
 
-              {/* Star Rating */}
-              <div className="flex justify-center gap-1 sm:gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredStar(star)}
-                    onMouseLeave={() => setHoveredStar(0)}
-                    className="p-1 transition-transform hover:scale-110 active:scale-95"
-                  >
-                    <Star
-                      className={`w-8 h-8 sm:w-10 sm:h-10 transition-colors ${
-                        star <= (hoveredStar || rating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {rating > 0 && (
-                <p className="text-center text-lg font-medium text-gray-700">
-                  {rating === 5 && '🔥 Amazing!'}
-                  {rating === 4 && '👍 Great!'}
-                  {rating === 3 && '😊 Good'}
-                  {rating === 2 && '😐 Could be better'}
-                  {rating === 1 && '😞 Poor experience'}
-                </p>
-              )}
+              <SatisfactionRating
+                value={rating}
+                onChange={setRating}
+                disabled={isProcessing}
+              />
 
               {/* Comment */}
               <div>
@@ -404,10 +379,7 @@ export default function PaymentRequestModal({
                   {isProcessing ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <>
-                      <Star className="w-5 h-5" />
-                      Submit Review
-                    </>
+                    'Submit'
                   )}
                 </button>
               </div>
@@ -421,7 +393,7 @@ export default function PaymentRequestModal({
                 <Check className="w-10 h-10 text-green-600" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
-              <p className="text-gray-600">Your payment and review have been submitted.</p>
+              <p className="text-gray-600">Your payment and feedback have been submitted.</p>
             </div>
           )}
         </div>

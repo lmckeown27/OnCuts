@@ -12,7 +12,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, Check, Clock, DollarSign, User, Calendar,
-  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Undo2, Wallet, Banknote
+  MapPin, ArrowLeft, AlertCircle, Loader2, Undo2, Wallet, Banknote
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -26,6 +26,7 @@ import {
   deferPaymentTakeover,
 } from '../store/deferredPaymentBookings';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import SatisfactionRating from '../components/SatisfactionRating';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -516,7 +517,7 @@ function PaymentForm({
   );
 }
 
-// Review Form Component
+// Review Form Component — satisfaction faces (not 5-star)
 function ReviewForm({ 
   booking, 
   onComplete 
@@ -525,13 +526,12 @@ function ReviewForm({
   onComplete: () => void;
 }) {
   const [rating, setRating] = useState(0);
-  const [hoveredStar, setHoveredStar] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error('Please select a rating');
+      toast.error('Please select a satisfaction rating');
       return;
     }
 
@@ -541,10 +541,10 @@ function ReviewForm({
         rating,
         comment: comment.trim() || null,
       });
-      toast.success('Thank you for your review!');
+      toast.success('Thank you for your feedback!');
       onComplete();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to submit review');
+      toast.error(error.message || 'Failed to submit feedback');
     } finally {
       setIsSubmitting(false);
     }
@@ -557,30 +557,14 @@ function ReviewForm({
           <Check className="w-8 h-8 text-green-600" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-        <p className="text-gray-600">How was your experience with {booking.barber.firstName}?</p>
+        <p className="text-gray-600">How satisfied were you with {booking.barber.firstName}?</p>
       </div>
 
-      {/* Star Rating */}
-      <div className="flex justify-center gap-2">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => setRating(star)}
-            onMouseEnter={() => setHoveredStar(star)}
-            onMouseLeave={() => setHoveredStar(0)}
-            className="p-1 transition-transform hover:scale-110"
-          >
-            <Star
-              className={`w-10 h-10 transition-colors ${
-                star <= (hoveredStar || rating)
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-gray-300'
-              }`}
-            />
-          </button>
-        ))}
-      </div>
+      <SatisfactionRating
+        value={rating}
+        onChange={setRating}
+        disabled={isSubmitting}
+      />
 
       {/* Comment */}
       <textarea
@@ -600,7 +584,7 @@ function ReviewForm({
         </button>
         <button
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || rating === 0}
           className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
@@ -609,7 +593,7 @@ function ReviewForm({
               Submitting...
             </>
           ) : (
-            'Submit Review'
+            'Submit'
           )}
         </button>
       </div>
