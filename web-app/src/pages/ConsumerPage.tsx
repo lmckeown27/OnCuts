@@ -2085,7 +2085,7 @@ function DiscoveryView({
               OnCuts Waitlist
             </p>
             <h2 className="text-3xl sm:text-4xl font-semibold text-gray-900 tracking-tight">
-              Join {countLabel} consumer{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
+              Join {countLabel} user{consumerUserCount === 1 ? '' : 's'} waiting for OnCuts
             </h2>
             <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-md mx-auto">
               Provider browsing is paused while we prepare the next release. You&apos;re already counted — hang tight.

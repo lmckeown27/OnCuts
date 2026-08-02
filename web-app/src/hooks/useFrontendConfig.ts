@@ -42,8 +42,8 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
       cachedConfig = next;
       return next;
     } catch {
-      cachedConfig = { ...DEFAULT_CONFIG };
-      return cachedConfig;
+      // Do not cache failures — allow a later remount/retry to pick up a live count.
+      return { ...DEFAULT_CONFIG };
     } finally {
       inflight = null;
     }

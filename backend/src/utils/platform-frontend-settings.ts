@@ -83,12 +83,16 @@ export async function isCashPaymentEnabled(client: DbClient = pool): Promise<boo
   return settings.cashPaymentEnabled;
 }
 
+/**
+ * Same total as Admin Users tab default (`role` unmanaged / managed):
+ * consumers + admins. Used for the public waitlist count.
+ */
 export async function countConsumerUsers(client: DbClient = pool): Promise<number> {
   try {
     const result = await client.query(
       `SELECT COUNT(*)::int AS count
        FROM users
-       WHERE UPPER(role) = 'CONSUMER'`
+       WHERE role IN ('CONSUMER', 'ADMIN')`
     );
     return parseInt(String(result.rows[0]?.count ?? '0'), 10) || 0;
   } catch (err) {
