@@ -434,7 +434,7 @@ export default function BookingPaymentPage() {
             No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your barber'} accepts your request.
           </p>
           <p>
-            By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} in the app after acceptance to lock in your appointment.
+            By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} after acceptance to lock in your appointment.
           </p>
         </div>
       </div>
