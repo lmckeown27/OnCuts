@@ -491,6 +491,7 @@ function TipPaymentForm({
   const { cashPaymentEnabled } = useFrontendConfig();
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState('');
+  const [customTipActive, setCustomTipActive] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
@@ -583,6 +584,7 @@ function TipPaymentForm({
             onClick={() => {
               setSelectedTip(0);
               setCustomTip('');
+              setCustomTipActive(false);
             }}
             className={`w-20 shrink-0 py-2.5 px-3 rounded-lg border text-sm font-semibold transition-colors ${
               selectedTip === 0 && !customTip
@@ -603,16 +605,18 @@ function TipPaymentForm({
               onFocus={() => {
                 // Custom entry is exclusive — clear any preset tip selection
                 setSelectedTip(null);
+                setCustomTipActive(true);
               }}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '' || parseFloat(value) >= 0) {
                   setCustomTip(value);
                   setSelectedTip(null);
+                  setCustomTipActive(true);
                 }
               }}
               className={`w-full pl-7 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-400 ${
-                customTip !== ''
+                customTip !== '' || customTipActive
                   ? 'border-brand-500 bg-brand-50'
                   : 'border-brand-300'
               }`}
@@ -627,6 +631,7 @@ function TipPaymentForm({
               onClick={() => {
                 setSelectedTip(option.value);
                 setCustomTip('');
+                setCustomTipActive(false);
               }}
               className={`py-3 px-2 rounded-lg border text-xl font-semibold transition-colors ${
                 selectedTip === option.value && !customTip
@@ -641,7 +646,11 @@ function TipPaymentForm({
       </div>
 
       {!tipChosen && (
-        <p className="text-sm text-gray-500 text-center">Pick a tip amount to complete the booking</p>
+        <p className="text-sm text-gray-500 text-center">
+          {customTipActive
+            ? 'Enter a tip amount to complete the booking'
+            : 'Pick a tip amount to complete the booking'}
+        </p>
       )}
 
       {tipChosen && tipAmount === 0 && (
