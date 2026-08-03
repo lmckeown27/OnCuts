@@ -1637,6 +1637,7 @@ function DiscoveryView({
     serviceName: string;
     amount: number;
     scheduledTime?: string;
+    status: string;
   }>;
   onOpenPayment?: (data: {
     bookingId: string;
@@ -2163,7 +2164,7 @@ function DiscoveryView({
                           {booking.barberName}
                         </p>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
-                          Awaiting payment
+                          {booking.status === 'COMPLETED' ? 'Awaiting Tip' : 'Awaiting payment'}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
@@ -2333,7 +2334,7 @@ function DiscoveryView({
                         {booking.barberName}
                       </p>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
-                        Awaiting payment
+                        {booking.status === 'COMPLETED' ? 'Awaiting Tip' : 'Awaiting payment'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
