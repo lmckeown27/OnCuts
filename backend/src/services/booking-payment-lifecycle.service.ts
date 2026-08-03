@@ -67,7 +67,7 @@ export async function notifyConsumerPayAfterAccept(opts: {
   }
 }
 
-/** After complete: nudge consumer to decide tip (including $0). */
+/** After complete: nudge consumer to decide tip. */
 export async function notifyConsumerTipAfterComplete(opts: {
   bookingId: string;
   consumerId: string;
@@ -81,7 +81,7 @@ export async function notifyConsumerTipAfterComplete(opts: {
   const { bookingId, consumerId, barberName, serviceName } = opts;
   const paymentUrl = bookingPaymentUrl(bookingId);
   const title = 'Add a tip';
-  const message = `${barberName} completed your ${serviceName}. Please choose a tip (including $0).`;
+  const message = `${barberName} completed your ${serviceName}. Consider leaving a tip.`;
 
   try {
     await notificationService.saveNotification({

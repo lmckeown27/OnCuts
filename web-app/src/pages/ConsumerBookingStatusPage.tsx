@@ -1083,7 +1083,7 @@ export default function ConsumerBookingStatusPage() {
                 </h3>
                 <p className="text-gray-600 text-sm mb-4">
                   {needsTip
-                    ? `${booking.barberName} completed your service. Please choose a tip (including $0).`
+                    ? `${booking.barberName} completed your service. Consider leaving a tip.`
                     : `${booking.barberName} accepted your booking. Pay now to confirm.`}
                 </p>
                 
