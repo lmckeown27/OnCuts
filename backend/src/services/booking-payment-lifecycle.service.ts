@@ -15,58 +15,6 @@ export function bookingPaymentUrl(bookingId: string): string {
   return `${getFrontendBaseUrl()}/web/payment/${bookingId}`;
 }
 
-/** After accept: nudge consumer to pay service now. */
-export async function notifyConsumerPayAfterAccept(opts: {
-  bookingId: string;
-  consumerId: string;
-  barberName: string;
-  priceUsdCents?: number | null;
-}): Promise<void> {
-  const { bookingId, consumerId, barberName, priceUsdCents } = opts;
-  const paymentUrl = bookingPaymentUrl(bookingId);
-  const priceLabel =
-    typeof priceUsdCents === 'number'
-      ? ` of $${(priceUsdCents / 100).toFixed(2)}`
-      : '';
-  const title = 'Pay to confirm your booking';
-  const message = `${barberName} accepted your booking. Please pay for the service${priceLabel} to confirm.`;
-
-  try {
-    await notificationService.saveNotification({
-      userId: consumerId,
-      type: 'payment_request',
-      title,
-      message,
-      data: { bookingId, paymentUrl, phase: 'service' },
-    });
-    await pushNotificationService.sendMirrorPush(
-      consumerId,
-      title,
-      message,
-      'payment_request',
-      { bookingId, paymentUrl, phase: 'service' }
-    );
-  } catch (err: any) {
-    logger.warn(`Failed pay-after-accept notify for ${bookingId}: ${err?.message || err}`);
-  }
-
-  try {
-    const io = getSocketIO();
-    if (io) {
-      io.to(`user-${consumerId}`).emit('booking-payment-required', {
-        bookingId,
-        status: 'ACCEPTED',
-        paymentUrl,
-        phase: 'service',
-        barberName,
-        priceUsdCents: priceUsdCents ?? null,
-      });
-    }
-  } catch {
-    /* non-fatal */
-  }
-}
-
 /** After complete: nudge consumer to decide tip. */
 export async function notifyConsumerTipAfterComplete(opts: {
   bookingId: string;
