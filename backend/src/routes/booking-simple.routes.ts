@@ -2600,23 +2600,29 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
       );
     }
 
-    // Notify barber of new review
+    // Notify barber of new review (satisfaction faces: 1/3/5 → Dissatisfied/Neutral/Satisfied)
+    const satisfactionLabel =
+      rating >= 5 ? 'Satisfied' : rating >= 3 ? 'Neutral' : 'Dissatisfied';
+    const reviewTitle = `New ${satisfactionLabel} Review`;
+    const reviewMessage = `${booking.consumer_name} left you a ${satisfactionLabel} review${
+      comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''
+    }`;
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
       type: 'new_review',
-      title: `New ${rating}-Star Review`,
-      message: `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
-      data: { bookingId: id, rating, comment },
+      title: reviewTitle,
+      message: reviewMessage,
+      data: { bookingId: id, rating, comment, satisfactionLabel },
     });
     await pushNotificationService.sendMirrorPush(
       booking.barber_user_id,
-      `New ${rating}-Star Review`,
-      `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
+      reviewTitle,
+      reviewMessage,
       'new_review',
-      { bookingId: id, rating, comment }
+      { bookingId: id, rating, comment, satisfactionLabel }
     );
 
-    logger.info(`Review submitted for booking ${id}: ${rating} stars`);
+    logger.info(`Review submitted for booking ${id}: ${satisfactionLabel} (${rating})`);
 
     res.json({
       success: true,

@@ -835,9 +835,11 @@ class PushNotificationService {
     studentName: string,
     rating: number
   ): Promise<any> {
+    const satisfactionLabel =
+      rating >= 5 ? 'Satisfied' : rating >= 3 ? 'Neutral' : 'Dissatisfied';
     const notification: NotificationData = {
-      title: 'New Review!',
-      body: `${studentName} rated you ${rating} stars`,
+      title: `New ${satisfactionLabel} Review`,
+      body: `${studentName} left you a ${satisfactionLabel} review`,
       type: 'review',
       category: 'REVIEW_CATEGORY',
       sound: 'default',
@@ -845,6 +847,8 @@ class PushNotificationService {
       data: {
         type: 'review',
         action: 'open_reviews',
+        satisfactionLabel,
+        rating,
       },
     };
 
