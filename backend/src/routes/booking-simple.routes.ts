@@ -2090,13 +2090,13 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       userId: booking.barber_user_id,
       type: 'payment_received',
       title: 'Payment Received!',
-      message: `Service payment received: $${(totalAmountCents / 100).toFixed(2)}`,
+      message: `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)}`,
       data: { bookingId: id, amount: totalAmountCents, tip: 0, phase: 'service' },
     });
     await pushNotificationService.sendMirrorPush(
       booking.barber_user_id,
       'Payment Received!',
-      `Service payment received: $${(totalAmountCents / 100).toFixed(2)}`,
+      `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)}`,
       'payment_received',
       { bookingId: id, amount: totalAmountCents, tip: 0, phase: 'service' }
     );
@@ -2224,13 +2224,13 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       userId: booking.barber_user_id,
       type: 'payment_received',
       title: 'Payment Received!',
-      message: `Service payment received: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
+      message: `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
       data: { bookingId: id, amount: totalAmountCents, tip: 0, paymentMethod, phase: 'service' },
     });
     await pushNotificationService.sendMirrorPush(
       booking.barber_user_id,
       'Payment Received!',
-      `Service payment received: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
+      `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
       'payment_received',
       { bookingId: id, amount: totalAmountCents, tip: 0, paymentMethod, phase: 'service' }
     );
