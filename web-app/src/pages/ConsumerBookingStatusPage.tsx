@@ -688,7 +688,14 @@ export default function ConsumerBookingStatusPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8" />
+            <button
+              type="button"
+              onClick={handleBackToDiscover}
+              className="cursor-pointer"
+              aria-label="Back to providers"
+            >
+              <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8" />
+            </button>
             <button
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-black"
@@ -889,7 +896,14 @@ export default function ConsumerBookingStatusPage() {
               </span>
             )}
           </button>
-          <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10" />
+          <button
+            type="button"
+            onClick={handleBackToDiscover}
+            className="cursor-pointer"
+            aria-label="Back to providers"
+          >
+            <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10" />
+          </button>
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
