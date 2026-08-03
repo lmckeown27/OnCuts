@@ -34,6 +34,8 @@ interface BookingRow {
   location?: string | null;
   barberName?: string;
   barberAvatar?: string | null;
+  paidAt?: string | null;
+  tipDecidedAt?: string | null;
 }
 
 interface ConsumerBookingsModalProps {
@@ -46,9 +48,15 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function consumerBookingTab(booking: { scheduledTime: string; status: string }): Tab {
+function consumerBookingTab(booking: {
+  scheduledTime: string;
+  status: string;
+  tipDecidedAt?: string | null;
+}): Tab {
   const status = (booking.status || '').toUpperCase();
-  if (['PAID', 'CANCELLED', 'REJECTED'].includes(status)) return 'past';
+  // Terminal / settled bookings are past. PAID is an active upcoming appointment.
+  if (['CANCELLED', 'REJECTED'].includes(status)) return 'past';
+  if (status === 'COMPLETED' && booking.tipDecidedAt) return 'past';
 
   const sched = new Date(booking.scheduledTime);
   const today = new Date();
@@ -78,13 +86,13 @@ function statusBadge(status: string): { label: string; className: string; plain?
       return { label: 'Confirmed', className: 'bg-blue-100 text-blue-800' };
     case 'COMPLETED':
       return {
-        label: 'Awaiting payment',
+        label: 'Awaiting tip',
         className:
           'text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5',
         plain: true,
       };
     case 'PAID':
-      return { label: 'Paid', className: 'bg-green-100 text-green-800' };
+      return { label: 'Paid', className: 'bg-emerald-100 text-emerald-800' };
     case 'CANCELLED':
     case 'REJECTED':
       return { label: s === 'REJECTED' ? 'Declined' : 'Cancelled', className: 'bg-gray-200 text-gray-700' };
@@ -314,7 +322,8 @@ export default function ConsumerBookingsModal({
                     </div>
 
                     <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">
-                      {b.status?.toUpperCase() === 'COMPLETED' && (
+                      {((b.status?.toUpperCase() === 'ACCEPTED' && !b.paidAt) ||
+                        (b.status?.toUpperCase() === 'COMPLETED' && !b.tipDecidedAt)) && (
                         <Button
                           size="sm"
                           variant="primary"
@@ -322,10 +331,10 @@ export default function ConsumerBookingsModal({
                           onClick={() => goPay(b.id)}
                         >
                           <CreditCard className="w-4 h-4" />
-                          Pay now
+                          {b.status?.toUpperCase() === 'COMPLETED' ? 'Choose tip' : 'Pay now'}
                         </Button>
                       )}
-                      {['PENDING', 'ACCEPTED', 'COMPLETED'].includes(
+                      {['PENDING', 'ACCEPTED', 'PAID', 'COMPLETED'].includes(
                         (b.status || '').toUpperCase()
                       ) && (
                         <Button

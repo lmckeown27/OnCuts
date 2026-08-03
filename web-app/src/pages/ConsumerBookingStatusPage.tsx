@@ -44,7 +44,7 @@ interface ActiveBooking {
   scheduledTime: string;
   location?: string;
   notes?: string;
-  status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'ACCEPTED' | 'PAID' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   // Original values (for detecting edits)
   originalScheduledTime?: string;
@@ -55,6 +55,8 @@ interface ActiveBooking {
   // Payment tracking
   paymentRequestedAt?: string;
   paidAt?: string;
+  tipDecidedAt?: string | null;
+  completedAt?: string | null;
   pendingRescheduleRequest?: {
     id: string;
     requestedTime: string;
@@ -379,23 +381,30 @@ export default function ConsumerBookingStatusPage() {
 
   const fetchActiveBooking = async () => {
     try {
-      // Fetch consumer's active bookings (PENDING, ACCEPTED, or COMPLETED awaiting payment)
-      // Add timestamp to bust cache after edits
+      // Active: PENDING / ACCEPTED / PAID, plus COMPLETED still awaiting tip
       const response = await api.get('/bookings-simple', { 
         role: 'consumer',
-        status: 'PENDING,ACCEPTED,COMPLETED',
+        status: 'PENDING,ACCEPTED,PAID,COMPLETED',
         _t: Date.now() // Cache buster
       });
       
       const bookings = response.bookings || [];
       
-      // Get the most recent active booking (prioritize COMPLETED awaiting payment, then ACCEPTED, then PENDING)
       const activeBooking = bookings
-        .filter((b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED' || b.status === 'COMPLETED')
+        .filter((b: any) => {
+          if (b.status === 'PENDING' || b.status === 'ACCEPTED' || b.status === 'PAID') return true;
+          if (b.status === 'COMPLETED' && !b.tipDecidedAt) return true;
+          return false;
+        })
         .sort((a: any, b: any) => {
-          // Prioritize COMPLETED (awaiting payment) over ACCEPTED over PENDING
-          const statusPriority: Record<string, number> = { 'COMPLETED': 0, 'ACCEPTED': 1, 'PENDING': 2 };
-          const priorityDiff = (statusPriority[a.status] || 3) - (statusPriority[b.status] || 3);
+          // Tip-pending complete, then unpaid accept, then paid, then pending
+          const statusPriority: Record<string, number> = {
+            COMPLETED: 0,
+            ACCEPTED: 1,
+            PAID: 2,
+            PENDING: 3,
+          };
+          const priorityDiff = (statusPriority[a.status] || 4) - (statusPriority[b.status] || 4);
           if (priorityDiff !== 0) return priorityDiff;
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         })[0];
@@ -833,6 +842,9 @@ export default function ConsumerBookingStatusPage() {
 
   const isPending = booking.status === 'PENDING';
   const isAccepted = booking.status === 'ACCEPTED';
+  const isPaid = booking.status === 'PAID';
+  /** Accepted or paid — appointment is confirmed / active. */
+  const isConfirmed = isAccepted || isPaid;
 
   const handleGoToMessages = () => {
     navigate(`${platformPrefix}/consumer/messages`);
@@ -973,7 +985,7 @@ export default function ConsumerBookingStatusPage() {
             <div className="absolute top-5 left-10 right-10 h-1 bg-gray-200 rounded-full">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isAccepted ? 'w-full bg-green-500' : 'w-0 bg-primary-500'
+                  isConfirmed ? 'w-full bg-green-500' : 'w-0 bg-primary-500'
                 }`}
               />
             </div>
@@ -992,17 +1004,17 @@ export default function ConsumerBookingStatusPage() {
               </span>
             </div>
             
-            {/* Step 2: Accepted */}
+            {/* Step 2: Confirmed (accepted or paid) */}
             <div className="flex flex-col items-center z-10">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isAccepted 
+                isConfirmed 
                   ? 'bg-green-100 text-green-600 ring-4 ring-green-50' 
                   : 'bg-gray-100 text-gray-400'
               }`}>
-                {isAccepted ? <CheckCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+                {isConfirmed ? <CheckCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
               </div>
-              <span className={`text-sm mt-2 font-medium ${isAccepted ? 'text-green-600' : 'text-gray-400'}`}>
-                Confirmed
+              <span className={`text-sm mt-2 font-medium ${isConfirmed ? 'text-green-600' : 'text-gray-400'}`}>
+                {isPaid ? 'Paid' : 'Confirmed'}
               </span>
             </div>
           </div>
@@ -1021,14 +1033,17 @@ export default function ConsumerBookingStatusPage() {
             </div>
           )}
           
-          {isAccepted && (
+          {isConfirmed && (
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-primary-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-primary-800">Booking Confirmed!</p>
+                  <p className="font-semibold text-primary-800">
+                    {isPaid ? 'Appointment Paid & Confirmed!' : 'Booking Confirmed!'}
+                  </p>
                   <p className="text-sm text-primary-600 mt-1">
-                    Your appointment with {booking.barberName} is confirmed.
+                    Your appointment with {booking.barberName} is confirmed
+                    {isPaid ? ' and paid.' : '.'}
                   </p>
                 </div>
               </div>
@@ -1188,7 +1203,7 @@ export default function ConsumerBookingStatusPage() {
         {/* Actions */}
         <div className="space-y-3">
           {/* Message button only shows after barber accepts (messaging locked during pending) */}
-          {isAccepted && (
+          {isConfirmed && (
             <button
               onClick={handleMessageBarber}
               className="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -1198,8 +1213,8 @@ export default function ConsumerBookingStatusPage() {
             </button>
           )}
           
-          {/* Edit and Cancel buttons for pending and accepted bookings (hidden if payment requested) */}
-          {(isPending || isAccepted) && !booking.paymentRequestedAt && (
+          {/* Edit / Reschedule / Cancel for active bookings (PENDING, ACCEPTED, PAID) */}
+          {(isPending || isConfirmed) && (
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={handleOpenEditModal}

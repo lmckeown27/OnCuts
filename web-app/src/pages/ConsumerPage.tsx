@@ -198,7 +198,7 @@ export default function ConsumerPage() {
     amount: number;
   } | null>(null);
   const paymentModalRef = useRef<{ open: boolean; bookingId: string }>({ open: false, bookingId: '' });
-  /** Unpaid COMPLETED bookings — powers home pending-payment banner (incl. after Pay Later). */
+  /** Unpaid ACCEPTED / tip-pending COMPLETED — powers home pending-payment banner. */
   const [pendingPaymentBookings, setPendingPaymentBookings] = useState<
     Array<{
       bookingId: string;
@@ -207,6 +207,18 @@ export default function ConsumerPage() {
       serviceName: string;
       amount: number;
       scheduledTime?: string;
+    }>
+  >([]);
+  /** Active appointments (PENDING / ACCEPTED / PAID) — Booking Reminder above provider browse. */
+  const [activeReminderBookings, setActiveReminderBookings] = useState<
+    Array<{
+      bookingId: string;
+      barberName: string;
+      barberAvatar?: string | null;
+      serviceName: string;
+      amount: number;
+      scheduledTime?: string;
+      status: string;
     }>
   >([]);
   const [showDeclinedModal, setShowDeclinedModal] = useState(false);
@@ -295,69 +307,59 @@ export default function ConsumerPage() {
   // NOTE: isAuthLoading check is moved to the return statement below
   // to avoid violating React's Rules of Hooks (no early returns before hooks)
   
-  // Check for active bookings and redirect to booking status page
-  useEffect(() => {
-    const checkActiveBookings = async () => {
-      if (!user) return;
-      
-      try {
-        const response = await api.get('/bookings-simple', { role: 'consumer' });
-        const bookings = response.bookings || [];
-        
-        // Check if user has any PENDING or ACCEPTED bookings
-        const activeBooking = bookings.find(
-          (b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED'
-        );
-        
-        if (activeBooking) {
-          // Redirect to booking status page
-          navigate(`${platformPrefix}/consumer/booking-status`, { replace: true });
-        }
-      } catch (error) {
-        console.error('Failed to check active bookings:', error);
-      }
-    };
-    
-    checkActiveBookings();
-  }, [user?.id, platformPrefix, navigate]);
+  const mapConsumerBookingCard = (b: any) => ({
+    bookingId: b.id,
+    barberName:
+      b.barberName ||
+      [b.barber?.firstName, b.barber?.lastName].filter(Boolean).join(' ') ||
+      'Your provider',
+    barberAvatar: b.barberAvatar || b.barber?.profilePictureUrl || b.barber?.avatar || null,
+    serviceName: b.serviceName || b.serviceType || 'Service',
+    amount: b.priceUsdCents || 0,
+    scheduledTime: b.scheduledTime,
+    status: String(b.status || '').toUpperCase(),
+  });
 
-  const refreshPendingPaymentBookings = async () => {
+  const refreshConsumerHomeBookings = async () => {
     if (!user) {
       setPendingPaymentBookings([]);
+      setActiveReminderBookings([]);
       return;
     }
     try {
       const response = await api.get('/bookings-simple', {
         role: 'consumer',
-        status: 'ACCEPTED,COMPLETED',
+        status: 'PENDING,ACCEPTED,PAID,COMPLETED',
       });
       const bookings = response.bookings || [];
-      setPendingPaymentBookings(
+
+      const pendingPay = bookings
+        .filter(
+          (b: any) =>
+            (b.status === 'ACCEPTED' && !b.paidAt) ||
+            (b.status === 'COMPLETED' && !b.tipDecidedAt)
+        )
+        .map(mapConsumerBookingCard);
+      setPendingPaymentBookings(pendingPay);
+
+      const pendingPayIds = new Set(pendingPay.map((b) => b.bookingId));
+      // PAID is an active upcoming booking; exclude rows already shown as payment-needed.
+      setActiveReminderBookings(
         bookings
-          .filter(
-            (b: any) =>
-              (b.status === 'ACCEPTED' && !b.paidAt) ||
-              (b.status === 'COMPLETED' && !b.tipDecidedAt)
-          )
-          .map((b: any) => ({
-            bookingId: b.id,
-            barberName:
-              b.barberName ||
-              [b.barber?.firstName, b.barber?.lastName].filter(Boolean).join(' ') ||
-              'Your provider',
-            barberAvatar: b.barberAvatar || b.barber?.profilePictureUrl || b.barber?.avatar || null,
-            serviceName: b.serviceName || b.serviceType || 'Service',
-            amount: b.priceUsdCents || 0,
-            scheduledTime: b.scheduledTime,
-          }))
+          .filter((b: any) => {
+            const status = String(b.status || '').toUpperCase();
+            if (!['PENDING', 'ACCEPTED', 'PAID'].includes(status)) return false;
+            return !pendingPayIds.has(b.id);
+          })
+          .map(mapConsumerBookingCard)
       );
     } catch (error) {
-      console.error('Failed to load pending payments:', error);
+      console.error('Failed to load consumer home bookings:', error);
     }
   };
 
   useEffect(() => {
-    void refreshPendingPaymentBookings();
+    void refreshConsumerHomeBookings();
   }, [user?.id]);
 
   const openPaymentTakeover = (data: {
@@ -376,7 +378,11 @@ export default function ConsumerPage() {
     deferPaymentTakeover(bookingId);
     setShowPaymentModal(false);
     setPaymentModalData(null);
-    void refreshPendingPaymentBookings();
+    void refreshConsumerHomeBookings();
+  };
+
+  const openActiveBookingReminder = () => {
+    navigate(`${platformPrefix}/consumer/booking-status`);
   };
 
   // Check for barber profile if not already known
@@ -612,7 +618,7 @@ export default function ConsumerPage() {
     }) => {
       console.log('Received booking-completed event:', data);
 
-      void refreshPendingPaymentBookings();
+      void refreshConsumerHomeBookings();
 
       // Pay Later: skip auto-pop for this booking until user reopens from banner/bookings
       if (isPaymentTakeoverDeferred(data.bookingId)) {
@@ -686,7 +692,7 @@ export default function ConsumerPage() {
         setPaymentModalData(null);
       }
 
-      void refreshPendingPaymentBookings();
+      void refreshConsumerHomeBookings();
 
       notificationService.getNotifications().then((notifData) => {
         setNotifications(notifData.notifications);
@@ -819,16 +825,20 @@ export default function ConsumerPage() {
                     title={
                       pendingPaymentBookings.length > 0
                         ? 'My bookings — payment pending'
-                        : 'My bookings'
+                        : activeReminderBookings.length > 0
+                          ? 'My bookings — active appointment'
+                          : 'My bookings'
                     }
                     aria-label={
                       pendingPaymentBookings.length > 0
                         ? 'My bookings, payment awaiting'
-                        : 'My bookings'
+                        : activeReminderBookings.length > 0
+                          ? 'My bookings, active appointment'
+                          : 'My bookings'
                     }
                   >
                     <Calendar className="w-5 h-5 text-gray-600" />
-                    {pendingPaymentBookings.length > 0 && (
+                    {(pendingPaymentBookings.length > 0 || activeReminderBookings.length > 0) && (
                       <span
                         className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-bold leading-none flex items-center justify-center"
                         aria-hidden
@@ -968,6 +978,8 @@ export default function ConsumerPage() {
           onBecomeBarberClick={handleBecomeBarberClick}
           pendingPaymentBookings={pendingPaymentBookings}
           onOpenPayment={openPaymentTakeover}
+          activeReminderBookings={activeReminderBookings}
+          onOpenActiveBooking={openActiveBookingReminder}
         />
       </div>
 
@@ -1349,7 +1361,7 @@ export default function ConsumerPage() {
           onPayLater={() => handlePayLater(paymentModalData.bookingId)}
           onPaymentComplete={() => {
             clearDeferredPaymentTakeover(paymentModalData.bookingId);
-            void refreshPendingPaymentBookings();
+            void refreshConsumerHomeBookings();
             handlePullToRefresh();
           }}
         />
@@ -1601,11 +1613,20 @@ function getBarberNameSearchText(barber: Barber): string {
     .toLowerCase();
 }
 
+function activeBookingReminderLabel(status: string): string {
+  const s = (status || '').toUpperCase();
+  if (s === 'PENDING') return 'Pending';
+  if (s === 'PAID') return 'Paid';
+  return 'Confirmed';
+}
+
 function DiscoveryView({
   navigate,
   onBecomeBarberClick,
   pendingPaymentBookings = [],
   onOpenPayment,
+  activeReminderBookings = [],
+  onOpenActiveBooking,
 }: {
   navigate: any;
   onBecomeBarberClick: () => void;
@@ -1625,6 +1646,16 @@ function DiscoveryView({
     barberAvatar?: string | null;
     scheduledTime?: string;
   }) => void;
+  activeReminderBookings?: Array<{
+    bookingId: string;
+    barberName: string;
+    barberAvatar?: string | null;
+    serviceName: string;
+    amount: number;
+    scheduledTime?: string;
+    status: string;
+  }>;
+  onOpenActiveBooking?: () => void;
 }) {
   const location = useLocation();
   const {
@@ -2039,8 +2070,61 @@ function DiscoveryView({
 
     return (
       <>
-        {pendingPaymentBookings.length > 0 && (
+        {(activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
           <div className="mb-4 flex flex-col items-center gap-2">
+            {activeReminderBookings.map((booking) => {
+              const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
+              const dateStr = when
+                ? when.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : null;
+              const timeStr = when
+                ? when.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : null;
+              const price =
+                booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
+
+              return (
+                <button
+                  key={booking.bookingId}
+                  type="button"
+                  onClick={() => onOpenActiveBooking?.()}
+                  className="w-full max-w-md px-4 py-5 bg-white border border-brand-200 rounded-xl text-left hover:bg-brand-50/40 transition-colors shadow-sm"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <Avatar
+                      src={booking.barberAvatar || undefined}
+                      alt={booking.barberName}
+                      size="xl"
+                      className="!rounded-md"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-base font-semibold text-gray-900 truncate leading-tight">
+                          {booking.barberName}
+                        </p>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-600 shrink-0 leading-tight pt-0.5">
+                          Booking Reminder
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 mt-2 truncate">
+                        {booking.serviceName}
+                        <span className="text-gray-400"> · {activeBookingReminderLabel(booking.status)}</span>
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1.5">
+                        {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
             {pendingPaymentBookings.map((booking) => {
               const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
               const dateStr = when
@@ -2156,8 +2240,61 @@ function DiscoveryView({
         missingTownCoords={latitude == null || longitude == null}
       />
 
-      {pendingPaymentBookings.length > 0 && (
+      {(activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
         <div className="mb-4 flex flex-col items-center gap-2">
+          {activeReminderBookings.map((booking) => {
+            const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
+            const dateStr = when
+              ? when.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : null;
+            const timeStr = when
+              ? when.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
+              : null;
+            const price =
+              booking.amount != null ? `$${(booking.amount / 100).toFixed(2)}` : null;
+
+            return (
+              <button
+                key={booking.bookingId}
+                type="button"
+                onClick={() => onOpenActiveBooking?.()}
+                className="w-full max-w-md px-4 py-5 bg-white border border-brand-200 rounded-xl text-left hover:bg-brand-50/40 transition-colors shadow-sm"
+              >
+                <div className="flex items-start gap-3.5">
+                  <Avatar
+                    src={booking.barberAvatar || undefined}
+                    alt={booking.barberName}
+                    size="xl"
+                    className="!rounded-md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-base font-semibold text-gray-900 truncate leading-tight">
+                        {booking.barberName}
+                      </p>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-600 shrink-0 leading-tight pt-0.5">
+                        Booking Reminder
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2 truncate">
+                      {booking.serviceName}
+                      <span className="text-gray-400"> · {activeBookingReminderLabel(booking.status)}</span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1.5">
+                      {[dateStr, timeStr, price].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
           {pendingPaymentBookings.map((booking) => {
             const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
             const dateStr = when
