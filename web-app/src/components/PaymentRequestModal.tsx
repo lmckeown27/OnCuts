@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
-import { useFrontendConfig } from '../hooks/useFrontendConfig';
 import SatisfactionRating from './SatisfactionRating';
 
 interface PaymentRequestModalProps {
@@ -31,17 +30,44 @@ export default function PaymentRequestModal({
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { cashPaymentEnabled } = useFrontendConfig();
   const [step, setStep] = useState<'payment' | 'tip' | 'review' | 'complete'>('payment');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
+  /** Admin↔admin only when Controls cash toggle is on (from booking API). */
+  const [cashAllowed, setCashAllowed] = useState(false);
   const [rating, setRating] = useState<number>(0);
   const [reviewComment, setReviewComment] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen || !bookingId) {
+      setCashAllowed(false);
+      setPaymentMethod('card');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await api.get<{
+          booking?: { cashPaymentAllowed?: boolean };
+          cashPaymentAllowed?: boolean;
+        }>(`/bookings-simple/${bookingId}`);
+        const booking = response?.booking || response;
+        if (!cancelled) {
+          setCashAllowed(booking?.cashPaymentAllowed === true);
+        }
+      } catch {
+        if (!cancelled) setCashAllowed(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, bookingId]);
+
   if (!isOpen) return null;
 
   const baseAmountDollars = amount / 100;
-  const effectiveMethod = cashPaymentEnabled ? paymentMethod : 'card';
+  const effectiveMethod = cashAllowed ? paymentMethod : 'card';
 
   const handlePayLater = () => {
     onPayLater?.();
@@ -151,7 +177,7 @@ export default function PaymentRequestModal({
               {/* Payment Method Selection */}
               <div>
                 <p className="font-semibold text-gray-900 mb-3">How would you like to pay?</p>
-                <div className={`grid gap-3 ${cashPaymentEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <div className={`grid gap-3 ${cashAllowed ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <button
                     onClick={() => setPaymentMethod('card')}
                     className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
@@ -163,7 +189,7 @@ export default function PaymentRequestModal({
                     <CreditCard className="w-6 h-6" />
                     <span className="font-semibold">Pay with Card</span>
                   </button>
-                  {cashPaymentEnabled && (
+                  {cashAllowed && (
                     <button
                       onClick={() => setPaymentMethod('cash')}
                       className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
@@ -177,7 +203,7 @@ export default function PaymentRequestModal({
                     </button>
                   )}
                 </div>
-                {cashPaymentEnabled && effectiveMethod === 'cash' && (
+                {cashAllowed && effectiveMethod === 'cash' && (
                   <p className="mt-2 text-sm text-green-600 text-center">
                     Please give cash directly to {barberName.split(' ')[0]}
                   </p>
@@ -199,7 +225,7 @@ export default function PaymentRequestModal({
               </div>
 
               {/* Pay Button */}
-              {cashPaymentEnabled && effectiveMethod === 'cash' ? (
+              {cashAllowed && effectiveMethod === 'cash' ? (
                 <button
                   onClick={handleCashPayment}
                   disabled={isProcessing}

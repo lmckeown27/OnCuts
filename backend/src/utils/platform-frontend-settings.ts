@@ -1,6 +1,10 @@
 /**
  * Platform frontend controls (cash payments, consumer home mode).
  * Stored on singleton platform_settings; Admin-editable via Controls tab.
+ *
+ * cash_payment_enabled only gates cash for bookings where BOTH the consumer
+ * and the operator user are platform ADMIN (internal/test). Standard
+ * consumer/operator bookings never offer cash.
  */
 
 import { pool } from '../database/connection';
@@ -81,6 +85,26 @@ export async function getPlatformFrontendSettings(
 export async function isCashPaymentEnabled(client: DbClient = pool): Promise<boolean> {
   const settings = await getPlatformFrontendSettings(client);
   return settings.cashPaymentEnabled;
+}
+
+export function isAdminAdminBookingPair(
+  consumerRole: unknown,
+  barberUserRole: unknown
+): boolean {
+  return (
+    String(consumerRole || '').trim().toUpperCase() === 'ADMIN' &&
+    String(barberUserRole || '').trim().toUpperCase() === 'ADMIN'
+  );
+}
+
+/** Cash is allowed only when the Controls toggle is on AND both parties are ADMIN. */
+export async function isCashPaymentAllowedForRoles(
+  consumerRole: unknown,
+  barberUserRole: unknown,
+  client: DbClient = pool
+): Promise<boolean> {
+  if (!isAdminAdminBookingPair(consumerRole, barberUserRole)) return false;
+  return isCashPaymentEnabled(client);
 }
 
 /**

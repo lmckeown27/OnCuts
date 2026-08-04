@@ -5053,7 +5053,7 @@ export function AdminDashboard({
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Cash Option</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      toggle off = no cash option
+                      Admin↔admin bookings only. Consumer/operator bookings never show cash.
                     </p>
                   </div>
                   <button

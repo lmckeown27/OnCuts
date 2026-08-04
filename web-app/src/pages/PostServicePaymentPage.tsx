@@ -25,7 +25,6 @@ import {
   clearDeferredPaymentTakeover,
   deferPaymentTakeover,
 } from '../store/deferredPaymentBookings';
-import { useFrontendConfig } from '../hooks/useFrontendConfig';
 import SatisfactionRating from '../components/SatisfactionRating';
 
 // Helper to get display name for service
@@ -49,6 +48,8 @@ interface BookingDetails {
   tipRequestedAt?: string | null;
   tipDecidedAt?: string | null;
   paymentMethod?: string | null;
+  /** Admin↔admin only, and only when Controls cash toggle is on. */
+  cashPaymentAllowed?: boolean;
   scheduledTime: string;
   location?: string;
   notes?: string;
@@ -243,7 +244,7 @@ function ServicePaymentForm({
   booking: BookingDetails;
   onSuccess: () => void;
 }) {
-  const { cashPaymentEnabled } = useFrontendConfig();
+  const cashAllowed = booking.cashPaymentAllowed === true;
   const [paymentEntry, setPaymentEntry] = useState<PaymentEntryMode>('manual');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
@@ -252,7 +253,7 @@ function ServicePaymentForm({
 
   const baseAmount = booking.priceUsdCents / 100;
   const effectiveEntry =
-    paymentEntry === 'cash' && !cashPaymentEnabled ? 'manual' : paymentEntry;
+    paymentEntry === 'cash' && !cashAllowed ? 'manual' : paymentEntry;
 
   const createPaymentIntent = async () => {
     setIsCreatingIntent(true);
@@ -330,7 +331,7 @@ function ServicePaymentForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to pay?</label>
-        <div className={`grid gap-3 ${cashPaymentEnabled ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className={`grid gap-3 ${cashAllowed ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <button
             type="button"
             onClick={() => setPaymentEntry('manual')}
@@ -355,7 +356,7 @@ function ServicePaymentForm({
             <Wallet className="w-6 h-6" />
             <span className="font-semibold text-sm text-center">Apple / Google Pay</span>
           </button>
-          {cashPaymentEnabled && (
+          {cashAllowed && (
             <button
               type="button"
               onClick={() => setPaymentEntry('cash')}

@@ -48,7 +48,10 @@ import {
   resolveBookingPlatformFee,
 } from '../utils/platform-commission';
 import { processProviderKickback } from '../utils/platform-kickback';
-import { isCashPaymentEnabled } from '../utils/platform-frontend-settings';
+import {
+  isCashPaymentAllowedForRoles,
+  isCashPaymentEnabled,
+} from '../utils/platform-frontend-settings';
 import {
   bookingPaymentUrl,
   notifyConsumerTipAfterComplete,
@@ -919,10 +922,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
         barber_user.first_name as barber_first_name,
         barber_user.last_name as barber_last_name,
         barber_user."avatarUrl" as barber_profile_url,
+        barber_user.role as barber_user_role,
         consumer.id as consumer_user_id,
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
         consumer."avatarUrl" as consumer_profile_url,
+        consumer.role as consumer_user_role,
         rr.id as rr_id,
         rr.requested_time as rr_requested_time,
         rr.location as rr_location,
@@ -946,7 +951,11 @@ router.get('/:id', authenticate, async (req, res, next) => {
     }
 
     const row = result.rows[0];
-    
+    const cashPaymentAllowed = await isCashPaymentAllowedForRoles(
+      row.consumer_user_role,
+      row.barber_user_role
+    );
+
     // Format response with nested barber/consumer objects
     const booking = {
       id: row.id,
@@ -967,6 +976,8 @@ router.get('/:id', authenticate, async (req, res, next) => {
       tipRequestedAt: normalizeApiTimestamp(row.tipRequestedAt),
       tipDecidedAt: normalizeApiTimestamp(row.tipDecidedAt),
       commissionFreeApplied: row.commission_free_applied === true,
+      /** True only for admin↔admin bookings when Controls cash toggle is on. */
+      cashPaymentAllowed,
       location: mergeConversationLocation(row.conv_location, row.conv_location_details),
       locationDetails: row.conv_location_details || null,
       notes: row.conv_notes,
@@ -2160,15 +2171,7 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       });
     }
 
-    if (paymentMethod === 'cash') {
-      const cashEnabled = await isCashPaymentEnabled();
-      if (!cashEnabled) {
-        return res.status(403).json({
-          success: false,
-          error: 'Cash payments are currently disabled',
-        });
-      }
-    } else {
+    if (paymentMethod !== 'cash') {
       return res.status(400).json({
         success: false,
         error: 'Card service payments must use create-payment-intent + confirm-payment',
@@ -2178,10 +2181,13 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
               barber."userId" as barber_user_id,
-              barber_user.first_name || ' ' || barber_user.last_name as barber_name
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name,
+              barber_user.role as barber_user_role,
+              consumer.role as consumer_user_role
        FROM bookings b
        JOIN barbers barber ON b."barberId" = barber.id
        JOIN users barber_user ON barber."userId" = barber_user.id
+       JOIN users consumer ON b."consumerId" = consumer.id
        WHERE b.id = $1 AND b."consumerId" = $2`,
       [id, userId]
     );
@@ -2194,6 +2200,20 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
+
+    const cashAllowed = await isCashPaymentAllowedForRoles(
+      booking.consumer_user_role,
+      booking.barber_user_role
+    );
+    if (!cashAllowed) {
+      const settingOn = await isCashPaymentEnabled();
+      return res.status(403).json({
+        success: false,
+        error: settingOn
+          ? 'Cash payments are only available for admin-to-admin bookings'
+          : 'Cash payments are currently disabled',
+      });
+    }
 
     if (booking.status !== 'ACCEPTED') {
       return res.status(400).json({
