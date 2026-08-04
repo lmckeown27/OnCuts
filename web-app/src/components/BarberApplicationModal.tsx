@@ -907,7 +907,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <textarea
                   value={form.whyBeBarber}
                   onChange={(e) => setForm({ ...form, whyBeBarber: e.target.value })}
-                  placeholder="Tell us about your passion for barbering and why you'd be a great fit for OnCuts..."
+                  placeholder="Why would you be a great fit for OnCuts?..."
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
