@@ -46,6 +46,11 @@ import {
   barberNearCampusByPinSql,
   servicePinDistanceToCampusSql,
 } from '../utils/admin-campus-proximity';
+import {
+  EXCLUDE_ADMIN_ADMIN_BK,
+  EXCLUDE_ADMIN_ADMIN_BOOKINGS,
+  SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED,
+} from '../utils/admin-metrics-filters';
 import { coarsenPublicLocationLabel } from '../services/geocode.service';
 
 /**
@@ -1131,6 +1136,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled
       FROM bookings
       WHERE "barberId" IN (${nearCampusIds})
+      AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `, [campusId]);
 
     // Get total revenue, platform fees, and transaction count for Stripe fee calculation
@@ -1151,6 +1157,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
       AND "barberId" IN (${nearCampusIds})
+      AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `, [campusId]);
 
     // Get average rating and review count
@@ -1161,6 +1168,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       FROM bookings
       WHERE "reviewRating" IS NOT NULL
       AND "barberId" IN (${nearCampusIds})
+      AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `, [campusId]);
 
     // Get average bookings per day (last 30 days)
@@ -1172,6 +1180,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '30 days'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('day', "createdAt")
       ) daily_counts
     `, [campusId]);
@@ -1185,6 +1194,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 weeks'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('week', "createdAt")
       ) weekly_counts
     `, [campusId]);
@@ -1198,6 +1208,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 months'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('month', "createdAt")
       ) monthly_counts
     `, [campusId]);
@@ -1211,6 +1222,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '30 days'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('day', "createdAt")
       ) daily_revenues
     `, [campusId]);
@@ -1224,6 +1236,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 weeks'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('week', "createdAt")
       ) weekly_revenues
     `, [campusId]);
@@ -1237,6 +1250,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 months'
         AND "barberId" IN (${nearCampusIds})
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('month', "createdAt")
       ) monthly_revenues
     `, [campusId]);
@@ -1280,6 +1294,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         WHERE status IN ('COMPLETED', 'PAID')
           AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
           AND "barberId" IN (${nearCampusIds})
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
       ) as barber_weeks
     `, [campusId]);
     const estimatedPayouts = parseInt(payoutCountResult.rows[0]?.estimated_payouts || '0');
@@ -1399,6 +1414,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
             WHERE "barberId" = ANY($1::uuid[])
               AND "paidAt" IS NOT NULL
               AND "paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
+              AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
             `,
             [barberIds, trunc, campusTimezone]
           )
@@ -1410,6 +1426,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
             FROM bookings
             WHERE "barberId" = ANY($1::uuid[])
               AND "paidAt" IS NOT NULL
+              AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
             `,
             [barberIds]
           );
@@ -1544,6 +1561,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         WHERE "barberId" = ANY($2::uuid[])
           AND "paidAt" IS NOT NULL
           AND "paidAt" >= NOW() - $3::interval
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
         ORDER BY period_start ASC
       `, [dateTrunc, barberIds, interval, campusTimezone]);
@@ -1558,6 +1576,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         WHERE "barberId" = ANY($2::uuid[])
           AND "paidAt" IS NOT NULL
           AND "paidAt" >= $3::timestamp
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
         ORDER BY period_start ASC
       `, [dateTrunc, barberIds, startDate, campusTimezone]);
@@ -1571,6 +1590,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         FROM bookings
         WHERE "barberId" = ANY($2::uuid[])
           AND "paidAt" IS NOT NULL
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
       `, [dateTrunc, barberIds, campusTimezone]);
@@ -1690,6 +1710,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as completed,
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled
       FROM bookings
+      WHERE ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `);
 
     // Get total revenue, platform fees, and transaction count
@@ -1709,6 +1730,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `);
 
     // Get average rating and review count
@@ -1718,6 +1740,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COUNT("reviewRating") as total_reviews
       FROM bookings
       WHERE "reviewRating" IS NOT NULL
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
     `);
 
     // Get average bookings per day (last 30 days)
@@ -1728,6 +1751,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '30 days'
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('day', "createdAt")
       ) daily_counts
     `);
@@ -1740,6 +1764,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 weeks'
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('week', "createdAt")
       ) weekly_counts
     `);
@@ -1752,6 +1777,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
         AND "createdAt" >= NOW() - INTERVAL '12 months'
+        AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC('month', "createdAt")
       ) monthly_counts
     `);
@@ -1796,6 +1822,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
           AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
       ) as barber_weeks
     `);
     const estimatedPayouts = parseInt(payoutCountResult.rows[0]?.estimated_payouts || '0');
@@ -1937,6 +1964,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
             FROM bookings
             WHERE "paidAt" IS NOT NULL
               AND "paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+              AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
             `,
             [trunc, aggregateTimezone]
           )
@@ -1947,6 +1975,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
               COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0)::int as revenue
             FROM bookings
             WHERE "paidAt" IS NOT NULL
+              AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
             `
           );
 
@@ -2069,6 +2098,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
         FROM bookings
         WHERE "paidAt" IS NOT NULL
           AND "paidAt" >= NOW() - $2::interval
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
       `, [dateTrunc, interval, aggregateTimezone]);
@@ -2094,6 +2124,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
         FROM bookings
         WHERE "paidAt" IS NOT NULL
           AND "paidAt" >= $2::timestamp
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
       `, [dateTrunc, startDate, aggregateTimezone]);
@@ -2118,6 +2149,7 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
           COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
         FROM bookings
         WHERE "paidAt" IS NOT NULL
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $2)
         ORDER BY period_start ASC
       `, [dateTrunc, aggregateTimezone]);
@@ -2269,6 +2301,7 @@ async function queryEarliestMetricsEventTs(params: {
           WHERE bk."barberId" = ANY($1::uuid[])
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${EXCLUDE_ADMIN_ADMIN_BK}
           `,
           [barberIds]
         )
@@ -2278,6 +2311,7 @@ async function queryEarliestMetricsEventTs(params: {
           FROM bookings bk
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${EXCLUDE_ADMIN_ADMIN_BK}
           `
         );
     return result.rows[0]?.earliest ? new Date(result.rows[0].earliest) : new Date();
@@ -2609,6 +2643,7 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
           JOIN users cu ON cu.id = bk."consumerId"
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
             AND bk."paidAt" >= $1::timestamptz
             AND bk."paidAt" < $2::timestamptz
           ORDER BY bk."paidAt" ASC
@@ -2625,6 +2660,7 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
           JOIN users cu ON cu.id = bk."consumerId"
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
             AND bk."paidAt" >= (DATE_TRUNC($1, NOW() AT TIME ZONE $2) AT TIME ZONE $2)
           ORDER BY bk."paidAt" ASC
           `,
@@ -2640,6 +2676,7 @@ export const getAggregateMetricsEvents = async (req: AuthRequest, res: Response,
           JOIN users cu ON cu.id = bk."consumerId"
           WHERE bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
           ORDER BY bk."paidAt" ASC
           `
         );
@@ -2763,6 +2800,7 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
           WHERE bk."barberId" = ANY($1::uuid[])
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
             AND bk."paidAt" >= $2::timestamptz
             AND bk."paidAt" < $3::timestamptz
           ORDER BY bk."paidAt" ASC
@@ -2780,6 +2818,7 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
           WHERE bk."barberId" = ANY($1::uuid[])
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
             AND bk."paidAt" >= (DATE_TRUNC($2, NOW() AT TIME ZONE $3) AT TIME ZONE $3)
           ORDER BY bk."paidAt" ASC
           `,
@@ -2796,6 +2835,7 @@ export const getCampusMetricsEvents = async (req: AuthRequest, res: Response, ne
           WHERE bk."barberId" = ANY($1::uuid[])
             AND bk."paidAt" IS NOT NULL
             AND bk.status IN ('COMPLETED', 'PAID')
+            AND ${SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED}
           ORDER BY bk."paidAt" ASC
           `,
           [barberIds]
@@ -2958,6 +2998,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
           SUM("totalPaidCents") as total_volume_cents
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY "barberId"
       ) stats ON stats."barberId" = b.id
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
@@ -3510,6 +3551,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
           SUM("totalPaidCents") as total_volume_cents
         FROM bookings
         WHERE status IN ('COMPLETED', 'PAID')
+          AND ${EXCLUDE_ADMIN_ADMIN_BOOKINGS}
         GROUP BY "barberId"
       ) stats ON stats."barberId" = b.id
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
