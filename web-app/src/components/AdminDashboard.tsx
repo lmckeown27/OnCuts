@@ -787,6 +787,14 @@ export function AdminDashboard({
     });
   }, [metricsListBookings, metricsListSignups, metricsListSortOrder, metricsListView]);
 
+  const metricsListBookingsRevenueCents = useMemo(() => {
+    if (metricsListView !== 'bookings') return 0;
+    return metricsListBookings.reduce(
+      (sum, event) => sum + (event.total_paid_cents || 0),
+      0
+    );
+  }, [metricsListBookings, metricsListView]);
+
   const exportMetricsListCsv = useCallback(() => {
     if (metricsListView !== 'bookings' && metricsListView !== 'signups') return;
     if (sortedMetricsListEvents.length === 0) {
@@ -2783,6 +2791,9 @@ export function AdminDashboard({
               <p>
                 {metricsListWindowLabel} · 0{' '}
                 {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+                {metricsListView === 'bookings'
+                  ? ` · ${formatCurrency(metricsListBookingsRevenueCents)}`
+                  : ''}
               </p>
               <button
                 type="button"
@@ -2807,6 +2818,9 @@ export function AdminDashboard({
               <p>
                 {metricsListWindowLabel} · {sortedMetricsListEvents.length}{' '}
                 {metricsListView === 'bookings' ? 'bookings' : 'sign-ups'}
+                {metricsListView === 'bookings'
+                  ? ` · ${formatCurrency(metricsListBookingsRevenueCents)}`
+                  : ''}
               </p>
               <div className="flex items-center gap-0.5 shrink-0">
                 <button
