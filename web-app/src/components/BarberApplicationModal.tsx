@@ -852,7 +852,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  What Type of Operator are you? *
+                  Operator Type *
                 </label>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
