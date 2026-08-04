@@ -4638,7 +4638,7 @@ export function AdminDashboard({
                         <p className="text-sm font-medium text-gray-900">
                           {booking.barber_first_name} {booking.barber_last_name}
                         </p>
-                        <p className="text-xs text-gray-500">{booking.service_type}</p>
+                        <p className="text-xs text-gray-500">{formatServiceType(booking.service_type)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-gray-900">
