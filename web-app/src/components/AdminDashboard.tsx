@@ -4518,7 +4518,7 @@ export function AdminDashboard({
                     : ''}
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+              <div className="flex flex-col items-stretch gap-2 shrink-0">
                 {selectedConsumer.has_inactive_barber_profile &&
                   !selectedConsumer.barber_reapply_allowed && (
                     <Button
