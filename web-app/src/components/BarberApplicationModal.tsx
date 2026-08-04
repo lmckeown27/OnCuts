@@ -69,6 +69,18 @@ function phoneDigits(formatted: string): string {
   return formatted.replace(/\D/g, '');
 }
 
+/** Strip a leading @ so the input adornment does not double up. */
+function normalizeSocialHandle(value: string): string {
+  return value.replace(/^@+/, '');
+}
+
+function formatSocialDisplay(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed) || trimmed.includes('/')) return trimmed;
+  return `@${normalizeSocialHandle(trimmed)}`;
+}
+
 export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess, guestMode = false }: BarberApplicationModalProps) {
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
@@ -947,13 +959,20 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Social Media (optional)
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Instagram handle or link"
-                    value={form.socialMedia}
-                    onChange={(e) => setForm({ ...form, socialMedia: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="username"
+                      value={form.socialMedia}
+                      onChange={(e) =>
+                        setForm({ ...form, socialMedia: normalizeSocialHandle(e.target.value) })
+                      }
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1030,8 +1049,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
                 {form.socialMedia && (
                   <div className="border-t pt-4">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Portfolio/Social</p>
-                    <p className="text-primary-600 text-sm">{form.socialMedia}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Social</p>
+                    <p className="text-primary-600 text-sm">{formatSocialDisplay(form.socialMedia)}</p>
                   </div>
                 )}
               </div>
