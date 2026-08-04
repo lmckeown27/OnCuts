@@ -11,6 +11,17 @@ type CatalogServiceOption = Pick<ServiceType, 'id' | 'name'> & {
   providerType: 'barber' | 'beauty';
 };
 
+function isHaircutService(service: CatalogServiceOption): boolean {
+  return service.name.toLowerCase() === 'haircut' || service.id.toLowerCase() === 'haircut';
+}
+
+/** Keep Haircut first; preserve relative order for everything else. */
+function withHaircutFirst(services: CatalogServiceOption[]): CatalogServiceOption[] {
+  const haircut = services.filter(isHaircutService);
+  const rest = services.filter((s) => !isHaircutService(s));
+  return [...haircut, ...rest];
+}
+
 interface BarberApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -352,7 +363,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       }));
 
   const availableServices = form.operatorType
-    ? serviceSource.filter((service) => service.providerType === form.operatorType)
+    ? withHaircutFirst(
+        serviceSource.filter((service) => service.providerType === form.operatorType),
+      )
     : [];
 
   const handleOperatorTypeSelect = (operatorType: 'barber' | 'beauty') => {
