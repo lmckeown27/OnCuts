@@ -31,6 +31,49 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
 import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
+import { SERVICE_TYPES } from '../config/services';
+
+function formatApplicationExperience(value: string | number | undefined | null): string {
+  if (value === undefined || value === null || value === '') return 'Not specified';
+  const key = String(value);
+  const labels: Record<string, string> = {
+    'less-than-1': 'Less than 1 year',
+    '1-2': '1-2 years',
+    '3-5': '3-5 years',
+    '5-plus': '5+ years',
+  };
+  return labels[key] || (typeof value === 'number' ? `${value} years` : key);
+}
+
+function formatApplicationHours(value: string | undefined | null): string {
+  if (!value) return 'Not specified';
+  const labels: Record<string, string> = {
+    '5-10': '5-10 hours/week',
+    '10-20': '10-20 hours/week',
+    '20-30': '20-30 hours/week',
+    '30-plus': '30+ hours/week',
+  };
+  return labels[value] || value;
+}
+
+function formatApplicationSocial(value: string | undefined | null): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed) || trimmed.includes('/')) return trimmed;
+  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
+}
+
+function inferApplicationOperatorType(specialties: string[] | undefined | null): string {
+  if (!specialties?.length) return 'Not specified';
+  const beautyNames = new Set(
+    SERVICE_TYPES.filter((s) => s.providerType === 'beauty').map((s) => s.name.toLowerCase())
+  );
+  const beautyCount = specialties.filter((s) => beautyNames.has(String(s).toLowerCase())).length;
+  if (beautyCount === 0) return 'Barber';
+  if (beautyCount === specialties.length) return 'Beauty';
+  return 'Mixed';
+}
+
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -3905,22 +3948,12 @@ export function AdminDashboard({
                         <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Campus</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.campus_name || 'Unknown'}</p>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1">Experience</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
+                            <p className="font-semibold text-gray-900">{formatApplicationExperience(selectedApplication.years_experience)}</p>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Barber license</p>
-                            <p className="font-semibold text-gray-900">
-                              {selectedApplication.has_license
-                                ? selectedApplication.license_number
-                                  ? `Yes: #${selectedApplication.license_number}`
-                                  : 'Yes (number not provided)'
-                                : 'Not declared'}
-                            </p>
+                            <p className="text-xs text-gray-500 mb-1">Operator Type</p>
+                            <p className="font-semibold text-gray-900">{inferApplicationOperatorType(selectedApplication.specialties)}</p>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1">Phone Number</p>
@@ -3934,12 +3967,18 @@ export function AdminDashboard({
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1">Available Hours</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.available_hours || 'Not specified'}</p>
+                            <p className="font-semibold text-gray-900">{formatApplicationHours(selectedApplication.available_hours)}</p>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Yes' : 'No'}</p>
+                            <p className="text-xs text-gray-500 mb-1">Tools</p>
+                            <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}</p>
                           </div>
+                          {selectedApplication.social_media && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-xs text-gray-500 mb-1">Social</p>
+                              <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
+                            </div>
+                          )}
                           <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1">Applied On</p>
                             <p className="font-semibold text-gray-900">
@@ -3965,6 +4004,20 @@ export function AdminDashboard({
                           <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
                             <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
                             <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
+                          </div>
+                        )}
+
+                        {selectedApplication.portfolio_description && (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Portfolio</p>
+                            <p className="text-gray-700">{selectedApplication.portfolio_description}</p>
+                          </div>
+                        )}
+
+                        {selectedApplication.additional_notes && (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Additional Notes</p>
+                            <p className="text-gray-700">{selectedApplication.additional_notes}</p>
                           </div>
                         )}
                       </div>
@@ -4017,9 +4070,8 @@ export function AdminDashboard({
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
-                            <p className="text-xs text-gray-400 truncate">{app.campus_name || 'Unknown campus'}</p>
-                            {app.years_experience !== undefined && (
-                              <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
+                            {app.years_experience !== undefined && app.years_experience !== null && (
+                              <p className="text-xs text-gray-600 mt-1">{formatApplicationExperience(app.years_experience)}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -4302,17 +4354,11 @@ export function AdminDashboard({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Experience</p>
-                        <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
+                        <p className="font-semibold text-gray-900">{formatApplicationExperience(selectedApplication.years_experience)}</p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Barber license</p>
-                        <p className="font-semibold text-gray-900">
-                          {selectedApplication.has_license
-                            ? selectedApplication.license_number
-                              ? `Yes: #${selectedApplication.license_number}`
-                              : 'Yes (number not provided)'
-                            : 'Not declared'}
-                        </p>
+                        <p className="text-xs text-gray-500 mb-1">Operator Type</p>
+                        <p className="font-semibold text-gray-900">{inferApplicationOperatorType(selectedApplication.specialties)}</p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Phone Number</p>
@@ -4326,12 +4372,18 @@ export function AdminDashboard({
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Available Hours</p>
-                        <p className="font-semibold text-gray-900">{selectedApplication.available_hours || 'Not specified'}</p>
+                        <p className="font-semibold text-gray-900">{formatApplicationHours(selectedApplication.available_hours)}</p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
-                        <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Yes' : 'No'}</p>
+                        <p className="text-xs text-gray-500 mb-1">Tools</p>
+                        <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}</p>
                       </div>
+                      {selectedApplication.social_media && (
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                          <p className="text-xs text-gray-500 mb-1">Social</p>
+                          <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
+                        </div>
+                      )}
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Applied On</p>
                         <p className="font-semibold text-gray-900">
@@ -4357,6 +4409,20 @@ export function AdminDashboard({
                       <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
                         <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
                         <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
+                      </div>
+                    )}
+
+                    {selectedApplication.portfolio_description && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Portfolio</p>
+                        <p className="text-gray-700">{selectedApplication.portfolio_description}</p>
+                      </div>
+                    )}
+
+                    {selectedApplication.additional_notes && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Additional Notes</p>
+                        <p className="text-gray-700">{selectedApplication.additional_notes}</p>
                       </div>
                     )}
                   </div>
@@ -4412,8 +4478,8 @@ export function AdminDashboard({
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
-                          {app.years_experience !== undefined && (
-                            <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
+                          {app.years_experience !== undefined && app.years_experience !== null && (
+                            <p className="text-xs text-gray-600 mt-1">{formatApplicationExperience(app.years_experience)}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
