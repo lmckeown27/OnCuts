@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { X, Clock, Check, Mail, UserX } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
-import { SERVICE_TYPES } from '../config/services';
+import { SERVICE_TYPES, type ServiceType } from '../config/services';
 import barberService from '../services/barber.service';
+import api from '../services/api.service';
 import toast from 'react-hot-toast';
+
+type CatalogServiceOption = Pick<ServiceType, 'id' | 'name'> & {
+  providerType: 'barber' | 'beauty';
+};
 
 interface BarberApplicationModalProps {
   isOpen: boolean;
@@ -64,6 +69,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [existingApplication, setExistingApplication] = useState<BarberApplication | null>(null);
   const [checkingExistingApplication, setCheckingExistingApplication] = useState(true);
   const [isDemotedBarber, setIsDemotedBarber] = useState(false);
+  /** Active admin catalog; null until loaded, then prefer over static SERVICE_TYPES */
+  const [catalogServices, setCatalogServices] = useState<CatalogServiceOption[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -97,6 +105,48 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setIsVisible(false);
     setTimeout(onClose, 150);
   };
+
+  // Load active (non-removed) services from the platform catalog
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    setCatalogLoading(true);
+    setCatalogServices(null);
+
+    (async () => {
+      try {
+        const data = await api.get<Array<{
+          id: string;
+          slug?: string;
+          name: string;
+          providerType?: string;
+          isActive?: boolean;
+        }>>('/platform/services');
+
+        if (cancelled) return;
+
+        const list: CatalogServiceOption[] = (Array.isArray(data) ? data : [])
+          .filter((s) => s.isActive !== false && s.name)
+          .map((s) => ({
+            id: String(s.slug || s.id),
+            name: s.name,
+            providerType: s.providerType === 'beauty' ? 'beauty' : 'barber',
+          }));
+
+        setCatalogServices(list);
+      } catch {
+        // Fall back to static config only if the catalog endpoint is unavailable
+        if (!cancelled) setCatalogServices(null);
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   // Check for existing application / demoted status on mount
   useEffect(() => {
@@ -290,15 +340,26 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     (!guestMode ||
       (form.firstName.trim() && form.lastName.trim() && form.email && isValidEmail(form.email)));
 
+  // While loading, show nothing (avoid flashing admin-removed static services).
+  // On fetch failure, fall back to the static config.
+  const serviceSource: CatalogServiceOption[] = catalogLoading
+    ? []
+    : catalogServices ??
+      SERVICE_TYPES.map((s) => ({
+        id: s.id,
+        name: s.name,
+        providerType: s.providerType === 'beauty' ? 'beauty' : 'barber',
+      }));
+
   const availableServices = form.operatorType
-    ? SERVICE_TYPES.filter((service) => service.providerType === form.operatorType)
+    ? serviceSource.filter((service) => service.providerType === form.operatorType)
     : [];
 
   const handleOperatorTypeSelect = (operatorType: 'barber' | 'beauty') => {
     setForm((prev) => {
       if (prev.operatorType === operatorType) return prev;
       const allowed = new Set(
-        SERVICE_TYPES.filter((s) => s.providerType === operatorType).map((s) => s.name),
+        serviceSource.filter((s) => s.providerType === operatorType).map((s) => s.name),
       );
       return {
         ...prev,
@@ -307,6 +368,17 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       };
     });
   };
+
+  // Drop specialties that are no longer in the active catalog (e.g. admin removed them)
+  useEffect(() => {
+    if (!catalogServices) return;
+    const allowed = new Set(catalogServices.map((s) => s.name));
+    setForm((prev) => {
+      const next = prev.specialties.filter((name) => allowed.has(name));
+      if (next.length === prev.specialties.length) return prev;
+      return { ...prev, specialties: next };
+    });
+  }, [catalogServices]);
 
   // Step 2: About You
   const canProceedStep2 = form.whyBeBarber.trim().length > 0 && Boolean(form.availableHours);
@@ -789,6 +861,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   What services will you offer? * (Select all that apply)
                 </label>
+                {catalogLoading ? (
+                  <p className="text-sm text-gray-500 py-2">Loading available services…</p>
+                ) : availableServices.length === 0 ? (
+                  <p className="text-sm text-gray-500 py-2">
+                    No active services are available for this operator type right now.
+                  </p>
+                ) : (
                 <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto">
                   {availableServices.map((service) => {
                     const isSelected = form.specialties.includes(service.name);
@@ -814,6 +893,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     );
                   })}
                 </div>
+                )}
               </div>
               )}
             </div>
