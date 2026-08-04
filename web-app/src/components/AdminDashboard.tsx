@@ -306,6 +306,10 @@ interface PlatformUser {
   created_at: string;
   is_active: boolean;
   customer_number: number | null;
+  /** Inactive (demoted) barber profile exists */
+  has_inactive_barber_profile?: boolean;
+  /** Admin cleared demotion so they may submit a new application */
+  barber_reapply_allowed?: boolean;
 }
 
 interface AdminDashboardProps {
@@ -464,6 +468,7 @@ export function AdminDashboard({
   const [consumerBookings, setConsumerBookings] = useState<ConsumerBooking[]>([]);
   const [isLoadingConsumerBookings, setIsLoadingConsumerBookings] = useState(false);
   const [isUpdatingUserRole, setIsUpdatingUserRole] = useState(false);
+  const [isAllowingBarberReapply, setIsAllowingBarberReapply] = useState(false);
   const currentAdminId = useAuthStore((s) => s.user?.id);
   
   // Barber view state (shared between all-barbers and campus-specific views)
@@ -1928,6 +1933,38 @@ export function AdminDashboard({
       );
     } finally {
       setIsUpdatingUserRole(false);
+    }
+  };
+
+  const handleAllowBarberReapply = async (user: PlatformUser) => {
+    if (
+      !window.confirm(
+        `Allow ${user.first_name} ${user.last_name} to reapply as a provider? This clears the “Barber Access Removed” lock so they can go through the application flow again.`
+      )
+    ) {
+      return;
+    }
+    setIsAllowingBarberReapply(true);
+    try {
+      await api.post(`/admin/users/${user.id}/allow-barber-reapply`, {});
+      const next = {
+        ...user,
+        has_inactive_barber_profile: true,
+        barber_reapply_allowed: true,
+      };
+      setSelectedConsumer(next);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? next : u)));
+      toast.success('User can reapply as a provider');
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.error?.message ||
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to allow reapply'
+      );
+    } finally {
+      setIsAllowingBarberReapply(false);
     }
   };
   
@@ -4474,44 +4511,75 @@ export function AdminDashboard({
                 <p className="text-xs text-gray-400 mt-1">
                   {selectedConsumer.role || 'CONSUMER'}
                   {selectedConsumer.campus_name ? ` · ${selectedConsumer.campus_name}` : ''}
+                  {selectedConsumer.has_inactive_barber_profile
+                    ? selectedConsumer.barber_reapply_allowed
+                      ? ' · Barber reapply allowed'
+                      : ' · Barber access removed'
+                    : ''}
                 </p>
               </div>
-              {['CONSUMER', 'ADMIN'].includes(
-                String(selectedConsumer.role || 'CONSUMER').toUpperCase()
-              ) && (
-                String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 whitespace-nowrap"
-                    disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
-                    title={
-                      selectedConsumer.id === currentAdminId
-                        ? 'You cannot revoke your own Admin access'
-                        : undefined
-                    }
-                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
-                  >
-                    {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remove Admin'}
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="shrink-0 whitespace-nowrap"
-                    disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
-                    title={
-                      selectedConsumer.id === currentAdminId
-                        ? 'You cannot change your own role'
-                        : undefined
-                    }
-                    onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
-                  >
-                    {isUpdatingUserRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Make Admin'}
-                  </Button>
-                )
-              )}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                {selectedConsumer.has_inactive_barber_profile &&
+                  !selectedConsumer.barber_reapply_allowed && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={isAllowingBarberReapply}
+                      title="Clear demotion so this user can submit a new provider application"
+                      onClick={() => void handleAllowBarberReapply(selectedConsumer)}
+                    >
+                      {isAllowingBarberReapply ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Allow Barber Reapply'
+                      )}
+                    </Button>
+                  )}
+                {['CONSUMER', 'ADMIN'].includes(
+                  String(selectedConsumer.role || 'CONSUMER').toUpperCase()
+                ) &&
+                  (String(selectedConsumer.role || '').toUpperCase() === 'ADMIN' ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
+                      title={
+                        selectedConsumer.id === currentAdminId
+                          ? 'You cannot revoke your own Admin access'
+                          : undefined
+                      }
+                      onClick={() => void handleUpdateUserRole(selectedConsumer, 'CONSUMER')}
+                    >
+                      {isUpdatingUserRole ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Remove Admin'
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={isUpdatingUserRole || selectedConsumer.id === currentAdminId}
+                      title={
+                        selectedConsumer.id === currentAdminId
+                          ? 'You cannot change your own role'
+                          : undefined
+                      }
+                      onClick={() => void handleUpdateUserRole(selectedConsumer, 'ADMIN')}
+                    >
+                      {isUpdatingUserRole ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Make Admin'
+                      )}
+                    </Button>
+                  ))}
+              </div>
             </div>
             
             {/* Booking History */}

@@ -500,39 +500,79 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
     const sourceSelect = await barberServiceLocationSourceSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
 
-    let barberResult = await pool.query(
-      `SELECT 
-        b.id,
-        b."userId" as user_id,
-        b.bio,
-        b.specialties,
-        b.pricing,
-        b."avgRating" as average_rating,
-        b."totalReviews" as total_reviews,
-        b."totalBookings" as total_bookings,
-        b."isActive" as is_active,
-        b."createdAt" as created_at,
-        b."weeklySchedule" as weekly_schedule,
-        b.commission_free_bookings_remaining,
-        b.service_latitude,
-        b.service_longitude,
-        b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
-        u.email,
-        u.first_name,
-        u.last_name,
-        u."displayName" as display_name,
-        u."avatarUrl" as profile_picture_url,
-        u."instagramHandle" as instagram_handle,
-        u."campusId" as campus_id,
-        u.role as user_type,
-        u."isBanned" as user_is_banned,
-        c.timezone as campus_timezone
-      FROM barbers b
-      JOIN users u ON b."userId" = u.id
-      LEFT JOIN campuses c ON u."campusId" = c.id
-      WHERE b."userId" = $1`,
-      [userId]
-    );
+    let barberResult;
+    try {
+      barberResult = await pool.query(
+        `SELECT 
+          b.id,
+          b."userId" as user_id,
+          b.bio,
+          b.specialties,
+          b.pricing,
+          b."avgRating" as average_rating,
+          b."totalReviews" as total_reviews,
+          b."totalBookings" as total_bookings,
+          b."isActive" as is_active,
+          b.reapply_allowed_at,
+          b."createdAt" as created_at,
+          b."weeklySchedule" as weekly_schedule,
+          b.commission_free_bookings_remaining,
+          b.service_latitude,
+          b.service_longitude,
+          b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
+          u.email,
+          u.first_name,
+          u.last_name,
+          u."displayName" as display_name,
+          u."avatarUrl" as profile_picture_url,
+          u."instagramHandle" as instagram_handle,
+          u."campusId" as campus_id,
+          u.role as user_type,
+          u."isBanned" as user_is_banned,
+          c.timezone as campus_timezone
+        FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        LEFT JOIN campuses c ON u."campusId" = c.id
+        WHERE b."userId" = $1`,
+        [userId]
+      );
+    } catch (selectErr: any) {
+      if (selectErr?.code !== '42703') throw selectErr;
+      barberResult = await pool.query(
+        `SELECT 
+          b.id,
+          b."userId" as user_id,
+          b.bio,
+          b.specialties,
+          b.pricing,
+          b."avgRating" as average_rating,
+          b."totalReviews" as total_reviews,
+          b."totalBookings" as total_bookings,
+          b."isActive" as is_active,
+          NULL::timestamptz as reapply_allowed_at,
+          b."createdAt" as created_at,
+          b."weeklySchedule" as weekly_schedule,
+          b.commission_free_bookings_remaining,
+          b.service_latitude,
+          b.service_longitude,
+          b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
+          u.email,
+          u.first_name,
+          u.last_name,
+          u."displayName" as display_name,
+          u."avatarUrl" as profile_picture_url,
+          u."instagramHandle" as instagram_handle,
+          u."campusId" as campus_id,
+          u.role as user_type,
+          u."isBanned" as user_is_banned,
+          c.timezone as campus_timezone
+        FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        LEFT JOIN campuses c ON u."campusId" = c.id
+        WHERE b."userId" = $1`,
+        [userId]
+      );
+    }
 
     // If no barber record exists, check if this is a barber user and auto-create one
     if (barberResult.rows.length === 0) {
@@ -648,6 +688,8 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       });
     }
     delete barber.user_is_banned;
+    const reapplyAllowed = barber.reapply_allowed_at != null;
+    delete barber.reapply_allowed_at;
 
     const pricing = Array.isArray(barber.pricing) ? barber.pricing : [];
 
@@ -659,6 +701,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       success: true,
       data: {
         ...barber,
+        reapply_allowed: reapplyAllowed,
         commissionFreeBookingsRemaining,
         pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
@@ -1571,10 +1614,22 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
       );
 
       // Deactivate the barber profile (keep it for records, but mark inactive)
-      await client.query(
-        `UPDATE barbers SET "isActive" = false, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
-        [id]
-      );
+      try {
+        await client.query(
+          `UPDATE barbers
+           SET "isActive" = false,
+               reapply_allowed_at = NULL,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE id = $1`,
+          [id]
+        );
+      } catch (deactivateErr: any) {
+        if (deactivateErr?.code !== '42703') throw deactivateErr;
+        await client.query(
+          `UPDATE barbers SET "isActive" = false, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
+          [id]
+        );
+      }
 
       // Delete CM-barber direct conversations (conversations without a booking_id)
       // First delete messages, then the conversations

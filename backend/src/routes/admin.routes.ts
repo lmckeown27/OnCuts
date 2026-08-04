@@ -32,6 +32,7 @@ router.post('/withdrawals/process-batch', adminController.processBatch);
 // User Management
 router.post('/users/:userId/ban', adminController.banUser);
 router.post('/users/:userId/unban', adminController.unbanUser);
+router.post('/users/:userId/allow-barber-reapply', adminController.allowBarberReapply);
 router.put('/users/:userId/role', adminController.updateUserRole);
 router.get('/users/:userId/balance', adminController.getUserBalance);
 router.get('/users/:userId/bookings', adminController.getUserBookings);

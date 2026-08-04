@@ -111,11 +111,15 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       try {
         setCheckingExistingApplication(true);
         
-        // First, check if user is a demoted barber (has barber record with isActive = false)
+        // First, check if user is a demoted barber (inactive profile, reapply not cleared)
+        let reapplyAllowed = false;
         if (user?.id) {
           try {
             const barberProfile = await barberService.getBarberByUserId(user.id);
-            if (barberProfile && barberProfile.is_active === false) {
+            reapplyAllowed = Boolean(
+              (barberProfile as { reapply_allowed?: boolean } | null)?.reapply_allowed
+            );
+            if (barberProfile && barberProfile.is_active === false && !reapplyAllowed) {
               setIsDemotedBarber(true);
               setExistingApplication(null);
               return; // Don't check for application if demoted
@@ -127,7 +131,16 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         
         // Check for existing application
         const application = await barberApplicationService.getMyApplication();
-        setExistingApplication(application);
+        // After Admin clears demotion, skip stale approved status so they can reapply.
+        if (
+          reapplyAllowed &&
+          application &&
+          ['approved', 'rejected'].includes(String(application.status || '').toLowerCase())
+        ) {
+          setExistingApplication(null);
+        } else {
+          setExistingApplication(application);
+        }
       } catch (error) {
         console.error('Failed to check existing application:', error);
         // If error, assume no existing application and let user proceed
@@ -140,6 +153,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     if (isOpen) {
       setStep(1);
       setForm(emptyApplicationForm());
+      setIsDemotedBarber(false);
       // Skip existing application check for guest mode (no user to check)
       if (!guestMode) {
         checkExistingApplicationAndDemotedStatus();

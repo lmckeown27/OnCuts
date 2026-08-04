@@ -538,6 +538,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                specialties = EXCLUDED.specialties,
                pricing = EXCLUDED.pricing,
                "isActive" = true,
+               reapply_allowed_at = NULL,
                "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
             [userId, specialties, JSON.stringify(pricing), 'barber']
           );
@@ -611,6 +612,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              specialties = EXCLUDED.specialties,
              pricing = EXCLUDED.pricing,
              "isActive" = true,
+             reapply_allowed_at = NULL,
              "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
           [updatedApplication.user_id, specialties, JSON.stringify(pricing), 'barber']
         );

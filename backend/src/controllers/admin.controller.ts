@@ -3367,7 +3367,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     // Get consumers/admins with primary campus (booking-based) and global customer number
-    const result = await pool.query(`
+    const usersListCtes = `
       WITH numbered_consumers AS (
         SELECT 
           id,
@@ -3375,7 +3375,6 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         FROM users
         WHERE role = 'CONSUMER'
       ),
-      -- Calculate primary campus for each consumer based on booking history
       consumer_booking_campuses AS (
         SELECT 
           bk."consumerId",
@@ -3387,7 +3386,6 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         WHERE bk.status IN ('COMPLETED', 'PAID', 'ACCEPTED', 'IN_PROGRESS')
         GROUP BY bk."consumerId", bu."campusId"
       ),
-      -- Get the primary campus (most booked) for each consumer
       primary_campus AS (
         SELECT DISTINCT ON ("consumerId")
           "consumerId",
@@ -3395,6 +3393,12 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         FROM consumer_booking_campuses
         ORDER BY "consumerId", booking_count DESC
       )
+    `;
+
+    let result;
+    try {
+      result = await pool.query(
+        `${usersListCtes}
       SELECT 
         u.id,
         u.first_name,
@@ -3404,9 +3408,18 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         u."avatarUrl" as avatar_url,
         u."createdAt" as created_at,
         true as is_active,
-        -- Use primary campus (booking-based) if available, otherwise signup campus
         COALESCE(pc_campus.name, c.name) as campus_name,
-        nc.customer_number
+        nc.customer_number,
+        EXISTS (
+          SELECT 1 FROM barbers b
+          WHERE b."userId" = u.id AND b."isActive" = false
+        ) AS has_inactive_barber_profile,
+        EXISTS (
+          SELECT 1 FROM barbers b
+          WHERE b."userId" = u.id
+            AND b."isActive" = false
+            AND b.reapply_allowed_at IS NOT NULL
+        ) AS barber_reapply_allowed
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
       LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
@@ -3414,8 +3427,41 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
       LEFT JOIN numbered_consumers nc ON u.id = nc.id
       ${whereClause}
       ORDER BY CASE WHEN u.role = 'ADMIN' THEN 0 ELSE 1 END, u."createdAt" DESC
-      LIMIT $1 OFFSET $2
-    `, params);
+      LIMIT $1 OFFSET $2`,
+        params
+      );
+    } catch (listErr: any) {
+      // Pre-migration 058: reapply_allowed_at missing — fall back without that flag.
+      if (listErr?.code !== '42703') throw listErr;
+      result = await pool.query(
+        `${usersListCtes}
+      SELECT 
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.role,
+        u."avatarUrl" as avatar_url,
+        u."createdAt" as created_at,
+        true as is_active,
+        COALESCE(pc_campus.name, c.name) as campus_name,
+        nc.customer_number,
+        EXISTS (
+          SELECT 1 FROM barbers b
+          WHERE b."userId" = u.id AND b."isActive" = false
+        ) AS has_inactive_barber_profile,
+        false AS barber_reapply_allowed
+      FROM users u
+      LEFT JOIN campuses c ON u."campusId" = c.id
+      LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
+      LEFT JOIN campuses pc_campus ON pc.primary_campus_id = pc_campus.id
+      LEFT JOIN numbered_consumers nc ON u.id = nc.id
+      ${whereClause}
+      ORDER BY CASE WHEN u.role = 'ADMIN' THEN 0 ELSE 1 END, u."createdAt" DESC
+      LIMIT $1 OFFSET $2`,
+        params
+      );
+    }
 
     // Get total count (same role + campus filter)
     let countParams: string[] = [];
@@ -3882,6 +3928,91 @@ export const unbanUser = async (req: AuthRequest, res: Response, next: NextFunct
     logger.info('admin_unban_user', { userId, adminId: req.user!.userId });
     res.json({ success: true, data: { ok: true, wasBanned: true }, message: 'User unbanned' });
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/admin/users/:userId/allow-barber-reapply
+ * Clears demotion lock for an inactive barber profile so the user can submit
+ * a new operator application (does not restore active barber access).
+ */
+export const allowBarberReapply = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const { userId } = req.params;
+
+    const userCheck = await pool.query(`SELECT id, email FROM users WHERE id = $1::uuid`, [userId]);
+    if (userCheck.rows.length === 0) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const barberCheck = await pool.query(
+      `SELECT id, "isActive", reapply_allowed_at
+       FROM barbers
+       WHERE "userId" = $1::uuid
+       LIMIT 1`,
+      [userId]
+    );
+    if (barberCheck.rows.length === 0) {
+      throw new ApiError(400, 'User has no barber profile to clear');
+    }
+    const barber = barberCheck.rows[0];
+    if (barber.isActive === true) {
+      throw new ApiError(400, 'Barber access is already active; reapply is not needed');
+    }
+    if (barber.reapply_allowed_at) {
+      res.json({
+        success: true,
+        data: { ok: true, alreadyAllowed: true },
+        message: 'User can already reapply as a barber',
+      });
+      return;
+    }
+
+    await pool.query(
+      `UPDATE barbers
+       SET reapply_allowed_at = NOW(), "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $1::uuid`,
+      [barber.id]
+    );
+
+    // Prior approved applications otherwise block the apply UI; mark them superseded.
+    await pool.query(
+      `UPDATE barber_applications
+       SET status = 'rejected',
+           review_notes = COALESCE(review_notes || E'\n', '') ||
+             'Superseded: Admin cleared demotion so user may reapply.',
+           updated_at = NOW()
+       WHERE user_id = $1::uuid
+         AND status IN ('approved', 'pending', 'under_review', 'interview_scheduled')`,
+      [userId]
+    );
+
+    logger.info('admin_allow_barber_reapply', {
+      userId,
+      barberId: barber.id,
+      adminId: req.user!.userId,
+    });
+
+    res.json({
+      success: true,
+      data: { ok: true, alreadyAllowed: false },
+      message: 'User can now reapply as a barber',
+    });
+  } catch (error: any) {
+    if (error?.code === '42703') {
+      next(
+        new ApiError(
+          503,
+          'Database missing reapply_allowed_at. Apply migration 058_barber_reapply_allowed.sql'
+        )
+      );
+      return;
+    }
     next(error);
   }
 };
