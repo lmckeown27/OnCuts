@@ -5605,12 +5605,12 @@ export function AdminDashboard({
             aria-modal="true"
             aria-label="Contact Applicant"
           >
-            <div className="px-6 py-4 bg-primary-600 flex items-center justify-between">
+            <div className="relative px-6 py-4 bg-primary-600 flex items-center justify-center">
               <h2 className="text-xl font-bold text-white">Contact Applicant</h2>
               <button
                 type="button"
                 onClick={closeContactModal}
-                className="text-white/80 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
                 aria-label="Close"
               >
                 <X className="w-6 h-6" />
@@ -5673,9 +5673,6 @@ export function AdminDashboard({
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 mt-4 text-center">
-                Use either contact method to reach out and schedule an interview to discuss their application.
-              </p>
             </div>
           </div>
         </div>
