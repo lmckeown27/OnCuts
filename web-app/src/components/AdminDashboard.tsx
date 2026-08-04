@@ -817,7 +817,7 @@ export function AdminDashboard({
         return [
           event.id,
           event.status,
-          event.service_type,
+          formatServiceType(event.service_type),
           ((event.total_paid_cents || 0) / 100).toFixed(2),
           ((event.tip_cents || 0) / 100).toFixed(2),
           paidAt.month,
@@ -2852,7 +2852,7 @@ export function AdminDashboard({
                         </p>
                         <p className="text-[11px] text-gray-500 truncate">
                           with {event.barber_first_name} {event.barber_last_name}
-                          {event.service_type ? ` · ${event.service_type}` : ''}
+                          {event.service_type ? ` · ${formatServiceType(event.service_type)}` : ''}
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           {event.paid_at
