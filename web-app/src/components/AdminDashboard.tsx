@@ -3916,15 +3916,20 @@ export function AdminDashboard({
                                 {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
                               </h3>
                               <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
-                              <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${
-                                selectedApplication.status === 'pending' 
-                                  ? 'bg-amber-100 text-amber-700' 
-                                  : selectedApplication.status === 'approved'
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-700'
-                              }`}>
-                                {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${
+                                  selectedApplication.status === 'pending' 
+                                    ? 'bg-amber-100 text-amber-700' 
+                                    : selectedApplication.status === 'approved'
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  Applied {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </span>
+                              </div>
                             </div>
                           </div>
                           <button
@@ -3979,12 +3984,6 @@ export function AdminDashboard({
                               <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
                             </div>
                           )}
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Applied On</p>
-                            <p className="font-semibold text-gray-900">
-                              {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
-                          </div>
                         </div>
 
                         {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
@@ -4321,15 +4320,20 @@ export function AdminDashboard({
                             {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
                           </h3>
                           <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
-                          <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${
-                            selectedApplication.status === 'pending' 
-                              ? 'bg-amber-100 text-amber-700' 
-                              : selectedApplication.status === 'approved'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${
+                              selectedApplication.status === 'pending' 
+                                ? 'bg-amber-100 text-amber-700' 
+                                : selectedApplication.status === 'approved'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Applied {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <button
@@ -4384,12 +4388,6 @@ export function AdminDashboard({
                           <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
                         </div>
                       )}
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Applied On</p>
-                        <p className="font-semibold text-gray-900">
-                          {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                      </div>
                     </div>
 
                     {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
