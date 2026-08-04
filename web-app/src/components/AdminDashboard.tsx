@@ -1876,6 +1876,7 @@ export function AdminDashboard({
   
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
+    setSelectedApplication(null);
     setSelectedBarber(barber);
     syncCommissionFormFromBarber(barber);
     setBarberBookings([]);
@@ -3367,6 +3368,195 @@ export function AdminDashboard({
               </div>
             )}
           </div>
+        ) : selectedApplication ? (
+          /* Application Detail View — full panel (same takeover as operator detail) */
+          <div>
+            <button
+              onClick={() => setSelectedApplication(null)}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-3 text-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Applications
+            </button>
+
+            <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <Users className="w-6 h-6 text-primary-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900">
+                  {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'}{' '}
+                  {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {selectedApplication.email || selectedApplication.user?.email || 'No email'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span
+                    className={`inline-block text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                      selectedApplication.status === 'pending'
+                        ? 'bg-amber-100 text-amber-700'
+                        : selectedApplication.status === 'approved'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {selectedApplication.status === 'pending'
+                      ? 'Pending'
+                      : selectedApplication.status === 'approved'
+                        ? 'Approved'
+                        : selectedApplication.status}
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    Applied{' '}
+                    {new Date(selectedApplication.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setShowContactModal(selectedApplication)}
+                >
+                  Schedule Interview
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Application Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Experience</p>
+                  <p className="font-semibold text-gray-900">
+                    {formatApplicationExperience(selectedApplication.years_experience)}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Operator Type</p>
+                  <p className="font-semibold text-gray-900">
+                    {inferApplicationOperatorType(selectedApplication.specialties)}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Phone Number</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedApplication.phone_number || 'Not provided'}
+                  </p>
+                  {selectedApplication.phone_number && (
+                    <div className="flex gap-2 mt-2">
+                      <a
+                        href={`tel:${selectedApplication.phone_number}`}
+                        className="text-xs text-gray-900 hover:underline"
+                      >
+                        Call
+                      </a>
+                      <a
+                        href={`sms:${selectedApplication.phone_number}`}
+                        className="text-xs text-gray-900 hover:underline"
+                      >
+                        Text
+                      </a>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Available Hours</p>
+                  <p className="font-semibold text-gray-900">
+                    {formatApplicationHours(selectedApplication.available_hours)}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Tools</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}
+                  </p>
+                </div>
+                {selectedApplication.social_media && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 mb-1">Social</p>
+                    <p className="font-semibold text-gray-900">
+                      {formatApplicationSocial(selectedApplication.social_media)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-gray-500 mb-2">Specialties</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedApplication.specialties.map((specialty, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedApplication.why_be_barber && (
+                <div className="mt-3 p-3 bg-primary-50 rounded-lg border border-primary-100">
+                  <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">
+                    Why They Want to Join
+                  </p>
+                  <p className="text-gray-700 italic text-sm">"{selectedApplication.why_be_barber}"</p>
+                </div>
+              )}
+
+              {selectedApplication.portfolio_description && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">
+                    Portfolio
+                  </p>
+                  <p className="text-gray-700 text-sm">{selectedApplication.portfolio_description}</p>
+                </div>
+              )}
+
+              {selectedApplication.additional_notes && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">
+                    Additional Notes
+                  </p>
+                  <p className="text-gray-700 text-sm">{selectedApplication.additional_notes}</p>
+                </div>
+              )}
+            </div>
+
+            {selectedApplication.status === 'pending' && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => {
+                    requestApplicationAction(selectedApplication, 'approve');
+                  }}
+                  disabled={applicationActionLoading === selectedApplication.id}
+                  className="flex-1 py-3 justify-center"
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Approve Application
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    requestApplicationAction(selectedApplication, 'reject');
+                  }}
+                  disabled={applicationActionLoading === selectedApplication.id}
+                  className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <XCircle className="w-5 h-5 mr-2" />
+                  Reject Application
+                </Button>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1 mb-1">
@@ -3894,159 +4084,6 @@ export function AdminDashboard({
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
                     </div>
-                  ) : selectedApplication ? (
-                    // Detailed Application View
-                    <div className="space-y-4">
-                      <button
-                        onClick={() => setSelectedApplication(null)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                        <span className="text-sm font-medium">Back to Applications</span>
-                      </button>
-                      
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
-                              <Users className="w-7 h-7 text-primary-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-900">
-                                {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
-                              </h3>
-                              <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
-                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${
-                                  selectedApplication.status === 'pending' 
-                                    ? 'bg-amber-100 text-amber-700' 
-                                    : selectedApplication.status === 'approved'
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  Applied {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                            className="hidden sm:flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors flex-shrink-0"
-                          >
-                            Schedule Interview
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                          className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors"
-                        >
-                          Schedule Interview
-                        </button>
-                      </div>
-
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                        <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Experience</p>
-                            <p className="font-semibold text-gray-900">{formatApplicationExperience(selectedApplication.years_experience)}</p>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Operator Type</p>
-                            <p className="font-semibold text-gray-900">{inferApplicationOperatorType(selectedApplication.specialties)}</p>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Phone Number</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.phone_number || 'Not provided'}</p>
-                            {selectedApplication.phone_number && (
-                              <div className="flex gap-2 mt-2">
-                                <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Call</a>
-                                <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Text</a>
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Available Hours</p>
-                            <p className="font-semibold text-gray-900">{formatApplicationHours(selectedApplication.available_hours)}</p>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1">Tools</p>
-                            <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}</p>
-                          </div>
-                          {selectedApplication.social_media && (
-                            <div className="p-3 bg-gray-50 rounded-lg">
-                              <p className="text-xs text-gray-500 mb-1">Social</p>
-                              <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
-                          <div className="mt-4">
-                            <p className="text-xs text-gray-500 mb-2">Specialties</p>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedApplication.specialties.map((specialty, idx) => (
-                                <span key={idx} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                                  {specialty}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedApplication.why_be_barber && (
-                          <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
-                            <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
-                            <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
-                          </div>
-                        )}
-
-                        {selectedApplication.portfolio_description && (
-                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Portfolio</p>
-                            <p className="text-gray-700">{selectedApplication.portfolio_description}</p>
-                          </div>
-                        )}
-
-                        {selectedApplication.additional_notes && (
-                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                            <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Additional Notes</p>
-                            <p className="text-gray-700">{selectedApplication.additional_notes}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {selectedApplication.status === 'pending' && (
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <Button
-                            onClick={() => {
-                              requestApplicationAction(selectedApplication, 'approve');
-                            }}
-                            disabled={applicationActionLoading === selectedApplication.id}
-                            className="flex-1 py-3 justify-center"
-                          >
-                            <CheckCircle className="w-5 h-5 mr-2" />
-                            Approve Application
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              requestApplicationAction(selectedApplication, 'reject');
-                            }}
-                            disabled={applicationActionLoading === selectedApplication.id}
-                            className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <XCircle className="w-5 h-5 mr-2" />
-                            Reject Application
-                          </Button>
-                        </div>
-                      )}
-                    </div>
                   ) : applications.length > 0 ? (
                     applications.map(app => (
                       <div
@@ -4297,161 +4334,6 @@ export function AdminDashboard({
               isLoadingApplications ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-                </div>
-              ) : selectedApplication ? (
-                // Detailed Application View (Campus-specific)
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setSelectedApplication(null)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                    <span className="text-sm font-medium">Back to Applications</span>
-                  </button>
-                  
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
-                          <Users className="w-7 h-7 text-primary-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
-                          </h3>
-                          <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${
-                              selectedApplication.status === 'pending' 
-                                ? 'bg-amber-100 text-amber-700' 
-                                : selectedApplication.status === 'approved'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              Applied {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                        className="hidden sm:flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors flex-shrink-0"
-                      >
-                        Schedule Interview
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
-                      className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors"
-                    >
-                      Schedule Interview
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                    <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Experience</p>
-                        <p className="font-semibold text-gray-900">{formatApplicationExperience(selectedApplication.years_experience)}</p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Operator Type</p>
-                        <p className="font-semibold text-gray-900">{inferApplicationOperatorType(selectedApplication.specialties)}</p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Phone Number</p>
-                        <p className="font-semibold text-gray-900">{selectedApplication.phone_number || 'Not provided'}</p>
-                        {selectedApplication.phone_number && (
-                          <div className="flex gap-2 mt-2">
-                            <a href={`tel:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Call</a>
-                            <a href={`sms:${selectedApplication.phone_number}`} className="text-xs text-gray-900 hover:underline">Text</a>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Available Hours</p>
-                        <p className="font-semibold text-gray-900">{formatApplicationHours(selectedApplication.available_hours)}</p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Tools</p>
-                        <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}</p>
-                      </div>
-                      {selectedApplication.social_media && (
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs text-gray-500 mb-1">Social</p>
-                          <p className="font-semibold text-gray-900">{formatApplicationSocial(selectedApplication.social_media)}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-xs text-gray-500 mb-2">Specialties</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedApplication.specialties.map((specialty, idx) => (
-                            <span key={idx} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                              {specialty}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedApplication.why_be_barber && (
-                      <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
-                        <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
-                        <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
-                      </div>
-                    )}
-
-                    {selectedApplication.portfolio_description && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Portfolio</p>
-                        <p className="text-gray-700">{selectedApplication.portfolio_description}</p>
-                      </div>
-                    )}
-
-                    {selectedApplication.additional_notes && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wide">Additional Notes</p>
-                        <p className="text-gray-700">{selectedApplication.additional_notes}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedApplication.status === 'pending' && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button
-                        onClick={() => {
-                          requestApplicationAction(selectedApplication, 'approve');
-                          setSelectedApplication(null);
-                        }}
-                        disabled={applicationActionLoading === selectedApplication.id}
-                        className="flex-1 py-3 justify-center"
-                      >
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Approve Application
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          requestApplicationAction(selectedApplication, 'reject');
-                          setSelectedApplication(null);
-                        }}
-                        disabled={applicationActionLoading === selectedApplication.id}
-                        className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
-                      >
-                        <XCircle className="w-5 h-5 mr-2" />
-                        Reject Application
-                      </Button>
-                    </div>
-                  )}
                 </div>
               ) : applications.length > 0 ? (
                 <div className="space-y-2 max-h-80 overflow-y-auto">
