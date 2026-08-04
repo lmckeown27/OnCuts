@@ -530,7 +530,26 @@ export function AdminDashboard({
   const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
   const [pendingApplicationAction, setPendingApplicationAction] = useState<{ app: BarberApplication; action: 'approve' | 'reject' } | null>(null);
   const [showContactModal, setShowContactModal] = useState<BarberApplication | null>(null);
+  const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
+
+  const openContactModal = (app: BarberApplication) => {
+    setShowContactModal(app);
+    setCopiedField(null);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsContactModalVisible(true);
+      });
+    });
+  };
+
+  const closeContactModal = () => {
+    setIsContactModalVisible(false);
+    setCopiedField(null);
+    setTimeout(() => {
+      setShowContactModal(null);
+    }, 200);
+  };
   
   const chartContainerRef = useRef<HTMLDivElement>(null);
   
@@ -3421,7 +3440,7 @@ export function AdminDashboard({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={() => setShowContactModal(selectedApplication)}
+                  onClick={() => openContactModal(selectedApplication)}
                 >
                   Schedule Interview
                 </Button>
@@ -5569,11 +5588,31 @@ export function AdminDashboard({
 
       {/* Contact Modal for Scheduling Interview */}
       {showContactModal && (
-        <div className="fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 bg-black/50" onClick={() => { setShowContactModal(null); setCopiedField(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-colors duration-200 ${
+            isContactModalVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeContactModal}
+        >
+          <div
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-200 ease-out ${
+              isContactModalVisible
+                ? 'opacity-100 translate-y-0 scale-100'
+                : 'opacity-0 translate-y-4 scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Contact Applicant"
+          >
             <div className="px-6 py-4 bg-primary-600 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Contact Applicant</h2>
-              <button onClick={() => { setShowContactModal(null); setCopiedField(null); }} className="text-white/80 hover:text-white">
+              <button
+                type="button"
+                onClick={closeContactModal}
+                className="text-white/80 hover:text-white"
+                aria-label="Close"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
