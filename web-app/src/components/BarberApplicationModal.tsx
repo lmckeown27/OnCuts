@@ -823,7 +823,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       >
                         <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                               isSelected
-                                ? 'bg-primary-400 border-gray-400'
+                                ? 'bg-green-500 border-green-500'
                                 : 'border-gray-300'
                             }`}>
                           {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
