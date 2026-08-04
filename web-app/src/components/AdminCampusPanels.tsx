@@ -2910,15 +2910,34 @@ export const ServicesManagementPanel: React.FC = () => {
                   <h4 className="font-semibold text-gray-900 text-sm leading-tight">
                     {service.name}
                   </h4>
-                  <span
-                    className={`mt-1 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                      providerType === 'beauty'
-                        ? 'bg-violet-100 text-violet-800'
-                        : 'bg-sky-100 text-sky-800'
-                    }`}
-                  >
-                    {providerType === 'beauty' ? 'Beauty' : 'Barber'}
-                  </span>
+                  {isEditing ? (
+                    <div className="mt-1 flex gap-1">
+                      {(['barber', 'beauty'] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setEditingBounds((prev) => ({ ...prev, providerType: type }))}
+                          className={`flex-1 text-[10px] px-2 py-1 rounded border capitalize ${
+                            editingBounds.providerType === type
+                              ? 'border-gray-900 bg-gray-900 text-white'
+                              : 'border-gray-300 bg-white text-gray-600'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span
+                      className={`mt-1 inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                        providerType === 'beauty'
+                          ? 'bg-violet-100 text-violet-800'
+                          : 'bg-sky-100 text-sky-800'
+                      }`}
+                    >
+                      {providerType === 'beauty' ? 'Beauty' : 'Barber'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {!isEditing && (
@@ -3020,22 +3039,6 @@ export const ServicesManagementPanel: React.FC = () => {
                         className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
                       />
                     </label>
-                  </div>
-                  <div className="flex gap-1">
-                    {(['barber', 'beauty'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setEditingBounds((prev) => ({ ...prev, providerType: type }))}
-                        className={`flex-1 text-[10px] px-2 py-1 rounded border capitalize ${
-                          editingBounds.providerType === type
-                            ? 'border-gray-900 bg-gray-900 text-white'
-                            : 'border-gray-300 bg-white text-gray-600'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
                   </div>
                   <div className="flex gap-1">
                     <button
