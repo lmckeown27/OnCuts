@@ -2142,7 +2142,7 @@ export function AdminDashboard({
                     type="number"
                     min={0}
                     max={100}
-                    step={0.1}
+                    step={1}
                     readOnly={!isEditingPlatformFee}
                     disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
                     value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
