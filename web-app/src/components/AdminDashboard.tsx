@@ -513,6 +513,7 @@ export function AdminDashboard({
   const [onboardingBulkConfirmField, setOnboardingBulkConfirmField] = useState<
     'free' | 'kickback' | null
   >(null);
+  const [isOnboardingBulkConfirmVisible, setIsOnboardingBulkConfirmVisible] = useState(false);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -537,9 +538,34 @@ export function AdminDashboard({
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
   const [pendingApplicationAction, setPendingApplicationAction] = useState<{ app: BarberApplication; action: 'approve' | 'reject' } | null>(null);
+  const [isApplicationActionVisible, setIsApplicationActionVisible] = useState(false);
   const [showContactModal, setShowContactModal] = useState<BarberApplication | null>(null);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
+
+  /** Fade/scale a confirm dialog in on the next frame (matches contact modal). */
+  const revealAfterMount = (setVisible: (visible: boolean) => void) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setVisible(true));
+    });
+  };
+
+  const MODAL_TRANSITION_MS = 200;
+
+  const openOnboardingBulkConfirm = (field: 'free' | 'kickback') => {
+    setOnboardingBulkConfirmField(field);
+    revealAfterMount(setIsOnboardingBulkConfirmVisible);
+  };
+
+  const closeOnboardingBulkConfirm = () => {
+    setIsOnboardingBulkConfirmVisible(false);
+    setTimeout(() => setOnboardingBulkConfirmField(null), MODAL_TRANSITION_MS);
+  };
+
+  const closeApplicationActionConfirm = () => {
+    setIsApplicationActionVisible(false);
+    setTimeout(() => setPendingApplicationAction(null), MODAL_TRANSITION_MS);
+  };
 
   const openContactModal = (app: BarberApplication) => {
     setShowContactModal(app);
@@ -767,6 +793,7 @@ export function AdminDashboard({
   // Show confirmation for application action
   const requestApplicationAction = (app: BarberApplication, action: 'approve' | 'reject') => {
     setPendingApplicationAction({ app, action });
+    revealAfterMount(setIsApplicationActionVisible);
   };
 
   // Handle application action (approve/reject) - called after confirmation
@@ -775,7 +802,7 @@ export function AdminDashboard({
     
     const { app, action } = pendingApplicationAction;
     setApplicationActionLoading(app.id);
-    setPendingApplicationAction(null);
+    closeApplicationActionConfirm();
     
     try {
       if (action === 'approve') {
@@ -1781,7 +1808,7 @@ export function AdminDashboard({
       return;
     }
 
-    setOnboardingBulkConfirmField(field);
+    openOnboardingBulkConfirm(field);
   };
 
   const executeBulkOnboardingSave = async (field: 'free' | 'kickback') => {
@@ -1833,7 +1860,7 @@ export function AdminDashboard({
 
   const confirmBulkOnboardingSave = async () => {
     const field = onboardingBulkConfirmField;
-    setOnboardingBulkConfirmField(null);
+    closeOnboardingBulkConfirm();
     if (!field) return;
     await executeBulkOnboardingSave(field);
   };
@@ -5665,8 +5692,22 @@ export function AdminDashboard({
       )}
 
       {pendingApplicationAction && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-colors duration-200 ${
+            isApplicationActionVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeApplicationActionConfirm}
+        >
+          <div
+            className={`bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-200 ease-out ${
+              isApplicationActionVisible
+                ? 'opacity-100 translate-y-0 scale-100'
+                : 'opacity-0 translate-y-4 scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
             <div className={`px-6 py-4 ${pendingApplicationAction.action === 'approve' ? 'bg-primary-500' : 'bg-red-500'}`}>
               <h3 className="text-lg font-bold text-white">
                 {pendingApplicationAction.action === 'approve' ? 'Approve Application' : 'Reject Application'}
@@ -5692,7 +5733,7 @@ export function AdminDashboard({
               )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setPendingApplicationAction(null)}
+                  onClick={closeApplicationActionConfirm}
                   className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   Cancel
@@ -5714,8 +5755,23 @@ export function AdminDashboard({
       )}
 
       {onboardingBulkConfirmField && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden">
+        <div
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-colors duration-200 ${
+            isOnboardingBulkConfirmVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeOnboardingBulkConfirm}
+        >
+          <div
+            className={`bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden transition-all duration-200 ease-out ${
+              isOnboardingBulkConfirmVisible
+                ? 'opacity-100 translate-y-0 scale-100'
+                : 'opacity-0 translate-y-4 scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm bulk update"
+          >
             <div className="px-6 py-4 border-b border-stone-200">
               <h3 className="text-lg font-semibold text-gray-900">Are you sure?</h3>
             </div>
@@ -5730,7 +5786,7 @@ export function AdminDashboard({
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setOnboardingBulkConfirmField(null)}
+                  onClick={closeOnboardingBulkConfirm}
                   className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   No
