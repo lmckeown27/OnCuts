@@ -1770,13 +1770,6 @@ export function AdminDashboard({
         toast.error('Kickback percent must be between 0 and 100');
         return;
       }
-      if (onboardingIncentiveMode === 'timeframe') {
-        const duration = parseInt(onboardingDurationValue.trim(), 10);
-        if (!Number.isInteger(duration) || duration < 1) {
-          toast.error('Set a duration (≥ 1) before applying kickback in timeframe mode');
-          return;
-        }
-      }
     }
 
     if (onboardingScope === 'selected') {
@@ -1792,29 +1785,28 @@ export function AdminDashboard({
   };
 
   const executeBulkOnboardingSave = async (field: 'free' | 'kickback') => {
+    // Kickback Apply and commissionless Add are independent — never send both in one request.
     const body: {
       scope: 'all' | 'selected';
       barberRecordIds?: string[];
-      mode: 'count' | 'timeframe';
+      mode?: 'count' | 'timeframe';
       commissionFreeBookingsRemaining?: number;
       kickbackPercent?: number;
       durationValue?: number;
       durationUnit?: 'days' | 'weeks' | 'months';
     } = {
       scope: onboardingScope,
-      mode: onboardingIncentiveMode,
     };
 
-    if (onboardingIncentiveMode === 'timeframe') {
+    if (field === 'kickback') {
+      body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+    } else if (onboardingIncentiveMode === 'timeframe') {
+      body.mode = 'timeframe';
       body.durationValue = parseInt(onboardingDurationValue.trim(), 10);
       body.durationUnit = onboardingDurationUnit;
-      if (field === 'kickback') {
-        body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
-      }
-    } else if (field === 'free') {
-      body.commissionFreeBookingsRemaining = parseInt(onboardingFreeInput.trim(), 10);
     } else {
-      body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+      body.mode = 'count';
+      body.commissionFreeBookingsRemaining = parseInt(onboardingFreeInput.trim(), 10);
     }
 
     if (onboardingScope === 'selected') {
@@ -3855,8 +3847,8 @@ export function AdminDashboard({
                     </div>
                     {onboardingIncentiveMode === 'timeframe' && (
                       <p className="text-[10px] text-gray-500 text-center max-w-sm">
-                        Timeframe grants unlimited commissionless bookings (and kickback) until it
-                        ends. Duration starts when you apply.
+                        Add sets the commissionless window only. Apply sets kickback % only — they
+                        do not affect each other. Duration starts when you click Add.
                       </p>
                     )}
                   </div>
@@ -5733,9 +5725,7 @@ export function AdminDashboard({
                   ? onboardingIncentiveMode === 'timeframe'
                     ? `Apply ${onboardingDurationValue} ${onboardingDurationUnit} of unlimited commissionless bookings to all ${onboardingStats.total} operators?`
                     : `Set commissionless bookings to ${onboardingFreeInput} for all ${onboardingStats.total} operators?`
-                  : onboardingIncentiveMode === 'timeframe'
-                    ? `Set kickback to ${onboardingKickbackInput}% and refresh the ${onboardingDurationValue} ${onboardingDurationUnit} window for all ${onboardingStats.total} operators?`
-                    : `Set kickback to ${onboardingKickbackInput}% for all ${onboardingStats.total} operators?`}
+                  : `Set kickback to ${onboardingKickbackInput}% for all ${onboardingStats.total} operators?`}
               </p>
               <div className="flex gap-3">
                 <button
