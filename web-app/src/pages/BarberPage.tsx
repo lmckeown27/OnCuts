@@ -431,6 +431,9 @@ export default function BarberPage() {
     serviceLocationSource?: string | null;
     serviceLocationWebOnly?: boolean;
     commissionFreeBookingsRemaining?: number;
+    commissionIncentiveMode?: 'count' | 'timeframe';
+    commissionIncentiveExpiresAt?: string | null;
+    commissionIncentiveActive?: boolean;
   } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -497,6 +500,15 @@ export default function BarberPage() {
             commissionFreeBookingsRemaining: Number.isFinite(remaining)
               ? Math.max(0, Math.floor(remaining))
               : 0,
+            commissionIncentiveMode:
+              response.commissionIncentiveMode === 'timeframe' ? 'timeframe' : 'count',
+            commissionIncentiveExpiresAt:
+              response.commissionIncentiveExpiresAt ??
+              response.commission_incentive_expires_at ??
+              null,
+            commissionIncentiveActive:
+              response.commissionIncentiveActive === true ||
+              response.commission_incentive_active === true,
           });
         }
       } catch (error) {
@@ -662,6 +674,9 @@ export default function BarberPage() {
           refreshKey={bookingsRefreshKey} 
           campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'}
           commissionFreeBookingsRemaining={barberProfile?.commissionFreeBookingsRemaining ?? 0}
+          commissionIncentiveMode={barberProfile?.commissionIncentiveMode}
+          commissionIncentiveExpiresAt={barberProfile?.commissionIncentiveExpiresAt}
+          commissionIncentiveActive={barberProfile?.commissionIncentiveActive}
           onBlockTime={(date, startTime, endTime) => {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
@@ -1181,8 +1196,11 @@ interface DashboardViewProps {
   onRefreshBookings?: () => void; // Callback to trigger refresh without opening modal
   refreshKey?: number;
   campusTimezone?: string;
-  /** Remaining commission-free card bookings; hide UI when 0. */
+  /** Remaining commission-free card bookings; hide UI when 0 (count mode). */
   commissionFreeBookingsRemaining?: number;
+  commissionIncentiveMode?: 'count' | 'timeframe';
+  commissionIncentiveExpiresAt?: string | null;
+  commissionIncentiveActive?: boolean;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
   onOpenPayoutSettings?: () => void; // Open Stripe Connect / Payout Settings
   onOpenBookings?: () => void; // Open bookings list (e.g. awaiting payment)
@@ -1245,7 +1263,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', commissionFreeBookingsRemaining = 0, onBlockTime, onOpenPayoutSettings, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', commissionFreeBookingsRemaining = 0, commissionIncentiveMode = 'count', commissionIncentiveExpiresAt = null, commissionIncentiveActive = false, onBlockTime, onOpenPayoutSettings, onOpenBookings, onEditAvailability, onOpenServicesOffered, onEditServiceLocation, serviceLocationLabel, serviceLatitude, serviceLongitude, serviceLocationWebOnly = false, onServiceLocationUpdated, onServiceLocationWebOnlyChanged, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1333,12 +1351,25 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md space-y-3">
         <div>
-          {commissionFreeBookingsRemaining > 0 && (
+          {commissionIncentiveMode === 'timeframe' &&
+          commissionIncentiveActive &&
+          commissionIncentiveExpiresAt ? (
+            <p className="text-xs text-gray-500 text-center mb-1">
+              Commission-free until{' '}
+              <span className="font-bold text-gray-700">
+                {new Date(commissionIncentiveExpiresAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            </p>
+          ) : commissionFreeBookingsRemaining > 0 ? (
             <p className="text-xs text-gray-500 text-center mb-1">
               Commissionless Bookings left:{' '}
               <span className="font-bold text-gray-700">{commissionFreeBookingsRemaining}</span>
             </p>
-          )}
+          ) : null}
           {serviceLocationWebOnly ? (
             <PlaceSearchInput
               value={locationDraft}

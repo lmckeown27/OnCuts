@@ -2,6 +2,10 @@
  * Platform commission helpers for Stripe Connect destination charges.
  * Fee applies to service amount only (never tips).
  * Rate is stored in platform_settings (Admin-editable); defaults to 15% if missing.
+ *
+ * Commissionless eligibility:
+ * - count mode: commission_free_bookings_remaining > 0 (decremented per booking)
+ * - timeframe mode: now < commission_incentive_expires_at (unlimited until expiry)
  */
 
 import type { PoolClient, QueryResultRow } from 'pg';
@@ -21,10 +25,17 @@ let cachedFeePercentExpiresAt = 0;
 
 export type DbClient = PoolClient | typeof pool;
 
+export type CommissionIncentiveMode = 'count' | 'timeframe';
+export type CommissionIncentiveDurationUnit = 'days' | 'weeks' | 'months';
+
 export interface ProviderCommissionSettings {
   commissionFreeBookingsRemaining: number;
   /** Effective rate 0–1 used when not commission-free (from platform_settings). */
   effectiveFeeRate: number;
+  incentiveMode: CommissionIncentiveMode;
+  incentiveExpiresAt: Date | null;
+  /** True if provider currently gets commission-free (count remaining or active window). */
+  commissionFreeEligible: boolean;
 }
 
 export interface PlatformFeeSplit {
@@ -38,6 +49,48 @@ export interface PlatformFeeSplit {
 function clampFeePercent(raw: number): number {
   if (!Number.isFinite(raw)) return DEFAULT_PLATFORM_FEE_PERCENT;
   return Math.min(100, Math.max(0, Math.round(raw * 100) / 100));
+}
+
+export function parseCommissionIncentiveMode(raw: unknown): CommissionIncentiveMode {
+  return String(raw ?? '').toLowerCase() === 'timeframe' ? 'timeframe' : 'count';
+}
+
+export function parseIncentiveExpiresAt(raw: unknown): Date | null {
+  if (raw == null || raw === '') return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Whether commissionless (and thus kickback eligibility) is active right now. */
+export function isCommissionFreeEligible(
+  settings: Pick<
+    ProviderCommissionSettings,
+    'incentiveMode' | 'incentiveExpiresAt' | 'commissionFreeBookingsRemaining'
+  >,
+  now: Date = new Date()
+): boolean {
+  if (settings.incentiveMode === 'timeframe') {
+    return (
+      settings.incentiveExpiresAt != null && settings.incentiveExpiresAt.getTime() > now.getTime()
+    );
+  }
+  return settings.commissionFreeBookingsRemaining > 0;
+}
+
+export function computeIncentiveExpiresAt(
+  durationValue: number,
+  durationUnit: CommissionIncentiveDurationUnit,
+  from: Date = new Date()
+): Date {
+  const d = new Date(from.getTime());
+  if (durationUnit === 'days') {
+    d.setUTCDate(d.getUTCDate() + durationValue);
+  } else if (durationUnit === 'weeks') {
+    d.setUTCDate(d.getUTCDate() + durationValue * 7);
+  } else {
+    d.setUTCMonth(d.getUTCMonth() + durationValue);
+  }
+  return d;
 }
 
 export function invalidatePlatformFeeCache(): void {
@@ -131,7 +184,7 @@ export function estimatePlatformFeeSplit(
   serviceAmountCents: number,
   settings: ProviderCommissionSettings
 ): PlatformFeeSplit {
-  if (settings.commissionFreeBookingsRemaining > 0) {
+  if (settings.commissionFreeEligible) {
     return calculatePlatformFeeSplit(serviceAmountCents, { forceCommissionFree: true });
   }
   return calculatePlatformFeeSplit(serviceAmountCents, {
@@ -142,11 +195,18 @@ export function estimatePlatformFeeSplit(
 
 async function mapSettingsRow(row: QueryResultRow | undefined): Promise<ProviderCommissionSettings> {
   const remaining = Math.max(0, parseInt(String(row?.commission_free_bookings_remaining ?? '0'), 10) || 0);
+  const incentiveMode = parseCommissionIncentiveMode(row?.commission_incentive_mode);
+  const incentiveExpiresAt = parseIncentiveExpiresAt(row?.commission_incentive_expires_at);
   const effectiveFeeRate = await getPlatformFeeRate();
-  return {
+  const base: ProviderCommissionSettings = {
     commissionFreeBookingsRemaining: remaining,
     effectiveFeeRate,
+    incentiveMode,
+    incentiveExpiresAt,
+    commissionFreeEligible: false,
   };
+  base.commissionFreeEligible = isCommissionFreeEligible(base);
+  return base;
 }
 
 export async function loadProviderCommissionSettings(
@@ -154,7 +214,9 @@ export async function loadProviderCommissionSettings(
   barberRecordId: string
 ): Promise<ProviderCommissionSettings> {
   const result = await client.query(
-    `SELECT commission_free_bookings_remaining
+    `SELECT commission_free_bookings_remaining,
+            commission_incentive_mode,
+            commission_incentive_expires_at
      FROM barbers
      WHERE id = $1::uuid`,
     [barberRecordId]
@@ -167,7 +229,9 @@ export async function loadProviderCommissionSettingsByUserId(
   barberUserId: string
 ): Promise<{ settings: ProviderCommissionSettings; barberRecordId: string | null }> {
   const result = await client.query(
-    `SELECT id, commission_free_bookings_remaining
+    `SELECT id, commission_free_bookings_remaining,
+            commission_incentive_mode,
+            commission_incentive_expires_at
      FROM barbers
      WHERE "userId" = $1::uuid`,
     [barberUserId]
@@ -177,6 +241,9 @@ export async function loadProviderCommissionSettingsByUserId(
       settings: {
         commissionFreeBookingsRemaining: 0,
         effectiveFeeRate: await getPlatformFeeRate(client),
+        incentiveMode: 'count',
+        incentiveExpiresAt: null,
+        commissionFreeEligible: false,
       },
       barberRecordId: null,
     };
@@ -188,8 +255,8 @@ export async function loadProviderCommissionSettingsByUserId(
 }
 
 /**
- * Atomically consume one commission-free slot.
- * Returns true if a slot was reserved.
+ * Atomically reserve commission-free for a booking.
+ * Count mode: decrement remaining. Timeframe mode: no decrement while window active.
  */
 export async function reserveCommissionFreeBooking(
   client: DbClient,
@@ -197,19 +264,43 @@ export async function reserveCommissionFreeBooking(
 ): Promise<boolean> {
   const result = await client.query(
     `UPDATE barbers
-     SET commission_free_bookings_remaining = commission_free_bookings_remaining - 1,
+     SET commission_free_bookings_remaining = CASE
+           WHEN COALESCE(commission_incentive_mode, 'count') = 'count'
+                AND commission_free_bookings_remaining > 0
+             THEN commission_free_bookings_remaining - 1
+           ELSE commission_free_bookings_remaining
+         END,
          "updatedAt" = NOW()
      WHERE id = $1::uuid
-       AND commission_free_bookings_remaining > 0
-     RETURNING commission_free_bookings_remaining`,
+       AND (
+         (
+           COALESCE(commission_incentive_mode, 'count') = 'timeframe'
+           AND commission_incentive_expires_at IS NOT NULL
+           AND commission_incentive_expires_at > NOW()
+         )
+         OR (
+           COALESCE(commission_incentive_mode, 'count') = 'count'
+           AND commission_free_bookings_remaining > 0
+         )
+       )
+     RETURNING commission_free_bookings_remaining,
+               commission_incentive_mode,
+               commission_incentive_expires_at`,
     [barberRecordId]
   );
   const reserved = (result.rowCount ?? 0) > 0;
   if (reserved) {
-    logger.info('Reserved commission-free booking slot', {
-      barberRecordId,
-      remaining: result.rows[0]?.commission_free_bookings_remaining,
-    });
+    const mode = parseCommissionIncentiveMode(result.rows[0]?.commission_incentive_mode);
+    logger.info(
+      mode === 'timeframe'
+        ? 'Reserved commission-free booking via timeframe window'
+        : 'Reserved commission-free booking slot',
+      {
+        barberRecordId,
+        remaining: result.rows[0]?.commission_free_bookings_remaining,
+        expiresAt: result.rows[0]?.commission_incentive_expires_at,
+      }
+    );
   }
   return reserved;
 }
@@ -219,14 +310,19 @@ export async function releaseCommissionFreeBooking(
   client: DbClient,
   barberRecordId: string
 ): Promise<void> {
-  await client.query(
+  // Only restore quota in count mode — timeframe never decremented.
+  const result = await client.query(
     `UPDATE barbers
      SET commission_free_bookings_remaining = commission_free_bookings_remaining + 1,
          "updatedAt" = NOW()
-     WHERE id = $1::uuid`,
+     WHERE id = $1::uuid
+       AND COALESCE(commission_incentive_mode, 'count') = 'count'
+     RETURNING id`,
     [barberRecordId]
   );
-  logger.info('Released commission-free booking slot', { barberRecordId });
+  if ((result.rowCount ?? 0) > 0) {
+    logger.info('Released commission-free booking slot', { barberRecordId });
+  }
 }
 
 /**

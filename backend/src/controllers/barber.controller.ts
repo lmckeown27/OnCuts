@@ -36,6 +36,11 @@ import {
   serviceSelectSql,
 } from '../services/service-schema.service';
 import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
+import {
+  isCommissionFreeEligible,
+  parseCommissionIncentiveMode,
+  parseIncentiveExpiresAt,
+} from '../utils/platform-commission';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -517,6 +522,8 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
           b.commission_free_bookings_remaining,
+          b.commission_incentive_mode,
+          b.commission_incentive_expires_at,
           b.service_latitude,
           b.service_longitude,
           b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
@@ -553,6 +560,8 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
           b.commission_free_bookings_remaining,
+          'count'::varchar as commission_incentive_mode,
+          NULL::timestamptz as commission_incentive_expires_at,
           b.service_latitude,
           b.service_longitude,
           b.service_radius_km${labelSelect}${sourceSelect}${providerTypeSelect},
@@ -697,12 +706,24 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
     res.setHeader('Pragma', 'no-cache');
     const commissionFreeBookingsRemaining =
       Math.max(0, parseInt(String(barber.commission_free_bookings_remaining ?? '0'), 10) || 0);
+    const commissionIncentiveMode = parseCommissionIncentiveMode(barber.commission_incentive_mode);
+    const commissionIncentiveExpiresAt = parseIncentiveExpiresAt(
+      barber.commission_incentive_expires_at
+    );
+    const commissionIncentiveActive = isCommissionFreeEligible({
+      incentiveMode: commissionIncentiveMode,
+      incentiveExpiresAt: commissionIncentiveExpiresAt,
+      commissionFreeBookingsRemaining,
+    });
     res.json({
       success: true,
       data: {
         ...barber,
         reapply_allowed: reapplyAllowed,
         commissionFreeBookingsRemaining,
+        commissionIncentiveMode,
+        commissionIncentiveExpiresAt: commissionIncentiveExpiresAt?.toISOString() ?? null,
+        commissionIncentiveActive,
         pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
       },

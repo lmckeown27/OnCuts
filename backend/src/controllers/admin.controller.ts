@@ -52,6 +52,47 @@ import {
   SQL_EXCLUDE_ADMIN_ADMIN_BOOKING_JOINED,
 } from '../utils/admin-metrics-filters';
 import { coarsenPublicLocationLabel } from '../services/geocode.service';
+import {
+  computeIncentiveExpiresAt,
+  isCommissionFreeEligible,
+  parseCommissionIncentiveMode,
+  parseIncentiveExpiresAt,
+  type CommissionIncentiveDurationUnit,
+  type CommissionIncentiveMode,
+} from '../utils/platform-commission';
+
+function mapBarberCommissionFields(row: {
+  commission_free_bookings_remaining?: unknown;
+  kickback_percent?: unknown;
+  commission_incentive_mode?: unknown;
+  commission_incentive_expires_at?: unknown;
+}) {
+  const commissionFreeBookingsRemaining =
+    parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0;
+  const kickbackPercent = parseFloat(String(row.kickback_percent ?? '0')) || 0;
+  const commissionIncentiveMode = parseCommissionIncentiveMode(row.commission_incentive_mode);
+  const commissionIncentiveExpiresAt = parseIncentiveExpiresAt(
+    row.commission_incentive_expires_at
+  );
+  const commissionIncentiveActive = isCommissionFreeEligible({
+    incentiveMode: commissionIncentiveMode,
+    incentiveExpiresAt: commissionIncentiveExpiresAt,
+    commissionFreeBookingsRemaining,
+  });
+  return {
+    commissionFreeBookingsRemaining,
+    kickbackPercent,
+    commissionIncentiveMode,
+    commissionIncentiveExpiresAt: commissionIncentiveExpiresAt?.toISOString() ?? null,
+    commissionIncentiveActive,
+  };
+}
+
+function parseDurationUnit(raw: unknown): CommissionIncentiveDurationUnit | null {
+  const u = String(raw ?? '').toLowerCase();
+  if (u === 'days' || u === 'weeks' || u === 'months') return u;
+  return null;
+}
 
 /**
  * Withdraw platform fees
@@ -2982,6 +3023,8 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         b.service_longitude,
         b.commission_free_bookings_remaining,
         b.kickback_percent,
+        b.commission_incentive_mode,
+        b.commission_incentive_expires_at,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -3024,9 +3067,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
-        commissionFreeBookingsRemaining:
-          parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
-        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
+        ...mapBarberCommissionFields(row),
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -3570,6 +3611,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b.service_longitude,
         b.commission_free_bookings_remaining,
         b.kickback_percent,
+        b.commission_incentive_mode,
+        b.commission_incentive_expires_at,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -3624,9 +3667,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
         isBanned: row.is_banned === true,
         createdAt: row.created_at,
-        commissionFreeBookingsRemaining:
-          parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
-        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
+        ...mapBarberCommissionFields(row),
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -3639,9 +3680,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
 /**
  * PUT /api/admin/barbers/:barberRecordId/commission
- * Set commission-free booking quota + platform-funded kickback percent
- * (global platform fee rate is Admin-set via /platform-settings; kickback only
- * pays out on commissionless bookings).
+ * Set commission-free quota and/or timeframe window + kickback percent.
  */
 export const updateBarberCommission = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -3651,25 +3690,88 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
     }
 
     const { barberRecordId } = req.params;
-    const { commissionFreeBookingsRemaining, kickbackPercent } = req.body ?? {};
+    const body = req.body ?? {};
+    const {
+      commissionFreeBookingsRemaining,
+      kickbackPercent,
+      mode,
+      durationValue,
+      durationUnit,
+    } = body;
 
     if (!barberRecordId) {
       throw new ApiError(400, 'barberRecordId is required');
     }
 
-    if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'commissionFreeBookingsRemaining')) {
-      throw new ApiError(400, 'commissionFreeBookingsRemaining is required');
+    const existing = await pool.query(
+      `SELECT id, commission_free_bookings_remaining, kickback_percent,
+              commission_incentive_mode, commission_incentive_expires_at
+       FROM barbers WHERE id = $1::uuid`,
+      [barberRecordId]
+    );
+    if (existing.rows.length === 0) {
+      throw new ApiError(404, 'Service provider not found');
+    }
+    const current = existing.rows[0];
+
+    let incentiveMode: CommissionIncentiveMode =
+      mode != null
+        ? parseCommissionIncentiveMode(mode)
+        : parseCommissionIncentiveMode(current.commission_incentive_mode);
+
+    let remaining =
+      parseInt(String(current.commission_free_bookings_remaining ?? '0'), 10) || 0;
+    let expiresAt = parseIncentiveExpiresAt(current.commission_incentive_expires_at);
+
+    if (incentiveMode === 'timeframe') {
+      const hasDuration =
+        Object.prototype.hasOwnProperty.call(body, 'durationValue') &&
+        Object.prototype.hasOwnProperty.call(body, 'durationUnit');
+      if (hasDuration) {
+        const value =
+          typeof durationValue === 'number'
+            ? durationValue
+            : parseInt(String(durationValue), 10);
+        const unit = parseDurationUnit(durationUnit);
+        if (!Number.isInteger(value) || value < 1 || value > 3650 || !unit) {
+          throw new ApiError(
+            400,
+            'durationValue must be an integer 1–3650 and durationUnit must be days, weeks, or months'
+          );
+        }
+        expiresAt = computeIncentiveExpiresAt(value, unit);
+      } else if (!expiresAt || expiresAt.getTime() <= Date.now()) {
+        // Switching to timeframe without a duration requires a new window
+        if (mode != null || Object.prototype.hasOwnProperty.call(body, 'commissionFreeBookingsRemaining')) {
+          throw new ApiError(400, 'durationValue and durationUnit are required for timeframe mode');
+        }
+      }
+      remaining = 0;
+    } else {
+      expiresAt = null;
+      if (Object.prototype.hasOwnProperty.call(body, 'commissionFreeBookingsRemaining')) {
+        remaining =
+          typeof commissionFreeBookingsRemaining === 'number'
+            ? commissionFreeBookingsRemaining
+            : parseInt(String(commissionFreeBookingsRemaining), 10);
+        if (!Number.isInteger(remaining) || remaining < 0 || remaining > 10000) {
+          throw new ApiError(
+            400,
+            'commissionFreeBookingsRemaining must be an integer between 0 and 10000'
+          );
+        }
+      } else if (mode != null) {
+        // Explicit switch to count without remaining — keep current remaining
+      } else if (!Object.prototype.hasOwnProperty.call(body, 'kickbackPercent')) {
+        throw new ApiError(400, 'commissionFreeBookingsRemaining is required');
+      }
     }
 
-    const remaining = typeof commissionFreeBookingsRemaining === 'number'
-      ? commissionFreeBookingsRemaining
-      : parseInt(String(commissionFreeBookingsRemaining), 10);
-    if (!Number.isInteger(remaining) || remaining < 0 || remaining > 10000) {
-      throw new ApiError(400, 'commissionFreeBookingsRemaining must be an integer between 0 and 10000');
-    }
-
-    let kickback = 0;
-    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, 'kickbackPercent')) {
+    let kickback =
+      current.kickback_percent != null
+        ? parseFloat(String(current.kickback_percent)) || 0
+        : 0;
+    if (Object.prototype.hasOwnProperty.call(body, 'kickbackPercent')) {
       kickback =
         typeof kickbackPercent === 'number'
           ? kickbackPercent
@@ -3677,52 +3779,35 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
       if (!Number.isFinite(kickback) || kickback < 0 || kickback > 100) {
         throw new ApiError(400, 'kickbackPercent must be a number between 0 and 100');
       }
-      // Store one decimal place max for admin clarity
       kickback = Math.round(kickback * 100) / 100;
-    } else {
-      const current = await pool.query(
-        `SELECT kickback_percent FROM barbers WHERE id = $1::uuid`,
-        [barberRecordId]
-      );
-      kickback = current.rows[0]?.kickback_percent != null
-        ? parseFloat(String(current.rows[0].kickback_percent)) || 0
-        : 0;
-    }
-
-    const existing = await pool.query(
-      `SELECT id, commission_free_bookings_remaining, kickback_percent
-       FROM barbers WHERE id = $1::uuid`,
-      [barberRecordId]
-    );
-    if (existing.rows.length === 0) {
-      throw new ApiError(404, 'Service provider not found');
     }
 
     const result = await pool.query(
       `UPDATE barbers
        SET commission_free_bookings_remaining = $1,
            kickback_percent = $2,
+           commission_incentive_mode = $3,
+           commission_incentive_expires_at = $4,
            "updatedAt" = NOW()
-       WHERE id = $3::uuid
-       RETURNING id, commission_free_bookings_remaining, kickback_percent`,
-      [remaining, kickback, barberRecordId]
+       WHERE id = $5::uuid
+       RETURNING id, commission_free_bookings_remaining, kickback_percent,
+                 commission_incentive_mode, commission_incentive_expires_at`,
+      [remaining, kickback, incentiveMode, expiresAt, barberRecordId]
     );
 
     const row = result.rows[0];
+    const mapped = mapBarberCommissionFields(row);
     logger.info('admin_update_barber_commission', {
       barberRecordId,
       adminId: req.user!.userId,
-      commissionFreeBookingsRemaining: row.commission_free_bookings_remaining,
-      kickbackPercent: row.kickback_percent,
+      ...mapped,
     });
 
     res.json({
       success: true,
       data: {
         barberRecordId: row.id.toString(),
-        commissionFreeBookingsRemaining:
-          parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0,
-        kickbackPercent: parseFloat(String(row.kickback_percent ?? '0')) || 0,
+        ...mapped,
       },
       message: 'Payment settings updated',
     });
@@ -3733,7 +3818,7 @@ export const updateBarberCommission = async (req: AuthRequest, res: Response, ne
 
 /**
  * PUT /api/admin/barbers/commission/bulk
- * Apply commission-free quota and/or kickback % to all providers or a selected set.
+ * Apply commission-free quota/timeframe and/or kickback % to all providers or a selected set.
  */
 export const bulkUpdateBarberCommission = async (
   req: AuthRequest,
@@ -3746,31 +3831,60 @@ export const bulkUpdateBarberCommission = async (
       throw new ApiError(403, 'Admin access required');
     }
 
+    const body = req.body ?? {};
     const {
       scope,
       barberRecordIds,
       commissionFreeBookingsRemaining,
       kickbackPercent,
-    } = req.body ?? {};
+      mode,
+      durationValue,
+      durationUnit,
+    } = body;
 
     if (scope !== 'all' && scope !== 'selected') {
       throw new ApiError(400, 'scope must be "all" or "selected"');
     }
 
-    const hasFree = Object.prototype.hasOwnProperty.call(
-      req.body ?? {},
-      'commissionFreeBookingsRemaining'
-    );
-    const hasKickback = Object.prototype.hasOwnProperty.call(req.body ?? {}, 'kickbackPercent');
-    if (!hasFree && !hasKickback) {
+    const incentiveMode: CommissionIncentiveMode =
+      mode != null ? parseCommissionIncentiveMode(mode) : 'count';
+
+    const hasFree = Object.prototype.hasOwnProperty.call(body, 'commissionFreeBookingsRemaining');
+    const hasKickback = Object.prototype.hasOwnProperty.call(body, 'kickbackPercent');
+    const hasDuration =
+      Object.prototype.hasOwnProperty.call(body, 'durationValue') &&
+      Object.prototype.hasOwnProperty.call(body, 'durationUnit');
+
+    if (incentiveMode === 'count' && !hasFree && !hasKickback) {
       throw new ApiError(
         400,
         'Provide commissionFreeBookingsRemaining and/or kickbackPercent'
       );
     }
+    if (incentiveMode === 'timeframe' && !hasDuration && !hasKickback) {
+      throw new ApiError(400, 'Provide durationValue/durationUnit and/or kickbackPercent');
+    }
 
     let remaining: number | null = null;
-    if (hasFree) {
+    let expiresAt: Date | null | undefined = undefined;
+
+    if (incentiveMode === 'timeframe') {
+      if (hasDuration) {
+        const value =
+          typeof durationValue === 'number'
+            ? durationValue
+            : parseInt(String(durationValue), 10);
+        const unit = parseDurationUnit(durationUnit);
+        if (!Number.isInteger(value) || value < 1 || value > 3650 || !unit) {
+          throw new ApiError(
+            400,
+            'durationValue must be an integer 1–3650 and durationUnit must be days, weeks, or months'
+          );
+        }
+        expiresAt = computeIncentiveExpiresAt(value, unit);
+        remaining = 0;
+      }
+    } else if (hasFree) {
       remaining =
         typeof commissionFreeBookingsRemaining === 'number'
           ? commissionFreeBookingsRemaining
@@ -3781,6 +3895,10 @@ export const bulkUpdateBarberCommission = async (
           'commissionFreeBookingsRemaining must be an integer between 0 and 10000'
         );
       }
+      expiresAt = null;
+    } else if (mode != null) {
+      // Explicit count mode with only kickback — clear timeframe
+      expiresAt = null;
     }
 
     let kickback: number | null = null;
@@ -3810,6 +3928,15 @@ export const bulkUpdateBarberCommission = async (
 
     const setClauses: string[] = ['"updatedAt" = NOW()'];
     const params: unknown[] = [];
+
+    if (mode != null || expiresAt !== undefined || remaining !== null) {
+      params.push(incentiveMode);
+      setClauses.push(`commission_incentive_mode = $${params.length}`);
+    }
+    if (expiresAt !== undefined) {
+      params.push(expiresAt);
+      setClauses.push(`commission_incentive_expires_at = $${params.length}`);
+    }
     if (remaining !== null) {
       params.push(remaining);
       setClauses.push(`commission_free_bookings_remaining = $${params.length}`);
@@ -3817,6 +3944,11 @@ export const bulkUpdateBarberCommission = async (
     if (kickback !== null) {
       params.push(kickback);
       setClauses.push(`kickback_percent = $${params.length}`);
+    }
+
+    // Kickback-only in timeframe without refreshing duration: still stamp mode
+    if (incentiveMode === 'timeframe' && hasKickback && !hasDuration && mode != null) {
+      // mode already set above when mode != null
     }
 
     let result;
@@ -3843,8 +3975,10 @@ export const bulkUpdateBarberCommission = async (
       adminId: req.user!.userId,
       scope,
       updatedCount,
+      mode: incentiveMode,
       commissionFreeBookingsRemaining: remaining,
       kickbackPercent: kickback,
+      commissionIncentiveExpiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : expiresAt,
     });
 
     res.json({
@@ -3852,8 +3986,11 @@ export const bulkUpdateBarberCommission = async (
       data: {
         updatedCount,
         scope,
+        mode: incentiveMode,
         commissionFreeBookingsRemaining: remaining,
         kickbackPercent: kickback,
+        commissionIncentiveExpiresAt:
+          expiresAt instanceof Date ? expiresAt.toISOString() : expiresAt ?? null,
       },
       message: `Updated payment settings for ${updatedCount} operator${updatedCount === 1 ? '' : 's'}`,
     });

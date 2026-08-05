@@ -11,6 +11,11 @@ import type Stripe from 'stripe';
 import { pool } from '../database/connection';
 import { getStripeClientForLivemode } from '../config/stripe';
 import { logger } from './logger';
+import {
+  isCommissionFreeEligible,
+  parseCommissionIncentiveMode,
+  parseIncentiveExpiresAt,
+} from './platform-commission';
 
 export type DbClient = PoolClient | typeof pool;
 
@@ -29,10 +34,29 @@ export async function loadProviderKickbackPercent(
   barberRecordId: string
 ): Promise<number> {
   const result = await client.query(
-    `SELECT kickback_percent FROM barbers WHERE id = $1::uuid`,
+    `SELECT kickback_percent,
+            commission_free_bookings_remaining,
+            commission_incentive_mode,
+            commission_incentive_expires_at
+     FROM barbers WHERE id = $1::uuid`,
     [barberRecordId]
   );
-  const raw = result.rows[0]?.kickback_percent;
+  const row = result.rows[0];
+  if (!row) return 0;
+
+  // Timeframe expired → kickback off even if percent is still stored.
+  const incentiveMode = parseCommissionIncentiveMode(row.commission_incentive_mode);
+  if (incentiveMode === 'timeframe') {
+    const eligible = isCommissionFreeEligible({
+      incentiveMode,
+      incentiveExpiresAt: parseIncentiveExpiresAt(row.commission_incentive_expires_at),
+      commissionFreeBookingsRemaining:
+        Math.max(0, parseInt(String(row.commission_free_bookings_remaining ?? '0'), 10) || 0),
+    });
+    if (!eligible) return 0;
+  }
+
+  const raw = row.kickback_percent;
   const percent = raw != null ? parseFloat(String(raw)) : 0;
   if (!Number.isFinite(percent) || percent <= 0) return 0;
   return Math.min(100, Math.max(0, percent));

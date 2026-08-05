@@ -282,6 +282,9 @@ interface Barber {
   isBanned?: boolean;
   commissionFreeBookingsRemaining?: number;
   kickbackPercent?: number;
+  commissionIncentiveMode?: 'count' | 'timeframe';
+  commissionIncentiveExpiresAt?: string | null;
+  commissionIncentiveActive?: boolean;
 }
 
 interface BarberBooking {
@@ -494,6 +497,11 @@ export function AdminDashboard({
   const [onboardingSelectedIds, setOnboardingSelectedIds] = useState<Set<string>>(new Set());
   const [onboardingFreeInput, setOnboardingFreeInput] = useState('0');
   const [onboardingKickbackInput, setOnboardingKickbackInput] = useState('0');
+  const [onboardingIncentiveMode, setOnboardingIncentiveMode] = useState<'count' | 'timeframe'>('count');
+  const [onboardingDurationValue, setOnboardingDurationValue] = useState('7');
+  const [onboardingDurationUnit, setOnboardingDurationUnit] = useState<'days' | 'weeks' | 'months'>(
+    'days'
+  );
   const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('all');
   const [onboardingLocationFilter, setOnboardingLocationFilter] = useState<'all' | 'has-pin' | 'missing'>('all');
   const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'with-free' | 'at-zero'>('all');
@@ -1409,9 +1417,16 @@ export function AdminDashboard({
       if (onboardingStripeFilter === 'not-ready' && b.hasStripeSetup) return false;
       if (onboardingLocationFilter === 'has-pin' && !b.hasServiceLocation) return false;
       if (onboardingLocationFilter === 'missing' && b.hasServiceLocation) return false;
-      const free = b.commissionFreeBookingsRemaining ?? 0;
-      if (onboardingFreeFilter === 'with-free' && free <= 0) return false;
-      if (onboardingFreeFilter === 'at-zero' && free > 0) return false;
+      const freeActive =
+        b.commissionIncentiveActive === true ||
+        (b.commissionIncentiveMode === 'timeframe'
+          ? Boolean(
+              b.commissionIncentiveExpiresAt &&
+                new Date(b.commissionIncentiveExpiresAt).getTime() > Date.now()
+            )
+          : (b.commissionFreeBookingsRemaining ?? 0) > 0);
+      if (onboardingFreeFilter === 'with-free' && !freeActive) return false;
+      if (onboardingFreeFilter === 'at-zero' && freeActive) return false;
       const kickback = b.kickbackPercent ?? 0;
       if (onboardingKickbackFilter === 'with-kickback' && kickback <= 0) return false;
       if (onboardingKickbackFilter === 'none' && kickback > 0) return false;
@@ -1445,9 +1460,17 @@ export function AdminDashboard({
     for (const b of onboardingOperators) {
       const free = b.commissionFreeBookingsRemaining ?? 0;
       const kickback = b.kickbackPercent ?? 0;
+      const freeActive =
+        b.commissionIncentiveActive === true ||
+        (b.commissionIncentiveMode === 'timeframe'
+          ? Boolean(
+              b.commissionIncentiveExpiresAt &&
+                new Date(b.commissionIncentiveExpiresAt).getTime() > Date.now()
+            )
+          : free > 0);
       totalFreeSlots += free;
       kickbackSum += kickback;
-      if (free > 0) withFree += 1;
+      if (freeActive) withFree += 1;
       else zeroFree += 1;
       if (kickback > 0) withKickback += 1;
       if (b.hasStripeSetup) stripeReady += 1;
@@ -1692,7 +1715,11 @@ export function AdminDashboard({
       const data = await api.put<{
         commissionFreeBookingsRemaining: number;
         kickbackPercent: number;
+        commissionIncentiveMode?: 'count' | 'timeframe';
+        commissionIncentiveExpiresAt?: string | null;
+        commissionIncentiveActive?: boolean;
       }>(`/admin/barbers/${selectedBarber.barberRecordId}/commission`, {
+        mode: 'count',
         commissionFreeBookingsRemaining: freeRemaining,
         kickbackPercent,
       });
@@ -1700,6 +1727,9 @@ export function AdminDashboard({
         ...selectedBarber,
         commissionFreeBookingsRemaining: data.commissionFreeBookingsRemaining ?? freeRemaining,
         kickbackPercent: data.kickbackPercent ?? kickbackPercent,
+        commissionIncentiveMode: data.commissionIncentiveMode ?? 'count',
+        commissionIncentiveExpiresAt: data.commissionIncentiveExpiresAt ?? null,
+        commissionIncentiveActive: data.commissionIncentiveActive,
       };
       setSelectedBarber(updated);
       syncCommissionFormFromBarber(updated);
@@ -1721,16 +1751,31 @@ export function AdminDashboard({
 
   const handleBulkOnboardingFieldSave = async (field: 'free' | 'kickback') => {
     if (field === 'free') {
-      const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
-      if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
-        toast.error('Commission-free bookings must be a whole number ≥ 0');
-        return;
+      if (onboardingIncentiveMode === 'count') {
+        const freeRemaining = parseInt(onboardingFreeInput.trim(), 10);
+        if (!Number.isInteger(freeRemaining) || freeRemaining < 0) {
+          toast.error('Commission-free bookings must be a whole number ≥ 0');
+          return;
+        }
+      } else {
+        const duration = parseInt(onboardingDurationValue.trim(), 10);
+        if (!Number.isInteger(duration) || duration < 1) {
+          toast.error('Duration must be a whole number ≥ 1');
+          return;
+        }
       }
     } else {
       const kickbackPercent = parseFloat(onboardingKickbackInput.trim());
       if (!Number.isFinite(kickbackPercent) || kickbackPercent < 0 || kickbackPercent > 100) {
         toast.error('Kickback percent must be between 0 and 100');
         return;
+      }
+      if (onboardingIncentiveMode === 'timeframe') {
+        const duration = parseInt(onboardingDurationValue.trim(), 10);
+        if (!Number.isInteger(duration) || duration < 1) {
+          toast.error('Set a duration (≥ 1) before applying kickback in timeframe mode');
+          return;
+        }
       }
     }
 
@@ -1750,13 +1795,23 @@ export function AdminDashboard({
     const body: {
       scope: 'all' | 'selected';
       barberRecordIds?: string[];
+      mode: 'count' | 'timeframe';
       commissionFreeBookingsRemaining?: number;
       kickbackPercent?: number;
+      durationValue?: number;
+      durationUnit?: 'days' | 'weeks' | 'months';
     } = {
       scope: onboardingScope,
+      mode: onboardingIncentiveMode,
     };
 
-    if (field === 'free') {
+    if (onboardingIncentiveMode === 'timeframe') {
+      body.durationValue = parseInt(onboardingDurationValue.trim(), 10);
+      body.durationUnit = onboardingDurationUnit;
+      if (field === 'kickback') {
+        body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
+      }
+    } else if (field === 'free') {
       body.commissionFreeBookingsRemaining = parseInt(onboardingFreeInput.trim(), 10);
     } else {
       body.kickbackPercent = parseFloat(onboardingKickbackInput.trim());
@@ -1802,20 +1857,13 @@ export function AdminDashboard({
 
   const applyBarberCommissionLocally = (
     barberRecordId: string,
-    commissionFreeBookingsRemaining: number,
-    kickbackPercent: number
+    patch: Partial<Barber>
   ) => {
     setBarbers((prev) =>
-      prev.map((b) =>
-        b.barberRecordId === barberRecordId
-          ? { ...b, commissionFreeBookingsRemaining, kickbackPercent }
-          : b
-      )
+      prev.map((b) => (b.barberRecordId === barberRecordId ? { ...b, ...patch } : b))
     );
     setSelectedBarber((prev) =>
-      prev && prev.barberRecordId === barberRecordId
-        ? { ...prev, commissionFreeBookingsRemaining, kickbackPercent }
-        : prev
+      prev && prev.barberRecordId === barberRecordId ? { ...prev, ...patch } : prev
     );
   };
 
@@ -1829,6 +1877,12 @@ export function AdminDashboard({
       return;
     }
     if (savingOnboardingBarberId || isSavingOnboardingBulk) return;
+
+    const mode = barber.commissionIncentiveMode === 'timeframe' ? 'timeframe' : 'count';
+    if (mode === 'timeframe' && field === 'free') {
+      toast.error('Switch to By bookings to adjust commissionless slots, or re-apply a timeframe');
+      return;
+    }
 
     const currentFree = barber.commissionFreeBookingsRemaining ?? 0;
     const currentKickback = barber.kickbackPercent ?? 0;
@@ -1846,15 +1900,21 @@ export function AdminDashboard({
       const data = await api.put<{
         commissionFreeBookingsRemaining: number;
         kickbackPercent: number;
+        commissionIncentiveMode?: 'count' | 'timeframe';
+        commissionIncentiveExpiresAt?: string | null;
+        commissionIncentiveActive?: boolean;
       }>(`/admin/barbers/${barber.barberRecordId}/commission`, {
+        mode,
         commissionFreeBookingsRemaining: nextFree,
         kickbackPercent: nextKickback,
       });
-      applyBarberCommissionLocally(
-        barber.barberRecordId,
-        data.commissionFreeBookingsRemaining ?? nextFree,
-        data.kickbackPercent ?? nextKickback
-      );
+      applyBarberCommissionLocally(barber.barberRecordId, {
+        commissionFreeBookingsRemaining: data.commissionFreeBookingsRemaining ?? nextFree,
+        kickbackPercent: data.kickbackPercent ?? nextKickback,
+        commissionIncentiveMode: data.commissionIncentiveMode ?? mode,
+        commissionIncentiveExpiresAt: data.commissionIncentiveExpiresAt ?? barber.commissionIncentiveExpiresAt,
+        commissionIncentiveActive: data.commissionIncentiveActive,
+      });
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -3664,21 +3724,77 @@ export function AdminDashboard({
                     </nav>
                   </div>
 
+                  <div className="flex justify-center">
+                    <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingIncentiveMode('count')}
+                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                          onboardingIncentiveMode === 'count'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        By bookings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingIncentiveMode('timeframe')}
+                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                          onboardingIncentiveMode === 'timeframe'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        By timeframe
+                      </button>
+                    </nav>
+                  </div>
+
                   <div className="flex flex-col items-center gap-2">
                     <div className="flex flex-wrap items-center justify-center gap-2">
-                      <label className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700 whitespace-nowrap">
-                          Commissionless Bookings:
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={onboardingFreeInput}
-                          onChange={(e) => setOnboardingFreeInput(e.target.value)}
-                          className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
-                        />
-                      </label>
+                      {onboardingIncentiveMode === 'count' ? (
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700 whitespace-nowrap">
+                            Commissionless Bookings:
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={onboardingFreeInput}
+                            onChange={(e) => setOnboardingFreeInput(e.target.value)}
+                            className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                          />
+                        </label>
+                      ) : (
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700 whitespace-nowrap">
+                            Commissionless for:
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={onboardingDurationValue}
+                            onChange={(e) => setOnboardingDurationValue(e.target.value)}
+                            className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                          />
+                          <select
+                            value={onboardingDurationUnit}
+                            onChange={(e) =>
+                              setOnboardingDurationUnit(
+                                e.target.value as 'days' | 'weeks' | 'months'
+                              )
+                            }
+                            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                          >
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                          </select>
+                        </label>
+                      )}
                       <Button
                         type="button"
                         size="sm"
@@ -3738,6 +3854,12 @@ export function AdminDashboard({
                         )}
                       </Button>
                     </div>
+                    {onboardingIncentiveMode === 'timeframe' && (
+                      <p className="text-[10px] text-gray-500 text-center max-w-sm">
+                        Timeframe grants unlimited commissionless bookings (and kickback) until it
+                        ends. Duration starts when you apply.
+                      </p>
+                    )}
                   </div>
 
                   {onboardingScope === 'selected' && (
@@ -3802,6 +3924,27 @@ export function AdminDashboard({
                         const busy = savingOnboardingBarberId === id;
                         const free = barber.commissionFreeBookingsRemaining ?? 0;
                         const kickback = barber.kickbackPercent ?? 0;
+                        const isTimeframe = barber.commissionIncentiveMode === 'timeframe';
+                        const expiresAt = barber.commissionIncentiveExpiresAt
+                          ? new Date(barber.commissionIncentiveExpiresAt)
+                          : null;
+                        const timeframeActive =
+                          isTimeframe &&
+                          expiresAt != null &&
+                          !Number.isNaN(expiresAt.getTime()) &&
+                          expiresAt.getTime() > Date.now();
+                        const timeframeExpired =
+                          isTimeframe &&
+                          expiresAt != null &&
+                          !Number.isNaN(expiresAt.getTime()) &&
+                          expiresAt.getTime() <= Date.now();
+                        const daysLeft =
+                          timeframeActive && expiresAt
+                            ? Math.max(
+                                1,
+                                Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+                              )
+                            : null;
                         return (
                           <div
                             key={id}
@@ -3855,32 +3998,58 @@ export function AdminDashboard({
                               </div>
 
                               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                                    Commissionless
-                                  </span>
-                                  <button
-                                    type="button"
-                                    disabled={busy || free <= 0}
-                                    onClick={() => void handleOnboardingAdjust(barber, 'free', -1)}
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                    aria-label="Decrease commissionless slots"
-                                  >
-                                    <Minus className="w-3.5 h-3.5" />
-                                  </button>
-                                  <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-gray-900">
-                                    {free}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => void handleOnboardingAdjust(barber, 'free', 1)}
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                                    aria-label="Increase commissionless slots"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
+                                {isTimeframe ? (
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                      Commissionless
+                                    </span>
+                                    {timeframeActive && expiresAt ? (
+                                      <span className="text-xs font-semibold text-gray-900 tabular-nums text-right">
+                                        {daysLeft}d left
+                                        <span className="block text-[10px] font-normal text-gray-500">
+                                          until{' '}
+                                          {expiresAt.toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                          })}
+                                        </span>
+                                      </span>
+                                    ) : timeframeExpired ? (
+                                      <span className="text-[10px] font-semibold text-red-600">
+                                        Expired
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-gray-400">No window</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                      Commissionless
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={busy || free <= 0}
+                                      onClick={() => void handleOnboardingAdjust(barber, 'free', -1)}
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                      aria-label="Decrease commissionless slots"
+                                    >
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-gray-900">
+                                      {free}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={busy}
+                                      onClick={() => void handleOnboardingAdjust(barber, 'free', 1)}
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                      aria-label="Increase commissionless slots"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-1">
                                   <span className="text-[10px] text-gray-500 whitespace-nowrap">
                                     Kickback %
@@ -5562,8 +5731,12 @@ export function AdminDashboard({
             <div className="p-6">
               <p className="text-sm text-gray-600 mb-5">
                 {onboardingBulkConfirmField === 'free'
-                  ? `Set commissionless bookings to ${onboardingFreeInput} for all ${onboardingStats.total} operators?`
-                  : `Set kickback to ${onboardingKickbackInput}% for all ${onboardingStats.total} operators?`}
+                  ? onboardingIncentiveMode === 'timeframe'
+                    ? `Apply ${onboardingDurationValue} ${onboardingDurationUnit} of unlimited commissionless bookings to all ${onboardingStats.total} operators?`
+                    : `Set commissionless bookings to ${onboardingFreeInput} for all ${onboardingStats.total} operators?`
+                  : onboardingIncentiveMode === 'timeframe'
+                    ? `Set kickback to ${onboardingKickbackInput}% and refresh the ${onboardingDurationValue} ${onboardingDurationUnit} window for all ${onboardingStats.total} operators?`
+                    : `Set kickback to ${onboardingKickbackInput}% for all ${onboardingStats.total} operators?`}
               </p>
               <div className="flex gap-3">
                 <button

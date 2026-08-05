@@ -94,7 +94,7 @@ class StripePaymentService {
         platformFeeCents = Math.max(0, Math.round(platformFeeCentsOverride));
       } else if (barberId) {
         const { settings } = await loadProviderCommissionSettingsByUserId(pool, barberId);
-        if (settings.commissionFreeBookingsRemaining > 0) {
+        if (settings.commissionFreeEligible) {
           platformFeeCents = 0;
         } else {
           platformFeeCents = Math.round(serviceAmountCents * settings.effectiveFeeRate);
