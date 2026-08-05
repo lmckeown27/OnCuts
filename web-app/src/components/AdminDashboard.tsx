@@ -1880,7 +1880,7 @@ export function AdminDashboard({
 
     const mode = barber.commissionIncentiveMode === 'timeframe' ? 'timeframe' : 'count';
     if (mode === 'timeframe' && field === 'free') {
-      toast.error('Switch to By bookings to adjust commissionless slots, or re-apply a timeframe');
+      toast.error('Switch to Number mode to adjust commissionless slots, or re-apply a timeframe');
       return;
     }
 
@@ -3696,36 +3696,8 @@ export function AdminDashboard({
 
                 {/* Compact mass apply */}
                 <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
-                  <div className="flex justify-center">
-                    <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setOnboardingScope('all')}
-                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
-                          onboardingScope === 'all'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        All Operators ({onboardingStats.total})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOnboardingScope('selected')}
-                        className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
-                          onboardingScope === 'selected'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Select Operators
-                        {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
-                      </button>
-                    </nav>
-                  </div>
-
-                  <div className="flex justify-center">
-                    <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => setOnboardingIncentiveMode('count')}
@@ -3735,7 +3707,7 @@ export function AdminDashboard({
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        By bookings
+                        Number
                       </button>
                       <button
                         type="button"
@@ -3746,9 +3718,36 @@ export function AdminDashboard({
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        By timeframe
+                        Time
                       </button>
                     </nav>
+                    <div className="flex-1 flex justify-center min-w-[12rem]">
+                      <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setOnboardingScope('all')}
+                          className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                            onboardingScope === 'all'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          All Operators ({onboardingStats.total})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOnboardingScope('selected')}
+                          className={`py-1 px-2.5 rounded-md text-xs font-semibold transition-all ${
+                            onboardingScope === 'selected'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Select Operators
+                          {onboardingSelectedIds.size > 0 ? ` (${onboardingSelectedIds.size})` : ''}
+                        </button>
+                      </nav>
+                    </div>
                   </div>
 
                   <div className="flex flex-col items-center gap-2">
