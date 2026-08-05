@@ -34,6 +34,8 @@ import { sameUuid } from '../utils/uuid-compare';
 import {
   cancelPendingRescheduleRequestsForBooking,
   executeParticipantBookingCancellation,
+  shouldRefundOnCancellation,
+  type CancellationActor,
 } from '../services/booking-cancellation.service';
 import { assertBookingWithinBarberAvailability, assertNoBarberSlotConflict } from '../services/barber-availability.service';
 import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
@@ -3492,34 +3494,61 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // PAID (service paid, not yet complete): refund service PI then cancel
+    // PAID (service paid, not yet complete): optionally refund service PI then cancel
     if (booking.status === 'PAID' && (isBarber || isConsumer || isAdmin)) {
+      const cancelledBy: CancellationActor = isBarber ? 'barber' : isConsumer ? 'consumer' : 'admin';
+      const refundEligible = shouldRefundOnCancellation({
+        cancelledBy,
+        scheduledTime: booking.scheduledTime,
+      });
+
+      let refunded = false;
       if (booking.payment_intent_id && booking.paymentMethod !== 'cash') {
-        try {
-          const stripe = getDefaultStripeClient();
-          await stripe.refunds.create({
-            payment_intent: booking.payment_intent_id,
-            reason: 'requested_by_customer',
-            metadata: {
-              booking_id: id,
-              cancelled_by: isBarber ? 'barber' : isConsumer ? 'consumer' : 'admin',
-            },
-          });
-          logger.info(`Refunded service payment intent ${booking.payment_intent_id} for cancelled PAID booking ${id}`);
-        } catch (refundErr: any) {
-          logger.error(`Failed to refund PAID booking ${id}: ${refundErr.message}`);
-          return res.status(502).json({
-            success: false,
-            error: 'Could not refund the service payment. Booking was not cancelled.',
-          });
+        if (refundEligible) {
+          try {
+            const stripe = getDefaultStripeClient();
+            await stripe.refunds.create({
+              payment_intent: booking.payment_intent_id,
+              reason: 'requested_by_customer',
+              metadata: {
+                booking_id: id,
+                cancelled_by: cancelledBy,
+              },
+            });
+            refunded = true;
+            logger.info(
+              `Refunded service payment intent ${booking.payment_intent_id} for cancelled PAID booking ${id} (cancelled_by=${cancelledBy})`
+            );
+          } catch (refundErr: any) {
+            logger.error(`Failed to refund PAID booking ${id}: ${refundErr.message}`);
+            return res.status(502).json({
+              success: false,
+              error: 'Could not refund the service payment. Booking was not cancelled.',
+            });
+          }
+        } else {
+          logger.info(
+            `Skipping refund for PAID booking ${id}: consumer cancelled within 1 hour of appointment (scheduled=${booking.scheduledTime})`
+          );
         }
       }
 
       await executeParticipantBookingCancellation(booking, userId, isBarber, reason ?? null);
 
+      const message = refunded
+        ? 'Booking cancelled and service payment refunded'
+        : cancelledBy === 'consumer' && booking.payment_intent_id && booking.paymentMethod !== 'cash'
+          ? 'Booking cancelled. No refund — cancellations within 1 hour of the appointment are non-refundable.'
+          : 'Booking cancelled successfully';
+
       return res.json({
         success: true,
-        message: 'Booking cancelled and service payment refunded',
+        message,
+        data: {
+          refunded,
+          refundEligible,
+          message,
+        },
       });
     }
 

@@ -286,11 +286,11 @@ export default function BookingDetailsModal({
   const handleCancelBooking = async () => {
     setIsSaving(true);
     try {
-      await api.delete(`/bookings-simple/${booking.id}`, {
+      const result = await api.delete<{ message?: string; refunded?: boolean }>(`/bookings-simple/${booking.id}`, {
         reason: cancelReason || undefined,
       });
-
-      toast.success('Booking cancelled successfully');
+      
+      toast.success(result?.message || 'Booking cancelled successfully');
       setIsDeleting(false);
       handleClose();
       onBookingUpdated?.();

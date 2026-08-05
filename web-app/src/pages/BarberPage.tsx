@@ -1941,10 +1941,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     setIsSavingBooking(true);
     try {
-      await api.delete(`/bookings-simple/${selectedBookingInline.id}`, {
+      const result = await api.delete<{ message?: string }>(`/bookings-simple/${selectedBookingInline.id}`, {
         reason: cancelReason || undefined,
       });
-      toast.success('Booking cancelled successfully');
+      toast.success(result?.message || 'Booking cancelled successfully');
       closeDayModal();
       if (onRefreshBookings) onRefreshBookings(); // Trigger refresh without reopening modal
     } catch (error: any) {

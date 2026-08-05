@@ -530,8 +530,10 @@ export default function ConsumerBookingStatusPage() {
     setIsSaving(true);
     
     try {
-      await api.delete(`/bookings-simple/${booking.id}`, { reason: cancelReason || undefined });
-      toast.success('Booking cancelled');
+      const result = await api.delete<{ message?: string }>(`/bookings-simple/${booking.id}`, {
+        reason: cancelReason || undefined,
+      });
+      toast.success(result?.message || 'Booking cancelled');
       setShowCancelConfirm(false);
       navigate(`${platformPrefix}/consumer`);
     } catch (error: any) {

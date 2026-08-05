@@ -10,6 +10,40 @@ import pushNotificationService from './pushNotification.service';
 import { sendBookingCancellationEmails } from './email.service';
 import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
 
+/** Consumer cancellations inside this window before the appointment are non-refundable. */
+export const CONSUMER_CANCEL_NO_REFUND_WINDOW_MS = 60 * 60 * 1000;
+
+export type CancellationActor = 'consumer' | 'barber' | 'admin';
+
+/**
+ * Refund policy for paid bookings:
+ * - Operator/admin cancel → always full refund
+ * - Consumer cancel ≥ 1 hour before appointment → full refund
+ * - Consumer cancel within 1 hour of (or after) appointment → no refund
+ */
+export function shouldRefundOnCancellation(params: {
+  cancelledBy: CancellationActor;
+  scheduledTime: Date | string | null | undefined;
+  now?: Date;
+}): boolean {
+  if (params.cancelledBy === 'barber' || params.cancelledBy === 'admin') {
+    return true;
+  }
+
+  if (params.scheduledTime == null || params.scheduledTime === '') {
+    // Fail closed for consumer when schedule is unknown — no refund.
+    return false;
+  }
+
+  const scheduledMs = new Date(params.scheduledTime).getTime();
+  if (Number.isNaN(scheduledMs)) {
+    return false;
+  }
+
+  const nowMs = (params.now ?? new Date()).getTime();
+  return nowMs < scheduledMs - CONSUMER_CANCEL_NO_REFUND_WINDOW_MS;
+}
+
 function mergeConversationLocation(
   loc: string | null | undefined,
   details: string | null | undefined

@@ -341,9 +341,10 @@ export default function MessagesPage() {
     
     setIsDeleting(true);
     try {
+      let cancelMessage: string | undefined;
       // Cancel the booking if it exists
       if (deletingConversation.booking?.id) {
-        await fetch(`${import.meta.env.VITE_API_URL}/bookings-simple/${deletingConversation.booking.id}`, {
+        const cancelRes = await fetch(`${import.meta.env.VITE_API_URL}/bookings-simple/${deletingConversation.booking.id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -351,11 +352,16 @@ export default function MessagesPage() {
           },
           body: JSON.stringify({ reason: 'Cancelled by user' }),
         });
+        const cancelJson = await cancelRes.json().catch(() => ({}));
+        if (!cancelRes.ok) {
+          throw new Error(cancelJson.error || cancelJson.message || 'Failed to cancel booking');
+        }
+        cancelMessage = cancelJson.message || cancelJson.data?.message;
       }
       
       // Delete the conversation
       await messageService.deleteConversation(String(deletingConversation.id));
-      toast.success('Booking cancelled successfully');
+      toast.success(cancelMessage || 'Booking cancelled successfully');
       
       // Remove from list
       setConversations(prev => prev.filter(c => c.id !== deletingConversation.id));
