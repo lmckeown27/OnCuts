@@ -1810,7 +1810,7 @@ function DiscoveryView({
 
   useEffect(() => {
     applyFilters();
-  }, [barbers, filterCriteria, latitude, longitude, user?.id, barberSearchQuery]);
+  }, [barbers, filterCriteria, latitude, longitude, barberSearchQuery]);
 
   // Lock body scroll when barber modal is open (fixes mobile viewport issues)
   useEffect(() => {
@@ -1997,11 +1997,6 @@ function DiscoveryView({
 
   const applyFilters = () => {
     let filtered = [...barbers];
-
-    // Filter out the user's own barber profile (prevent self-booking)
-    if (user?.id) {
-      filtered = filtered.filter(barber => barber.user_id !== user.id);
-    }
 
     // Filter by service type
     if (filterCriteria.serviceType) {
