@@ -10,7 +10,12 @@
 import { pool } from '../database/connection';
 import { logger } from './logger';
 import type { DbClient } from './platform-commission';
-import { getPlatformFeePercent, setPlatformFeePercent } from './platform-commission';
+import {
+  getConfiguredPlatformFeePercent,
+  isPlatformCommissionEnabled,
+  setPlatformCommissionEnabled,
+  setPlatformFeePercent,
+} from './platform-commission';
 
 export type ConsumerHomeMode = 'providers' | 'waitlist';
 
@@ -20,7 +25,10 @@ export interface PlatformFrontendSettings {
 }
 
 export interface PlatformSettingsPayload extends PlatformFrontendSettings {
+  /** Admin-configured percent (preserved when commission is off). */
   platformFeePercent: number;
+  /** When false, card bookings take $0 platform fee. */
+  platformCommissionEnabled: boolean;
 }
 
 export interface FrontendConfigPayload extends PlatformFrontendSettings {
@@ -143,12 +151,14 @@ export async function getFrontendConfigPayload(
 export async function getPlatformSettingsPayload(
   client: DbClient = pool
 ): Promise<PlatformSettingsPayload> {
-  const [platformFeePercent, frontend] = await Promise.all([
-    getPlatformFeePercent(client),
+  const [platformFeePercent, platformCommissionEnabled, frontend] = await Promise.all([
+    getConfiguredPlatformFeePercent(client),
+    isPlatformCommissionEnabled(client),
     getPlatformFrontendSettings(client),
   ]);
   return {
     platformFeePercent,
+    platformCommissionEnabled,
     ...frontend,
   };
 }
@@ -156,6 +166,7 @@ export async function getPlatformSettingsPayload(
 export async function updatePlatformSettingsPartial(
   patch: {
     platformFeePercent?: number;
+    platformCommissionEnabled?: boolean;
     cashPaymentEnabled?: boolean;
     consumerHomeMode?: ConsumerHomeMode;
   },
@@ -163,11 +174,16 @@ export async function updatePlatformSettingsPartial(
   client: DbClient = pool
 ): Promise<PlatformSettingsPayload> {
   const hasFee = patch.platformFeePercent !== undefined;
+  const hasCommissionEnabled = patch.platformCommissionEnabled !== undefined;
   const hasCash = patch.cashPaymentEnabled !== undefined;
   const hasMode = patch.consumerHomeMode !== undefined;
 
   if (hasFee) {
     await setPlatformFeePercent(patch.platformFeePercent!, updatedBy, client);
+  }
+
+  if (hasCommissionEnabled) {
+    await setPlatformCommissionEnabled(Boolean(patch.platformCommissionEnabled), updatedBy, client);
   }
 
   if (hasCash || hasMode) {

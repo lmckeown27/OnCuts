@@ -20,8 +20,10 @@ export const DEFAULT_COMMISSION_FREE_BOOKINGS = 5;
 
 const FEE_CACHE_TTL_MS = 45_000;
 
-let cachedFeePercent: number | null = null;
-let cachedFeePercentExpiresAt = 0;
+/** Configured admin-set percent (not the effective charged percent when commission is off). */
+let cachedConfiguredFeePercent: number | null = null;
+let cachedCommissionEnabled: boolean | null = null;
+let cachedFeeSettingsExpiresAt = 0;
 
 export type DbClient = PoolClient | typeof pool;
 
@@ -94,42 +96,93 @@ export function computeIncentiveExpiresAt(
 }
 
 export function invalidatePlatformFeeCache(): void {
-  cachedFeePercent = null;
-  cachedFeePercentExpiresAt = 0;
+  cachedConfiguredFeePercent = null;
+  cachedCommissionEnabled = null;
+  cachedFeeSettingsExpiresAt = 0;
 }
 
-/**
- * Global platform commission percent (0–100) from platform_settings.
- */
-export async function getPlatformFeePercent(client: DbClient = pool): Promise<number> {
+async function loadPlatformFeeSettings(
+  client: DbClient = pool
+): Promise<{ configuredPercent: number; enabled: boolean }> {
   const now = Date.now();
-  if (cachedFeePercent !== null && now < cachedFeePercentExpiresAt) {
-    return cachedFeePercent;
+  if (
+    cachedConfiguredFeePercent !== null &&
+    cachedCommissionEnabled !== null &&
+    now < cachedFeeSettingsExpiresAt
+  ) {
+    return {
+      configuredPercent: cachedConfiguredFeePercent,
+      enabled: cachedCommissionEnabled,
+    };
   }
 
   try {
     const result = await client.query(
-      `SELECT platform_fee_percent FROM platform_settings WHERE id = 1 LIMIT 1`
+      `SELECT platform_fee_percent, platform_commission_enabled
+       FROM platform_settings WHERE id = 1 LIMIT 1`
     );
-    if (result.rows.length > 0 && result.rows[0].platform_fee_percent != null) {
-      const percent = clampFeePercent(parseFloat(String(result.rows[0].platform_fee_percent)));
-      cachedFeePercent = percent;
-      cachedFeePercentExpiresAt = now + FEE_CACHE_TTL_MS;
-      return percent;
+    if (result.rows.length > 0) {
+      const percent =
+        result.rows[0].platform_fee_percent != null
+          ? clampFeePercent(parseFloat(String(result.rows[0].platform_fee_percent)))
+          : DEFAULT_PLATFORM_FEE_PERCENT;
+      // Default true when column missing / null (pre-migration rows)
+      const enabled = result.rows[0].platform_commission_enabled !== false;
+      cachedConfiguredFeePercent = percent;
+      cachedCommissionEnabled = enabled;
+      cachedFeeSettingsExpiresAt = now + FEE_CACHE_TTL_MS;
+      return { configuredPercent: percent, enabled };
     }
   } catch (err) {
-    logger.warn('platform_settings lookup failed; using default commission percent', {
+    // Column may not exist yet before migration 060 — fall back to percent-only query.
+    try {
+      const result = await client.query(
+        `SELECT platform_fee_percent FROM platform_settings WHERE id = 1 LIMIT 1`
+      );
+      if (result.rows.length > 0 && result.rows[0].platform_fee_percent != null) {
+        const percent = clampFeePercent(parseFloat(String(result.rows[0].platform_fee_percent)));
+        cachedConfiguredFeePercent = percent;
+        cachedCommissionEnabled = true;
+        cachedFeeSettingsExpiresAt = now + FEE_CACHE_TTL_MS;
+        return { configuredPercent: percent, enabled: true };
+      }
+    } catch {
+      /* use defaults below */
+    }
+    logger.warn('platform_settings lookup failed; using default commission settings', {
       error: err instanceof Error ? err.message : String(err),
       fallbackPercent: DEFAULT_PLATFORM_FEE_PERCENT,
     });
   }
 
-  cachedFeePercent = DEFAULT_PLATFORM_FEE_PERCENT;
-  cachedFeePercentExpiresAt = now + FEE_CACHE_TTL_MS;
-  return DEFAULT_PLATFORM_FEE_PERCENT;
+  cachedConfiguredFeePercent = DEFAULT_PLATFORM_FEE_PERCENT;
+  cachedCommissionEnabled = true;
+  cachedFeeSettingsExpiresAt = now + FEE_CACHE_TTL_MS;
+  return { configuredPercent: DEFAULT_PLATFORM_FEE_PERCENT, enabled: true };
 }
 
-/** Global platform commission rate 0–1. */
+/** Admin-configured percent (0–100), even when global commission is turned off. */
+export async function getConfiguredPlatformFeePercent(client: DbClient = pool): Promise<number> {
+  const { configuredPercent } = await loadPlatformFeeSettings(client);
+  return configuredPercent;
+}
+
+/** Whether platform commission is charged on card service payments. */
+export async function isPlatformCommissionEnabled(client: DbClient = pool): Promise<boolean> {
+  const { enabled } = await loadPlatformFeeSettings(client);
+  return enabled;
+}
+
+/**
+ * Effective platform commission percent (0–100) for charging.
+ * Returns 0 when global commission is disabled.
+ */
+export async function getPlatformFeePercent(client: DbClient = pool): Promise<number> {
+  const { configuredPercent, enabled } = await loadPlatformFeeSettings(client);
+  return enabled ? configuredPercent : 0;
+}
+
+/** Global platform commission rate 0–1 (effective for charging). */
 export async function getPlatformFeeRate(client: DbClient = pool): Promise<number> {
   return (await getPlatformFeePercent(client)) / 100;
 }
@@ -152,8 +205,36 @@ export async function setPlatformFeePercent(
        updated_by = EXCLUDED.updated_by`,
     [next, updatedBy ?? null]
   );
-  cachedFeePercent = next;
-  cachedFeePercentExpiresAt = Date.now() + FEE_CACHE_TTL_MS;
+  invalidatePlatformFeeCache();
+  return next;
+}
+
+/**
+ * Persist global commission on/off and refresh cache.
+ */
+export async function setPlatformCommissionEnabled(
+  enabled: boolean,
+  updatedBy?: string | null,
+  client: DbClient = pool
+): Promise<boolean> {
+  const next = Boolean(enabled);
+  await client.query(
+    `INSERT INTO platform_settings (id, platform_fee_percent, platform_commission_enabled, updated_at, updated_by)
+     VALUES (
+       1,
+       COALESCE((SELECT platform_fee_percent FROM platform_settings WHERE id = 1), $1),
+       $2,
+       NOW(),
+       $3
+     )
+     ON CONFLICT (id) DO UPDATE SET
+       platform_commission_enabled = EXCLUDED.platform_commission_enabled,
+       updated_at = NOW(),
+       updated_by = EXCLUDED.updated_by`,
+    [DEFAULT_PLATFORM_FEE_PERCENT, next, updatedBy ?? null]
+  );
+  invalidatePlatformFeeCache();
+  await loadPlatformFeeSettings(client);
   return next;
 }
 
@@ -338,14 +419,35 @@ export async function resolveBookingPlatformFee(
     alreadyCommissionFreeApplied?: boolean;
   }
 ): Promise<PlatformFeeSplit & { reservedNow: boolean }> {
-  const feePercent = await getPlatformFeePercent(client);
-
   if (opts.alreadyCommissionFreeApplied) {
     return {
       ...calculatePlatformFeeSplit(opts.serviceAmountCents, { forceCommissionFree: true }),
       reservedNow: false,
     };
   }
+
+  // Global commission off: $0 fee, do not consume free slots or stamp commission_free_applied.
+  if (!(await isPlatformCommissionEnabled(client))) {
+    const split = calculatePlatformFeeSplit(opts.serviceAmountCents, {
+      forceCommissionFree: false,
+      feePercent: 0,
+    });
+    await client.query(
+      `UPDATE bookings
+       SET "platformFeeUsdCents" = $1,
+           "barberEarningsUsdCents" = $2,
+           "updatedAt" = NOW()
+       WHERE id = $3::uuid`,
+      [split.platformFeeCents, split.barberEarningsCents, opts.bookingId]
+    );
+    logger.info('Platform commission disabled; booking charged $0 fee without free-slot reserve', {
+      bookingId: opts.bookingId,
+      barberRecordId: opts.barberRecordId,
+    });
+    return { ...split, reservedNow: false };
+  }
+
+  const feePercent = await getPlatformFeePercent(client);
 
   const reservedNow = await reserveCommissionFreeBooking(client, opts.barberRecordId);
   if (reservedNow) {

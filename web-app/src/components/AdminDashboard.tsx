@@ -482,6 +482,8 @@ export function AdminDashboard({
   const [isSavingCommission, setIsSavingCommission] = useState(false);
   /** Global platform commission % from /admin/platform-settings */
   const [platformFeePercent, setPlatformFeePercent] = useState(15);
+  const [platformCommissionEnabled, setPlatformCommissionEnabled] = useState(true);
+  const [platformCommissionEnabledDraft, setPlatformCommissionEnabledDraft] = useState(true);
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
   const [isSavingControls, setIsSavingControls] = useState(false);
@@ -632,6 +634,7 @@ export function AdminDashboard({
       try {
         const data = await api.get<{
           platformFeePercent: number;
+          platformCommissionEnabled?: boolean;
           cashPaymentEnabled?: boolean;
           consumerHomeMode?: string;
         }>('/admin/platform-settings');
@@ -640,6 +643,9 @@ export function AdminDashboard({
           setPlatformFeePercent(percent);
           setPlatformFeeInput(String(percent));
         }
+        const commissionOn = data?.platformCommissionEnabled !== false;
+        setPlatformCommissionEnabled(commissionOn);
+        setPlatformCommissionEnabledDraft(commissionOn);
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
       } catch (error) {
@@ -659,14 +665,25 @@ export function AdminDashboard({
     }
     setIsSavingPlatformFee(true);
     try {
-      const data = await api.put<{ platformFeePercent: number }>('/admin/platform-settings', {
+      const data = await api.put<{
+        platformFeePercent: number;
+        platformCommissionEnabled?: boolean;
+      }>('/admin/platform-settings', {
         platformFeePercent: percent,
+        platformCommissionEnabled: platformCommissionEnabledDraft,
       });
       const next = Number(data?.platformFeePercent ?? percent);
+      const nextEnabled = data?.platformCommissionEnabled !== false;
       setPlatformFeePercent(next);
       setPlatformFeeInput(String(next));
+      setPlatformCommissionEnabled(nextEnabled);
+      setPlatformCommissionEnabledDraft(nextEnabled);
       setIsEditingPlatformFee(false);
-      toast.success(`Platform commission set to ${next}%`);
+      toast.success(
+        nextEnabled
+          ? `Platform commission on at ${next}%`
+          : `Platform commission off (saved rate ${next}%)`
+      );
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update platform commission');
     } finally {
@@ -706,11 +723,13 @@ export function AdminDashboard({
 
   const handleStartEditPlatformFee = () => {
     setPlatformFeeInput(String(platformFeePercent));
+    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
     setIsEditingPlatformFee(true);
   };
 
   const handleCancelEditPlatformFee = () => {
     setPlatformFeeInput(String(platformFeePercent));
+    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
     setIsEditingPlatformFee(false);
   };  
   // Fetch campus performance when campus changes (or aggregate when none selected)
@@ -2331,11 +2350,16 @@ export function AdminDashboard({
                     max={100}
                     step={1}
                     readOnly={!isEditingPlatformFee}
-                    disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                    disabled={
+                      isLoadingPlatformFee ||
+                      isSavingPlatformFee ||
+                      !isEditingPlatformFee ||
+                      !platformCommissionEnabledDraft
+                    }
                     value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
                     onChange={(e) => setPlatformFeeInput(e.target.value)}
                     className={`w-full rounded-md border px-2 py-1 pr-6 text-sm transition-colors ${
-                      isEditingPlatformFee
+                      isEditingPlatformFee && platformCommissionEnabledDraft
                         ? 'border-gray-300 bg-white text-gray-900'
                         : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                     }`}
@@ -2343,13 +2367,30 @@ export function AdminDashboard({
                   />
                   <span
                     className={`pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs ${
-                      isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
+                      isEditingPlatformFee && platformCommissionEnabledDraft
+                        ? 'text-gray-500'
+                        : 'text-gray-400'
                     }`}
                     aria-hidden="true"
                   >
                     %
                   </span>
                 </div>
+              </label>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={
+                    isEditingPlatformFee
+                      ? platformCommissionEnabledDraft
+                      : platformCommissionEnabled
+                  }
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                  onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+                  aria-label="Commission bookings"
+                />
+                <span className="text-xs text-gray-600 whitespace-nowrap">Commission bookings</span>
               </label>
               {isEditingPlatformFee ? (
                 <>
@@ -2382,6 +2423,11 @@ export function AdminDashboard({
                 </Button>
               )}
             </div>
+            {!platformCommissionEnabled && !isEditingPlatformFee && (
+              <p className="text-[10px] text-amber-700">
+                Commission off. Card bookings take $0 platform fee (rate {platformFeePercent}% saved).
+              </p>
+            )}
           </div>
 
           <div className="shrink-0 flex items-stretch divide-x divide-stone-200 rounded-lg border border-stone-200 overflow-hidden">
@@ -3211,7 +3257,10 @@ export function AdminDashboard({
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
                 <span className="text-[10px] text-gray-500">
-                  Platform commission {platformFeePercent}% · tips never commissioned
+                  {platformCommissionEnabled
+                    ? `Platform commission ${platformFeePercent}%`
+                    : `Commission off (saved ${platformFeePercent}%)`}{' '}
+                  · tips never commissioned
                 </span>
               </div>
               <label className="block max-w-sm mb-3">
@@ -3224,11 +3273,16 @@ export function AdminDashboard({
                       max={100}
                       step={0.1}
                       readOnly={!isEditingPlatformFee}
-                      disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
+                      disabled={
+                        isLoadingPlatformFee ||
+                        isSavingPlatformFee ||
+                        !isEditingPlatformFee ||
+                        !platformCommissionEnabledDraft
+                      }
                       value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
                       onChange={(e) => setPlatformFeeInput(e.target.value)}
                       className={`w-full rounded-md border px-2.5 py-1.5 pr-7 text-sm transition-colors ${
-                        isEditingPlatformFee
+                        isEditingPlatformFee && platformCommissionEnabledDraft
                           ? 'border-gray-300 bg-white text-gray-900'
                           : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                       }`}
@@ -3236,13 +3290,34 @@ export function AdminDashboard({
                     />
                     <span
                       className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm ${
-                        isEditingPlatformFee ? 'text-gray-500' : 'text-gray-400'
+                        isEditingPlatformFee && platformCommissionEnabledDraft
+                          ? 'text-gray-500'
+                          : 'text-gray-400'
                       }`}
                       aria-hidden="true"
                     >
                       %
                     </span>
                   </div>
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={
+                        isEditingPlatformFee
+                          ? platformCommissionEnabledDraft
+                          : platformCommissionEnabled
+                      }
+                      disabled={
+                        isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee
+                      }
+                      onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+                      aria-label="Commission bookings"
+                    />
+                    <span className="text-xs text-gray-600 whitespace-nowrap">
+                      Commission bookings
+                    </span>
+                  </label>
                   {isEditingPlatformFee ? (
                     <>
                       <Button

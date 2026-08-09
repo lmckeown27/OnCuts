@@ -253,6 +253,7 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
  * PUT /api/admin/platform-settings
  * Partial body allowed:
  *   platformFeePercent?: number (0–100)
+ *   platformCommissionEnabled?: boolean
  *   cashPaymentEnabled?: boolean
  *   consumerHomeMode?: 'providers' | 'waitlist'
  * At least one field required.
@@ -266,18 +267,23 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
 
     const body = req.body ?? {};
     const hasFee = Object.prototype.hasOwnProperty.call(body, 'platformFeePercent');
+    const hasCommissionEnabled = Object.prototype.hasOwnProperty.call(
+      body,
+      'platformCommissionEnabled'
+    );
     const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
     const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
 
-    if (!hasFee && !hasCash && !hasMode) {
+    if (!hasFee && !hasCommissionEnabled && !hasCash && !hasMode) {
       throw new ApiError(
         400,
-        'Provide at least one of platformFeePercent, cashPaymentEnabled, consumerHomeMode'
+        'Provide at least one of platformFeePercent, platformCommissionEnabled, cashPaymentEnabled, consumerHomeMode'
       );
     }
 
     const patch: {
       platformFeePercent?: number;
+      platformCommissionEnabled?: boolean;
       cashPaymentEnabled?: boolean;
       consumerHomeMode?: ConsumerHomeMode;
     } = {};
@@ -291,6 +297,10 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
         throw new ApiError(400, 'platformFeePercent must be a number between 0 and 100');
       }
       patch.platformFeePercent = percent;
+    }
+
+    if (hasCommissionEnabled) {
+      patch.platformCommissionEnabled = Boolean(body.platformCommissionEnabled);
     }
 
     if (hasCash) {
