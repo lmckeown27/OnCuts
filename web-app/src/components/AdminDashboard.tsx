@@ -3790,6 +3790,12 @@ export function AdminDashboard({
 
                 {/* Compact mass apply */}
                 <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
+                  {!platformCommissionEnabled && (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800 text-center">
+                      Platform commission is off. All card bookings are commissionless for every
+                      operator.
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5 shrink-0">
                       <button
@@ -4091,7 +4097,16 @@ export function AdminDashboard({
                               </div>
 
                               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                {isTimeframe ? (
+                                {!platformCommissionEnabled ? (
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                      Commissionless
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                      All bookings
+                                    </span>
+                                  </div>
+                                ) : isTimeframe ? (
                                   <div className="flex flex-col items-end gap-0.5">
                                     <span className="text-[10px] text-gray-500 whitespace-nowrap">
                                       Commissionless
