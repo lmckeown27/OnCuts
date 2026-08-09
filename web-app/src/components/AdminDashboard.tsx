@@ -505,8 +505,10 @@ export function AdminDashboard({
     'days'
   );
   const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('ready');
-  const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'with-free' | 'at-zero'>('all');
-  const [onboardingKickbackFilter, setOnboardingKickbackFilter] = useState<'all' | 'with-kickback' | 'none'>('all');
+  const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [onboardingKickbackFilter, setOnboardingKickbackFilter] = useState<'all' | 'enabled' | 'disabled'>(
+    'all'
+  );
   const [showOnboardingFilters, setShowOnboardingFilters] = useState(false);
   const [isOnboardingFiltersVisible, setIsOnboardingFiltersVisible] = useState(false);
   const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
@@ -1516,11 +1518,11 @@ export function AdminDashboard({
                 new Date(b.commissionIncentiveExpiresAt).getTime() > Date.now()
             )
           : (b.commissionFreeBookingsRemaining ?? 0) > 0);
-      if (onboardingFreeFilter === 'with-free' && !freeActive) return false;
-      if (onboardingFreeFilter === 'at-zero' && freeActive) return false;
+      if (onboardingFreeFilter === 'enabled' && !freeActive) return false;
+      if (onboardingFreeFilter === 'disabled' && freeActive) return false;
       const kickback = b.kickbackPercent ?? 0;
-      if (onboardingKickbackFilter === 'with-kickback' && kickback <= 0) return false;
-      if (onboardingKickbackFilter === 'none' && kickback > 0) return false;
+      if (onboardingKickbackFilter === 'enabled' && kickback <= 0) return false;
+      if (onboardingKickbackFilter === 'disabled' && kickback > 0) return false;
       if (!query) return true;
       return (
         b.firstName.toLowerCase().includes(query) ||
@@ -1538,40 +1540,10 @@ export function AdminDashboard({
     onboardingKickbackFilter,
   ]);
 
-  const onboardingStats = useMemo(() => {
-    const total = onboardingOperators.length;
-    let withFree = 0;
-    let zeroFree = 0;
-    let withKickback = 0;
-    let totalFreeSlots = 0;
-    let kickbackSum = 0;
-    for (const b of onboardingOperators) {
-      const free = b.commissionFreeBookingsRemaining ?? 0;
-      const kickback = b.kickbackPercent ?? 0;
-      const freeActive =
-        b.commissionIncentiveActive === true ||
-        (b.commissionIncentiveMode === 'timeframe'
-          ? Boolean(
-              b.commissionIncentiveExpiresAt &&
-                new Date(b.commissionIncentiveExpiresAt).getTime() > Date.now()
-            )
-          : free > 0);
-      totalFreeSlots += free;
-      kickbackSum += kickback;
-      if (freeActive) withFree += 1;
-      else zeroFree += 1;
-      if (kickback > 0) withKickback += 1;
-    }
-    return {
-      total,
-      withFree,
-      zeroFree,
-      withKickback,
-      totalFreeSlots,
-      avgFreeSlots: total > 0 ? totalFreeSlots / total : 0,
-      avgKickbackPercent: total > 0 ? kickbackSum / total : 0,
-    };
-  }, [onboardingOperators]);
+  const onboardingStats = useMemo(
+    () => ({ total: onboardingOperators.length }),
+    [onboardingOperators]
+  );
 
   const stripeStatusBadge = (barber: Barber) =>
     barber.hasStripeSetup ? (
@@ -5661,22 +5633,19 @@ export function AdminDashboard({
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                   Commission-free
                 </p>
-                <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
+                <div className="flex rounded-lg bg-stone-100 p-1">
                   {(
                     [
-                      {
-                        id: 'all',
-                        label: `All · ${onboardingStats.totalFreeSlots} total free (avg ${onboardingStats.avgFreeSlots.toFixed(1)})`,
-                      },
-                      { id: 'with-free', label: `With free slots (${onboardingStats.withFree})` },
-                      { id: 'at-zero', label: `At 0 (${onboardingStats.zeroFree})` },
+                      { id: 'all', label: 'All' },
+                      { id: 'enabled', label: 'Enabled' },
+                      { id: 'disabled', label: 'Disabled' },
                     ] as const
                   ).map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => setOnboardingFreeFilter(opt.id)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
                         onboardingFreeFilter === opt.id
                           ? 'bg-white shadow-sm text-gray-900'
                           : 'text-gray-600'
@@ -5692,28 +5661,19 @@ export function AdminDashboard({
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                   Kickback
                 </p>
-                <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
+                <div className="flex rounded-lg bg-stone-100 p-1">
                   {(
                     [
-                      {
-                        id: 'all',
-                        label: `All · avg ${onboardingStats.avgKickbackPercent.toFixed(1)}%`,
-                      },
-                      {
-                        id: 'with-kickback',
-                        label: `With kickback (${onboardingStats.withKickback})`,
-                      },
-                      {
-                        id: 'none',
-                        label: `None (${Math.max(0, onboardingStats.total - onboardingStats.withKickback)})`,
-                      },
+                      { id: 'all', label: 'All' },
+                      { id: 'enabled', label: 'Enabled' },
+                      { id: 'disabled', label: 'Disabled' },
                     ] as const
                   ).map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => setOnboardingKickbackFilter(opt.id)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
                         onboardingKickbackFilter === opt.id
                           ? 'bg-white shadow-sm text-gray-900'
                           : 'text-gray-600'
