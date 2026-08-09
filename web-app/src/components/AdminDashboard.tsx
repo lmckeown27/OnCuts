@@ -528,7 +528,7 @@ export function AdminDashboard({
   // Barber view state (shared between all-barbers and campus-specific views)
   const [barberViewTab, setBarberViewTab] = useState<'barbers' | 'applications' | 'availability'>('barbers');
   const [barberVisibilityFilter, setBarberVisibilityFilter] = useState<'visible' | 'hidden'>('visible');
-  const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
+  const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('setup');
   /** All-universities only: filter by whether operator has a public service pin near a campus */
   const [barberLocationFilter, setBarberLocationFilter] = useState<'all' | 'near-campus' | 'unassigned'>('all');
   const [showBarberFilters, setShowBarberFilters] = useState(false);
@@ -4285,7 +4285,7 @@ export function AdminDashboard({
                   onClick={() => setShowBarberFilters(true)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     barberVisibilityFilter !== 'visible' ||
-                    activeBarberStripeFilter !== 'all' ||
+                    activeBarberStripeFilter !== 'setup' ||
                     barberLocationFilter !== 'all'
                       ? 'border-gray-900 bg-gray-900 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
@@ -4294,7 +4294,7 @@ export function AdminDashboard({
                   <Filter className="w-3.5 h-3.5" />
                   Filters
                   {(barberVisibilityFilter !== 'visible' ||
-                    activeBarberStripeFilter !== 'all' ||
+                    activeBarberStripeFilter !== 'setup' ||
                     barberLocationFilter !== 'all') && (
                     <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                   )}
@@ -4364,7 +4364,7 @@ export function AdminDashboard({
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                       <Scissors className="w-8 h-8 mb-2" />
-                      <p className="text-sm">No {activeBarberStripeFilter === 'setup' ? 'barbers with Stripe' : activeBarberStripeFilter === 'not-setup' ? 'barbers without Stripe' : 'active barbers'}</p>
+                      <p className="text-sm">No {activeBarberStripeFilter === 'setup' ? 'Stripe-ready operators' : activeBarberStripeFilter === 'not-setup' ? 'operators without Stripe' : 'active operators'}</p>
                     </div>
                   );
                 })()}
@@ -4523,14 +4523,14 @@ export function AdminDashboard({
                   onClick={() => setShowBarberFilters(true)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     barberVisibilityFilter !== 'visible' ||
-                    activeBarberStripeFilter !== 'all'
+                    activeBarberStripeFilter !== 'setup'
                       ? 'border-gray-900 bg-gray-900 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Filter className="w-3.5 h-3.5" />
                   Filters
-                  {(barberVisibilityFilter !== 'visible' || activeBarberStripeFilter !== 'all') && (
+                  {(barberVisibilityFilter !== 'visible' || activeBarberStripeFilter !== 'setup') && (
                     <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                   )}
                 </button>
@@ -5539,8 +5539,8 @@ export function AdminDashboard({
                     {(
                       [
                         { id: 'all', label: 'All' },
-                        { id: 'setup', label: 'Setup' },
-                        { id: 'not-setup', label: 'Not setup' },
+                        { id: 'setup', label: 'Ready' },
+                        { id: 'not-setup', label: 'Not ready' },
                       ] as const
                     ).map((opt) => (
                       <button
