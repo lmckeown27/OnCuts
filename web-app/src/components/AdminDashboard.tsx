@@ -1581,6 +1581,12 @@ export function AdminDashboard({
       </span>
     );
 
+  const commissionlessAllBookingsBadge = !platformCommissionEnabled ? (
+    <span className="text-[10px] text-white bg-olive-600 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap">
+      Commissionless All Bookings
+    </span>
+  ) : null;
+
   const barberLocationSubtitle = (barber: Barber) => {
     // City/town only — never street address
     let place: string | null = null;
@@ -4138,9 +4144,7 @@ export function AdminDashboard({
 
                               <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 {!platformCommissionEnabled ? (
-                                  <span className="text-[10px] text-white bg-olive-600 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap">
-                                    Commissionless All Bookings
-                                  </span>
+                                  commissionlessAllBookingsBadge
                                 ) : isTimeframe ? (
                                   <div className="flex flex-col items-end gap-0.5">
                                     <span className="text-[10px] text-gray-500 whitespace-nowrap">
@@ -4343,6 +4347,7 @@ export function AdminDashboard({
                                 <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                               ) : null}
                               {stripeStatusBadge(barber)}
+                              {commissionlessAllBookingsBadge}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
@@ -4388,6 +4393,7 @@ export function AdminDashboard({
                                 <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                               ) : null}
                               {stripeStatusBadge(barber)}
+                              {commissionlessAllBookingsBadge}
                             </p>
                             <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                           </div>
@@ -4586,6 +4592,7 @@ export function AdminDashboard({
                                   <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                                 ) : null}
                                 {stripeStatusBadge(barber)}
+                                {commissionlessAllBookingsBadge}
                               </p>
                               <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                             </div>
@@ -4630,6 +4637,8 @@ export function AdminDashboard({
                                 {barber.isBanned ? (
                                   <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
                                 ) : null}
+                                {stripeStatusBadge(barber)}
+                                {commissionlessAllBookingsBadge}
                               </p>
                               <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                             </div>
