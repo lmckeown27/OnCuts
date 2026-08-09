@@ -509,6 +509,7 @@ export function AdminDashboard({
   const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'with-free' | 'at-zero'>('all');
   const [onboardingKickbackFilter, setOnboardingKickbackFilter] = useState<'all' | 'with-kickback' | 'none'>('all');
   const [showOnboardingFilters, setShowOnboardingFilters] = useState(false);
+  const [isOnboardingFiltersVisible, setIsOnboardingFiltersVisible] = useState(false);
   const [onboardingSearchQuery, setOnboardingSearchQuery] = useState('');
   const [isSavingOnboardingBulk, setIsSavingOnboardingBulk] = useState(false);
   const [savingOnboardingBarberId, setSavingOnboardingBarberId] = useState<string | null>(null);
@@ -532,6 +533,7 @@ export function AdminDashboard({
   /** All-universities only: filter by whether operator has a public service pin near a campus */
   const [barberLocationFilter, setBarberLocationFilter] = useState<'all' | 'near-campus' | 'unassigned'>('all');
   const [showBarberFilters, setShowBarberFilters] = useState(false);
+  const [isBarberFiltersVisible, setIsBarberFiltersVisible] = useState(false);
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
   // Barber applications state
@@ -567,6 +569,26 @@ export function AdminDashboard({
   const closeApplicationActionConfirm = () => {
     setIsApplicationActionVisible(false);
     setTimeout(() => setPendingApplicationAction(null), MODAL_TRANSITION_MS);
+  };
+
+  const openBarberFilters = () => {
+    setShowBarberFilters(true);
+    revealAfterMount(setIsBarberFiltersVisible);
+  };
+
+  const closeBarberFilters = () => {
+    setIsBarberFiltersVisible(false);
+    setTimeout(() => setShowBarberFilters(false), MODAL_TRANSITION_MS);
+  };
+
+  const openOnboardingFilters = () => {
+    setShowOnboardingFilters(true);
+    revealAfterMount(setIsOnboardingFiltersVisible);
+  };
+
+  const closeOnboardingFilters = () => {
+    setIsOnboardingFiltersVisible(false);
+    setTimeout(() => setShowOnboardingFilters(false), MODAL_TRANSITION_MS);
   };
 
   const openContactModal = (app: BarberApplication) => {
@@ -3822,7 +3844,7 @@ export function AdminDashboard({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setShowOnboardingFilters(true)}
+                    onClick={openOnboardingFilters}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                       onboardingFiltersActive
                         ? 'border-gray-900 bg-gray-900 text-white'
@@ -4291,7 +4313,7 @@ export function AdminDashboard({
               <div className="mb-3">
                 <button
                   type="button"
-                  onClick={() => setShowBarberFilters(true)}
+                  onClick={openBarberFilters}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     barberVisibilityFilter !== 'visible' ||
                     activeBarberStripeFilter !== 'setup' ||
@@ -4531,7 +4553,7 @@ export function AdminDashboard({
               <div className="mb-3">
                 <button
                   type="button"
-                  onClick={() => setShowBarberFilters(true)}
+                  onClick={openBarberFilters}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     barberVisibilityFilter !== 'visible' ||
                     activeBarberStripeFilter !== 'setup'
@@ -5500,14 +5522,27 @@ export function AdminDashboard({
 
       {/* Operators filters sheet */}
       {showBarberFilters && (
-        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center">
+        <div
+          className={`absolute inset-0 z-40 flex items-end sm:items-center justify-center transition-colors duration-200 ${
+            isBarberFiltersVisible ? 'bg-black/35' : 'bg-black/0'
+          }`}
+        >
           <button
             type="button"
-            className="absolute inset-0 bg-black/35"
+            className="absolute inset-0"
             aria-label="Dismiss filters"
-            onClick={() => setShowBarberFilters(false)}
+            onClick={closeBarberFilters}
           />
-          <div className="relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4">
+          <div
+            className={`relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4 transition-all duration-200 ease-out ${
+              isBarberFiltersVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Operator filters"
+          >
             <div className="flex justify-center pt-2 pb-1 sm:hidden">
               <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
             </div>
@@ -5515,7 +5550,7 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">Filters</h3>
               <button
                 type="button"
-                onClick={() => setShowBarberFilters(false)}
+                onClick={closeBarberFilters}
                 className="p-2 hover:bg-stone-100 rounded-full"
                 aria-label="Close filters"
               >
@@ -5600,7 +5635,7 @@ export function AdminDashboard({
                   </div>
                 </div>
               )}
-              <Button type="button" className="w-full" onClick={() => setShowBarberFilters(false)}>
+              <Button type="button" className="w-full" onClick={closeBarberFilters}>
                 Done
               </Button>
             </div>
@@ -5610,14 +5645,27 @@ export function AdminDashboard({
 
       {/* Onboarding filters sheet */}
       {showOnboardingFilters && (
-        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center">
+        <div
+          className={`absolute inset-0 z-40 flex items-end sm:items-center justify-center transition-colors duration-200 ${
+            isOnboardingFiltersVisible ? 'bg-black/35' : 'bg-black/0'
+          }`}
+        >
           <button
             type="button"
-            className="absolute inset-0 bg-black/35"
+            className="absolute inset-0"
             aria-label="Dismiss onboarding filters"
-            onClick={() => setShowOnboardingFilters(false)}
+            onClick={closeOnboardingFilters}
           />
-          <div className="relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4">
+          <div
+            className={`relative z-10 w-full sm:max-w-md max-h-[80%] rounded-t-2xl sm:rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden flex flex-col m-0 sm:m-4 transition-all duration-200 ease-out ${
+              isOnboardingFiltersVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Onboarding filters"
+          >
             <div className="flex justify-center pt-2 pb-1 sm:hidden">
               <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
             </div>
@@ -5625,7 +5673,7 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">Filters</h3>
               <button
                 type="button"
-                onClick={() => setShowOnboardingFilters(false)}
+                onClick={closeOnboardingFilters}
                 className="p-2 hover:bg-stone-100 rounded-full"
                 aria-label="Close filters"
               >
@@ -5768,7 +5816,7 @@ export function AdminDashboard({
               >
                 Clear filters
               </Button>
-              <Button type="button" className="w-full" onClick={() => setShowOnboardingFilters(false)}>
+              <Button type="button" className="w-full" onClick={closeOnboardingFilters}>
                 Done
               </Button>
             </div>
