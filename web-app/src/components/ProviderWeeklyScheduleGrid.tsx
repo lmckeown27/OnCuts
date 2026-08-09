@@ -365,7 +365,7 @@ export default function ProviderWeeklyScheduleGrid({
       <div className="overflow-x-auto -mx-1 px-1">
         <div className="min-w-[640px]">
           {/* Day headers */}
-          <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] gap-px mb-1 sticky top-0 z-20 bg-white">
+          <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))] gap-px mb-1 sticky top-0 z-20 bg-white">
             <div />
             {weekDays.map(day => (
               <div
@@ -386,7 +386,7 @@ export default function ProviderWeeklyScheduleGrid({
             className="overflow-y-auto border border-gray-200 rounded-lg bg-white"
             style={{ maxHeight: VISIBLE_GRID_HEIGHT_PX }}
           >
-            <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] gap-px relative" style={{ minHeight: totalHeight }}>
+            <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))] gap-px relative" style={{ minHeight: totalHeight }}>
               {/* Time labels */}
               <div className="relative bg-gray-50 border-r border-gray-200" style={{ height: totalHeight }}>
                 {timeRows.map((min, idx) => {
@@ -394,7 +394,7 @@ export default function ProviderWeeklyScheduleGrid({
                   return (
                     <div
                       key={min}
-                      className="absolute right-1 text-[10px] text-gray-400 leading-none -translate-y-1/2 select-none"
+                      className="absolute right-1 text-[10px] text-gray-400 leading-none -translate-y-1/2 select-none whitespace-nowrap"
                       style={{ top: idx * ROW_HEIGHT_PX + ROW_HEIGHT_PX / 2 }}
                     >
                       {formatTime12(minutesToTime(min))}
