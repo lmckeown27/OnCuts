@@ -4139,7 +4139,7 @@ export function AdminDashboard({
                               <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 {!platformCommissionEnabled ? (
                                   <span className="text-[10px] text-white bg-olive-600 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap">
-                                    All bookings
+                                    Commissionless All Bookings
                                   </span>
                                 ) : isTimeframe ? (
                                   <div className="flex flex-col items-end gap-0.5">
