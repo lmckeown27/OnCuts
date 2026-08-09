@@ -531,7 +531,6 @@ export function AdminDashboard({
   const [barberVisibilityFilter, setBarberVisibilityFilter] = useState<'visible' | 'hidden'>('visible');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('setup');
   /** All-universities only: filter by whether operator has a public service pin near a campus */
-  const [barberLocationFilter, setBarberLocationFilter] = useState<'all' | 'near-campus' | 'unassigned'>('all');
   const [showBarberFilters, setShowBarberFilters] = useState(false);
   const [isBarberFiltersVisible, setIsBarberFiltersVisible] = useState(false);
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
@@ -1478,22 +1477,17 @@ export function AdminDashboard({
   
   // Filtered barbers for the "all barbers" view (when no campus selected)
   const filteredAllBarbers = useMemo(() => {
-    let list = barbers;
-    if (barberLocationFilter === 'near-campus') {
-      list = list.filter((b) => Boolean(b.campusId));
-    } else if (barberLocationFilter === 'unassigned') {
-      list = list.filter((b) => !b.hasServiceLocation || !b.campusId);
-    }
-    if (!allBarberSearchQuery) return list;
+    if (!allBarberSearchQuery) return barbers;
     const query = allBarberSearchQuery.toLowerCase();
-    return list.filter(b => 
-      b.firstName.toLowerCase().includes(query) || 
-      b.lastName.toLowerCase().includes(query) ||
-      b.email.toLowerCase().includes(query) ||
-      (b.campusName && b.campusName.toLowerCase().includes(query)) ||
-      (b.serviceLocationLabel && b.serviceLocationLabel.toLowerCase().includes(query))
+    return barbers.filter(
+      (b) =>
+        b.firstName.toLowerCase().includes(query) ||
+        b.lastName.toLowerCase().includes(query) ||
+        b.email.toLowerCase().includes(query) ||
+        (b.campusName && b.campusName.toLowerCase().includes(query)) ||
+        (b.serviceLocationLabel && b.serviceLocationLabel.toLowerCase().includes(query))
     );
-  }, [barbers, allBarberSearchQuery, barberLocationFilter]);
+  }, [barbers, allBarberSearchQuery]);
 
   const onboardingOperators = useMemo(
     () =>
@@ -4315,18 +4309,14 @@ export function AdminDashboard({
                   type="button"
                   onClick={openBarberFilters}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                    barberVisibilityFilter !== 'visible' ||
-                    activeBarberStripeFilter !== 'setup' ||
-                    barberLocationFilter !== 'all'
+                    barberVisibilityFilter !== 'visible' || activeBarberStripeFilter !== 'setup'
                       ? 'border-gray-900 bg-gray-900 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Filter className="w-3.5 h-3.5" />
                   Filters
-                  {(barberVisibilityFilter !== 'visible' ||
-                    activeBarberStripeFilter !== 'setup' ||
-                    barberLocationFilter !== 'all') && (
+                  {(barberVisibilityFilter !== 'visible' || activeBarberStripeFilter !== 'setup') && (
                     <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
                   )}
                 </button>
@@ -5598,33 +5588,6 @@ export function AdminDashboard({
                         onClick={() => setActiveBarberStripeFilter(opt.id)}
                         className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
                           activeBarberStripeFilter === opt.id
-                            ? 'bg-white shadow-sm text-gray-900'
-                            : 'text-gray-600'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!selectedCampusId && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Location</p>
-                  <div className="flex flex-col gap-1 rounded-lg bg-stone-100 p-1">
-                    {(
-                      [
-                        { id: 'all', label: 'All' },
-                        { id: 'near-campus', label: 'Near campus' },
-                        { id: 'unassigned', label: 'Unassigned' },
-                      ] as const
-                    ).map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setBarberLocationFilter(opt.id)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md text-left ${
-                          barberLocationFilter === opt.id
                             ? 'bg-white shadow-sm text-gray-900'
                             : 'text-gray-600'
                         }`}
