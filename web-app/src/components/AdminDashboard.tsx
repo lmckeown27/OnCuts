@@ -504,8 +504,7 @@ export function AdminDashboard({
   const [onboardingDurationUnit, setOnboardingDurationUnit] = useState<'days' | 'weeks' | 'months'>(
     'days'
   );
-  const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('all');
-  const [onboardingLocationFilter, setOnboardingLocationFilter] = useState<'all' | 'has-pin' | 'missing'>('all');
+  const [onboardingStripeFilter, setOnboardingStripeFilter] = useState<'all' | 'ready' | 'not-ready'>('ready');
   const [onboardingFreeFilter, setOnboardingFreeFilter] = useState<'all' | 'with-free' | 'at-zero'>('all');
   const [onboardingKickbackFilter, setOnboardingKickbackFilter] = useState<'all' | 'with-kickback' | 'none'>('all');
   const [showOnboardingFilters, setShowOnboardingFilters] = useState(false);
@@ -1500,8 +1499,7 @@ export function AdminDashboard({
   );
 
   const onboardingFiltersActive =
-    onboardingStripeFilter !== 'all' ||
-    onboardingLocationFilter !== 'all' ||
+    onboardingStripeFilter !== 'ready' ||
     onboardingFreeFilter !== 'all' ||
     onboardingKickbackFilter !== 'all';
 
@@ -1510,8 +1508,6 @@ export function AdminDashboard({
     return onboardingOperators.filter((b) => {
       if (onboardingStripeFilter === 'ready' && !b.hasStripeSetup) return false;
       if (onboardingStripeFilter === 'not-ready' && b.hasStripeSetup) return false;
-      if (onboardingLocationFilter === 'has-pin' && !b.hasServiceLocation) return false;
-      if (onboardingLocationFilter === 'missing' && b.hasServiceLocation) return false;
       const freeActive =
         b.commissionIncentiveActive === true ||
         (b.commissionIncentiveMode === 'timeframe'
@@ -1538,7 +1534,6 @@ export function AdminDashboard({
     onboardingOperators,
     onboardingSearchQuery,
     onboardingStripeFilter,
-    onboardingLocationFilter,
     onboardingFreeFilter,
     onboardingKickbackFilter,
   ]);
@@ -1548,8 +1543,6 @@ export function AdminDashboard({
     let withFree = 0;
     let zeroFree = 0;
     let withKickback = 0;
-    let stripeReady = 0;
-    let withLocation = 0;
     let totalFreeSlots = 0;
     let kickbackSum = 0;
     for (const b of onboardingOperators) {
@@ -1568,18 +1561,12 @@ export function AdminDashboard({
       if (freeActive) withFree += 1;
       else zeroFree += 1;
       if (kickback > 0) withKickback += 1;
-      if (b.hasStripeSetup) stripeReady += 1;
-      if (b.hasServiceLocation) withLocation += 1;
     }
     return {
       total,
       withFree,
       zeroFree,
       withKickback,
-      stripeReady,
-      stripeNotReady: Math.max(0, total - stripeReady),
-      withLocation,
-      withoutLocation: Math.max(0, total - withLocation),
       totalFreeSlots,
       avgFreeSlots: total > 0 ? totalFreeSlots / total : 0,
       avgKickbackPercent: total > 0 ? kickbackSum / total : 0,
@@ -5649,9 +5636,9 @@ export function AdminDashboard({
                 <div className="flex rounded-lg bg-stone-100 p-1">
                   {(
                     [
-                      { id: 'all', label: `All (${onboardingStats.total})` },
-                      { id: 'ready', label: `Ready (${onboardingStats.stripeReady})` },
-                      { id: 'not-ready', label: `Not ready (${onboardingStats.stripeNotReady})` },
+                      { id: 'all', label: 'All' },
+                      { id: 'ready', label: 'Ready' },
+                      { id: 'not-ready', label: 'Not ready' },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -5660,34 +5647,6 @@ export function AdminDashboard({
                       onClick={() => setOnboardingStripeFilter(opt.id)}
                       className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
                         onboardingStripeFilter === opt.id
-                          ? 'bg-white shadow-sm text-gray-900'
-                          : 'text-gray-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                  Public location
-                </p>
-                <div className="flex rounded-lg bg-stone-100 p-1">
-                  {(
-                    [
-                      { id: 'all', label: 'All' },
-                      { id: 'has-pin', label: `Set (${onboardingStats.withLocation})` },
-                      { id: 'missing', label: `Missing (${onboardingStats.withoutLocation})` },
-                    ] as const
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setOnboardingLocationFilter(opt.id)}
-                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md ${
-                        onboardingLocationFilter === opt.id
                           ? 'bg-white shadow-sm text-gray-900'
                           : 'text-gray-600'
                       }`}
@@ -5771,8 +5730,7 @@ export function AdminDashboard({
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setOnboardingStripeFilter('all');
-                  setOnboardingLocationFilter('all');
+                  setOnboardingStripeFilter('ready');
                   setOnboardingFreeFilter('all');
                   setOnboardingKickbackFilter('all');
                 }}
