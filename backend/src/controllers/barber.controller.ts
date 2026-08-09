@@ -38,6 +38,7 @@ import {
 import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
 import {
   isCommissionFreeEligible,
+  isPlatformCommissionEnabled,
   parseCommissionIncentiveMode,
   parseIncentiveExpiresAt,
 } from '../utils/platform-commission';
@@ -704,25 +705,33 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
-    const commissionFreeBookingsRemaining =
+    const storedFreeRemaining =
       Math.max(0, parseInt(String(barber.commission_free_bookings_remaining ?? '0'), 10) || 0);
     const commissionIncentiveMode = parseCommissionIncentiveMode(barber.commission_incentive_mode);
-    const commissionIncentiveExpiresAt = parseIncentiveExpiresAt(
-      barber.commission_incentive_expires_at
-    );
-    const commissionIncentiveActive = isCommissionFreeEligible({
-      incentiveMode: commissionIncentiveMode,
-      incentiveExpiresAt: commissionIncentiveExpiresAt,
-      commissionFreeBookingsRemaining,
-    });
+    const storedExpiresAt = parseIncentiveExpiresAt(barber.commission_incentive_expires_at);
+    // When platform commission is off, every booking is already $0 fee — hide per-operator
+    // commissionless UI (banner / remaining) as if no personal incentive is set.
+    const platformCommissionEnabled = await isPlatformCommissionEnabled();
+    const commissionIncentiveActive =
+      platformCommissionEnabled &&
+      isCommissionFreeEligible({
+        incentiveMode: commissionIncentiveMode,
+        incentiveExpiresAt: storedExpiresAt,
+        commissionFreeBookingsRemaining: storedFreeRemaining,
+      });
+    const commissionFreeBookingsRemaining = platformCommissionEnabled ? storedFreeRemaining : 0;
+    const commissionIncentiveExpiresAt = platformCommissionEnabled
+      ? storedExpiresAt?.toISOString() ?? null
+      : null;
     res.json({
       success: true,
       data: {
         ...barber,
         reapply_allowed: reapplyAllowed,
+        platformCommissionEnabled,
         commissionFreeBookingsRemaining,
         commissionIncentiveMode,
-        commissionIncentiveExpiresAt: commissionIncentiveExpiresAt?.toISOString() ?? null,
+        commissionIncentiveExpiresAt,
         commissionIncentiveActive,
         pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
