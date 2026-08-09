@@ -1587,6 +1587,14 @@ export function AdminDashboard({
     </span>
   ) : null;
 
+  /** Checkbox reflects current state; label is the opposite CTA. */
+  const platformCommissionChecked = isEditingPlatformFee
+    ? platformCommissionEnabledDraft
+    : platformCommissionEnabled;
+  const platformCommissionStateLabel = platformCommissionChecked
+    ? 'Disable Commission'
+    : 'Enable Commission';
+
   const barberLocationSubtitle = (barber: Barber) => {
     // City/town only — never street address
     let place: string | null = null;
@@ -2420,11 +2428,7 @@ export function AdminDashboard({
                 <input
                   id="platform-commission-enabled-performance"
                   type="checkbox"
-                  checked={
-                    isEditingPlatformFee
-                      ? platformCommissionEnabledDraft
-                      : platformCommissionEnabled
-                  }
+                  checked={platformCommissionChecked}
                   disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
                   onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
                   className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
@@ -2434,11 +2438,7 @@ export function AdminDashboard({
                   id="platform-commission-enabled-performance-label"
                   className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
                 >
-                  {(isEditingPlatformFee
-                    ? platformCommissionEnabledDraft
-                    : platformCommissionEnabled)
-                    ? 'Enable Commission'
-                    : 'Disable Commission'}
+                  {platformCommissionStateLabel}
                 </span>
               </div>
               {isEditingPlatformFee ? (
@@ -3352,11 +3352,7 @@ export function AdminDashboard({
                     <input
                       id="platform-commission-enabled-payment"
                       type="checkbox"
-                      checked={
-                        isEditingPlatformFee
-                          ? platformCommissionEnabledDraft
-                          : platformCommissionEnabled
-                      }
+                      checked={platformCommissionChecked}
                       disabled={
                         isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee
                       }
@@ -3368,11 +3364,7 @@ export function AdminDashboard({
                       id="platform-commission-enabled-payment-label"
                       className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
                     >
-                      {(isEditingPlatformFee
-                        ? platformCommissionEnabledDraft
-                        : platformCommissionEnabled)
-                        ? 'Enable Commission'
-                        : 'Disable Commission'}
+                      {platformCommissionStateLabel}
                     </span>
                   </div>
                   {isEditingPlatformFee ? (
