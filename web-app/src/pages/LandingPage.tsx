@@ -247,8 +247,8 @@ export default function LandingPage() {
                           on iPhone, or search near you here and tap &quot;Find Operator&quot; on the web.
                         </li>
                         <li>Browse operators near you and view their portfolio.</li>
-                        <li>Pick a service, date, time, and location, then submit your request.</li>
-                        <li>Wait for a notification when the operator accepts.</li>
+                        <li>Pick a service, date, and time, add where you&apos;ll meet, then submit your request.</li>
+                        <li>Wait for a notification when the operator accepts — then you can pay and message them.</li>
                       </ol>
                     </div>
                   </div>
@@ -265,7 +265,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <p className="px-4 pb-4 text-gray-600 text-sm text-center">
-                        Pay after the service is complete. When the operator marks it done, pay in the app or on the web with card, Apple Pay, or Google Pay. Tips are optional (15%, 20%, or 25%).
+                        Pay the service after the operator accepts — in the app or on the web with card, Apple Pay, or Google Pay. After they mark the service complete, you can add an optional tip ($4, $5, $6, or a custom amount).
                       </p>
                     </div>
                   </div>
@@ -282,7 +282,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <p className="px-4 pb-4 text-gray-600 text-sm text-center">
-                        Choose from your operator&apos;s listed locations when you book. Options may include campus spots, dorms, homes, or nearby areas.
+                        Operators set a service area so clients can find them nearby. When you book, enter where you&apos;ll meet — campus spots, dorms, homes, or other nearby places you coordinate together.
                       </p>
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <p className="px-4 pb-4 text-gray-600 text-sm text-center">
-                        Yes. Edit time, date, location, or notes while your booking is pending. After acceptance, send a reschedule request for schedule changes. Cancel anytime before the service is marked complete.
+                        Yes. You can update time, date, meeting details, or notes before the service is marked complete — the operator is notified of changes. Cancel anytime before completion. If you cancel a paid booking within 1 hour of the appointment, the service payment is non-refundable; if the operator cancels, you get a full refund.
                       </p>
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export default function LandingPage() {
                         <li>
                           Once approved, download{' '}
                           <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
-                            OnCuts Provider
+                            OnCuts Operator
                           </a>{' '}
                           from the App Store, or use the operator web dashboard.
                         </li>
@@ -385,9 +385,9 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>You keep 85% of each card service payment (OnCuts takes 15%).</li>
-                        <li>You keep 100% of tips.</li>
-                        <li>Some operators get a few early card bookings with $0 platform fee before the 15% rate applies.</li>
+                        <li>OnCuts takes a platform fee on card service payments (default 15%; set by OnCuts).</li>
+                        <li>You keep 100% of tips — tips never include a platform fee.</li>
+                        <li>New operators typically get several commission-free card bookings (default 5), or a time-limited commission-free window when OnCuts grants one. During those bookings, a platform-funded kickback may also apply when configured.</li>
                       </ol>
                     </div>
                   </div>
@@ -404,8 +404,8 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Mark the booking complete in OnCuts Provider or your web dashboard after the service.</li>
-                        <li>The client pays through OnCuts with card or digital wallet.</li>
+                        <li>Accept the booking — the client then pays the service through OnCuts with card or digital wallet.</li>
+                        <li>After the service, mark the booking complete in OnCuts Operator or your web dashboard so the client can tip.</li>
                         <li>Card take-home goes to your Stripe Express balance, then to your bank.</li>
                       </ol>
                     </div>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <ol className="px-4 pb-4 text-gray-600 text-sm text-left list-decimal list-inside space-y-1.5 max-w-md mx-auto">
-                        <li>Set weekly hours under Edit Schedule in OnCuts Provider or your web dashboard.</li>
+                        <li>Set weekly hours under Edit Schedule in OnCuts Operator or your web dashboard.</li>
                         <li>Use Block Time for one-off unavailable dates or hours.</li>
                       </ol>
                     </div>
