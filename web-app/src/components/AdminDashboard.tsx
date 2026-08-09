@@ -2427,9 +2427,21 @@ export function AdminDashboard({
                   disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
                   onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
                   className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
-                  aria-label="Commission bookings"
+                  aria-label={
+                    (isEditingPlatformFee
+                      ? platformCommissionEnabledDraft
+                      : platformCommissionEnabled)
+                      ? 'Disable Commission'
+                      : 'Enable Commission'
+                  }
                 />
-                <span className="text-xs text-gray-600 whitespace-nowrap">Commission bookings</span>
+                <span className="text-xs text-gray-600 whitespace-nowrap">
+                  {(isEditingPlatformFee
+                    ? platformCommissionEnabledDraft
+                    : platformCommissionEnabled)
+                    ? 'Disable Commission'
+                    : 'Enable Commission'}
+                </span>
               </label>
               {isEditingPlatformFee ? (
                 <>
@@ -3351,10 +3363,20 @@ export function AdminDashboard({
                       }
                       onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
-                      aria-label="Commission bookings"
+                      aria-label={
+                        (isEditingPlatformFee
+                          ? platformCommissionEnabledDraft
+                          : platformCommissionEnabled)
+                          ? 'Disable Commission'
+                          : 'Enable Commission'
+                      }
                     />
                     <span className="text-xs text-gray-600 whitespace-nowrap">
-                      Commission bookings
+                      {(isEditingPlatformFee
+                        ? platformCommissionEnabledDraft
+                        : platformCommissionEnabled)
+                        ? 'Disable Commission'
+                        : 'Enable Commission'}
                     </span>
                   </label>
                   {isEditingPlatformFee ? (
