@@ -731,7 +731,40 @@ export function AdminDashboard({
     setPlatformFeeInput(String(platformFeePercent));
     setPlatformCommissionEnabledDraft(platformCommissionEnabled);
     setIsEditingPlatformFee(false);
-  };  
+  };
+
+  /** Onboarding: checked = all card bookings commissionless (platform commission off). */
+  const handleToggleAllCommissionless = async (allCommissionless: boolean) => {
+    const nextEnabled = !allCommissionless;
+    const prevEnabled = platformCommissionEnabled;
+    setPlatformCommissionEnabled(nextEnabled);
+    setPlatformCommissionEnabledDraft(nextEnabled);
+    setIsSavingPlatformFee(true);
+    try {
+      const data = await api.put<{
+        platformFeePercent: number;
+        platformCommissionEnabled?: boolean;
+      }>('/admin/platform-settings', {
+        platformFeePercent,
+        platformCommissionEnabled: nextEnabled,
+      });
+      const confirmed = data?.platformCommissionEnabled !== false;
+      setPlatformCommissionEnabled(confirmed);
+      setPlatformCommissionEnabledDraft(confirmed);
+      toast.success(
+        confirmed
+          ? `Platform commission on at ${platformFeePercent}%`
+          : `All bookings commissionless (saved rate ${platformFeePercent}%)`
+      );
+    } catch (error: any) {
+      setPlatformCommissionEnabled(prevEnabled);
+      setPlatformCommissionEnabledDraft(prevEnabled);
+      toast.error(error?.message || 'Failed to update commissionless setting');
+    } finally {
+      setIsSavingPlatformFee(false);
+    }
+  };
+
   // Fetch campus performance when campus changes (or aggregate when none selected)
   // Also poll every 30 seconds for real-time updates
   useEffect(() => {
@@ -3790,12 +3823,6 @@ export function AdminDashboard({
 
                 {/* Compact mass apply */}
                 <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
-                  {!platformCommissionEnabled && (
-                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800 text-center">
-                      Platform commission is off. All card bookings are commissionless for every
-                      operator.
-                    </p>
-                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <nav className="flex gap-1 rounded-lg bg-stone-100 p-0.5 shrink-0">
                       <button
@@ -3852,11 +3879,23 @@ export function AdminDashboard({
 
                   <div className="flex flex-col items-center gap-2">
                     <div className="flex flex-wrap items-center justify-center gap-2">
-                      {onboardingIncentiveMode === 'count' ? (
-                        <label className="flex items-center gap-2">
-                          <span className="text-sm text-gray-700 whitespace-nowrap">
-                            Commissionless Bookings:
-                          </span>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!platformCommissionEnabled}
+                          disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                          onChange={(e) => void handleToggleAllCommissionless(e.target.checked)}
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+                          aria-label="Commissionless bookings for all operators"
+                        />
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          {platformCommissionEnabled && onboardingIncentiveMode === 'timeframe'
+                            ? 'Commissionless for:'
+                            : 'Commissionless Bookings:'}
+                        </span>
+                      </label>
+                      {platformCommissionEnabled &&
+                        (onboardingIncentiveMode === 'count' ? (
                           <input
                             type="number"
                             min={0}
@@ -3864,53 +3903,54 @@ export function AdminDashboard({
                             value={onboardingFreeInput}
                             onChange={(e) => setOnboardingFreeInput(e.target.value)}
                             className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                            aria-label="Commissionless bookings count"
                           />
-                        </label>
-                      ) : (
-                        <label className="flex items-center gap-2">
-                          <span className="text-sm text-gray-700 whitespace-nowrap">
-                            Commissionless for:
-                          </span>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={onboardingDurationValue}
-                            onChange={(e) => setOnboardingDurationValue(e.target.value)}
-                            className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
-                          />
-                          <select
-                            value={onboardingDurationUnit}
-                            onChange={(e) =>
-                              setOnboardingDurationUnit(
-                                e.target.value as 'days' | 'weeks' | 'months'
-                              )
-                            }
-                            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                          >
-                            <option value="days">Days</option>
-                            <option value="weeks">Weeks</option>
-                            <option value="months">Months</option>
-                          </select>
-                        </label>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={
-                          isSavingOnboardingBulk ||
-                          (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
-                        }
-                        onClick={() => void handleBulkOnboardingFieldSave('free')}
-                      >
-                        {isSavingOnboardingBulk ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : onboardingScope === 'all' ? (
-                          'Add to All'
                         ) : (
-                          `Add to ${onboardingApplyTargetCount}`
-                        )}
-                      </Button>
+                          <>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={onboardingDurationValue}
+                              onChange={(e) => setOnboardingDurationValue(e.target.value)}
+                              className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm tabular-nums"
+                              aria-label="Commissionless duration"
+                            />
+                            <select
+                              value={onboardingDurationUnit}
+                              onChange={(e) =>
+                                setOnboardingDurationUnit(
+                                  e.target.value as 'days' | 'weeks' | 'months'
+                                )
+                              }
+                              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                            >
+                              <option value="days">Days</option>
+                              <option value="weeks">Weeks</option>
+                              <option value="months">Months</option>
+                            </select>
+                          </>
+                        ))}
+                      {platformCommissionEnabled && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            isSavingOnboardingBulk ||
+                            isSavingPlatformFee ||
+                            (onboardingScope === 'selected' && onboardingSelectedIds.size === 0)
+                          }
+                          onClick={() => void handleBulkOnboardingFieldSave('free')}
+                        >
+                          {isSavingOnboardingBulk ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : onboardingScope === 'all' ? (
+                            'Add to All'
+                          ) : (
+                            `Add to ${onboardingApplyTargetCount}`
+                          )}
+                        </Button>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <label className="flex items-center gap-2">
