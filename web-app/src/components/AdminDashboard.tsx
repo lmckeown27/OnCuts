@@ -2416,8 +2416,9 @@ export function AdminDashboard({
                   </span>
                 </div>
               </label>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+              <div className="inline-flex items-center gap-1.5 select-none">
                 <input
+                  id="platform-commission-enabled-performance"
                   type="checkbox"
                   checked={
                     isEditingPlatformFee
@@ -2427,22 +2428,19 @@ export function AdminDashboard({
                   disabled={isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee}
                   onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
                   className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
-                  aria-label={
-                    (isEditingPlatformFee
-                      ? platformCommissionEnabledDraft
-                      : platformCommissionEnabled)
-                      ? 'Disable Commission'
-                      : 'Enable Commission'
-                  }
+                  aria-labelledby="platform-commission-enabled-performance-label"
                 />
-                <span className="text-xs text-gray-600 whitespace-nowrap">
+                <span
+                  id="platform-commission-enabled-performance-label"
+                  className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
+                >
                   {(isEditingPlatformFee
                     ? platformCommissionEnabledDraft
                     : platformCommissionEnabled)
-                    ? 'Disable Commission'
-                    : 'Enable Commission'}
+                    ? 'Enable Commission'
+                    : 'Disable Commission'}
                 </span>
-              </label>
+              </div>
               {isEditingPlatformFee ? (
                 <>
                   <Button
@@ -3350,8 +3348,9 @@ export function AdminDashboard({
                       %
                     </span>
                   </div>
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                  <div className="inline-flex items-center gap-1.5 select-none">
                     <input
+                      id="platform-commission-enabled-payment"
                       type="checkbox"
                       checked={
                         isEditingPlatformFee
@@ -3363,22 +3362,19 @@ export function AdminDashboard({
                       }
                       onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
-                      aria-label={
-                        (isEditingPlatformFee
-                          ? platformCommissionEnabledDraft
-                          : platformCommissionEnabled)
-                          ? 'Disable Commission'
-                          : 'Enable Commission'
-                      }
+                      aria-labelledby="platform-commission-enabled-payment-label"
                     />
-                    <span className="text-xs text-gray-600 whitespace-nowrap">
+                    <span
+                      id="platform-commission-enabled-payment-label"
+                      className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
+                    >
                       {(isEditingPlatformFee
                         ? platformCommissionEnabledDraft
                         : platformCommissionEnabled)
-                        ? 'Disable Commission'
-                        : 'Enable Commission'}
+                        ? 'Enable Commission'
+                        : 'Disable Commission'}
                     </span>
-                  </label>
+                  </div>
                   {isEditingPlatformFee ? (
                     <>
                       <Button
