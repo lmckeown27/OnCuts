@@ -1,4 +1,4 @@
-const TEAM_CONTACT_EMAIL = 'liam.mckeown38415@gmail.com';
+const TEAM_CONTACT_EMAIL = 'oncutshelp@gmail.com';
 
 const GMAIL_DOMAINS = new Set(['gmail.com', 'googlemail.com']);
 

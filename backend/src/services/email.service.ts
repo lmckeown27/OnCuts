@@ -2025,7 +2025,7 @@ Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
 If you believe a mistake has been made, please contact us at:
-support@oncuts.com
+oncutshelp@gmail.com
 
 We're here to help!
 
@@ -2151,7 +2151,7 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
     <div style="background-color: #f2f5f4; border: 1px solid #bfcdc8; border-radius: 8px; padding: 15px; margin: 20px 0;">
       <p style="color: #3d5149; margin: 0; font-size: 14px;">
         <strong>Think a mistake was made?</strong><br>
-        Contact us at <a href="mailto:support@oncuts.com" style="color: #5a7268; font-weight: 600;">support@oncuts.com</a> and we'll be happy to help.
+        Contact us at <a href="mailto:oncutshelp@gmail.com" style="color: #5a7268; font-weight: 600;">oncutshelp@gmail.com</a> and we'll be happy to help.
       </p>
     </div>
   </div>

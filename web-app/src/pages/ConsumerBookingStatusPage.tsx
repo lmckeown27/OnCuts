@@ -1612,8 +1612,8 @@ export default function ConsumerBookingStatusPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
                 <p className="text-sm text-amber-800">
                   Think a mistake was made? Contact us at{' '}
-                  <a href="mailto:support@oncuts.com" className="font-medium underline">
-                    support@oncuts.com
+                  <a href="mailto:oncutshelp@gmail.com" className="font-medium underline">
+                    oncutshelp@gmail.com
                   </a>
                 </p>
               </div>

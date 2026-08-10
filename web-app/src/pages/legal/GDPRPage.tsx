@@ -5,7 +5,7 @@ import webpageLogo from '../../assets/logos/Webpage_Logo copy.png';
 
 export default function GDPRPage() {
   const navigate = useNavigate();
-  const lastUpdated = 'June 17, 2026';
+  const lastUpdated = 'August 10, 2026';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -43,8 +43,8 @@ export default function GDPRPage() {
           <p className="text-gray-500 mb-4">Last Updated: {lastUpdated}</p>
           <p className="text-gray-600 mb-8">
             For users in the European Union (EU) and European Economic Area (EEA). This page outlines your rights under
-            the General Data Protection Regulation (GDPR) when using OnCuts, including our website, the OnCuts iOS
-            app, and the OnCuts Provider iOS app.
+            the General Data Protection Regulation (GDPR) when using OnCuts, including our website and the OnCuts iOS
+            apps for consumers and operators.
           </p>
 
           <div className="space-y-8 text-gray-700 leading-relaxed">
@@ -57,7 +57,11 @@ export default function GDPRPage() {
                 <Link to="/privacy" className="text-primary-600 hover:text-black underline">
                   Privacy Policy
                 </Link>
-                .
+                . Our{' '}
+                <Link to="/terms" className="text-primary-600 hover:text-black underline">
+                  Terms of Service
+                </Link>{' '}
+                describe how the marketplace, payments, and operator features work.
               </p>
             </section>
 
@@ -65,7 +69,7 @@ export default function GDPRPage() {
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Data Controller</h2>
               <p>
                 OnCuts is the data controller responsible for your personal data. For data protection inquiries,
-                contact us at support@oncuts.com.
+                contact us at oncutshelp@gmail.com.
               </p>
             </section>
 
@@ -74,15 +78,26 @@ export default function GDPRPage() {
               <p>Depending on how you use the Service, we may process:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Identity and contact data (name, email, phone)</li>
-                <li>Account and profile data (campus, role, photos, bio)</li>
-                <li>Booking and transaction data (appointments, payments, tips)</li>
+                <li>Account and profile data (campus, role, photos, bio, display name)</li>
+                <li>
+                  Operator data (services, pricing, availability, portfolio images, public service location pin or
+                  label, service radius, and profile visibility settings such as hide from consumer discovery)
+                </li>
+                <li>
+                  Booking and transaction data (appointments, service payments after operator accept, tips after
+                  completion, refunds, and payout status)
+                </li>
                 <li>Communications data (messages, photos, support requests)</li>
-                <li>Technical data (device, logs, IP address, cookies)</li>
+                <li>
+                  Technical data (device, logs, IP address, cookies, and push notification device tokens when
+                  notifications are enabled)
+                </li>
+                <li>Location data (approximate location from IP; precise location only with permission)</li>
                 <li>Moderation and safety data (blocks, reports, enforcement actions)</li>
-                {/* Google Calendar integration (disabled)
-                <li>Optional calendar data when barbers connect Google Calendar</li>
-                */}
-                <li>Authentication data from Sign in with Apple when used</li>
+                <li>
+                  Authentication data from Sign in with Apple, Sign in with Google, or phone SMS one-time password
+                  (OTP) flows when you use those options
+                </li>
               </ul>
             </section>
 
@@ -92,8 +107,9 @@ export default function GDPRPage() {
 
               <p className="font-semibold mt-4 mb-1">4.1 Contract Performance</p>
               <p>
-                Processing necessary to provide the Service: account creation, bookings, payments, messaging, and
-                customer support.
+                Processing necessary to provide the Service: account creation and verification, bookings, messaging,
+                payments and tips through Stripe, operator applications and payouts, nearby discovery, and customer
+                support.
               </p>
 
               <p className="font-semibold mt-4 mb-1">4.2 Legitimate Interests</p>
@@ -104,9 +120,10 @@ export default function GDPRPage() {
 
               <p className="font-semibold mt-4 mb-1">4.3 Consent</p>
               <p>
-                Processing based on your explicit consent: marketing communications
-                {/* , optional Google Calendar connection */}
-                , and non-essential cookies where applicable.
+                Processing based on your explicit consent: marketing communications, push notifications where consent
+                is required by device or local law, precise location access when you grant it, and non-essential cookies
+                where applicable. You may withdraw consent at any time (for example, by disabling notifications or
+                location in device settings, or by contacting us).
               </p>
 
               <p className="font-semibold mt-4 mb-1">4.4 Legal Obligation</p>
@@ -120,9 +137,10 @@ export default function GDPRPage() {
                 behalf, including:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>Stripe (payments and payouts)</li>
-                <li>Apple (Sign in with Apple authentication)</li>
-                <li>Google (optional Calendar integration for barbers)</li>
+                <li>Stripe (payment processing, Connect onboarding, and payouts)</li>
+                <li>Apple (Sign in with Apple authentication; Apple Push Notification service where used)</li>
+                <li>Google (Sign in with Google authentication; Firebase Cloud Messaging where used)</li>
+                <li>SMS / OTP providers (phone verification codes where offered)</li>
                 <li>Cloud infrastructure and email delivery providers</li>
               </ul>
               <p className="mt-3">
@@ -172,7 +190,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">7. How to Exercise Your Rights</h2>
               <p>To exercise any GDPR rights, contact us at:</p>
-              <p className="mt-2">Email: support@oncuts.com</p>
+              <p className="mt-2">Email: oncutshelp@gmail.com</p>
               <p className="mt-2">
                 Include &quot;GDPR Request&quot; in the subject line and provide enough information to verify your
                 identity. We will respond within 30 days.
@@ -197,8 +215,15 @@ export default function GDPRPage() {
               <p>We retain personal data only as long as necessary:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Active accounts: data retained while the account is active</li>
-                <li>After deletion: core data deleted within 30 days; some data retained for legal compliance (up to 7 years for financial records)</li>
+                <li>
+                  After deletion: core data deleted within 30 days; some data retained for legal compliance (up to 7
+                  years for financial records)
+                </li>
                 <li>Moderation records: retained as needed for safety and legal obligations</li>
+                <li>
+                  Push device tokens: retained until you disable notifications, uninstall the app, or the token becomes
+                  invalid
+                </li>
                 <li>Backups: removed from backup systems within 90 days</li>
               </ul>
             </section>
@@ -227,7 +252,7 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">12. Contact Information</h2>
               <p>For GDPR-related questions or to exercise your rights:</p>
-              <p className="mt-2">Email: support@oncuts.com</p>
+              <p className="mt-2">Email: oncutshelp@gmail.com</p>
               <p className="mt-1">Subject line: GDPR Request - [Your Request Type]</p>
             </section>
           </div>

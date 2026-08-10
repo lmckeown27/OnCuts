@@ -70,7 +70,7 @@ These areas use OnCuts as the primary name and should be treated as **source of 
 | Stripe statement descriptors | `payout.service.ts`, `payout-v2.service.ts`, config | `OnCuts`, `OnCuts Payout`, `STRIPE_STATEMENT_DESCRIPTOR=ONCUT` |
 | Google Calendar integration | `google-calendar.service.ts` | OnCuts in user-facing strings |
 | Nginx production config | `server-nginx.conf` | `oncuts.com` only |
-| Support email (README) | `README.md` | `support@oncuts.com` |
+| Support email (README) | `README.md` | `oncutshelp@gmail.com` |
 
 ### iOS (user-visible only)
 

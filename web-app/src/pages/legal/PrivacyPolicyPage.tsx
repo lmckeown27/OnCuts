@@ -5,7 +5,7 @@ import webpageLogo from '../../assets/logos/Webpage_Logo copy.png';
 
 export default function PrivacyPolicyPage() {
   const navigate = useNavigate();
-  const lastUpdated = 'June 17, 2026';
+  const lastUpdated = 'August 10, 2026';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -47,12 +47,16 @@ export default function PrivacyPolicyPage() {
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
                 OnCuts is committed to protecting your privacy. This Privacy Policy explains how we collect, use,
-                disclose, and safeguard your information when you use our website, the OnCuts iOS app for consumers,
-                the OnCuts Provider iOS app for barbers, and related services (collectively, the &quot;Service&quot;).
+                disclose, and safeguard your information when you use our website, the OnCuts iOS apps for consumers
+                and operators, and related services (collectively, the &quot;Service&quot;).
               </p>
               <p className="mt-3">
                 Please read this Privacy Policy carefully. By using the Service, you agree to the collection and use of
-                information in accordance with this policy.
+                information in accordance with this policy. For EU/EEA users, see also our{' '}
+                <Link to="/gdpr" className="text-primary-600 hover:text-black underline">
+                  GDPR page
+                </Link>
+                .
               </p>
             </section>
 
@@ -62,32 +66,49 @@ export default function PrivacyPolicyPage() {
               <p className="font-semibold mt-4 mb-2">2.1 Information You Provide</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Account Information: Name, email address, password (encrypted), phone number when provided</li>
-                <li>Profile Information: Profile photo, bio, campus affiliation</li>
-                <li>Barber Information: Services, pricing, availability, portfolio images, business locations</li>
-                <li>Booking Information: Appointment dates, times, services requested, locations, notes</li>
-                <li>Payment Information: Payment method details processed by Stripe (we do not store full card numbers)</li>
+                <li>Profile Information: Profile photo, bio, campus affiliation, display name</li>
+                <li>
+                  Operator Information: Services, pricing, availability, portfolio images, public service location pin
+                  or label, service radius, and profile visibility settings (including whether your profile is hidden
+                  from consumer discovery)
+                </li>
+                <li>Booking Information: Appointment dates, times, services requested, meeting details, notes</li>
+                <li>
+                  Payment Information: Payment method details processed by Stripe (we do not store full card numbers);
+                  payout and Connect account status for Operators
+                </li>
                 <li>Communications: Messages, photos, and support inquiries sent through the Service</li>
                 <li>Reviews and Ratings: Feedback you leave for other users</li>
-                <li>Application Information: Information submitted in barber applications</li>
+                <li>Application Information: Information submitted in operator applications</li>
               </ul>
 
               <p className="font-semibold mt-4 mb-2">2.2 Information Collected Automatically</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Device Information: Device type, operating system, browser type, app version</li>
                 <li>Usage Data: Pages or screens visited, features used, interaction logs</li>
-                <li>Location Data: General location based on IP address; precise location only with permission</li>
+                <li>
+                  Location Data: General location based on IP address; precise device location only with your
+                  permission, used for features such as nearby discovery and setting or updating an operator service
+                  pin
+                </li>
+                <li>
+                  Push Notification Data: Device tokens and related delivery metadata when you enable notifications
+                  (for example Apple Push Notification service or Firebase Cloud Messaging)
+                </li>
                 <li>Log Data: IP address, access times, referring URLs, error logs</li>
                 <li>Cookies and Tokens: Session cookies, authentication tokens, preference data</li>
               </ul>
 
               <p className="font-semibold mt-4 mb-2">2.3 Information from Third Parties</p>
               <ul className="list-disc pl-6 space-y-1">
-                <li>Stripe: Payment status, transaction confirmations, payout data</li>
+                <li>Stripe: Payment status, transaction confirmations, Connect onboarding status, and payout data</li>
                 <li>Apple: Sign in with Apple identity token, email, and name when you choose Apple authentication</li>
-                {/* Google Calendar integration (disabled)
-                <li>Google: Calendar busy/free data when you connect Google Calendar (barbers only)</li>
-                */}
-                <li>Social Media: Public profile or portfolio links you choose to display (e.g., Instagram)</li>
+                <li>Google: Sign in with Google identity information when you choose Google authentication</li>
+                <li>
+                  Phone OTP Providers: Phone number verification status and related delivery metadata when you use SMS
+                  one-time password sign-in where offered
+                </li>
+                <li>Social Media: Public profile or portfolio links you choose to display (for example, Instagram)</li>
               </ul>
             </section>
 
@@ -96,10 +117,14 @@ export default function PrivacyPolicyPage() {
               <p>We use the information we collect to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Provide, maintain, and improve the Service</li>
-                <li>Process bookings, reschedules, cancellations, and payments</li>
-                <li>Facilitate communication between Consumers and Barbers</li>
-                <li>Review barber applications and administer the platform</li>
-                <li>Send transactional notifications (confirmations, reminders, receipts)</li>
+                <li>Process bookings, reschedules, cancellations, payments, tips, refunds, and operator payouts</li>
+                <li>Show Consumers nearby or relevant Operators based on location and profile visibility</li>
+                <li>Facilitate communication between Consumers and Operators</li>
+                <li>Review operator applications and administer the platform, including commission and incentive settings</li>
+                <li>
+                  Send transactional notifications (confirmations, reminders, receipts, messages, and booking updates),
+                  including push notifications when enabled
+                </li>
                 <li>Send promotional communications with your consent</li>
                 <li>Detect, prevent, and address fraud, abuse, and security issues</li>
                 <li>Enforce community standards, including content moderation and account actions</li>
@@ -114,14 +139,17 @@ export default function PrivacyPolicyPage() {
 
               <p className="font-semibold mt-4 mb-2">4.1 With Other Users</p>
               <p>
-                Consumers and Barbers can see profile information, reviews, and booking details needed to complete
-                appointments. Messages you send are visible to the intended recipient.
+                Consumers and Operators can see profile information, reviews, and booking details needed to complete
+                appointments. An Operator&apos;s public service location information may appear in discovery when the
+                profile is not hidden. Messages you send are visible to the intended recipient.
               </p>
 
               <p className="font-semibold mt-4 mb-2">4.2 With Service Providers</p>
               <ul className="list-disc pl-6 space-y-1">
-                <li>Stripe: Payment processing and payouts</li>
-                <li>Apple and Google: Authentication and optional calendar integration</li>
+                <li>Stripe: Payment processing, Connect onboarding, and payouts</li>
+                <li>Apple and Google: Authentication where you choose those sign-in options</li>
+                <li>SMS / OTP providers: Delivery of phone verification codes where offered</li>
+                <li>Push notification providers: Delivery of device notifications when enabled</li>
                 <li>Cloud Hosting: Data storage and infrastructure</li>
                 <li>Email Services: Transactional and support email delivery</li>
               </ul>
@@ -179,6 +207,7 @@ export default function PrivacyPolicyPage() {
                 <li>Transaction records for tax and accounting purposes</li>
                 <li>Communications related to disputes, safety, or legal matters</li>
                 <li>Moderation and enforcement records</li>
+                <li>Device tokens until you disable notifications, uninstall the app, or the token becomes invalid</li>
               </ul>
             </section>
 
@@ -190,7 +219,7 @@ export default function PrivacyPolicyPage() {
                 <li>Correction: Request correction of inaccurate data</li>
                 <li>Deletion: Request deletion of your data (subject to legal requirements)</li>
                 <li>Portability: Request your data in a portable format</li>
-                <li>Opt-Out: Unsubscribe from marketing communications</li>
+                <li>Opt-Out: Unsubscribe from marketing communications; disable push notifications in device settings</li>
                 <li>Restrict Processing: Request limitations on how we use your data</li>
               </ul>
               <p className="mt-3">
@@ -198,7 +227,7 @@ export default function PrivacyPolicyPage() {
                 <Link to="/gdpr" className="text-primary-600 hover:text-black underline">
                   GDPR page
                 </Link>{' '}
-                for additional rights. To exercise any rights, contact us at support@oncuts.com.
+                for additional rights. To exercise any rights, contact us at oncutshelp@gmail.com.
               </p>
             </section>
 
@@ -219,20 +248,13 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">10. Third-Party Links</h2>
               <p>
-                Our Service may contain links to third-party websites or services (e.g., Instagram portfolios, Stripe,
-                App Store pages). We are not responsible for the privacy practices of these third parties.
+                Our Service may contain links to third-party websites or services (for example, Instagram portfolios,
+                Stripe, App Store pages). We are not responsible for the privacy practices of these third parties.
               </p>
             </section>
 
-            {/* Google Calendar integration (disabled)
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">11. Google API Services</h2>
-              ...
-            </section>
-            */}
-
-            <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">12. Children&apos;s Privacy</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">11. Children&apos;s Privacy</h2>
               <p>
                 The Service is not intended for users under 18 years of age. We do not knowingly collect personal
                 information from children. If we become aware that we have collected data from a child, we will take
@@ -241,7 +263,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">13. Changes to This Policy</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">12. Changes to This Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. We will post the updated policy on this page and
                 update the &quot;Last Updated&quot; date. Material changes may be communicated via email or through the
@@ -250,9 +272,9 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">14. Contact Us</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">13. Contact Us</h2>
               <p>If you have any questions about this Privacy Policy, please contact us at:</p>
-              <p className="mt-2">Email: support@oncuts.com</p>
+              <p className="mt-2">Email: oncutshelp@gmail.com</p>
             </section>
           </div>
         </div>

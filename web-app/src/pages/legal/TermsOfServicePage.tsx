@@ -6,7 +6,7 @@ import webpageLogo from '../../assets/logos/Webpage_Logo copy.png';
 export default function TermsOfServicePage() {
   const navigate = useNavigate();
 
-  const lastUpdated = 'June 17, 2026';
+  const lastUpdated = 'August 10, 2026';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,8 +49,8 @@ export default function TermsOfServicePage() {
               <p>
                 Welcome to OnCuts (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). These Terms of Service
                 (&quot;Terms&quot;) govern your access to and use of the OnCuts platform, including our website,
-                the OnCuts iOS app for consumers, the OnCuts Provider iOS app for barbers, and all related services
-                (collectively, the &quot;Service&quot;).
+                the OnCuts iOS apps for consumers and operators, and all related services (collectively, the
+                &quot;Service&quot;).
               </p>
               <p className="mt-3">
                 By accessing or using the Service, you agree to be bound by these Terms. If you do not agree, you may
@@ -61,47 +61,49 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Description of Service</h2>
               <p>
-                OnCuts is a marketplace platform that connects consumers seeking grooming services
-                (&quot;Consumers&quot;) with independent barbers (&quot;Barbers&quot;) at college and university
-                campuses. We facilitate:
+                OnCuts is a marketplace platform that connects people seeking grooming and related personal services
+                (&quot;Consumers&quot;) with independent service providers (&quot;Operators,&quot; also referred to as
+                barbers or beauty providers where applicable). We facilitate:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>Discovery and browsing of barber profiles, services, and portfolios</li>
+                <li>Discovery and browsing of operator profiles, services, portfolios, and service locations</li>
                 <li>Booking and scheduling of appointments on iOS and the web</li>
-                <li>In-app and web messaging between Consumers and Barbers</li>
-                <li>Secure payment processing after services are completed</li>
+                <li>In-app and web messaging between Consumers and Operators</li>
+                <li>Secure payment processing when an Operator accepts a booking, plus optional tips after completion</li>
                 <li>Reviews and ratings</li>
-                <li>Barber application review and platform administration</li>
+                <li>Operator applications, onboarding, and platform administration</li>
               </ul>
               <p className="mt-3">
                 <strong>Important:</strong> OnCuts is a platform that connects users. We are not a grooming service
-                provider. Barbers are independent contractors, not employees of OnCuts.
+                provider. Operators are independent contractors, not employees of OnCuts.
               </p>
               <p className="mt-3">
-                Consumers may use the OnCuts iOS app or our website. Barbers manage bookings, availability,
-                messaging, and payouts through the OnCuts Provider iOS app and/or the barber web dashboard, where
-                available.
+                Consumers may use the OnCuts iOS app or our website. Operators manage bookings, availability,
+                messaging, profile visibility, and payouts through the operator experience on iOS and/or the web
+                dashboard, where available.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">3. Account Registration</h2>
               <p>
-                <strong>Account creation:</strong> On our verification page you must enter the same email and password
-                you used to sign up, accept these Terms of Service, and then enter the verification code we email you.
-                If you did not provide a first or last name at signup, we may set your display name from your email
-                address. A user account is created after you successfully verify with your code. Submitting the
-                registration form or receiving a verification email alone does not create an account.
+                <strong>Account creation:</strong> When you register with email and password, you must verify your
+                email with the code we send you and accept these Terms. Submitting the registration form or receiving
+                a verification email alone does not create an account. A user account is created after successful
+                verification. If you did not provide a first or last name at signup, we may set your display name from
+                your email address.
               </p>
               <p className="mt-3">
-                You may also sign in with Apple where supported. If you use Sign in with Apple, you authorize us to
-                receive the information Apple provides (such as your Apple ID token, email, or name on first sign-in).
+                Where supported, you may also sign in with Apple or Google, or complete phone-based one-time password
+                (OTP) authentication. If you use a third-party sign-in or OTP provider, you authorize us to receive the
+                identity information that provider shares with us (such as an identity token, email, name, or phone
+                number).
               </p>
               <p className="mt-3">To use certain features of the Service, you must create an account. You agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Provide accurate, current, and complete information</li>
                 <li>Maintain and promptly update your account information</li>
-                <li>Maintain the security of your password and account</li>
+                <li>Maintain the security of your password, devices, and account</li>
                 <li>Accept responsibility for all activities under your account</li>
                 <li>Notify us immediately of any unauthorized use</li>
               </ul>
@@ -115,31 +117,39 @@ export default function TermsOfServicePage() {
               <h2 className="text-xl font-bold text-gray-900 mb-3">4. Consumer Terms</h2>
               <p>As a Consumer using the Service, you agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
-                <li>Provide accurate booking information including preferred date, time, and location</li>
+                <li>Provide accurate booking information including preferred date, time, and meeting details</li>
                 <li>Arrive on time for scheduled appointments</li>
-                <li>Cancel or reschedule appointments with reasonable notice</li>
-                <li>Treat Barbers with respect and professionalism</li>
-                <li>Pay the agreed-upon price for services rendered after the service is marked complete</li>
+                <li>Cancel or update appointments according to the cancellation and reschedule rules below</li>
+                <li>Treat Operators with respect and professionalism</li>
+                <li>
+                  Pay the agreed service price after the Operator accepts your booking, and pay any tip you choose after
+                  the service is marked complete
+                </li>
                 <li>Leave honest and fair reviews based on actual experiences</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">5. Barber Terms</h2>
-              <p>As a Barber using the Service, you agree to:</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">5. Operator Terms</h2>
+              <p>As an Operator using the Service, you agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Submit an application and receive approval from OnCuts administrators before offering services</li>
-                <li>Maintain accurate and up-to-date profile information, including services and pricing</li>
+                <li>Maintain accurate and up-to-date profile information, including services, pricing, and availability</li>
+                <li>
+                  Maintain a public service location (such as a map pin or service area) when required for discovery,
+                  and understand that hiding your profile removes you from consumer discovery while you remain an
+                  Operator
+                </li>
                 <li>Respond to booking requests in a timely manner</li>
                 <li>Honor confirmed bookings and arrive on time</li>
                 <li>Provide professional, quality services</li>
                 <li>Comply with all applicable laws, regulations, and licensing requirements</li>
                 <li>Maintain appropriate insurance coverage as required by law</li>
                 <li>Treat Consumers with respect and professionalism</li>
-                <li>Connect a valid Stripe account to receive payouts</li>
+                <li>Connect a valid Stripe Express account with payouts enabled so Consumers can book and pay you</li>
               </ul>
               <p className="mt-3">
-                Barbers are independent contractors and are solely responsible for their services, business practices,
+                Operators are independent contractors and are solely responsible for their services, business practices,
                 tax obligations, and compliance with applicable laws.
               </p>
             </section>
@@ -149,37 +159,54 @@ export default function TermsOfServicePage() {
 
               <p className="font-semibold mt-4 mb-2">6.1 Payment Processing</p>
               <p>
-                All payments are processed securely through Stripe, our third-party payment processor. By using the
-                Service, you agree to Stripe&apos;s terms of service. We do not store your full credit card information
-                on our servers. Supported payment methods may include card, Apple Pay, and Google Pay.
+                All card and wallet payments are processed securely through Stripe, our third-party payment processor.
+                By using the Service, you agree to Stripe&apos;s terms of service. We do not store your full credit card
+                information on our servers. Supported payment methods may include card, Apple Pay, and Google Pay.
               </p>
 
               <p className="font-semibold mt-4 mb-2">6.2 When Consumers Pay</p>
               <p>
-                Consumers pay after a haircut is complete. Once the Barber marks the booking as complete, the Consumer
-                receives a payment prompt in the OnCuts app or on the web.
+                Consumers pay the service amount after an Operator accepts the booking. Payment is completed in the
+                OnCuts app or on the web. After the Operator marks the service complete, the Consumer may add an
+                optional tip (preset amounts or a custom amount, where offered).
               </p>
 
-              <p className="font-semibold mt-4 mb-2">6.3 Platform Fee and Barber Payouts</p>
+              <p className="font-semibold mt-4 mb-2">6.3 Platform Fee and Operator Payouts</p>
               <p>
-                OnCuts charges a 15% platform fee on the service amount for completed bookings. Barbers receive 85%
-                of the service amount. Tips, when added, are passed to the Barber in full. Payout timing may vary based
-                on Stripe and banking policies.
+                OnCuts charges a platform fee on eligible card service payments. The fee percentage is set by OnCuts
+                (default 15%) and may change. Operators receive the service amount minus any applicable platform fee.
+                Tips are passed to the Operator in full and do not include a platform fee.
+              </p>
+              <p className="mt-3">
+                OnCuts may grant Operators commission-free bookings (for example, a default allotment for new Operators,
+                or a time-limited commission-free window). During those bookings, a platform-funded kickback may also
+                apply when configured. OnCuts may enable or disable platform commission globally. Fee, commission-free,
+                and kickback details shown in the operator dashboard or booking flow control the applicable amount for
+                a given booking.
+              </p>
+              <p className="mt-3">
+                Payout timing depends on Stripe Connect (including Express schedules and any Instant payout options) and
+                banking policies. New Stripe accounts may wait several business days after the first live card payment
+                before the first bank payout.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">7. Cancellations, Reschedules, and Refunds</h2>
               <p>
-                While a booking is pending, Consumers may edit the time, date, location, or notes directly. After a
-                Barber accepts, schedule changes require the Barber&apos;s approval through a reschedule request.
-                Consumers may cancel before the service is marked complete.
+                Before a service is marked complete, Consumers may update time, date, meeting details, or notes. The
+                Operator is notified of those changes. Consumers may cancel anytime before completion.
               </p>
               <p className="mt-3">
-                Refund eligibility depends on the timing of the cancellation, the reason for cancellation, whether the
-                service was partially or fully rendered, and applicable payment processor rules. Disputes between
-                Consumers and Barbers should first be resolved directly. OnCuts may assist in mediation but is not
-                obligated to issue refunds.
+                If a Consumer cancels a paid booking within one (1) hour of the appointment start time, the service
+                payment is non-refundable. If the Operator cancels a paid booking, the Consumer receives a full refund
+                of the service payment, subject to Stripe and banking processing times.
+              </p>
+              <p className="mt-3">
+                Refund eligibility outside those rules depends on timing, the reason for cancellation, whether the
+                service was partially or fully rendered, and payment processor rules. Disputes between Consumers and
+                Operators should first be resolved directly. OnCuts may assist in mediation but is not obligated to
+                issue refunds beyond what these Terms and applicable law require.
               </p>
             </section>
 
@@ -240,15 +267,15 @@ export default function TermsOfServicePage() {
                 ERROR-FREE.
               </p>
               <p className="mt-3">
-                WE DO NOT ENDORSE, WARRANT, OR GUARANTEE ANY BARBER&apos;S SERVICES, QUALIFICATIONS, OR WORK QUALITY.
-                YOU USE THE SERVICE AND ENGAGE WITH BARBERS AT YOUR OWN RISK.
+                WE DO NOT ENDORSE, WARRANT, OR GUARANTEE ANY OPERATOR&apos;S SERVICES, QUALIFICATIONS, OR WORK QUALITY.
+                YOU USE THE SERVICE AND ENGAGE WITH OPERATORS AT YOUR OWN RISK.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">12. Limitation of Liability</h2>
               <p>
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, AVILAPLATFORMS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, ONCUTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
                 SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED
                 DIRECTLY OR INDIRECTLY.
               </p>
@@ -301,7 +328,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">17. Contact Us</h2>
               <p>If you have any questions about these Terms, please contact us at:</p>
-              <p className="mt-2">Email: support@oncuts.com</p>
+              <p className="mt-2">Email: oncutshelp@gmail.com</p>
             </section>
           </div>
         </div>

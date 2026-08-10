@@ -10,7 +10,7 @@ public enum CampusCutsLegal {
         """
         By using this app, you agree to OnCuts’ Terms of Service and community expectations for booking, messaging, and payments.
 
-        The full in-app Terms of Service are shown when you create an account. For questions, contact support@oncuts.com.
+        The full in-app Terms of Service are shown when you create an account. For questions, contact oncutshelp@gmail.com.
 
         You confirm you are eligible to use the service where you live. Messaging and bookings may generate notifications; adjust preferences in your profile where supported.
         """

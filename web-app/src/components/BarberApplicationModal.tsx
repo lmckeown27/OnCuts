@@ -535,13 +535,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 Think this was a mistake? Contact us:
               </p>
               <a 
-                href="mailto:support@oncuts.com?subject=Barber Access Removed - Appeal"
+                href="mailto:oncutshelp@gmail.com?subject=Barber Access Removed - Appeal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
               >
                 <Mail className="w-4 h-4" />
-                support@oncuts.com
+                oncutshelp@gmail.com
               </a>
             </div>
           </div>
@@ -652,13 +652,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 Having issues or think your application wasn't submitted?
               </p>
               <a 
-                href="mailto:support@oncuts.com?subject=Barber Application Issue"
+                href="mailto:oncutshelp@gmail.com?subject=Barber Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
               >
                 <Mail className="w-4 h-4" />
-                support@oncuts.com
+                oncutshelp@gmail.com
               </a>
             </div>
           </div>

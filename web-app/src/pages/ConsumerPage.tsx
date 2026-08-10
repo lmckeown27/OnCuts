@@ -1090,12 +1090,12 @@ export default function ConsumerPage() {
             <p className="text-sm text-gray-500 mb-6">
               If you suspect your application was not sent, please contact{' '}
               <a 
-                href="mailto:support@oncuts.com?subject=Barber Application Issue"
+                href="mailto:oncutshelp@gmail.com?subject=Barber Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-600 hover:text-black font-medium"
               >
-                support@oncuts.com
+                oncutshelp@gmail.com
               </a>
             </p>
             <button
@@ -1127,7 +1127,7 @@ export default function ConsumerPage() {
               Your previous application was not approved. You can submit a new application with updated information.
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              If you have questions about why your application was rejected, please contact <span className="text-primary-600 font-medium">support@oncuts.com</span>
+              If you have questions about why your application was rejected, please contact <span className="text-primary-600 font-medium">oncutshelp@gmail.com</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
@@ -1423,8 +1423,8 @@ export default function ConsumerPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
                 <p className="text-sm text-amber-800">
                   Think a mistake was made? Contact us at{' '}
-                  <a href="mailto:support@oncuts.com" className="font-medium underline">
-                    support@oncuts.com
+                  <a href="mailto:oncutshelp@gmail.com" className="font-medium underline">
+                    oncutshelp@gmail.com
                   </a>
                 </p>
               </div>

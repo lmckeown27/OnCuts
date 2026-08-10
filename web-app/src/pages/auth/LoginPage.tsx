@@ -276,7 +276,7 @@ export default function LoginPage() {
             <p className="text-gray-500 text-sm">
               Need help?{' '}
               <a 
-                href="mailto:support@oncuts.com"
+                href="mailto:oncutshelp@gmail.com"
                 className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />

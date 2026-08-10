@@ -156,7 +156,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_16_char_app_password
-EMAIL_FROM="OnCuts <support@oncuts.com>"
+EMAIL_FROM="OnCuts <oncutshelp@gmail.com>"
 FRONTEND_URL=https://oncuts.com
 AUTO_VERIFY_EMAILS=false
 
@@ -660,7 +660,7 @@ OnCuts/
 ## 📞 Support
 
 - **Issues:** Open a GitHub issue
-- **Email:** support@oncuts.com
+- **Email:** oncutshelp@gmail.com
 - **Production URL:** https://oncuts.com
 
 ---
