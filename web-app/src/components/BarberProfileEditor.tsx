@@ -123,7 +123,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setProfilePhoto(data.profile_photo_url || data.profile_picture_url || '');
-      setIsHidden(!data.is_active); // is_active=false means hidden
+      setIsHidden(Boolean(data.is_hidden));
       
       setIsLoading(false);
     } catch (error: any) {
@@ -146,7 +146,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         display_name: displayName,
         bio,
         instagram_handle: instagramHandle,
-        is_active: !isHidden, // Hidden = not active
+        is_hidden: isHidden,
       };
 
       await barberService.updateBarberProfile(barber.id, updateData);

@@ -146,6 +146,7 @@ router.get(
         JOIN users u ON b."userId" = u.id
         WHERE b."campusId" = $1
           AND b."isActive" = true
+          AND b.is_hidden = false
           AND (u."isBanned" IS NOT TRUE)
           ${excludeSql}
           ${peerBarberSql}

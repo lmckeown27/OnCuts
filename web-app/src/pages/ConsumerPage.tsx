@@ -391,9 +391,15 @@ export default function ConsumerPage() {
       if (user && user.has_barber_profile === undefined) {
         try {
           const barberProfile = await barberService.getBarberByUserId(user.id);
-          // Only consider as having barber profile if it exists AND is active
-          // Demoted barbers have is_active = false
-          if (barberProfile && barberProfile.is_active !== false) {
+          // Operator profile exists if row is present and account is not demoted.
+          // Marketplace hide (is_hidden) must not clear has_barber_profile.
+          const role = String(
+            (barberProfile as { user_type?: string } | null)?.user_type || user.user_type || ''
+          ).toUpperCase();
+          const isDemoted =
+            barberProfile?.is_active === false &&
+            (role === 'CONSUMER' || role === 'STUDENT');
+          if (barberProfile && !isDemoted) {
             setUser({ ...user, has_barber_profile: true });
           } else {
             setUser({ ...user, has_barber_profile: false });

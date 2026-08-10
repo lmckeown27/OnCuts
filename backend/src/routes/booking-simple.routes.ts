@@ -242,12 +242,19 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Get barber record ID from barbers table (bookings.barberId references barbers.id, not users.id)
     const barberResult = await pool.query(
-      'SELECT id FROM barbers WHERE id = $1 OR "userId" = $1',
+      `SELECT id, "isActive", is_hidden FROM barbers WHERE id = $1 OR "userId" = $1`,
       [barberId]
     );
     
     if (barberResult.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'Barber not found' });
+    }
+
+    if (barberResult.rows[0].isActive === false || barberResult.rows[0].is_hidden === true) {
+      return res.status(400).json({
+        success: false,
+        error: 'This provider is not currently accepting bookings',
+      });
     }
     
     const barberRecordId = barberResult.rows[0].id;
@@ -802,7 +809,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       `SELECT b.id, u.first_name, u.last_name
        FROM barbers b
        JOIN users u ON b."userId" = u.id
-       WHERE u."campusId" = $1 AND b."isActive" = true AND (u."isBanned" IS NOT TRUE)
+       WHERE u."campusId" = $1 AND b."isActive" = true AND b.is_hidden = false AND (u."isBanned" IS NOT TRUE)
        ORDER BY u.first_name, u.last_name`,
       [campusId]
     );

@@ -269,6 +269,8 @@ interface Barber {
   email: string;
   profileImageUrl?: string;
   isActive: boolean;
+  /** Marketplace visibility; true = hidden from consumers */
+  isHidden?: boolean;
   campusId?: string | null;
   campusName?: string | null;
   serviceLocationLabel?: string | null;
@@ -4299,7 +4301,7 @@ export function AdminDashboard({
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {/* Visible Barbers (within Barbers tab) */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'visible' && (() => {
-                  const activeBarbers = filteredAllBarbers.filter(b => b.isActive);
+                  const activeBarbers = filteredAllBarbers.filter(b => b.isActive && !b.isHidden);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? activeBarbers
                     : activeBarberStripeFilter === 'setup'
@@ -4352,8 +4354,8 @@ export function AdminDashboard({
                 
                 {/* Hidden Barbers (within Barbers tab) */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'hidden' && (
-                  filteredAllBarbers.filter(b => !b.isActive).length > 0 ? (
-                    filteredAllBarbers.filter(b => !b.isActive).map(barber => (
+                  filteredAllBarbers.filter(b => b.isHidden || !b.isActive).length > 0 ? (
+                    filteredAllBarbers.filter(b => b.isHidden || !b.isActive).map(barber => (
                       <button
                         key={barber.id}
                         onClick={() => handleBarberClick(barber)}
@@ -4541,7 +4543,7 @@ export function AdminDashboard({
               <div className="space-y-4 max-h-80 overflow-y-auto">
                 {/* Barbers Tab - Visible */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'visible' && (() => {
-                  const visibleBarbers = filteredBarbers.filter(b => b.isActive);
+                  const visibleBarbers = filteredBarbers.filter(b => b.isActive && !b.isHidden);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? visibleBarbers
                     : activeBarberStripeFilter === 'setup'
@@ -4592,7 +4594,7 @@ export function AdminDashboard({
                 
                 {/* Barbers Tab - Hidden */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'hidden' && (() => {
-                  const hiddenBarbers = filteredBarbers.filter(b => !b.isActive);
+                  const hiddenBarbers = filteredBarbers.filter(b => b.isHidden || !b.isActive);
                   
                   return hiddenBarbers.length > 0 ? (
                     <div className="space-y-2">

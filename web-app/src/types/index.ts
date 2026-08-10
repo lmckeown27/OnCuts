@@ -138,6 +138,8 @@ export interface Barber {
   total_bookings: number;
   total_reviews?: number;
   is_active: boolean;
+  /** When true, hidden from consumer discovery (operator remains active). */
+  is_hidden?: boolean;
   profile_photo_url?: string;
   profile_picture_url?: string; // Alias from users table join
   portfolio?: PortfolioImage[];

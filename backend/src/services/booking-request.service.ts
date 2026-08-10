@@ -112,6 +112,7 @@ export async function fetchAlternativeBarbers(
       WHERE b."campusId" = $1
         AND b.id != $2
         AND b."isActive" = true
+        AND b.is_hidden = false
         AND b."isOnboarded" = true
         AND (u."isBanned" IS NOT TRUE)
         AND EXISTS (

@@ -3026,6 +3026,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u.email,
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
+        b.is_hidden,
         c.id as campus_id,
         c.name as campus_name,
         b.service_location_label,
@@ -3069,6 +3070,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
+        isHidden: row.is_hidden === true,
         campusId: row.campus_id?.toString(),
         campusName: row.campus_name,
         serviceLocationLabel: row.service_location_label
@@ -3614,6 +3616,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.email,
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
+        b.is_hidden,
         nearest.id as campus_id,
         nearest.name as campus_name,
         b.service_location_label,
@@ -3667,6 +3670,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
+        isHidden: row.is_hidden === true,
         campusId: row.campus_id?.toString() || null,
         campusName: row.campus_name || null,
         serviceLocationLabel: row.service_location_label

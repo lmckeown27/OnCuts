@@ -115,8 +115,8 @@ class BarberService {
     await api.delete(`/barbers/portfolio/${imageId}`);
   }
 
-  async toggleVacationMode(barberId: string, isActive: boolean): Promise<Barber> {
-    return await api.put<Barber>(`/barbers/${barberId}`, { is_active: isActive });
+  async toggleVacationMode(barberId: string, isHidden: boolean): Promise<Barber> {
+    return await api.put<Barber>(`/barbers/${barberId}`, { is_hidden: isHidden });
   }
 
   /**

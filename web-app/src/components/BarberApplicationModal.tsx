@@ -185,7 +185,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             reapplyAllowed = Boolean(
               (barberProfile as { reapply_allowed?: boolean } | null)?.reapply_allowed
             );
-            if (barberProfile && barberProfile.is_active === false && !reapplyAllowed) {
+            if (
+              barberProfile &&
+              barberProfile.is_active === false &&
+              !reapplyAllowed &&
+              // Demotion sets role to CONSUMER; self-hide must not look like demotion
+              String((barberProfile as { user_type?: string }).user_type || '').toUpperCase() === 'CONSUMER'
+            ) {
               setIsDemotedBarber(true);
               setExistingApplication(null);
               return; // Don't check for application if demoted

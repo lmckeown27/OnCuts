@@ -81,6 +81,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
+        b.is_hidden,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
@@ -121,19 +122,18 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex += 2;
     }
 
-    // Build WHERE clause - admin requests can to include hidden barbers
-    // When includeHidden=true (CM view), show ALL barbers including those without Stripe
-    // When includeHidden=false (consumer view), only show active barbers with Stripe setup
+    // Build WHERE clause - admin requests can include hidden barbers
+    // When includeHidden=true (CM view), show ALL barbers including those without Stripe / is_hidden
+    // When includeHidden=false (consumer view), only show active, listed barbers with Stripe setup
     const shouldIncludeHidden = includeHidden === 'true';
     
     // Filter by user role = 'BARBER' or 'CAMPUS_MANAGER' to exclude demoted users
     // Campus managers are still barbers who can accept bookings
-    // When includeHidden=true (CM view), show all barbers including those without Stripe or inactive
-    // When includeHidden=false (consumer view), only show active barbers with Stripe setup
+    // is_hidden is marketplace visibility only; isActive is demotion / account liveness
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND u.stripe_charges_enabled = true AND (u."isBanned" IS NOT TRUE)'}
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND b.is_hidden = false AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND u.stripe_charges_enabled = true AND (u."isBanned" IS NOT TRUE)'}
     `;
 
     if (constrainByDistance && hasUserLocation) {
@@ -431,6 +431,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
+        b.is_hidden,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u.email,
@@ -519,6 +520,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."totalReviews" as total_reviews,
           b."totalBookings" as total_bookings,
           b."isActive" as is_active,
+          b.is_hidden,
           b.reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -557,6 +559,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."totalReviews" as total_reviews,
           b."totalBookings" as total_bookings,
           b."isActive" as is_active,
+          false as is_hidden,
           NULL::timestamptz as reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -761,6 +764,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
+        b.is_hidden,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u."instagramHandle" as instagram_handle,
@@ -788,6 +792,13 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
     delete barber.user_is_banned;
 
     const viewerId = req.user?.userId;
+    const viewerRole = String(req.user?.role || '').toLowerCase();
+    const isOwner = viewerId && String(viewerId) === String(barber.user_id);
+    const isStaff = viewerRole === 'admin' || viewerRole === 'campus_manager';
+    // Hidden profiles stay off public discovery; owners/staff can still load them
+    if (barber.is_hidden === true && !isOwner && !isStaff) {
+      throw new ApiError(404, 'Barber not found');
+    }
     if (viewerId) {
       await assertNoMessagingBlockBetween(String(viewerId), String(barber.user_id));
     }
@@ -945,8 +956,30 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule, is_active, pricing } = req.body;
+    const {
+      bio,
+      instagram_handle,
+      display_name,
+      specialties,
+      yearsExperience,
+      weekly_schedule,
+      is_active,
+      is_hidden: isHiddenBody,
+      isHidden,
+      pricing,
+    } = req.body;
     const userId = req.user!.userId;
+    // Marketplace visibility (do not overload isActive — that flag is for demotion)
+    let is_hidden =
+      isHiddenBody !== undefined
+        ? isHiddenBody
+        : isHidden !== undefined
+          ? isHidden
+          : undefined;
+    // Legacy clients sent is_active for hide; map to is_hidden without flipping isActive
+    if (is_hidden === undefined && is_active !== undefined) {
+      is_hidden = !Boolean(is_active);
+    }
 
     // Verify ownership
     const ownership = await pool.query('SELECT id FROM barbers WHERE id = $1 AND "userId" = $2', [id, userId]);
@@ -1022,9 +1055,9 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       barberValues.push(JSON.stringify(weekly_schedule));
       paramIndex++;
     }
-    if (is_active !== undefined) {
-      barberUpdateFields.push(`"isActive" = $${paramIndex}`);
-      barberValues.push(is_active);
+    if (is_hidden !== undefined) {
+      barberUpdateFields.push(`is_hidden = $${paramIndex}`);
+      barberValues.push(Boolean(is_hidden));
       paramIndex++;
     }
 
@@ -1121,6 +1154,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
+        b.is_hidden,
         u.first_name,
         u.last_name,
         u."displayName" as display_name,

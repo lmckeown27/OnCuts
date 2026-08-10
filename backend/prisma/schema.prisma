@@ -212,6 +212,8 @@ model Barber {
   
   // Status
   isActive    Boolean  @default(true)
+  /// Marketplace visibility; when true, hidden from consumer discovery (operator stays active)
+  isHidden    Boolean  @default(false) @map("is_hidden")
   isOnboarded Boolean  @default(false)
 
   // Admin payment controls — commission-free quota + platform kickback

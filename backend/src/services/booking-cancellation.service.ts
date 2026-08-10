@@ -272,6 +272,7 @@ export async function executeParticipantBookingCancellation(
           WHERE b."campusId" = $1 
             AND b.id != $2
             AND b."isActive" = true
+            AND b.is_hidden = false
             AND (u."isBanned" IS NOT TRUE)
         `,
         [booking.campus_id, booking.barberId]
