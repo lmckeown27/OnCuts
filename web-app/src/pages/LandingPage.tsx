@@ -103,7 +103,7 @@ export default function LandingPage() {
                 alt="OnCuts"
                 className="h-12 w-auto"
               />
-              <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
+              <span className={`text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
                 OnCuts
               </span>
             </button>
