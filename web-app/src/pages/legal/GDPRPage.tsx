@@ -12,11 +12,7 @@ export default function GDPRPage() {
   }, []);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
+    navigate('/');
   };
 
   return (
