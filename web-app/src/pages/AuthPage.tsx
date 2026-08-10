@@ -41,12 +41,13 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect'); // For email links like ?redirect=/web/consumer/messages/123
-  const { login, signup, loginWithPhone, loginWithGoogle } = useAuthStore();
+  const { login, signup, loginWithPhone, loginWithGoogle, resendVerificationCode } = useAuthStore();
   const [mode, setMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isResendingCode, setIsResendingCode] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   // Login form state
@@ -530,8 +531,50 @@ export default function AuthPage() {
     } catch (err: any) {
       const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Signup failed. Please try again.';
       setError(errorMessage);
+      // Pending signup already exists — stash email so verification / resend works.
+      if (/verification already in progress/i.test(errorMessage) && signupData.email.trim()) {
+        localStorage.setItem('pendingVerificationEmail', signupData.email.trim());
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const isPendingVerificationError = Boolean(
+    error && /verification already in progress/i.test(error)
+  );
+
+  const goToVerificationPage = () => {
+    const email = signupData.email.trim();
+    if (email) {
+      localStorage.setItem('pendingVerificationEmail', email);
+    }
+    navigate('/web/verify-email');
+  };
+
+  const handleResendVerificationFromSignup = async () => {
+    const email = signupData.email.trim();
+    if (!email) {
+      toast.error('Enter your email address first');
+      return;
+    }
+    setIsResendingCode(true);
+    setError(null);
+    try {
+      localStorage.setItem('pendingVerificationEmail', email);
+      await resendVerificationCode(email);
+      toast.success('Verification code sent! Check your inbox.');
+      navigate('/web/verify-email');
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to resend code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsResendingCode(false);
     }
   };
 
@@ -1153,7 +1196,29 @@ export default function AuthPage() {
                     <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-red-700 text-sm">{error}</p>
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <p className="text-red-700 text-sm">{error}</p>
+                          {isPendingVerificationError && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void handleResendVerificationFromSignup()}
+                                disabled={isResendingCode || isLoading || !signupData.email.trim()}
+                                className="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isResendingCode ? 'Sending…' : 'Resend Code'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={goToVerificationPage}
+                                disabled={isResendingCode || isLoading}
+                                className="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold rounded-lg border-2 border-gray-900 text-gray-900 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Go to verification
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1464,7 +1529,29 @@ export default function AuthPage() {
                     <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-red-700 text-sm">{error}</p>
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <p className="text-red-700 text-sm">{error}</p>
+                          {isPendingVerificationError && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void handleResendVerificationFromSignup()}
+                                disabled={isResendingCode || isLoading || !signupData.email.trim()}
+                                className="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isResendingCode ? 'Sending…' : 'Resend Code'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={goToVerificationPage}
+                                disabled={isResendingCode || isLoading}
+                                className="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold rounded-lg border-2 border-gray-900 text-gray-900 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Go to verification
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

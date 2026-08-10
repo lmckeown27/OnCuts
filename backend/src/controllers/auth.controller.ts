@@ -119,7 +119,8 @@ import {
   takeCodeVerifiedPendingRegistration,
   takePendingRegistrationIfCodeValid,
   hasPendingRegistration,
-  getPendingRegistration
+  getPendingRegistration,
+  cancelPendingRegistration
 } from '../services/verification.service';
 import {
   resolveNamesForUser,
@@ -361,6 +362,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       });
     } catch (emailError: any) {
       logger.error('Failed to send verification email:', emailError);
+      // Don't leave a stuck pending row when SMTP fails — allow retry after fixing email.
+      await cancelPendingRegistration(email);
       throw new ApiError(500, 'Failed to send verification email. Please try again later.');
     }
   } catch (error) {
