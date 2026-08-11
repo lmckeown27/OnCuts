@@ -3862,13 +3862,15 @@ function AvailabilityModal({
           )}
 
           {onOpenBlockTime && (
-            <button
-              type="button"
-              onClick={() => onOpenBlockTime()}
-              className="w-full px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
-            >
-              Block Time
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => onOpenBlockTime()}
+                className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+              >
+                Block Time
+              </button>
+            </div>
           )}
 
           <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-4">
