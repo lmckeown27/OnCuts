@@ -7,6 +7,9 @@ import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 import { assertNoMessagingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
+import {
+  CLIENT_CANCEL_REFUND_HOUR_PRESETS,
+} from '../services/booking-cancellation.service';
 import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/service-duration.utils';
 import {
   BOOKING_SLOT_INCREMENT_MINUTES,
@@ -432,6 +435,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b.is_hidden,
+        b.client_cancel_refund_hours,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u.email,
@@ -521,6 +525,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."totalBookings" as total_bookings,
           b."isActive" as is_active,
           b.is_hidden,
+          b.client_cancel_refund_hours,
           b.reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -560,6 +565,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."totalBookings" as total_bookings,
           b."isActive" as is_active,
           false as is_hidden,
+          1 as client_cancel_refund_hours,
           NULL::timestamptz as reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -967,6 +973,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       is_hidden: isHiddenBody,
       isHidden,
       pricing,
+      client_cancel_refund_hours: clientCancelRefundHoursBody,
     } = req.body;
     const userId = req.user!.userId;
     // Marketplace visibility (do not overload isActive — that flag is for demotion)
@@ -979,6 +986,22 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     // Legacy clients sent is_active for hide; map to is_hidden without flipping isActive
     if (is_hidden === undefined && is_active !== undefined) {
       is_hidden = !Boolean(is_active);
+    }
+
+    let client_cancel_refund_hours: number | undefined;
+    if (clientCancelRefundHoursBody !== undefined) {
+      const parsed = parseInt(String(clientCancelRefundHoursBody), 10);
+      if (
+        !CLIENT_CANCEL_REFUND_HOUR_PRESETS.includes(
+          parsed as (typeof CLIENT_CANCEL_REFUND_HOUR_PRESETS)[number]
+        )
+      ) {
+        throw new ApiError(
+          400,
+          `client_cancel_refund_hours must be one of: ${CLIENT_CANCEL_REFUND_HOUR_PRESETS.join(', ')}`
+        );
+      }
+      client_cancel_refund_hours = parsed;
     }
 
     // Verify ownership
@@ -1058,6 +1081,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (is_hidden !== undefined) {
       barberUpdateFields.push(`is_hidden = $${paramIndex}`);
       barberValues.push(Boolean(is_hidden));
+      paramIndex++;
+    }
+    if (client_cancel_refund_hours !== undefined) {
+      barberUpdateFields.push(`client_cancel_refund_hours = $${paramIndex}`);
+      barberValues.push(client_cancel_refund_hours);
       paramIndex++;
     }
 
@@ -1155,6 +1183,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b.is_hidden,
+        b.client_cancel_refund_hours,
         u.first_name,
         u.last_name,
         u."displayName" as display_name,

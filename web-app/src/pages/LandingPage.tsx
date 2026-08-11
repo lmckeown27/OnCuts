@@ -299,7 +299,7 @@ export default function LandingPage() {
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
                       <p className="px-4 pb-4 text-gray-600 text-sm text-center">
-                        Yes. You can update time, date, meeting details, or notes before the service is marked complete. The operator is notified of changes. Cancel anytime before completion. If you cancel a paid booking within 1 hour of the appointment, the service payment is non-refundable; if the operator cancels, you get a full refund.
+                        Yes. You can update time, date, meeting details, or notes before the service is marked complete. The operator is notified of changes. Cancel anytime before completion. If you cancel a paid booking inside the operator&apos;s refund window (default 1 hour before the appointment; each operator sets 1h to 24h in Payouts), the service payment is non-refundable; if the operator cancels, you get a full refund.
                       </p>
                     </div>
                   </div>

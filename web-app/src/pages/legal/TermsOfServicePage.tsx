@@ -194,9 +194,11 @@ export default function TermsOfServicePage() {
                 Operator is notified of those changes. Consumers may cancel anytime before completion.
               </p>
               <p className="mt-3">
-                If a Consumer cancels a paid booking within one (1) hour of the appointment start time, the service
-                payment is non-refundable. If the Operator cancels a paid booking, the Consumer receives a full refund
-                of the service payment, subject to Stripe and banking processing times.
+                Each Operator sets a client-cancellation refund window (preset options from 1 to 24 hours before the
+                appointment; default 1 hour). If a Consumer cancels a paid booking inside that window, the service
+                payment is non-refundable. If the Consumer cancels at least that far before the appointment start time,
+                they receive a full refund of the service payment. If the Operator cancels a paid booking, the Consumer
+                receives a full refund of the service payment, subject to Stripe and banking processing times.
               </p>
               <p className="mt-3">
                 Refund eligibility outside those rules depends on timing, the reason for cancellation, whether the

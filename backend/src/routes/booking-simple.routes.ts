@@ -34,6 +34,7 @@ import { sameUuid } from '../utils/uuid-compare';
 import {
   cancelPendingRescheduleRequestsForBooking,
   executeParticipantBookingCancellation,
+  resolveClientCancelRefundHours,
   shouldRefundOnCancellation,
   type CancellationActor,
 } from '../services/booking-cancellation.service';
@@ -3448,6 +3449,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
               ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
               c.location, c.service_name as original_service_name,
               bar.id as "barberId", bar."userId" as barber_user_id, bar."campusId" as campus_id,
+              bar.client_cancel_refund_hours,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
               u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
               COALESCE(campus.timezone, 'America/New_York') as campus_timezone
@@ -3504,9 +3506,11 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     // PAID (service paid, not yet complete): optionally refund service PI then cancel
     if (booking.status === 'PAID' && (isBarber || isConsumer || isAdmin)) {
       const cancelledBy: CancellationActor = isBarber ? 'barber' : isConsumer ? 'consumer' : 'admin';
+      const refundHours = resolveClientCancelRefundHours(booking.client_cancel_refund_hours);
       const refundEligible = shouldRefundOnCancellation({
         cancelledBy,
         scheduledTime: booking.scheduledTime,
+        refundHours,
       });
 
       let refunded = false;
@@ -3535,17 +3539,18 @@ router.delete('/:id', authenticate, async (req, res, next) => {
           }
         } else {
           logger.info(
-            `Skipping refund for PAID booking ${id}: consumer cancelled within 1 hour of appointment (scheduled=${booking.scheduledTime})`
+            `Skipping refund for PAID booking ${id}: consumer cancelled within ${refundHours} hour(s) of appointment (scheduled=${booking.scheduledTime})`
           );
         }
       }
 
       await executeParticipantBookingCancellation(booking, userId, isBarber, reason ?? null);
 
+      const hourLabel = refundHours === 1 ? '1 hour' : `${refundHours} hours`;
       const message = refunded
         ? 'Booking cancelled and service payment refunded'
         : cancelledBy === 'consumer' && booking.payment_intent_id && booking.paymentMethod !== 'cash'
-          ? 'Booking cancelled. No refund — cancellations within 1 hour of the appointment are non-refundable.'
+          ? `Booking cancelled. No refund - cancellations within ${hourLabel} of the appointment are non-refundable.`
           : 'Booking cancelled successfully';
 
       return res.json({
@@ -3554,6 +3559,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         data: {
           refunded,
           refundEligible,
+          refundHours,
           message,
         },
       });

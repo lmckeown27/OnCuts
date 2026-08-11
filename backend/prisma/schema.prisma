@@ -214,6 +214,8 @@ model Barber {
   isActive    Boolean  @default(true)
   /// Marketplace visibility; when true, hidden from consumer discovery (operator stays active)
   isHidden    Boolean  @default(false) @map("is_hidden")
+  /// Hours before appointment for full client-cancel refund (1,2,4,6,12,24)
+  clientCancelRefundHours Int @default(1) @map("client_cancel_refund_hours")
   isOnboarded Boolean  @default(false)
 
   // Admin payment controls — commission-free quota + platform kickback

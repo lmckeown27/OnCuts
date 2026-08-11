@@ -1,7 +1,7 @@
 /**
  * Payout Settings — modal Connect hub.
  * Incomplete: embedded onboarding guide + Stripe App.
- * Connected: Payouts | Analytics tabs (Connect status / Express / App vs analytics).
+ * Connected: Payouts | Analytics | Cancellations tabs.
  * Does not auto-dismiss when Connect becomes active.
  */
 
@@ -24,6 +24,11 @@ import {
   type BarberPerformance,
 } from '../services/barber-payout.service';
 import { isBarberStripeFullyConnected } from '../utils/stripe-connect-status';
+import barberService from '../services/barber.service';
+
+const CLIENT_CANCEL_REFUND_HOUR_PRESETS = [1, 2, 4, 6, 12, 24] as const;
+type ClientCancelRefundHours = (typeof CLIENT_CANCEL_REFUND_HOUR_PRESETS)[number];
+type PayoutPanel = 'payouts' | 'analytics' | 'cancellations';
 
 const STRIPE_DASHBOARD_APP_STORE_URL = 'https://apps.apple.com/app/id978516833';
 const STRIPE_WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/Stripe,_Inc.';
@@ -359,10 +364,15 @@ export default function PayoutSettingsScreen({
   );
   const [stripeTabOpened, setStripeTabOpened] = useState(false);
   const [platformSetupBlocked, setPlatformSetupBlocked] = useState<string | null>(null);
-  const [panel, setPanel] = useState<'payouts' | 'analytics'>('payouts');
+  const [panel, setPanel] = useState<PayoutPanel>('payouts');
   const [performance, setPerformance] = useState<BarberPerformance>(EMPTY_PERFORMANCE);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [analyticsRefreshSignal, setAnalyticsRefreshSignal] = useState(0);
+  const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
+  const [cancelRefundHours, setCancelRefundHours] =
+    useState<ClientCancelRefundHours>(1);
+  const [cancelPolicyLoading, setCancelPolicyLoading] = useState(false);
+  const [cancelPolicySaving, setCancelPolicySaving] = useState(false);
   const loadRef = useRef<() => Promise<BarberConnectStatus | null>>(async () => null);
 
   const load = useCallback(async () => {
@@ -423,13 +433,67 @@ export default function PayoutSettingsScreen({
     void loadPerformance();
   }, [isOpen, panel, loadPerformance]);
 
+  const loadCancelPolicy = useCallback(async () => {
+    try {
+      setCancelPolicyLoading(true);
+      const profile = await barberService.getMyBarberProfile();
+      if (!profile?.id) {
+        toast.error('Could not load your operator profile');
+        return;
+      }
+      setBarberProfileId(profile.id);
+      const hours = Number(profile.client_cancel_refund_hours);
+      setCancelRefundHours(
+        (CLIENT_CANCEL_REFUND_HOUR_PRESETS as readonly number[]).includes(hours)
+          ? (hours as ClientCancelRefundHours)
+          : 1
+      );
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not load cancellation settings');
+    } finally {
+      setCancelPolicyLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || panel !== 'cancellations') return;
+    void loadCancelPolicy();
+  }, [isOpen, panel, loadCancelPolicy]);
+
   const handleAnalyticsRefresh = async () => {
     await loadPerformance();
     setAnalyticsRefreshSignal((n) => n + 1);
   };
 
-  const selectPanel = (next: 'payouts' | 'analytics') => {
+  const selectPanel = (next: PayoutPanel) => {
     setPanel(next);
+  };
+
+  const saveCancelRefundHours = async (hours: ClientCancelRefundHours) => {
+    if (!barberProfileId) {
+      toast.error('Operator profile not loaded yet');
+      return;
+    }
+    const previous = cancelRefundHours;
+    setCancelRefundHours(hours);
+    try {
+      setCancelPolicySaving(true);
+      await barberService.updateBarberProfile(barberProfileId, {
+        client_cancel_refund_hours: hours,
+      });
+      toast.success(
+        hours === 1
+          ? 'Clients get a full refund if they cancel at least 1 hour before'
+          : `Clients get a full refund if they cancel at least ${hours} hours before`
+      );
+    } catch (e) {
+      console.error(e);
+      setCancelRefundHours(previous);
+      toast.error('Could not save cancellation window');
+    } finally {
+      setCancelPolicySaving(false);
+    }
   };
 
   useEffect(() => {
@@ -587,11 +651,11 @@ export default function PayoutSettingsScreen({
         ) : (
           <>
             <div className="px-4 sm:px-6 pt-3 pb-2 shrink-0 bg-white border-b border-stone-100">
-              <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
                 <button
                   type="button"
                   onClick={() => selectPanel('payouts')}
-                  className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  className={`flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${
                     panel === 'payouts'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -602,13 +666,24 @@ export default function PayoutSettingsScreen({
                 <button
                   type="button"
                   onClick={() => selectPanel('analytics')}
-                  className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  className={`flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${
                     panel === 'analytics'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Analytics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPanel('cancellations')}
+                  className={`flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors ${
+                    panel === 'cancellations'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Cancellations
                 </button>
               </div>
             </div>
@@ -624,6 +699,61 @@ export default function PayoutSettingsScreen({
                   refreshSignal={analyticsRefreshSignal}
                   onRefresh={handleAnalyticsRefresh}
                 />
+              </div>
+            ) : panel === 'cancellations' ? (
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-stone-50">
+                <div className="space-y-5 max-w-md mx-auto">
+                  <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-900 text-center">
+                      Client cancellation refunds
+                    </h3>
+                    <p className="text-sm text-gray-600 text-center leading-relaxed">
+                      If a client cancels a paid booking at least this long before the appointment, they
+                      get a full refund. Cancellations inside this window are non-refundable. If you cancel,
+                      the client always gets a full refund.
+                    </p>
+                    {cancelPolicyLoading ? (
+                      <div className="py-8 text-center">
+                        <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">Loading…</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide text-center">
+                          Full refund if cancelled at least
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {CLIENT_CANCEL_REFUND_HOUR_PRESETS.map((hours) => {
+                            const selected = cancelRefundHours === hours;
+                            return (
+                              <button
+                                key={hours}
+                                type="button"
+                                disabled={cancelPolicySaving || !barberProfileId}
+                                onClick={() => void saveCancelRefundHours(hours)}
+                                className={`px-3 py-2.5 text-sm font-semibold rounded-xl border transition-colors disabled:opacity-60 ${
+                                  selected
+                                    ? 'bg-gray-900 text-white border-gray-900'
+                                    : 'bg-white text-gray-700 border-stone-200 hover:border-gray-400'
+                                }`}
+                              >
+                                {hours === 1 ? '1h' : `${hours}h`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-sm text-gray-700 text-center">
+                          Current:{' '}
+                          <span className="font-semibold">
+                            {cancelRefundHours === 1
+                              ? '1 hour before'
+                              : `${cancelRefundHours} hours before`}
+                          </span>
+                        </p>
+                      </>
+                    )}
+                  </section>
+                </div>
               </div>
             ) : fullyConnected ? (
               <div className="p-4 sm:p-6 overflow-y-auto flex-1 relative">

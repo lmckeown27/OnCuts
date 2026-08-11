@@ -10,21 +10,47 @@ import pushNotificationService from './pushNotification.service';
 import { sendBookingCancellationEmails } from './email.service';
 import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
 
-/** Consumer cancellations inside this window before the appointment are non-refundable. */
+/** Allowed preset hours for client-cancel full-refund window. */
+export const CLIENT_CANCEL_REFUND_HOUR_PRESETS = [1, 2, 4, 6, 12, 24] as const;
+export type ClientCancelRefundHours = (typeof CLIENT_CANCEL_REFUND_HOUR_PRESETS)[number];
+
+/** Default when missing/invalid — matches historical hard-coded 1 hour. */
+export const DEFAULT_CLIENT_CANCEL_REFUND_HOURS: ClientCancelRefundHours = 1;
+
+/** @deprecated Prefer resolveClientCancelRefundWindowMs; kept for tests/compat. */
 export const CONSUMER_CANCEL_NO_REFUND_WINDOW_MS = 60 * 60 * 1000;
+
+export function resolveClientCancelRefundHours(
+  value: unknown
+): ClientCancelRefundHours {
+  const n = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10);
+  if (
+    CLIENT_CANCEL_REFUND_HOUR_PRESETS.includes(n as ClientCancelRefundHours)
+  ) {
+    return n as ClientCancelRefundHours;
+  }
+  return DEFAULT_CLIENT_CANCEL_REFUND_HOURS;
+}
+
+export function resolveClientCancelRefundWindowMs(hours?: unknown): number {
+  return resolveClientCancelRefundHours(hours) * 60 * 60 * 1000;
+}
 
 export type CancellationActor = 'consumer' | 'barber' | 'admin';
 
 /**
  * Refund policy for paid bookings:
  * - Operator/admin cancel → always full refund
- * - Consumer cancel ≥ 1 hour before appointment → full refund
- * - Consumer cancel within 1 hour of (or after) appointment → no refund
+ * - Consumer cancel ≥ X hours before appointment → full refund
+ * - Consumer cancel within X hours of (or after) appointment → no refund
+ * X defaults to 1 hour and is set per operator (client_cancel_refund_hours).
  */
 export function shouldRefundOnCancellation(params: {
   cancelledBy: CancellationActor;
   scheduledTime: Date | string | null | undefined;
   now?: Date;
+  /** Operator-configured hours; invalid/missing → 1 */
+  refundHours?: unknown;
 }): boolean {
   if (params.cancelledBy === 'barber' || params.cancelledBy === 'admin') {
     return true;
@@ -40,8 +66,9 @@ export function shouldRefundOnCancellation(params: {
     return false;
   }
 
+  const windowMs = resolveClientCancelRefundWindowMs(params.refundHours);
   const nowMs = (params.now ?? new Date()).getTime();
-  return nowMs < scheduledMs - CONSUMER_CANCEL_NO_REFUND_WINDOW_MS;
+  return nowMs < scheduledMs - windowMs;
 }
 
 function mergeConversationLocation(
