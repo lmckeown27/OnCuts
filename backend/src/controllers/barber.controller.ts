@@ -46,6 +46,16 @@ import {
   parseIncentiveExpiresAt,
 } from '../utils/platform-commission';
 
+/** Marketplace hide flag. Web reads `is_hidden`; iOS Codable typically reads `isHidden`. */
+function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
+  const isHidden = barber.is_hidden === true || barber.isHidden === true;
+  return {
+    ...barber,
+    is_hidden: isHidden,
+    isHidden,
+  };
+}
+
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType, category } = req.query;
@@ -488,11 +498,11 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
 
     res.json({
       success: true,
-      data: {
+      data: withHiddenFlags({
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
         pricing: enrichPricingWithDurations(servicePricing),
-      },
+      }),
     });
   } catch (error) {
     logger.error('Error in getMyBarberProfile:', error);
@@ -683,7 +693,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       
       return res.json({
         success: true,
-        data: {
+        data: withHiddenFlags({
           ...barber,
           bio: barber.bio || '',
           average_rating: 0,
@@ -697,7 +707,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           instagram_handle: user.instagram_handle,
           campus_id: user.campus_id,
           name: user.display_name || `${user.first_name} ${user.last_name}`,
-        },
+        }),
       });
     }
 
@@ -736,7 +746,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       : null;
     res.json({
       success: true,
-      data: {
+      data: withHiddenFlags({
         ...barber,
         reapply_allowed: reapplyAllowed,
         platformCommissionEnabled,
@@ -746,7 +756,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         commissionIncentiveActive,
         pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-      },
+      }),
     });
   } catch (error) {
     logger.error('Error in getBarberByUserId:', error);
@@ -901,7 +911,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
 
     res.json({
       success: true,
-      data: {
+      data: withHiddenFlags({
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
         pricing: enrichPricingWithDurations(filteredPricing),
@@ -911,7 +921,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         service_locations: locationsResult.rows,
         average_rating: averageRating,
         review_count: reviewCount,
-      },
+      }),
     });
   } catch (error) {
     logger.error('Error in getBarberById:', error);
@@ -1204,11 +1214,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     res.setHeader('Pragma', 'no-cache');
     res.json({
       success: true,
-      data: {
+      data: withHiddenFlags({
         ...barber,
         pricing: enrichPricingWithDurations(savedPricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`.trim(),
-      },
+      }),
       message: 'Profile updated successfully',
     });
   } catch (error) {
