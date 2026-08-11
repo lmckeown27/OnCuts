@@ -120,6 +120,7 @@ export default function BarberPage() {
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
   const [showPayoutSettingsScreen, setShowPayoutSettingsScreen] = useState(false);
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
+  const [blockTimeReturnToSchedule, setBlockTimeReturnToSchedule] = useState(false);
   
   // Google Calendar integration (disabled)
   // const [googleCalendarConnected, setGoogleCalendarConnected] = useState<boolean | null>(null);
@@ -412,6 +413,7 @@ export default function BarberPage() {
     setShowBookingDetailsModal(false);
     setShowPayoutSettings(false);
     setShowBlockTimeModal(false);
+    setBlockTimeReturnToSchedule(false);
   }, [stripeGate.isBlocking]);
 
   // State for booking details modal
@@ -681,6 +683,7 @@ export default function BarberPage() {
           commissionIncentiveActive={barberProfile?.commissionIncentiveActive}
           platformCommissionEnabled={barberProfile?.platformCommissionEnabled !== false}
           onBlockTime={(date, startTime, endTime) => {
+            setBlockTimeReturnToSchedule(false);
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
           }}
@@ -869,8 +872,19 @@ export default function BarberPage() {
           isVisible={showBlockTimeModal}
           onClose={() => {
             setShowBlockTimeModal(false);
+            setBlockTimeReturnToSchedule(false);
             setBlockTimeInitialValues({});
           }}
+          onBack={
+            blockTimeReturnToSchedule
+              ? () => {
+                  setShowBlockTimeModal(false);
+                  setBlockTimeReturnToSchedule(false);
+                  setBlockTimeInitialValues({});
+                  openAvailability();
+                }
+              : undefined
+          }
           barberId={barberProfile.id}
           initialDate={blockTimeInitialValues.date}
           initialStartTime={blockTimeInitialValues.startTime}
@@ -927,6 +941,7 @@ export default function BarberPage() {
           onOpenBlockTime={() => {
             closeAvailability();
             setBlockTimeInitialValues({});
+            setBlockTimeReturnToSchedule(true);
             setShowBlockTimeModal(true);
           }}
         />

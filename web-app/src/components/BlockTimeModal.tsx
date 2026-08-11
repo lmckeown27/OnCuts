@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Loader2, X } from 'lucide-react';
+import { AlertCircle, ChevronLeft, Loader2, X } from 'lucide-react';
 import DatePicker from './DatePicker';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
@@ -15,6 +15,8 @@ import { colors } from '../utils/colors';
 interface BlockTimeModalProps {
   isVisible: boolean;
   onClose: () => void;
+  /** When set, shows a back chevron that returns to Edit Schedule instead of fully dismissing. */
+  onBack?: () => void;
   barberId: string;
   initialDate?: string; // YYYY-MM-DD
   initialStartTime?: string; // HH:MM
@@ -113,6 +115,7 @@ function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: numbe
 const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   isVisible,
   onClose,
+  onBack,
   barberId,
   initialDate,
   initialStartTime,
@@ -168,6 +171,15 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   const handleClose = () => {
     setIsAnimating(false);
     setTimeout(() => onClose(), 200);
+  };
+
+  const handleBack = () => {
+    if (!onBack) {
+      handleClose();
+      return;
+    }
+    setIsAnimating(false);
+    setTimeout(() => onBack(), 200);
   };
 
   const effectiveRange = useMemo(() => {
@@ -265,7 +277,11 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
       });
 
       toast.success(blocksEntireDay ? 'Day blocked' : 'Time blocked');
-      handleClose();
+      if (onBack) {
+        handleBack();
+      } else {
+        handleClose();
+      }
     } catch (err: unknown) {
       console.error('Failed to create time block:', err);
       const msg =
@@ -307,12 +323,24 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
           <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
         </div>
 
-        <div className="px-5 pt-2 pb-3 flex items-center justify-between border-b border-stone-200/80 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Block Time</h2>
+        <div className="px-5 pt-2 pb-3 flex items-center justify-between border-b border-stone-200/80 shrink-0 gap-2">
+          <div className="flex items-center gap-1 min-w-0">
+            {onBack && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="p-2 -ml-2 hover:bg-stone-200/60 rounded-full transition-colors shrink-0"
+                aria-label="Back to Edit Schedule"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-700" />
+              </button>
+            )}
+            <h2 className="text-lg font-semibold text-gray-900 truncate">Block Time</h2>
+          </div>
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+            className="p-2 hover:bg-stone-200/60 rounded-full transition-colors shrink-0"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-600" />
