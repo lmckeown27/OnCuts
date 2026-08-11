@@ -3939,10 +3939,8 @@ function AvailabilityModal({
             <button
               type="button"
               onClick={() => setShowTimeLimits((prev) => !prev)}
-              className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors shadow-sm border ${
-                showTimeLimits
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white text-gray-800 border-stone-300 hover:bg-stone-100'
+              className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
+                showTimeLimits ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
               }`}
             >
               Time Limits
