@@ -12,12 +12,13 @@ import {
 } from '../services/booking-cancellation.service';
 import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/service-duration.utils';
 import {
-  BOOKING_SLOT_INCREMENT_MINUTES,
+  BOOKING_SLOT_INTERVAL_PRESETS,
   SAME_DAY_BOOKING_BUFFER_MINUTES,
   bookingStatusBlocksScheduleSql,
   generateBookableStartSlots,
   getDayNameFromDateString,
   getIntervalsForDay,
+  resolveBookingSlotIntervalMinutes,
   weeklyScheduleHasOpenHours,
   type WeeklySchedule,
 } from '../services/barber-availability.service';
@@ -47,16 +48,21 @@ import {
   parseIncentiveExpiresAt,
 } from '../utils/platform-commission';
 
-/** Marketplace hide flag + schedule aliases for web (snake) and iOS (camel). */
+/** Marketplace hide flag + schedule / slot-interval aliases for web (snake) and iOS (camel). */
 function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
   const isHidden = barber.is_hidden === true || barber.isHidden === true;
   const weekly = barber.weekly_schedule ?? barber.weeklySchedule;
+  const slotInterval = resolveBookingSlotIntervalMinutes(
+    barber.booking_slot_interval_minutes ?? barber.bookingSlotIntervalMinutes
+  );
   return {
     ...barber,
     is_hidden: isHidden,
     isHidden,
     weekly_schedule: weekly,
     weeklySchedule: weekly,
+    booking_slot_interval_minutes: slotInterval,
+    bookingSlotIntervalMinutes: slotInterval,
   };
 }
 
@@ -450,6 +456,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."isActive" as is_active,
         b.is_hidden,
         b.client_cancel_refund_hours,
+        b.booking_slot_interval_minutes,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u.email,
@@ -540,6 +547,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."isActive" as is_active,
           b.is_hidden,
           b.client_cancel_refund_hours,
+          b.booking_slot_interval_minutes,
           b.reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -580,6 +588,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b."isActive" as is_active,
           false as is_hidden,
           1 as client_cancel_refund_hours,
+          15 as booking_slot_interval_minutes,
           NULL::timestamptz as reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -991,6 +1000,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       isHidden,
       pricing,
       client_cancel_refund_hours: clientCancelRefundHoursBody,
+      booking_slot_interval_minutes: bookingSlotIntervalMinutesBody,
+      bookingSlotIntervalMinutes,
     } = req.body;
     const userId = req.user!.userId;
     // Marketplace visibility (do not overload isActive — that flag is for demotion)
@@ -1019,6 +1030,26 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         );
       }
       client_cancel_refund_hours = parsed;
+    }
+
+    const bookingSlotIntervalRaw =
+      bookingSlotIntervalMinutesBody !== undefined
+        ? bookingSlotIntervalMinutesBody
+        : bookingSlotIntervalMinutes;
+    let booking_slot_interval_minutes: number | undefined;
+    if (bookingSlotIntervalRaw !== undefined) {
+      const parsed = parseInt(String(bookingSlotIntervalRaw), 10);
+      if (
+        !BOOKING_SLOT_INTERVAL_PRESETS.includes(
+          parsed as (typeof BOOKING_SLOT_INTERVAL_PRESETS)[number]
+        )
+      ) {
+        throw new ApiError(
+          400,
+          `booking_slot_interval_minutes must be one of: ${BOOKING_SLOT_INTERVAL_PRESETS.join(', ')}`
+        );
+      }
+      booking_slot_interval_minutes = parsed;
     }
 
     // Verify ownership
@@ -1102,7 +1133,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         pricingInput !== undefined ||
         display_name !== undefined ||
         instagram_handle !== undefined ||
-        client_cancel_refund_hours !== undefined;
+        client_cancel_refund_hours !== undefined ||
+        booking_slot_interval_minutes !== undefined;
       if (
         otherProfileFields &&
         !weeklyScheduleHasOpenHours(weekly_schedule)
@@ -1133,6 +1165,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (client_cancel_refund_hours !== undefined) {
       barberUpdateFields.push(`client_cancel_refund_hours = $${paramIndex}`);
       barberValues.push(client_cancel_refund_hours);
+      paramIndex++;
+    }
+    if (booking_slot_interval_minutes !== undefined) {
+      barberUpdateFields.push(`booking_slot_interval_minutes = $${paramIndex}`);
+      barberValues.push(booking_slot_interval_minutes);
       paramIndex++;
     }
 
@@ -1231,6 +1268,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b."isActive" as is_active,
         b.is_hidden,
         b.client_cancel_refund_hours,
+        b.booking_slot_interval_minutes,
         u.first_name,
         u.last_name,
         u."displayName" as display_name,
@@ -1430,7 +1468,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
 
     // Get barber's weekly schedule and campus timezone
     const barberResult = await pool.query(
-      `SELECT b."weeklySchedule" as weekly_schedule, 
+      `SELECT b."weeklySchedule" as weekly_schedule,
+              b.booking_slot_interval_minutes,
               COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone,
               u."isBanned" as user_is_banned,
               u.id as barber_user_id
@@ -1456,6 +1495,9 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
 
     const weeklySchedule: WeeklySchedule = barberResult.rows[0].weekly_schedule || {};
     const campusTimezone: string = barberResult.rows[0].campus_timezone;
+    const slotIncrementMinutes = resolveBookingSlotIntervalMinutes(
+      barberResult.rows[0].booking_slot_interval_minutes
+    );
     
     // If a specific date is provided, return available slots for that date
     if (date && typeof date === 'string') {
@@ -1582,11 +1624,11 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         intervals,
         bookedSlots,
         appointmentDurationMinutes,
-        BOOKING_SLOT_INCREMENT_MINUTES,
+        slotIncrementMinutes,
         currentTimeMinutes
       );
       
-      console.log(`[Availability] Generated ${slots.length} bookable slots for ${appointmentDurationMinutes} min appointments`);
+      console.log(`[Availability] Generated ${slots.length} bookable slots for ${appointmentDurationMinutes} min appointments (${slotIncrementMinutes} min interval)`);
 
       // Prevent caching of availability data
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1603,6 +1645,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
           bookedSlots,
           slots,
           appointmentDurationMinutes,
+          bookingSlotIntervalMinutes: slotIncrementMinutes,
+          booking_slot_interval_minutes: slotIncrementMinutes,
         }
       });
     }
@@ -1623,6 +1667,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       success: true,
       data: {
         weeklySchedule,
+        bookingSlotIntervalMinutes: slotIncrementMinutes,
+        booking_slot_interval_minutes: slotIncrementMinutes,
         legacyTemplates: templatesResult.rows
       }
     });

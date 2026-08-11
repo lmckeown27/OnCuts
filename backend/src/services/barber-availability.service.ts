@@ -27,7 +27,36 @@ export type WeeklySchedule = Partial<
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
 export const BOOKING_SLOT_INCREMENT_MINUTES = 15;
+export const BOOKING_SLOT_INTERVAL_PRESETS = [15, 30, 45] as const;
+export type BookingSlotIntervalMinutes = (typeof BOOKING_SLOT_INTERVAL_PRESETS)[number];
+export const DEFAULT_BOOKING_SLOT_INTERVAL_MINUTES: BookingSlotIntervalMinutes = 15;
 export const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
+
+export function resolveBookingSlotIntervalMinutes(raw: unknown): BookingSlotIntervalMinutes {
+  const n = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
+  if (
+    Number.isFinite(n) &&
+    BOOKING_SLOT_INTERVAL_PRESETS.includes(n as BookingSlotIntervalMinutes)
+  ) {
+    return n as BookingSlotIntervalMinutes;
+  }
+  return DEFAULT_BOOKING_SLOT_INTERVAL_MINUTES;
+}
+
+/** True when start time aligns to the operator interval from an available window start. */
+export function slotAlignsToInterval(
+  startMinutes: number,
+  intervals: TimeInterval[],
+  slotIncrementMinutes: number
+): boolean {
+  if (slotIncrementMinutes <= 0) return true;
+  return intervals.some((interval) => {
+    const intervalStart = timeToMinutes(interval.start);
+    const intervalEnd = timeToMinutes(interval.end);
+    if (startMinutes < intervalStart || startMinutes >= intervalEnd) return false;
+    return (startMinutes - intervalStart) % slotIncrementMinutes === 0;
+  });
+}
 
 /**
  * Statuses that occupy the calendar / block new bookings.
@@ -213,6 +242,7 @@ export async function assertBookingWithinBarberAvailability(
 ): Promise<void> {
   const barberResult = await client.query(
     `SELECT b."weeklySchedule" as weekly_schedule,
+            b.booking_slot_interval_minutes,
             COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone
      FROM barbers b
      LEFT JOIN users u ON b."userId" = u.id
@@ -227,6 +257,9 @@ export async function assertBookingWithinBarberAvailability(
 
   const weeklySchedule: WeeklySchedule = barberResult.rows[0].weekly_schedule || {};
   const campusTimezone: string = barberResult.rows[0].campus_timezone || 'America/Los_Angeles';
+  const slotIncrementMinutes = resolveBookingSlotIntervalMinutes(
+    barberResult.rows[0].booking_slot_interval_minutes
+  );
 
   const local = DateTime.fromJSDate(requestedTimeUtc, { zone: 'utc' }).setZone(campusTimezone);
   const date = local.toFormat('yyyy-MM-dd');
@@ -241,6 +274,12 @@ export async function assertBookingWithinBarberAvailability(
   const startMinutes = timeToMinutes(time);
   if (!slotFitsSchedule(startMinutes, durationMinutes, intervals)) {
     throw new ApiError(400, 'The selected time is outside the barber\'s available hours');
+  }
+  if (!slotAlignsToInterval(startMinutes, intervals, slotIncrementMinutes)) {
+    throw new ApiError(
+      400,
+      `Please choose a start time that aligns with this operator's ${slotIncrementMinutes}-minute booking interval`
+    );
   }
 
   const blockedRanges = await fetchBookedAndBlockedSlots(barberRecordId, date, excludeBookingId);

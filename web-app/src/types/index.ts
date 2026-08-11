@@ -142,6 +142,8 @@ export interface Barber {
   is_hidden?: boolean;
   /** Hours before appointment for full client-cancel refund (1, 2, 4, 6, 12, or 24). */
   client_cancel_refund_hours?: number;
+  booking_slot_interval_minutes?: number;
+  bookingSlotIntervalMinutes?: number;
   profile_photo_url?: string;
   profile_picture_url?: string; // Alias from users table join
   portfolio?: PortfolioImage[];
