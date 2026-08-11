@@ -41,8 +41,6 @@ type BarberView = 'performance' | 'clients';
 interface BarberAnalyticsPanelProps {
   performance: BarberPerformance;
   isLoadingPerformance: boolean;
-  /** Human-readable Stripe payout timing copy (from connect status). */
-  payoutScheduleClarity?: string;
   /** Increment to force metrics/clients reload (pull-to-refresh). */
   refreshSignal?: number;
   onRefresh?: () => Promise<void> | void;
@@ -128,7 +126,6 @@ function statusBadgeClass(status: string): string {
 export default function BarberAnalyticsPanel({
   performance,
   isLoadingPerformance,
-  payoutScheduleClarity,
   refreshSignal = 0,
   onRefresh,
 }: BarberAnalyticsPanelProps) {
@@ -533,11 +530,6 @@ export default function BarberAnalyticsPanel({
               <p className="text-center text-2xl font-bold tabular-nums">
                 {isLoadingPerformance ? '…' : formatCurrencyFromCents(paymentTakeHome)}
               </p>
-              {payoutScheduleClarity && (
-                <p className="mt-3 text-[11px] text-white/70 text-center leading-snug">
-                  {payoutScheduleClarity}
-                </p>
-              )}
             </section>
           </div>
         )}

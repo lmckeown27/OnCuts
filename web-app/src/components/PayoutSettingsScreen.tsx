@@ -16,7 +16,6 @@ import {
   refreshBarberConnectOnboarding,
   resetBarberConnect,
   fetchBarberStripeDashboardUrl,
-  formatPayoutScheduleClarity,
   type BarberConnectStatus,
 } from '../services/barber-connect.service';
 import {
@@ -693,9 +692,6 @@ export default function PayoutSettingsScreen({
                 <BarberAnalyticsPanel
                   performance={performance}
                   isLoadingPerformance={performanceLoading}
-                  payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
-                    instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
-                  })}
                   refreshSignal={analyticsRefreshSignal}
                   onRefresh={handleAnalyticsRefresh}
                 />
