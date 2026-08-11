@@ -315,16 +315,20 @@ export default function ProviderWeeklyScheduleGrid({
           return { status: 'unavailable' as SlotStatus };
         }
 
-        const blocks = Array.isArray(timeBlocks) ? timeBlocks : [];
-        const block = blocks.find(b => {
-          if (blockDateKey(b) !== day.dateStr) return false;
-          const range = blockTimeRange(b);
-          if (!range) return false;
-          return slotStartMin < range.end && slotEndMin > range.start;
-        });
+        // Do not paint the current day as blocked/red. Remaining today slots follow
+        // weekly hours and bookings only.
+        if (!day.isToday) {
+          const blocks = Array.isArray(timeBlocks) ? timeBlocks : [];
+          const block = blocks.find(b => {
+            if (blockDateKey(b) !== day.dateStr) return false;
+            const range = blockTimeRange(b);
+            if (!range) return false;
+            return slotStartMin < range.end && slotEndMin > range.start;
+          });
 
-        if (block) {
-          return { status: 'blocked' as SlotStatus, block };
+          if (block) {
+            return { status: 'blocked' as SlotStatus, block };
+          }
         }
 
         // Google Calendar busy slots (disabled)
