@@ -106,6 +106,10 @@ import barberApplicationRoutes from './routes/barber-application.routes';
 import bookingSimpleRoutes from './routes/booking-simple.routes';
 import publicStripeRoutes from './routes/public-stripe.routes';
 import publicPlatformRoutes from './routes/public-platform.routes';
+import {
+  serveBookingLinkOgImage,
+  serveBookingLinkPage,
+} from './controllers/booking-link-og.controller';
 
 // Google Calendar Integration (disabled)
 // import googleCalendarRoutes from './routes/google-calendar.routes';
@@ -371,6 +375,8 @@ app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe paym
 app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
 app.use('/api/v1/stripe', publicStripeRoutes); // Public publishable key bootstrap for native clients
 app.use('/api/v1/platform', publicPlatformRoutes); // Public frontend controls (cash / home mode)
+app.get('/api/v1/og/booking-image/:barberId', serveBookingLinkOgImage);
+app.get('/api/og/booking-image/:barberId', serveBookingLinkOgImage);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/campus', campusRoutes);
@@ -469,6 +475,10 @@ if (fsSync.existsSync(uploadsDir)) {
 
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/uploads', express.static(uploadsDir));  // For Nginx API proxy
+
+// Operator booking links: inject Open Graph tags so iMessage/SMS unfurls use the profile photo.
+app.get('/web/consumer/book/:barberId', serveBookingLinkPage);
+app.get('/app/consumer/book/:barberId', serveBookingLinkPage);
 
 // 404 handler (must be after all routes and static files)
 app.use((req: Request, res: Response) => {
