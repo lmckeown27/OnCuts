@@ -338,9 +338,8 @@ export default function BarberAnalyticsPanel({
     return best;
   }, null);
 
-  // Platform fees apply to card; cash take-home is full cash volume.
-  const cashTakeHome = performance.cashRevenue;
-  const cardTakeHome = Math.max(0, performance.totalBarberEarnings - cashTakeHome);
+  // Platform fees apply to card payments; take-home is earnings after fees.
+  const paymentTakeHome = Math.max(0, performance.totalBarberEarnings - performance.cashRevenue);
 
   const handlePanelRefresh = async () => {
     await onRefresh?.();
@@ -484,68 +483,39 @@ export default function BarberAnalyticsPanel({
               </div>
             </section>
 
-            {/* Card vs cash — All time */}
+            {/* Payment statistics — All time */}
             <section className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Card vs cash</h3>
+                <h3 className="text-base font-semibold text-gray-900">Payments</h3>
                 <p className="text-sm text-gray-500">All time</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-gray-900">Card</p>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-500">Volume</p>
-                    <p className="font-semibold text-gray-900 tabular-nums">
-                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(performance.cardRevenue)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Paid bookings</p>
-                    <p className="font-semibold text-gray-900 tabular-nums">
-                      {isLoadingPerformance ? '…' : performance.cardCount}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Platform fee</p>
-                    <p className="font-semibold text-red-600 tabular-nums">
-                      {isLoadingPerformance
-                        ? '…'
-                        : `−${formatCurrencyFromCents(performance.totalPlatformFees)}`}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Take-home</p>
-                    <p className="font-semibold tabular-nums" style={{ color: olive }}>
-                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(cardTakeHome)}
-                    </p>
-                  </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                <div>
+                  <p className="text-xs text-gray-500">Volume</p>
+                  <p className="font-semibold text-gray-900 tabular-nums">
+                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(performance.cardRevenue)}
+                  </p>
                 </div>
-              </div>
-
-              <div className="border-t border-stone-200" />
-
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-gray-900">Cash</p>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-500">Volume</p>
-                    <p className="font-semibold text-gray-900 tabular-nums">
-                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(performance.cashRevenue)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Paid bookings</p>
-                    <p className="font-semibold text-gray-900 tabular-nums">
-                      {isLoadingPerformance ? '…' : performance.cashCount}
-                    </p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-gray-500">Take-home</p>
-                    <p className="font-semibold tabular-nums" style={{ color: olive }}>
-                      {isLoadingPerformance ? '…' : formatCurrencyFromCents(cashTakeHome)}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500">Paid bookings</p>
+                  <p className="font-semibold text-gray-900 tabular-nums">
+                    {isLoadingPerformance ? '…' : performance.cardCount}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Platform fee</p>
+                  <p className="font-semibold text-red-600 tabular-nums">
+                    {isLoadingPerformance
+                      ? '…'
+                      : `−${formatCurrencyFromCents(performance.totalPlatformFees)}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Take-home</p>
+                  <p className="font-semibold tabular-nums" style={{ color: olive }}>
+                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(paymentTakeHome)}
+                  </p>
                 </div>
               </div>
             </section>
@@ -557,23 +527,12 @@ export default function BarberAnalyticsPanel({
                 background: `linear-gradient(135deg, ${colors.olive[500]} 0%, ${colors.olive.DEFAULT} 45%, ${colors.olive[700]} 100%)`,
               }}
             >
-              <p className="text-sm font-semibold text-white/90 text-center mb-3">
+              <p className="text-sm font-semibold text-white/90 text-center mb-2">
                 Estimated net take-home
               </p>
-              <div className="grid grid-cols-2 divide-x divide-white/25">
-                <div className="px-3 text-center">
-                  <p className="text-xs font-medium text-white/75 uppercase tracking-wide">Card</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums">
-                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(cardTakeHome)}
-                  </p>
-                </div>
-                <div className="px-3 text-center">
-                  <p className="text-xs font-medium text-white/75 uppercase tracking-wide">Cash</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums">
-                    {isLoadingPerformance ? '…' : formatCurrencyFromCents(cashTakeHome)}
-                  </p>
-                </div>
-              </div>
+              <p className="text-center text-2xl font-bold tabular-nums">
+                {isLoadingPerformance ? '…' : formatCurrencyFromCents(paymentTakeHome)}
+              </p>
               {payoutScheduleClarity && (
                 <p className="mt-3 text-[11px] text-white/70 text-center leading-snug">
                   {payoutScheduleClarity}
