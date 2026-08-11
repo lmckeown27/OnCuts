@@ -148,10 +148,6 @@ export default function DatePicker({
     return false;
   };
 
-  const isToday = (date: Date): boolean => {
-    return date.toDateString() === today.toDateString();
-  };
-
   const isSelected = (date: Date): boolean => {
     return selectedDate ? date.toDateString() === selectedDate.toDateString() : false;
   };
@@ -229,7 +225,6 @@ export default function DatePicker({
               {week.map((date, dayIndex) => {
                 const disabled = isDateDisabled(date);
                 const selected = isSelected(date);
-                const todayDate = isToday(date);
                 const currentMonth = isCurrentMonth(date);
 
                 return (
@@ -254,10 +249,6 @@ export default function DatePicker({
                     `}
                   >
                     <span>{date.getDate()}</span>
-                    {/* Today indicator dot */}
-                    {todayDate && !selected && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full" />
-                    )}
                   </button>
                 );
               })}

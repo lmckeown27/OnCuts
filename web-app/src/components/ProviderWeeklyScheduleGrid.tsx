@@ -407,7 +407,7 @@ export default function ProviderWeeklyScheduleGrid({
               {weekDays.map((day, dayIdx) => (
                 <div
                   key={day.dateStr}
-                  className={`relative ${day.isToday ? 'bg-primary-50/30' : 'bg-white'}`}
+                  className="relative bg-white"
                   style={{ height: totalHeight }}
                 >
                   {timeRows.map((slotStartMin, rowIdx) => {
