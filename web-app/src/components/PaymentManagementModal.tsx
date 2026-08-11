@@ -16,7 +16,6 @@ import {
   fetchBarberConnectStatus,
   createBarberConnectOnboarding,
   fetchBarberStripeDashboardUrl,
-  formatPayoutScheduleClarity,
   type BarberConnectStatus,
 } from '../services/barber-connect.service';
 
@@ -190,9 +189,6 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
           <BarberAnalyticsPanel
             performance={performance}
             isLoadingPerformance={isLoading}
-            payoutScheduleClarity={formatPayoutScheduleClarity(connectStatus?.payoutSchedule, {
-              instantPayoutsEnabled: connectStatus?.instantPayoutsEnabled,
-            })}
             refreshSignal={refreshSignal}
             onRefresh={handleRefresh}
           />
