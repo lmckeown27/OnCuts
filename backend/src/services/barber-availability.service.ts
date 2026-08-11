@@ -71,6 +71,24 @@ export function getDayNameFromDateString(date: string): (typeof DAY_NAMES)[numbe
   return DAY_NAMES[targetDate.getDay()];
 }
 
+function dayHasOpenHours(day: DayAvailability | undefined): boolean {
+  if (!day || typeof day !== 'object') return false;
+  if (day.enabled === false) return false;
+  if (Array.isArray(day.intervals) && day.intervals.some((i) => i?.start && i?.end)) {
+    return true;
+  }
+  if (day.start && day.end) return true;
+  return day.enabled === true;
+}
+
+/** True when at least one weekday has bookable hours. */
+export function weeklyScheduleHasOpenHours(schedule: unknown): boolean {
+  if (!schedule || typeof schedule !== 'object' || Array.isArray(schedule)) return false;
+  return Object.values(schedule as Record<string, DayAvailability>).some((day) =>
+    dayHasOpenHours(day)
+  );
+}
+
 export function getIntervalsForDay(
   weeklySchedule: WeeklySchedule,
   dayName: (typeof DAY_NAMES)[number]

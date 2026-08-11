@@ -3672,8 +3672,9 @@ function AvailabilityModal({
         const data = await response.json();
         if (data.data) {
           setBarberId(data.data.id);
-          if (data.data.weekly_schedule) {
-            setAvailability(migrateSchedule(data.data.weekly_schedule));
+          const rawSchedule = data.data.weekly_schedule ?? data.data.weeklySchedule;
+          if (rawSchedule) {
+            setAvailability(migrateSchedule(rawSchedule));
           } else {
             setAvailability(createDefaultAvailability());
           }

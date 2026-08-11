@@ -1,5 +1,6 @@
 import {
   haversineDistanceKm,
+  isNullIslandCoordinate,
   MAX_DEVICE_SERVICE_LOCATION_JUMP_KM,
 } from '../geo-distance';
 
@@ -11,9 +12,22 @@ describe('haversineDistanceKm', () => {
     expect(km).toBeGreaterThan(9000);
   });
 
-  it('allows long but plausible US travel under the threshold', () => {
-    // San Luis Obispo → Honolulu
-    const km = haversineDistanceKm(35.2828, -120.6596, 21.3069, -157.8583);
+  it('blocks cross-country GPS teleports that used to sneak under a 5000km cap', () => {
+    // San Luis Obispo → New York
+    const km = haversineDistanceKm(35.2828, -120.6596, 40.7128, -74.006);
+    expect(km).toBeGreaterThan(MAX_DEVICE_SERVICE_LOCATION_JUMP_KM);
+  });
+
+  it('allows a local commute under the threshold', () => {
+    // San Luis Obispo → Santa Barbara (~120 km is over; use nearby)
+    const km = haversineDistanceKm(35.2828, -120.6596, 35.1214, -120.5913); // Pismo Beach
     expect(km).toBeLessThan(MAX_DEVICE_SERVICE_LOCATION_JUMP_KM);
+  });
+});
+
+describe('isNullIslandCoordinate', () => {
+  it('detects 0,0 GPS glitches', () => {
+    expect(isNullIslandCoordinate(0, 0)).toBe(true);
+    expect(isNullIslandCoordinate(35.28, -120.66)).toBe(false);
   });
 });

@@ -22,7 +22,12 @@ export function haversineDistanceKm(
 
 /**
  * Max allowed jump for source=device public pin updates.
- * Blocks intercontinental teleports (e.g. California → Beijing ~10,000 km)
- * while allowing long US travel (e.g. CA ↔ HI ~4,000 km).
+ * GPS glitches often land thousands of km away (NYC, other coasts, other countries).
+ * Real campus operators move locally; long-distance moves should use manual PlaceSearch.
  */
-export const MAX_DEVICE_SERVICE_LOCATION_JUMP_KM = 5000;
+export const MAX_DEVICE_SERVICE_LOCATION_JUMP_KM = 100;
+
+/** Classic bad-GPS / unset CLLocation (Null Island). */
+export function isNullIslandCoordinate(latitude: number, longitude: number): boolean {
+  return Math.abs(latitude) < 0.05 && Math.abs(longitude) < 0.05;
+}

@@ -18,6 +18,7 @@ import {
   generateBookableStartSlots,
   getDayNameFromDateString,
   getIntervalsForDay,
+  weeklyScheduleHasOpenHours,
   type WeeklySchedule,
 } from '../services/barber-availability.service';
 import {
@@ -46,13 +47,16 @@ import {
   parseIncentiveExpiresAt,
 } from '../utils/platform-commission';
 
-/** Marketplace hide flag. Web reads `is_hidden`; iOS Codable typically reads `isHidden`. */
+/** Marketplace hide flag + schedule aliases for web (snake) and iOS (camel). */
 function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
   const isHidden = barber.is_hidden === true || barber.isHidden === true;
+  const weekly = barber.weekly_schedule ?? barber.weeklySchedule;
   return {
     ...barber,
     is_hidden: isHidden,
     isHidden,
+    weekly_schedule: weekly,
+    weeklySchedule: weekly,
   };
 }
 
@@ -980,7 +984,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       display_name,
       specialties,
       yearsExperience,
-      weekly_schedule,
+      weekly_schedule: weeklyScheduleBody,
+      weeklySchedule,
       is_active,
       is_hidden: isHiddenBody,
       isHidden,
@@ -1084,6 +1089,36 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       barberUpdateFields.push(`"yearsExperience" = $${paramIndex}`);
       barberValues.push(yearsExperience);
       paramIndex++;
+    }
+    const incomingSchedule =
+      weeklyScheduleBody !== undefined ? weeklyScheduleBody : weeklySchedule;
+    let weekly_schedule = incomingSchedule;
+    if (weekly_schedule !== undefined) {
+      const otherProfileFields =
+        bio !== undefined ||
+        specialtiesInput !== undefined ||
+        yearsExperience !== undefined ||
+        is_hidden !== undefined ||
+        pricingInput !== undefined ||
+        display_name !== undefined ||
+        instagram_handle !== undefined ||
+        client_cancel_refund_hours !== undefined;
+      if (
+        otherProfileFields &&
+        !weeklyScheduleHasOpenHours(weekly_schedule)
+      ) {
+        const existingHours = await pool.query(
+          `SELECT "weeklySchedule" AS weekly_schedule FROM barbers WHERE id = $1`,
+          [id]
+        );
+        if (weeklyScheduleHasOpenHours(existingHours.rows[0]?.weekly_schedule)) {
+          logger.warn(
+            'Ignoring blank weekly_schedule on bundled profile update so availability is not wiped',
+            { barberId: id, userId }
+          );
+          weekly_schedule = undefined;
+        }
+      }
     }
     if (weekly_schedule !== undefined) {
       barberUpdateFields.push(`"weeklySchedule" = $${paramIndex}`);
