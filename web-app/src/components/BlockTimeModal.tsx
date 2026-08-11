@@ -354,7 +354,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
               value={selectedDate}
               onChange={handleDateChange}
               minDate={getYesterdayStr()}
-              label="Date"
+              label=""
               required
             />
           </section>
