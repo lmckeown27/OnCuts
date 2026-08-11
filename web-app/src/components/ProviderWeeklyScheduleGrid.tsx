@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TimeBlock } from '../services/barber.service';
 
 const SLOT_MINUTES = 5;
@@ -57,6 +57,44 @@ interface ProviderWeeklyScheduleGridProps {
 const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
+};
+
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const normalizeDateKey = (value: unknown): string => {
+  if (value == null) return '';
+  const ymd = String(value).trim().slice(0, 10);
+  return DATE_KEY_RE.test(ymd) ? ymd : '';
+};
+
+const currentMinutesInTimeZone = (timeZone?: string): number => {
+  const now = new Date();
+  if (!timeZone) return now.getHours() * 60 + now.getMinutes();
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const hour = Number(parts.find(p => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+};
+
+type TimeBlockLike = TimeBlock & {
+  block_date?: string;
+  start_time?: string;
+  end_time?: string;
+};
+
+const blockDateKey = (block: TimeBlockLike): string =>
+  normalizeDateKey(block.blockDate ?? block.block_date);
+
+const blockTimeRange = (block: TimeBlockLike): { start: number; end: number } | null => {
+  const start = timeToMinutes(String(block.startTime ?? block.start_time ?? ''));
+  const end = timeToMinutes(String(block.endTime ?? block.end_time ?? ''));
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  return { start, end };
 };
 
 const minutesToTime = (minutes: number): string => {
@@ -169,6 +207,7 @@ const getBookingBlockStyles = (status: string) => {
 export default function ProviderWeeklyScheduleGrid({
   weekOffset,
   getToday,
+  campusTimezone,
   weeklySchedule,
   timeBlocks,
   bookings,
@@ -180,6 +219,14 @@ export default function ProviderWeeklyScheduleGrid({
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = getToday();
   const todayStr = today.toDateString();
+  const [nowMin, setNowMin] = useState(() => currentMinutesInTimeZone(campusTimezone));
+
+  useEffect(() => {
+    const tick = () => setNowMin(currentMinutesInTimeZone(campusTimezone));
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, [campusTimezone]);
 
   const startOfWeek = useMemo(() => getWeekStartMonday(today, weekOffset), [today, weekOffset]);
 
@@ -250,18 +297,6 @@ export default function ProviderWeeklyScheduleGrid({
           return { status: 'unavailable' as SlotStatus };
         }
 
-        const dayBlocks = timeBlocks.filter(b => b.blockDate === day.dateStr);
-        const block = dayBlocks.find(b => {
-          const bStart = timeToMinutes(b.startTime);
-          const bEnd = timeToMinutes(b.endTime);
-          return slotStartMin < bEnd && slotEndMin > bStart;
-        });
-
-        const slotStartDate = new Date(day.date);
-        slotStartDate.setHours(Math.floor(slotStartMin / 60), slotStartMin % 60, 0, 0);
-        const slotEndDate = new Date(day.date);
-        slotEndDate.setHours(Math.floor(slotEndMin / 60), slotEndMin % 60, 0, 0);
-
         const appointment = weekBookings.find(apt => {
           const aptStart = new Date(apt.scheduledTime);
           const aptStartMin = aptStart.getHours() * 60 + aptStart.getMinutes();
@@ -274,6 +309,19 @@ export default function ProviderWeeklyScheduleGrid({
         if (appointment) {
           return { status: 'booked' as SlotStatus, appointmentId: appointment.id };
         }
+
+        // Elapsed hours on today are not blocked time — show them as unavailable.
+        if (day.isToday && slotEndMin <= nowMin) {
+          return { status: 'unavailable' as SlotStatus };
+        }
+
+        const blocks = Array.isArray(timeBlocks) ? timeBlocks : [];
+        const block = blocks.find(b => {
+          if (blockDateKey(b) !== day.dateStr) return false;
+          const range = blockTimeRange(b);
+          if (!range) return false;
+          return slotStartMin < range.end && slotEndMin > range.start;
+        });
 
         if (block) {
           return { status: 'blocked' as SlotStatus, block };
@@ -290,7 +338,7 @@ export default function ProviderWeeklyScheduleGrid({
         };
       });
     });
-  }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings]);
+  }, [timeRows, weekDays, weeklySchedule, timeBlocks, weekBookings, nowMin]);
 
   /* Stats footer hidden — slot counts and color legend commented out per product request.
   const stats = useMemo(() => {
