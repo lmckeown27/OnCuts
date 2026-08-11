@@ -593,7 +593,9 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       );
     }
 
-    // If no barber record exists, check if this is a barber user and auto-create one
+    // If no barber record exists, auto-create for users who already have operator role.
+    // New operators must go through application approval (which inserts the row).
+    // This upsert remains so existing BARBER accounts without a row keep working.
     if (barberResult.rows.length === 0) {
       // Check if user exists and is a barber
       const userResult = await pool.query(

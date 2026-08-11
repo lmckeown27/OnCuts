@@ -226,8 +226,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
   try {
     const { email, password, firstName: rawFirst, lastName: rawLast, role, campusId: rawCampusId } = req.body;
 
-    if (!email || !password || !role) {
-      throw new ApiError(400, 'Email, password, and role are required');
+    if (!email || !password) {
+      throw new ApiError(400, 'Email and password are required');
     }
 
     const phoneE164 = parseOptionalSignupPhone(req.body as Record<string, unknown>);
@@ -235,19 +235,24 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     const firstName = typeof rawFirst === 'string' ? rawFirst.trim() : '';
     const lastName = typeof rawLast === 'string' ? rawLast.trim() : '';
 
+    // Signup is always a consumer. Operator status is granted only after an approved
+    // barber application (including approved guest applications at verify-email).
+    // Ignore client-supplied role=barber so old iOS pickers cannot self-promote.
+    const signupRole = 'student';
+    if (typeof role === 'string' && ['barber', 'BARBER'].includes(role)) {
+      logger.info(`Ignoring signup role=${role} for ${email}; accounts start as consumer`);
+    }
+
     // Validate email format
     const emailDomain = email.split('@')[1];
     if (!emailDomain) {
       throw new ApiError(400, 'Please provide a valid email address');
     }
 
-    // Campus is optional for consumers (college-town preference). Operators never get a campus org tag.
+    // Campus is optional for consumers (college-town preference).
     let campusId: string | null = null;
-    const registeringAsOperator =
-      typeof role === 'string' && ['barber', 'BARBER'].includes(role);
 
     const requestedCampusId =
-      registeringAsOperator ||
       rawCampusId === undefined ||
       rawCampusId === null ||
       rawCampusId === ''
@@ -331,7 +336,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       firstName: firstName || '',
       lastName: lastName || '',
       campusId,
-      role,
+      role: signupRole,
       phoneE164,
     });
 
@@ -522,19 +527,14 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     const hasApprovedApplication = approvedGuestApp.rows.length > 0;
 
-    // Map frontend role to database enum (student -> CONSUMER, barber -> BARBER)
-    // If user has an approved guest application, make them a BARBER
+    // Operator role is only granted after an approved application.
+    // Ignore pending_registrations.role (legacy iOS could store barber).
     let dbRole: string;
     if (hasApprovedApplication) {
       dbRole = 'BARBER';
       logger.info(`User ${email} has an approved guest application - auto-promoting to BARBER`);
     } else {
-      const roleMap: { [key: string]: string } = {
-        'student': 'CONSUMER',
-        'barber': 'BARBER',
-        'admin': 'ADMIN'
-      };
-      dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
+      dbRole = 'CONSUMER';
     }
 
     // Operators: never attribute campusId (location is the public service pin only).
@@ -734,7 +734,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
       firstName: pendingReg.firstName,
       lastName: pendingReg.lastName,
       campusId: pendingReg.campusId,
-      role: pendingReg.role,
+      role: 'student',
       phoneE164: pendingReg.phoneE164,
     });
 

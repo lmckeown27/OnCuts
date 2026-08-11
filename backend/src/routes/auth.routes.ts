@@ -33,7 +33,10 @@ router.post(
     body('lastName').optional().trim(),
     body('phoneNumber').optional().isString().trim(),
     body('phone').optional().isString().trim(),
-    body('role').isIn(['student', 'barber']).withMessage('Role must be student or barber'),
+    body('role')
+      .optional()
+      .isIn(['student', 'barber'])
+      .withMessage('Role must be student or barber'),
     validate,
   ],
   register
