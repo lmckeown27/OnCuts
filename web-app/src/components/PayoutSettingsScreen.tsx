@@ -707,11 +707,6 @@ export default function PayoutSettingsScreen({
                     <h3 className="text-lg font-semibold text-gray-900 text-center">
                       Client cancellation refunds
                     </h3>
-                    <p className="text-sm text-gray-600 text-center leading-relaxed">
-                      If a client cancels a paid booking at least this long before the appointment, they
-                      get a full refund. Cancellations inside this window are non-refundable. If you cancel,
-                      the client always gets a full refund.
-                    </p>
                     {cancelPolicyLoading ? (
                       <div className="py-8 text-center">
                         <div className="animate-spin w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full mx-auto mb-3" />
@@ -720,7 +715,7 @@ export default function PayoutSettingsScreen({
                     ) : (
                       <>
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide text-center">
-                          Full refund if cancelled at least
+                          Client receives full refund if cancelled at least
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                           {CLIENT_CANCEL_REFUND_HOUR_PRESETS.map((hours) => {
