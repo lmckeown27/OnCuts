@@ -163,7 +163,6 @@ type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
 type ConsumerHomeMode = 'providers' | 'waitlist';
-type ControlsPage = 'payment' | 'main';
 
 interface MetricsListWindow {
   id: string;
@@ -489,8 +488,6 @@ export function AdminDashboard({
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
   const [isSavingControls, setIsSavingControls] = useState(false);
-  /** Within Controls Pages card: Payment vs Main */
-  const [controlsPage, setControlsPage] = useState<ControlsPage>('payment');
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
   const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
@@ -5426,107 +5423,44 @@ export function AdminDashboard({
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                Pages
-              </p>
-              <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1">
-                {(
-                  [
-                    { id: 'payment' as const, label: 'Payment' },
-                    { id: 'main' as const, label: 'Main' },
-                  ] as const
-                ).map((page) => (
-                  <button
-                    key={page.id}
-                    type="button"
-                    onClick={() => setControlsPage(page.id)}
-                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
-                      controlsPage === page.id
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {page.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {controlsPage === 'payment' && (
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">Cash Option</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Admin↔admin bookings only. Consumer/operator bookings never show cash.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={cashPaymentEnabled}
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Pages
+            </p>
+            <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
+              <legend className="text-sm font-semibold text-gray-900 mb-1">
+                Consumer home
+              </legend>
+              {(
+                [
+                  { id: 'providers' as const, label: 'Provider cards' },
+                  { id: 'waitlist' as const, label: 'Waitlist' },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.id}
+                  className={`flex items-center gap-3 cursor-pointer ${
+                    isLoadingPlatformFee || isSavingControls ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="consumer-home-mode"
+                    value={opt.id}
+                    checked={consumerHomeMode === opt.id}
                     disabled={isLoadingPlatformFee || isSavingControls}
-                    onClick={() =>
+                    onChange={() => {
+                      if (opt.id === consumerHomeMode) return;
                       void handleSaveControls({
-                        cashPaymentEnabled: !cashPaymentEnabled,
-                        consumerHomeMode,
-                      })
-                    }
-                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                      cashPaymentEnabled ? 'bg-brand-500' : 'bg-stone-300'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                        cashPaymentEnabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {controlsPage === 'main' && (
-              <div className="space-y-3 pt-1">
-                <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
-                  <legend className="text-sm font-semibold text-gray-900 mb-1">
-                    Consumer home
-                  </legend>
-                  {(
-                    [
-                      { id: 'providers' as const, label: 'Provider cards' },
-                      { id: 'waitlist' as const, label: 'Waitlist' },
-                    ] as const
-                  ).map((opt) => (
-                    <label
-                      key={opt.id}
-                      className={`flex items-center gap-3 cursor-pointer ${
-                        isLoadingPlatformFee || isSavingControls ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="consumer-home-mode"
-                        value={opt.id}
-                        checked={consumerHomeMode === opt.id}
-                        disabled={isLoadingPlatformFee || isSavingControls}
-                        onChange={() => {
-                          if (opt.id === consumerHomeMode) return;
-                          void handleSaveControls({
-                            cashPaymentEnabled,
-                            consumerHomeMode: opt.id,
-                          });
-                        }}
-                        className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
-                      />
-                      <span className="text-sm text-gray-900">{opt.label}</span>
-                    </label>
-                  ))}
-                </fieldset>
-              </div>
-            )}
-
+                        cashPaymentEnabled,
+                        consumerHomeMode: opt.id,
+                      });
+                    }}
+                    className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                  />
+                  <span className="text-sm text-gray-900">{opt.label}</span>
+                </label>
+              ))}
+            </fieldset>
             {(isLoadingPlatformFee || isSavingControls) && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -5644,6 +5578,36 @@ export function AdminDashboard({
               </div>
             </div>
 
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Cash Option</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Admin↔admin bookings only. Consumer/operator bookings never show cash.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={cashPaymentEnabled}
+                disabled={isLoadingPlatformFee || isSavingControls}
+                onClick={() =>
+                  void handleSaveControls({
+                    cashPaymentEnabled: !cashPaymentEnabled,
+                    consumerHomeMode,
+                  })
+                }
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  cashPaymentEnabled ? 'bg-brand-500' : 'bg-stone-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    cashPaymentEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
               {isEditingPriceControls ? (
                 <>
@@ -5681,10 +5645,10 @@ export function AdminDashboard({
               )}
             </div>
 
-            {(isLoadingPlatformFee || isSavingPlatformFee) && (
+            {(isLoadingPlatformFee || isSavingPlatformFee || isSavingControls) && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {isSavingPlatformFee ? 'Saving…' : 'Loading…'}
+                {isSavingPlatformFee || isSavingControls ? 'Saving…' : 'Loading…'}
               </div>
             )}
           </div>
