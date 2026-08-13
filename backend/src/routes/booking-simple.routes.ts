@@ -2069,6 +2069,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
 
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              b."barberEarningsUsdCents",
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name
        FROM bookings b
@@ -2116,6 +2117,17 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       typeof paymentIntent.amount === 'number' && paymentIntent.amount > 0
         ? paymentIntent.amount
         : booking.priceUsdCents;
+    const storedEarnings = Number(booking.barberEarningsUsdCents);
+    const platformFeeFromPi = Number(
+      paymentIntent.metadata?.platform_fee_cents ?? paymentIntent.application_fee_amount ?? NaN
+    );
+    const operatorEnrouteCents =
+      booking.barberEarningsUsdCents != null && Number.isFinite(storedEarnings) && storedEarnings >= 0
+        ? Math.round(storedEarnings)
+        : Number.isFinite(platformFeeFromPi)
+          ? Math.max(0, totalAmountCents - Math.round(platformFeeFromPi))
+          : Number(booking.priceUsdCents) || 0;
+    const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
     await pool.query(
       `UPDATE bookings 
@@ -2158,15 +2170,15 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       userId: booking.barber_user_id,
       type: 'payment_received',
       title: 'Payment Received!',
-      message: `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)}`,
-      data: { bookingId: id, amount: totalAmountCents, tip: 0, phase: 'service' },
+      message: `Service payment enroute: ${operatorEnrouteLabel}`,
+      data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, phase: 'service' },
     });
     await pushNotificationService.sendMirrorPush(
       booking.barber_user_id,
       'Payment Received!',
-      `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)}`,
+      `Service payment enroute: ${operatorEnrouteLabel}`,
       'payment_received',
-      { bookingId: id, amount: totalAmountCents, tip: 0, phase: 'service' }
+      { bookingId: id, amount: operatorEnrouteCents, tip: 0, phase: 'service' }
     );
 
     logger.info(`Service payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
@@ -2185,9 +2197,9 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
           bookingId: id,
           consumerId: userId,
           consumerName,
-          amountPaid: totalAmountCents,
+          amountPaid: operatorEnrouteCents,
           tipAmount: 0,
-          totalFormatted: `$${(totalAmountCents / 100).toFixed(2)}`,
+          totalFormatted: operatorEnrouteLabel,
           phase: 'service',
         });
       }
@@ -2285,6 +2297,8 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       serviceAmountCents: booking.priceUsdCents,
     });
     const totalAmountCents = feeSplit.chargeAmountCents;
+    const operatorEnrouteCents = feeSplit.barberEarningsCents;
+    const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
     await pool.query(
       `UPDATE bookings 
@@ -2306,15 +2320,15 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       userId: booking.barber_user_id,
       type: 'payment_received',
       title: 'Payment Received!',
-      message: `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
-      data: { bookingId: id, amount: totalAmountCents, tip: 0, paymentMethod, phase: 'service' },
+      message: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
+      data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, paymentMethod, phase: 'service' },
     });
     await pushNotificationService.sendMirrorPush(
       booking.barber_user_id,
       'Payment Received!',
-      `Service payment enroute: $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})`,
+      `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
       'payment_received',
-      { bookingId: id, amount: totalAmountCents, tip: 0, paymentMethod, phase: 'service' }
+      { bookingId: id, amount: operatorEnrouteCents, tip: 0, paymentMethod, phase: 'service' }
     );
 
     logger.info(`Cash service payment for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
@@ -2333,9 +2347,9 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
           bookingId: id,
           consumerId: userId,
           consumerName,
-          amountPaid: totalAmountCents,
+          amountPaid: operatorEnrouteCents,
           tipAmount: 0,
-          totalFormatted: `$${(totalAmountCents / 100).toFixed(2)}`,
+          totalFormatted: operatorEnrouteLabel,
           paymentMethod,
           phase: 'service',
         });
