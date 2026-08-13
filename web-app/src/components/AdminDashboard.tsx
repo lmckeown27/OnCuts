@@ -5424,12 +5424,10 @@ export function AdminDashboard({
         <div className="space-y-4">
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Pages
+              Consumer Home
             </p>
             <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
-              <legend className="text-sm font-semibold text-gray-900 mb-1">
-                Consumer home
-              </legend>
+              <legend className="sr-only">Consumer home</legend>
               {(
                 [
                   { id: 'providers' as const, label: 'Provider cards' },
