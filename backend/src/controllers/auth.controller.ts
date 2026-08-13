@@ -107,6 +107,7 @@ import {
   verifyToken,
 } from '../utils/jwt.utils';
 import { resolveAccessTokenRole } from '../utils/access-token-role';
+import { notifyOperatorApplicationApproved } from '../utils/notify-application-approved';
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -625,6 +626,11 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       );
 
       logger.info(`Created barber profile for user ${user.id} from approved guest application ${guestApp.id}`);
+      void notifyOperatorApplicationApproved({
+        userId: user.id,
+        applicationId: guestApp.id,
+        specialties: guestApp.specialties,
+      });
     }
 
     const accessRole = await resolveAccessTokenRole(user.id, user.role);

@@ -1124,6 +1124,7 @@ export default function BarberPage() {
                       }
                       switch (notifType) {
                         case 'booking_accepted':
+                        case 'application_approved':
                           return { bg: 'bg-green-100', icon: <Check className="w-5 h-5 text-green-600" /> };
                         case 'booking_rejected':
                         case 'booking_cancelled':

@@ -443,10 +443,13 @@ class PushNotificationService {
     } else {
       note.badge = notification.badge ?? 1;
       note.sound = notification.sound || 'default';
-      note.alert = {
-        title: notification.title,
-        body: notification.body,
-      };
+      const alertTitle = String(notification.title || '').trim();
+      const alertBody = String(notification.body || '').trim();
+      // One-line banners: skip a duplicate title when it matches the body.
+      note.alert =
+        alertTitle && alertBody && alertTitle !== alertBody
+          ? { title: alertTitle, body: alertBody }
+          : alertBody || alertTitle;
       if (notification.category) {
         note.category = notification.category;
       }
@@ -893,6 +896,7 @@ class PushNotificationService {
     let category = 'BOOKING_CATEGORY';
     if (type === 'payment_received') category = 'PAYMENT_CATEGORY';
     else if (type === 'new_review' || type === 'review') category = 'REVIEW_CATEGORY';
+    else if (type === 'application_approved') category = 'SYSTEM_CATEGORY';
 
     return this.sendNotification(userId, {
       title,

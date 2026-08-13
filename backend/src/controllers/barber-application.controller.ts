@@ -5,6 +5,7 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
 import { barberProviderTypeInsertFragments } from '../services/barber-provider-schema.service';
+import { notifyOperatorApplicationApproved } from '../utils/notify-application-approved';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -546,6 +547,11 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
           );
 
           logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
+          void notifyOperatorApplicationApproved({
+            userId,
+            applicationId: id,
+            specialties,
+          });
         } else {
           // User doesn't exist yet - send them an email to create an account
           // They will be auto-promoted when they sign up with this email
@@ -620,6 +626,11 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
         );
 
         logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
+        void notifyOperatorApplicationApproved({
+          userId: updatedApplication.user_id,
+          applicationId: id,
+          specialties,
+        });
       }
     }
 
