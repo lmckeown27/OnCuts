@@ -1180,14 +1180,18 @@ export default function PostServicePaymentPage() {
                   <Check className="w-10 h-10 text-green-600" />
                 </div>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2
+                  className={`text-2xl font-bold text-gray-900 ${
+                    tipDone ? 'mb-6' : 'mb-2'
+                  }`}
+                >
                   {tipDone ? 'All set!' : 'Service Payment Confirmed!'}
                 </h2>
-                <p className="text-gray-600 mb-6">
-                  {tipDone
-                    ? `${booking.consumer.firstName} finished the tip step.`
-                    : `${booking.consumer.firstName} paid for the service. Mark complete after the appointment to request a tip.`}
-                </p>
+                {!tipDone && (
+                  <p className="text-gray-600 mb-6">
+                    {`${booking.consumer.firstName} paid for the service. Mark complete after the appointment to request a tip.`}
+                  </p>
+                )}
               </>
             ) : (
               <>
