@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { IOS_APP_STORE_LINKS } from './IosAppPromoSection';
+import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
+import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 import { isAppInstalled, isIOSDevice } from '../utils/appUtils';
 import { useViewport } from '../hooks';
 
@@ -17,15 +19,19 @@ const DISMISS_KEYS = {
 const COPY = {
   consumer: {
     title: 'Get the OnCuts app',
-    subtitle: 'Book faster on iPhone',
+    subtitle: 'Open in the OnCuts app',
     href: IOS_APP_STORE_LINKS.consumer,
-    cta: 'Download',
+    cta: 'Open',
+    logo: onCutsAppLogo,
+    logoAlt: 'OnCuts app',
   },
   operator: {
     title: 'Get OnCuts Operator',
-    subtitle: 'Manage your schedule on iPhone',
+    subtitle: 'Open in the OnCuts Operator app',
     href: IOS_APP_STORE_LINKS.interaProvider,
-    cta: 'Download',
+    cta: 'Open',
+    logo: interaProviderAppLogo,
+    logoAlt: 'OnCuts Operator app',
   },
 } as const;
 
@@ -75,7 +81,7 @@ export default function IosAppDownloadBanner({ variant }: IosAppDownloadBannerPr
 
   return (
     <div
-      className="sticky top-0 z-40 border-b border-gray-200 bg-gray-900 text-white"
+      className="sticky top-0 z-40 border-b border-black bg-black text-white"
       role="region"
       aria-label={copy.title}
     >
@@ -84,16 +90,24 @@ export default function IosAppDownloadBanner({ variant }: IosAppDownloadBannerPr
           href={copy.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-md"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
         >
-          <p className="truncate text-sm font-semibold leading-tight">{copy.title}</p>
-          <p className="truncate text-xs text-white/70">{copy.subtitle}</p>
+          <img
+            src={copy.logo}
+            alt={copy.logoAlt}
+            className="h-10 w-10 shrink-0 rounded-[10px] object-cover"
+            decoding="async"
+          />
+          <span className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-tight text-white">{copy.title}</p>
+            <p className="truncate text-xs text-white/70">{copy.subtitle}</p>
+          </span>
         </a>
         <a
           href={copy.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 transition-colors hover:bg-gray-100 active:scale-[0.98]"
+          className="shrink-0 rounded-full bg-[#007AFF] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0066d6] active:scale-[0.98]"
         >
           {copy.cta}
         </a>
