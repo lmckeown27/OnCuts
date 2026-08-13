@@ -2467,31 +2467,6 @@ export function AdminDashboard({
       <div className="p-2.5 sm:p-3 bg-white rounded-lg border border-gray-200">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex flex-col items-start gap-1.5">
-            <p className="text-sm font-bold text-gray-900">
-              {pricingBurdenView === 'client' ? 'Platform Service Fee' : 'Platform commission'}
-            </p>
-            <nav className="inline-flex gap-1 rounded-lg bg-stone-100 p-0.5">
-              {(
-                [
-                  { id: 'client' as const, label: 'Client Burden' },
-                  { id: 'operator' as const, label: 'Operator Burden' },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
-                  disabled={isSavingControls || isLoadingPlatformFee || isSavingPlatformFee}
-                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all disabled:opacity-50 ${
-                    pricingBurdenView === opt.id
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </nav>
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1.5">
                 <span className="text-xs text-gray-600 whitespace-nowrap">
@@ -2585,6 +2560,28 @@ export function AdminDashboard({
                 </Button>
               )}
             </div>
+            <nav className="inline-flex gap-1 rounded-lg bg-stone-100 p-0.5">
+              {(
+                [
+                  { id: 'client' as const, label: 'Client Burden' },
+                  { id: 'operator' as const, label: 'Operator Burden' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
+                  disabled={isSavingControls || isLoadingPlatformFee || isSavingPlatformFee}
+                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all disabled:opacity-50 ${
+                    pricingBurdenView === opt.id
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </nav>
             {!isEditingPlatformFee && (
               <p
                 className={`text-[10px] ${
