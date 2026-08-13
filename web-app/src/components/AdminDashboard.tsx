@@ -163,6 +163,7 @@ type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
 type ConsumerHomeMode = 'providers' | 'waitlist';
+type PricingBurdenView = 'client' | 'operator';
 
 interface MetricsListWindow {
   id: string;
@@ -495,6 +496,7 @@ export function AdminDashboard({
   const [platformKickbackPercent, setPlatformKickbackPercent] = useState(0);
   const [platformKickbackInput, setPlatformKickbackInput] = useState('0');
   const [isEditingPriceControls, setIsEditingPriceControls] = useState(false);
+  const [pricingBurdenView, setPricingBurdenView] = useState<PricingBurdenView>('operator');
   /** Within Operators tab: list vs onboarding bulk tools */
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
@@ -5469,16 +5471,45 @@ export function AdminDashboard({
 
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Price
+              Platform Pricing
             </p>
+
+            <nav className="flex justify-center gap-1 rounded-xl bg-stone-100 p-1">
+              {(
+                [
+                  { id: 'client' as const, label: 'Client Burden' },
+                  { id: 'operator' as const, label: 'Operator Burden' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    if (isEditingPriceControls) handleCancelEditPriceControls();
+                    setPricingBurdenView(opt.id);
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                    pricingBurdenView === opt.id
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </nav>
 
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900">Commission</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {platformCommissionEnabled
-                    ? `${platformFeePercent}% of service amount. Tips are never commissioned.`
-                    : `Off — card bookings take $0 fee (saved rate ${platformFeePercent}%).`}
+                  {pricingBurdenView === 'client'
+                    ? platformCommissionEnabled
+                      ? `${platformFeePercent}% added to the client's checkout. Operator keeps the listed price. Tips never commissioned.`
+                      : `Off — clients pay the listed price only (saved rate ${platformFeePercent}%).`
+                    : platformCommissionEnabled
+                      ? `${platformFeePercent}% of service amount taken from the operator. Tips are never commissioned.`
+                      : `Off — card bookings take $0 fee (saved rate ${platformFeePercent}%).`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -5536,6 +5567,7 @@ export function AdminDashboard({
               </div>
             </div>
 
+            {pricingBurdenView === 'operator' && (
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900">Kickback</p>
@@ -5575,6 +5607,7 @@ export function AdminDashboard({
                 </span>
               </div>
             </div>
+            )}
 
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
