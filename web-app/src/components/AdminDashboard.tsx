@@ -714,9 +714,13 @@ export function AdminDashboard({
       setPlatformCommissionEnabledDraft(nextEnabled);
       setIsEditingPlatformFee(false);
       toast.success(
-        nextEnabled
-          ? `Platform commission on at ${next}%`
-          : `Platform commission off (saved rate ${next}%)`
+        pricingBurdenView === 'client'
+          ? nextEnabled
+            ? `Service Fee on at ${next}% (client pays)`
+            : `Service Fee off (saved rate ${next}%)`
+          : nextEnabled
+            ? `Platform commission on at ${next}%`
+            : `Platform commission off (saved rate ${next}%)`
       );
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update platform commission');
@@ -759,6 +763,11 @@ export function AdminDashboard({
     if (next === pricingBurdenView) return;
     const prev = pricingBurdenView;
     if (isEditingPriceControls) handleCancelEditPriceControls();
+    if (isEditingPlatformFee) {
+      setPlatformFeeInput(String(platformFeePercent));
+      setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+      setIsEditingPlatformFee(false);
+    }
     setPricingBurdenView(next);
     setIsSavingControls(true);
     try {
@@ -2458,10 +2467,36 @@ export function AdminDashboard({
       <div className="p-2.5 sm:p-3 bg-white rounded-lg border border-gray-200">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex flex-col items-start gap-1.5">
-            <p className="text-sm font-bold text-gray-900">Platform commission</p>
+            <p className="text-sm font-bold text-gray-900">
+              {pricingBurdenView === 'client' ? 'Platform Service Fee' : 'Platform commission'}
+            </p>
+            <nav className="inline-flex gap-1 rounded-lg bg-stone-100 p-0.5">
+              {(
+                [
+                  { id: 'client' as const, label: 'Client Burden' },
+                  { id: 'operator' as const, label: 'Operator Burden' },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
+                  disabled={isSavingControls || isLoadingPlatformFee || isSavingPlatformFee}
+                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all disabled:opacity-50 ${
+                    pricingBurdenView === opt.id
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </nav>
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-600 whitespace-nowrap">Commission %:</span>
+                <span className="text-xs text-gray-600 whitespace-nowrap">
+                  {pricingBurdenView === 'client' ? 'Service Fee %:' : 'Commission %:'}
+                </span>
                 <div className="relative w-20">
                   <input
                     type="number"
@@ -2482,7 +2517,9 @@ export function AdminDashboard({
                         ? 'border-gray-300 bg-white text-gray-900'
                         : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                     }`}
-                    aria-label="Commission percent"
+                    aria-label={
+                      pricingBurdenView === 'client' ? 'Service Fee percent' : 'Commission percent'
+                    }
                   />
                   <span
                     className={`pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs ${
@@ -2510,7 +2547,11 @@ export function AdminDashboard({
                   id="platform-commission-enabled-performance-label"
                   className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
                 >
-                  {platformCommissionStateLabel}
+                  {pricingBurdenView === 'client'
+                    ? platformCommissionChecked
+                      ? 'Disable Service Fee'
+                      : 'Enable Service Fee'
+                    : platformCommissionStateLabel}
                 </span>
               </div>
               {isEditingPlatformFee ? (
@@ -2544,9 +2585,19 @@ export function AdminDashboard({
                 </Button>
               )}
             </div>
-            {!platformCommissionEnabled && !isEditingPlatformFee && (
-              <p className="text-[10px] text-amber-700">
-                Commission off. Card bookings take $0 platform fee (rate {platformFeePercent}% saved).
+            {!isEditingPlatformFee && (
+              <p
+                className={`text-[10px] ${
+                  platformCommissionEnabled ? 'text-gray-500' : 'text-amber-700'
+                }`}
+              >
+                {pricingBurdenView === 'client'
+                  ? platformCommissionEnabled
+                    ? `Client Burden: clients pay a ${platformFeePercent}% Service Fee on top of the listed price. Operator keeps 100%.`
+                    : `Service Fee off. Clients pay the listed price only (rate ${platformFeePercent}% saved).`
+                  : platformCommissionEnabled
+                    ? `Operator Burden: ${platformFeePercent}% is taken from the operator. Tips never commissioned.`
+                    : `Commission off. Card bookings take $0 platform fee (rate ${platformFeePercent}% saved).`}
               </p>
             )}
           </div>
