@@ -2590,7 +2590,7 @@ export function AdminDashboard({
               >
                 {pricingBurdenView === 'client'
                   ? isBurdenFeeOn('client')
-                    ? `Client Burden: clients pay a ${platformFeePercent}% Service Fee on top of the listed price. Operator keeps 100%.`
+                    ? `Client Burden: clients pay a ${platformFeePercent}% Service Fee on top of the listed price. The platform keeps that fee. The operator keeps 100% of the listed price.`
                     : `Service Fee off. Clients pay the listed price only (rate ${platformFeePercent}% saved).`
                   : isBurdenFeeOn('operator')
                     ? `Operator Burden: ${platformFeePercent}% is taken from the operator. Tips never commissioned.`
@@ -5582,7 +5582,7 @@ export function AdminDashboard({
                 <p className="text-xs text-gray-500 mt-0.5">
                   {pricingBurdenView === 'client'
                     ? isBurdenFeeOn('client')
-                      ? `${platformFeePercent}% added to the client's checkout. Operator keeps the listed price. Tips never commissioned.`
+                      ? `${platformFeePercent}% added to the client's checkout. The platform keeps that Service Fee. The operator keeps the listed price. Tips never commissioned.`
                       : `Off — clients pay the listed price only (saved rate ${platformFeePercent}%).`
                     : isBurdenFeeOn('operator')
                       ? `${platformFeePercent}% of service amount taken from the operator. Tips are never commissioned.`
