@@ -17,12 +17,12 @@ import {
   User,
   Scissors,
   MessageCircle,
-  Loader2,
-  Smartphone
+  Loader2
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import { IOS_APP_STORE_LINKS } from '../../components/IosAppPromoSection';
+import onCutsAppLogo from '../../assets/logos/OnCuts_Logo.png';
 import messageService from '../../services/message.service';
 import api from '../../services/api.service';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -396,28 +396,27 @@ export default function BookingPaymentPage() {
           </div>
         </Card>
 
-        {/* App notification info */}
-        <div className="mb-6 p-4 bg-primary-50 border border-gray-200 rounded-lg flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-            <Smartphone className="w-5 h-5 text-primary-600" />
-          </div>
-          <div>
-            <p className="font-semibold text-primary-900 text-sm">Check the app</p>
-            <p className="text-primary-700 text-sm mt-1">
-              After booking, you&apos;ll receive service details and appointment updates in the OnCuts app.
-              Download{' '}
-              <a
-                href={IOS_APP_STORE_LINKS.consumer}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary-900 underline underline-offset-2 hover:text-primary-950"
-              >
-                OnCuts
-              </a>{' '}
-              on iPhone to stay on top of your appointment.
-            </p>
-          </div>
-        </div>
+        <a
+          href={IOS_APP_STORE_LINKS.consumer}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 flex items-center gap-3 rounded-xl bg-black px-4 py-3 text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007AFF] focus-visible:ring-offset-2"
+          aria-label="Open in the OnCuts app"
+        >
+          <img
+            src={onCutsAppLogo}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-[10px] object-cover"
+            decoding="async"
+          />
+          <span className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-tight">Get the OnCuts app</p>
+            <p className="truncate text-xs text-white/70">Open in the OnCuts app</p>
+          </span>
+          <span className="shrink-0 rounded-full bg-[#007AFF] px-4 py-1.5 text-xs font-semibold text-white">
+            Open
+          </span>
+        </a>
 
         {/* Confirm Button */}
         <Button 
