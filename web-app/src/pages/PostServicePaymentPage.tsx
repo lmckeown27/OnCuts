@@ -1239,12 +1239,6 @@ export default function PostServicePaymentPage() {
                       <span className="text-gray-600">Service Price</span>
                       <span className="font-medium">${(serviceCents / 100).toFixed(2)}</span>
                     </div>
-                    {serviceFeeCents > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Service Fee</span>
-                        <span className="font-medium">${(serviceFeeCents / 100).toFixed(2)}</span>
-                      </div>
-                    )}
                     {tipAmount > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Tip</span>
