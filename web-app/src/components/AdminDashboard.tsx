@@ -497,6 +497,7 @@ export function AdminDashboard({
   const [platformKickbackInput, setPlatformKickbackInput] = useState('0');
   const [isEditingPriceControls, setIsEditingPriceControls] = useState(false);
   const [pricingBurdenView, setPricingBurdenView] = useState<PricingBurdenView>('operator');
+  const [feeBurden, setFeeBurden] = useState<PricingBurdenView>('operator');
   /** Within Operators tab: list vs onboarding bulk tools */
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
@@ -672,7 +673,10 @@ export function AdminDashboard({
           setPlatformFeeInput(String(percent));
         }
         const commissionOn = data?.platformCommissionEnabled !== false;
+        const burden: PricingBurdenView = data?.feeBurden === 'client' ? 'client' : 'operator';
         setPlatformCommissionEnabled(commissionOn);
+        setFeeBurden(burden);
+        setPricingBurdenView(burden);
         setPlatformCommissionEnabledDraft(commissionOn);
         const kickback = Number(data?.kickbackPercent);
         if (Number.isFinite(kickback)) {
@@ -681,7 +685,6 @@ export function AdminDashboard({
         }
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
-        setPricingBurdenView(data?.feeBurden === 'client' ? 'client' : 'operator');
       } catch (error) {
         console.error('Failed to fetch platform settings:', error);
       } finally {
@@ -702,17 +705,22 @@ export function AdminDashboard({
       const data = await api.put<{
         platformFeePercent: number;
         platformCommissionEnabled?: boolean;
+        feeBurden?: string;
       }>('/admin/platform-settings', {
         platformFeePercent: percent,
         platformCommissionEnabled: platformCommissionEnabledDraft,
+        feeBurden: pricingBurdenView,
       });
       const next = Number(data?.platformFeePercent ?? percent);
       const nextEnabled = data?.platformCommissionEnabled !== false;
+      const nextBurden: PricingBurdenView = data?.feeBurden === 'client' ? 'client' : 'operator';
       setPlatformFeePercent(next);
       setPlatformFeeInput(String(next));
       setPlatformCommissionEnabled(nextEnabled);
-      setPlatformCommissionEnabledDraft(nextEnabled);
+      setFeeBurden(nextBurden);
+      setPlatformCommissionEnabledDraft(nextEnabled && nextBurden === pricingBurdenView);
       setIsEditingPlatformFee(false);
+      invalidateFrontendConfigCache();
       toast.success(
         pricingBurdenView === 'client'
           ? nextEnabled
@@ -759,58 +767,41 @@ export function AdminDashboard({
     }
   };
 
-  const handleSaveFeeBurden = async (next: PricingBurdenView) => {
+  const isBurdenFeeOn = (view: PricingBurdenView) =>
+    platformCommissionEnabled && feeBurden === view;
+
+  const selectPricingBurdenView = (next: PricingBurdenView) => {
     if (next === pricingBurdenView) return;
-    const prev = pricingBurdenView;
-    if (isEditingPriceControls) handleCancelEditPriceControls();
-    if (isEditingPlatformFee) {
-      setPlatformFeeInput(String(platformFeePercent));
-      setPlatformCommissionEnabledDraft(platformCommissionEnabled);
-      setIsEditingPlatformFee(false);
-    }
     setPricingBurdenView(next);
-    setIsSavingControls(true);
-    try {
-      const data = await api.put<{ feeBurden?: string }>('/admin/platform-settings', {
-        feeBurden: next,
-      });
-      setPricingBurdenView(data?.feeBurden === 'client' ? 'client' : 'operator');
-      invalidateFrontendConfigCache();
-      toast.success(
-        next === 'client'
-          ? 'Client Burden: clients pay a Service Fee on top of the listed price'
-          : 'Operator Burden: commission is taken from the operator'
-      );
-    } catch (error: any) {
-      setPricingBurdenView(prev);
-      toast.error(error?.message || 'Failed to update fee burden');
-    } finally {
-      setIsSavingControls(false);
-    }
+    setIsEditingPriceControls(false);
+    setIsEditingPlatformFee(false);
+    setPlatformFeeInput(String(platformFeePercent));
+    setPlatformKickbackInput(String(platformKickbackPercent));
+    setPlatformCommissionEnabledDraft(platformCommissionEnabled && feeBurden === next);
   };
 
   const handleStartEditPlatformFee = () => {
     setPlatformFeeInput(String(platformFeePercent));
-    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformCommissionEnabledDraft(isBurdenFeeOn(pricingBurdenView));
     setIsEditingPlatformFee(true);
   };
 
   const handleCancelEditPlatformFee = () => {
     setPlatformFeeInput(String(platformFeePercent));
-    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformCommissionEnabledDraft(isBurdenFeeOn(pricingBurdenView));
     setIsEditingPlatformFee(false);
   };
 
   const handleStartEditPriceControls = () => {
     setPlatformFeeInput(String(platformFeePercent));
-    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformCommissionEnabledDraft(isBurdenFeeOn(pricingBurdenView));
     setPlatformKickbackInput(String(platformKickbackPercent));
     setIsEditingPriceControls(true);
   };
 
   const handleCancelEditPriceControls = () => {
     setPlatformFeeInput(String(platformFeePercent));
-    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformCommissionEnabledDraft(isBurdenFeeOn(pricingBurdenView));
     setPlatformKickbackInput(String(platformKickbackPercent));
     setIsEditingPriceControls(false);
   };
@@ -833,25 +824,34 @@ export function AdminDashboard({
         platformFeePercent: number;
         platformCommissionEnabled?: boolean;
         kickbackPercent?: number;
+        feeBurden?: string;
       }>('/admin/platform-settings', {
         platformFeePercent: percent,
         platformCommissionEnabled: platformCommissionEnabledDraft,
+        feeBurden: pricingBurdenView,
         ...(kickbackChanged ? { kickbackPercent: kickback } : {}),
       });
       const next = Number(data?.platformFeePercent ?? percent);
       const nextEnabled = data?.platformCommissionEnabled !== false;
+      const nextBurden: PricingBurdenView = data?.feeBurden === 'client' ? 'client' : 'operator';
       const nextKickback = Number(data?.kickbackPercent ?? kickback);
       setPlatformFeePercent(next);
       setPlatformFeeInput(String(next));
       setPlatformCommissionEnabled(nextEnabled);
-      setPlatformCommissionEnabledDraft(nextEnabled);
+      setFeeBurden(nextBurden);
+      setPlatformCommissionEnabledDraft(nextEnabled && nextBurden === pricingBurdenView);
       setPlatformKickbackPercent(Number.isFinite(nextKickback) ? nextKickback : kickback);
       setPlatformKickbackInput(String(Number.isFinite(nextKickback) ? nextKickback : kickback));
       setIsEditingPriceControls(false);
+      invalidateFrontendConfigCache();
       toast.success(
-        nextEnabled
-          ? `Commission ${next}% · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
-          : `Commission off · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
+        pricingBurdenView === 'client'
+          ? nextEnabled
+            ? `Service Fee on at ${next}% (client pays)`
+            : `Service Fee off (saved rate ${next}%)`
+          : nextEnabled
+            ? `Commission ${next}% · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
+            : `Commission off · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
       );
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update price controls');
@@ -1667,11 +1667,11 @@ export function AdminDashboard({
     </span>
   ) : null;
 
-  /** Checkbox reflects current state; label is the opposite CTA. */
+  /** Checkbox is on only for the active burden — Service Fee and Commission cannot both be on. */
   const platformCommissionChecked =
     isEditingPlatformFee || isEditingPriceControls
       ? platformCommissionEnabledDraft
-      : platformCommissionEnabled;
+      : isBurdenFeeOn(pricingBurdenView);
   const platformCommissionStateLabel = platformCommissionChecked
     ? 'Disable Commission'
     : 'Enable Commission';
@@ -2570,8 +2570,8 @@ export function AdminDashboard({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
-                  disabled={isSavingControls || isLoadingPlatformFee || isSavingPlatformFee}
+                  onClick={() => selectPricingBurdenView(opt.id)}
+                  disabled={isLoadingPlatformFee || isSavingPlatformFee}
                   className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all disabled:opacity-50 ${
                     pricingBurdenView === opt.id
                       ? 'bg-white text-gray-900 shadow-sm'
@@ -2585,14 +2585,14 @@ export function AdminDashboard({
             {!isEditingPlatformFee && (
               <p
                 className={`text-[10px] ${
-                  platformCommissionEnabled ? 'text-gray-500' : 'text-amber-700'
+                  isBurdenFeeOn(pricingBurdenView) ? 'text-gray-500' : 'text-amber-700'
                 }`}
               >
                 {pricingBurdenView === 'client'
-                  ? platformCommissionEnabled
+                  ? isBurdenFeeOn('client')
                     ? `Client Burden: clients pay a ${platformFeePercent}% Service Fee on top of the listed price. Operator keeps 100%.`
                     : `Service Fee off. Clients pay the listed price only (rate ${platformFeePercent}% saved).`
-                  : platformCommissionEnabled
+                  : isBurdenFeeOn('operator')
                     ? `Operator Burden: ${platformFeePercent}% is taken from the operator. Tips never commissioned.`
                     : `Commission off. Card bookings take $0 platform fee (rate ${platformFeePercent}% saved).`}
               </p>
@@ -3426,9 +3426,11 @@ export function AdminDashboard({
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
                 <span className="text-[10px] text-gray-500">
-                  {platformCommissionEnabled
-                    ? `Platform commission ${platformFeePercent}%`
-                    : `Commission off (saved ${platformFeePercent}%)`}{' '}
+                  {isBurdenFeeOn('client')
+                    ? `Service Fee ${platformFeePercent}% (client pays)`
+                    : isBurdenFeeOn('operator')
+                      ? `Platform commission ${platformFeePercent}%`
+                      : `Commission off (saved ${platformFeePercent}%)`}{' '}
                   · tips never commissioned
                 </span>
               </div>
@@ -5559,8 +5561,8 @@ export function AdminDashboard({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
-                  disabled={isSavingControls || isLoadingPlatformFee}
+                  onClick={() => selectPricingBurdenView(opt.id)}
+                  disabled={isLoadingPlatformFee}
                   className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
                     pricingBurdenView === opt.id
                       ? 'bg-white text-gray-900 shadow-sm'
@@ -5579,10 +5581,10 @@ export function AdminDashboard({
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {pricingBurdenView === 'client'
-                    ? platformCommissionEnabled
+                    ? isBurdenFeeOn('client')
                       ? `${platformFeePercent}% added to the client's checkout. Operator keeps the listed price. Tips never commissioned.`
                       : `Off — clients pay the listed price only (saved rate ${platformFeePercent}%).`
-                    : platformCommissionEnabled
+                    : isBurdenFeeOn('operator')
                       ? `${platformFeePercent}% of service amount taken from the operator. Tips are never commissioned.`
                       : `Off — card bookings take $0 fee (saved rate ${platformFeePercent}%).`}
                 </p>
