@@ -10,7 +10,9 @@ import { getDefaultStripeClient, getOptionalStatementDescriptor } from '../confi
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 import {
-  getPlatformFeeRate,
+  calculatePlatformFeeSplit,
+  getFeeBurden,
+  getPlatformFeePercent,
   loadProviderCommissionSettingsByUserId,
 } from '../utils/platform-commission';
 
@@ -86,24 +88,36 @@ class StripePaymentService {
         platformFeeCentsOverride,
       } = params;
 
-      const amountCents = Math.round(amount * 100);
-      const serviceAmountCents = serviceAmount ? Math.round(serviceAmount * 100) : amountCents;
+      const requestedAmountCents = Math.round(amount * 100);
+      const serviceAmountCents = serviceAmount
+        ? Math.round(serviceAmount * 100)
+        : requestedAmountCents;
+      const tipCents = Math.max(0, requestedAmountCents - serviceAmountCents);
 
       let platformFeeCents: number;
+      let chargeAmountCents = requestedAmountCents;
+      let barberAmountCents: number;
       if (platformFeeCentsOverride != null) {
         platformFeeCents = Math.max(0, Math.round(platformFeeCentsOverride));
-      } else if (barberId) {
-        const { settings } = await loadProviderCommissionSettingsByUserId(pool, barberId);
-        if (settings.commissionFreeEligible) {
-          platformFeeCents = 0;
-        } else {
-          platformFeeCents = Math.round(serviceAmountCents * settings.effectiveFeeRate);
-        }
+        barberAmountCents = requestedAmountCents - platformFeeCents;
       } else {
-        platformFeeCents = Math.round(serviceAmountCents * (await getPlatformFeeRate()));
+        const feeBurden = await getFeeBurden();
+        let feePercent = await getPlatformFeePercent();
+        let forceCommissionFree = false;
+        if (barberId) {
+          const { settings } = await loadProviderCommissionSettingsByUserId(pool, barberId);
+          feePercent = settings.effectiveFeeRate * 100;
+          forceCommissionFree = feeBurden !== 'client' && settings.commissionFreeEligible;
+        }
+        const split = calculatePlatformFeeSplit(serviceAmountCents, {
+          forceCommissionFree,
+          feePercent,
+          feeBurden,
+        });
+        platformFeeCents = split.platformFeeCents;
+        chargeAmountCents = split.chargeAmountCents + tipCents;
+        barberAmountCents = split.barberEarningsCents + tipCents;
       }
-
-      const barberAmountCents = amountCents - platformFeeCents;
 
       let barberStripeAccountId: string | null = null;
       if (barberId) {
@@ -116,7 +130,7 @@ class StripePaymentService {
 
       const st = getOptionalStatementDescriptor();
       const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
-        amount: amountCents,
+        amount: chargeAmountCents,
         currency,
         customer: customerId,
         metadata: {
@@ -146,7 +160,7 @@ class StripePaymentService {
       return {
         clientSecret: paymentIntent.client_secret!,
         paymentIntentId: paymentIntent.id,
-        amount: amountCents / 100,
+        amount: chargeAmountCents / 100,
         platformFee: platformFeeCents / 100,
         barberAmount: barberAmountCents / 100,
       };

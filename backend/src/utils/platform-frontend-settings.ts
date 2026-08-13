@@ -12,9 +12,12 @@ import { logger } from './logger';
 import type { DbClient } from './platform-commission';
 import {
   getConfiguredPlatformFeePercent,
+  getFeeBurden,
   isPlatformCommissionEnabled,
+  setFeeBurden,
   setPlatformCommissionEnabled,
   setPlatformFeePercent,
+  type FeeBurden,
 } from './platform-commission';
 import {
   getConfiguredKickbackPercent,
@@ -35,10 +38,15 @@ export interface PlatformSettingsPayload extends PlatformFrontendSettings {
   platformCommissionEnabled: boolean;
   /** Global kickback % of service amount (0 = off). Applied to all operators on save. */
   kickbackPercent: number;
+  /** operator = commission from listed price; client = Service Fee on top. */
+  feeBurden: FeeBurden;
 }
 
 export interface FrontendConfigPayload extends PlatformFrontendSettings {
   consumerUserCount: number;
+  platformFeePercent: number;
+  platformCommissionEnabled: boolean;
+  feeBurden: FeeBurden;
 }
 
 const DEFAULTS: PlatformFrontendSettings = {
@@ -144,30 +152,39 @@ export async function countConsumerUsers(client: DbClient = pool): Promise<numbe
 export async function getFrontendConfigPayload(
   client: DbClient = pool
 ): Promise<FrontendConfigPayload> {
-  const [settings, consumerUserCount] = await Promise.all([
-    getPlatformFrontendSettings(client),
-    countConsumerUsers(client),
-  ]);
+  const [settings, consumerUserCount, platformFeePercent, platformCommissionEnabled, feeBurden] =
+    await Promise.all([
+      getPlatformFrontendSettings(client),
+      countConsumerUsers(client),
+      getConfiguredPlatformFeePercent(client),
+      isPlatformCommissionEnabled(client),
+      getFeeBurden(client),
+    ]);
   return {
     ...settings,
     consumerUserCount,
+    platformFeePercent,
+    platformCommissionEnabled,
+    feeBurden,
   };
 }
 
 export async function getPlatformSettingsPayload(
   client: DbClient = pool
 ): Promise<PlatformSettingsPayload> {
-  const [platformFeePercent, platformCommissionEnabled, kickbackPercent, frontend] =
+  const [platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, frontend] =
     await Promise.all([
       getConfiguredPlatformFeePercent(client),
       isPlatformCommissionEnabled(client),
       getConfiguredKickbackPercent(client),
+      getFeeBurden(client),
       getPlatformFrontendSettings(client),
     ]);
   return {
     platformFeePercent,
     platformCommissionEnabled,
     kickbackPercent,
+    feeBurden,
     ...frontend,
   };
 }
@@ -177,6 +194,7 @@ export async function updatePlatformSettingsPartial(
     platformFeePercent?: number;
     platformCommissionEnabled?: boolean;
     kickbackPercent?: number;
+    feeBurden?: FeeBurden;
     cashPaymentEnabled?: boolean;
     consumerHomeMode?: ConsumerHomeMode;
   },
@@ -186,6 +204,7 @@ export async function updatePlatformSettingsPartial(
   const hasFee = patch.platformFeePercent !== undefined;
   const hasCommissionEnabled = patch.platformCommissionEnabled !== undefined;
   const hasKickback = patch.kickbackPercent !== undefined;
+  const hasBurden = patch.feeBurden !== undefined;
   const hasCash = patch.cashPaymentEnabled !== undefined;
   const hasMode = patch.consumerHomeMode !== undefined;
 
@@ -199,6 +218,10 @@ export async function updatePlatformSettingsPartial(
 
   if (hasKickback) {
     await setPlatformKickbackPercent(patch.kickbackPercent!, updatedBy, client);
+  }
+
+  if (hasBurden) {
+    await setFeeBurden(patch.feeBurden!, updatedBy, client);
   }
 
   if (hasCash || hasMode) {

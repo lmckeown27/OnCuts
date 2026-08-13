@@ -45,7 +45,11 @@ import {
   appendProviderIdAliasResponse,
 } from '../middleware/provider-id-alias.middleware';
 import {
+  calculatePlatformFeeSplit,
   estimatePlatformFeeSplit,
+  getConfiguredPlatformFeePercent,
+  getFeeBurden,
+  isPlatformCommissionEnabled,
   loadProviderCommissionSettings,
   releaseCommissionFreeBooking,
   resolveBookingPlatformFee,
@@ -341,7 +345,8 @@ router.post('/', authenticate, async (req, res, next) => {
     // Fee estimate uses provider commission settings; payment-intent reserves free slots for real.
     const price = priceUsdCents || 0;
     const commissionSettings = await loadProviderCommissionSettings(pool, barberRecordId);
-    const feeEstimate = estimatePlatformFeeSplit(price, commissionSettings);
+    const feeBurden = await getFeeBurden(pool);
+    const feeEstimate = estimatePlatformFeeSplit(price, commissionSettings, feeBurden);
     const platformFee = feeEstimate.platformFeeCents;
     const barberEarnings = feeEstimate.barberEarningsCents;
 
@@ -663,6 +668,9 @@ router.post('/', authenticate, async (req, res, next) => {
           barberId: booking.barberId,
           serviceType: booking.serviceType,
           priceUsdCents: booking.priceUsdCents,
+          serviceFeeCents: feeEstimate.serviceFeeCents,
+          chargeAmountCents: feeEstimate.chargeAmountCents,
+          feeBurden: feeEstimate.feeBurden,
           scheduledTime: booking.requestedAt,
           status: booking.status,
           createdAt: booking.createdAt,
@@ -966,6 +974,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
       row.barber_user_role
     );
 
+    const feeQuote = estimatePlatformFeeSplit(
+      Number(row.priceUsdCents) || 0,
+      await loadProviderCommissionSettings(pool, row.barberId),
+      await getFeeBurden(pool)
+    );
+
     // Format response with nested barber/consumer objects
     const booking = {
       id: row.id,
@@ -974,6 +988,10 @@ router.get('/:id', authenticate, async (req, res, next) => {
       serviceType: row.serviceType,
       serviceName: row.service_name || row.serviceType,
       priceUsdCents: row.priceUsdCents,
+      serviceFeeCents: feeQuote.serviceFeeCents,
+      chargeAmountCents: feeQuote.chargeAmountCents,
+      feeBurden: feeQuote.feeBurden,
+      platformFeePercent: feeQuote.feePercentDisplay,
       durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
       scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
       status: row.status,
@@ -1579,6 +1597,13 @@ router.get('/', authenticate, async (req, res, next) => {
 
     logger.info('Bookings fetched', { count: result.rows.length });
 
+    const listFeeBurden = await getFeeBurden(pool);
+    const listCommissionOn = await isPlatformCommissionEnabled(pool);
+    const listFeePercent =
+      listFeeBurden === 'client' && listCommissionOn
+        ? await getConfiguredPlatformFeePercent(pool)
+        : 0;
+
     // Helper to format service type: "HAIRCUT" -> "Haircut", "BEARD_TRIM" -> "Beard Trim"
     const formatServiceType = (type: string) => {
       if (!type) return 'Haircut';
@@ -1596,13 +1621,21 @@ router.get('/', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        bookings: result.rows.map(row => ({
+        bookings: result.rows.map(row => {
+          const feeQuote = calculatePlatformFeeSplit(Number(row.priceUsdCents) || 0, {
+            feePercent: listFeePercent,
+            feeBurden: listFeeBurden,
+          });
+          return {
           id: row.id,
           consumerId: row.consumerId,
           barberId: row.barberId,
           // Prefer original service name from conversation, fallback to formatted enum
           serviceType: row.conv_service_name || formatServiceType(row.serviceType),
           priceUsdCents: row.priceUsdCents,
+          serviceFeeCents: feeQuote.serviceFeeCents,
+          chargeAmountCents: feeQuote.chargeAmountCents,
+          feeBurden: feeQuote.feeBurden,
           durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
           scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
@@ -1642,7 +1675,8 @@ router.get('/', authenticate, async (req, res, next) => {
             avatar: row.barber_avatar,
           },
           pendingRescheduleRequest: formatPendingRescheduleRequest(row),
-        })),
+        };
+        }),
       },
       count: result.rows.length,
     });
@@ -1824,7 +1858,6 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       });
     }
 
-    const totalAmountCents = booking.priceUsdCents;
     const stripe = getDefaultStripeClient();
 
     const consumerResult = await pool.query(
@@ -1847,6 +1880,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       alreadyCommissionFreeApplied: booking.commission_free_applied === true,
     });
     const platformFeeCents = feeSplit.platformFeeCents;
+    const totalAmountCents = feeSplit.chargeAmountCents;
 
     const statementDescriptor = getOptionalStatementDescriptor();
     const paymentIntentConfig: any = {
@@ -1867,6 +1901,8 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         tip_amount_cents: '0',
         platform_fee_cents: platformFeeCents.toString(),
         platform_fee_percent: String(feeSplit.feePercentDisplay),
+        service_fee_cents: String(feeSplit.serviceFeeCents),
+        fee_burden: feeSplit.feeBurden,
         commission_free: feeSplit.commissionFree ? 'true' : 'false',
         platform: 'OnCuts',
       },
@@ -1879,10 +1915,13 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       paymentIntentConfig.transfer_data = {
         destination: barberStripeAccountId,
       };
-      const barberEarnings = totalAmountCents - platformFeeCents;
-      const feeLabel = feeSplit.commissionFree
-        ? 'commission-free'
-        : `${feeSplit.feePercentDisplay}% of $${serviceAmountCents / 100} service`;
+      const barberEarnings = feeSplit.barberEarningsCents;
+      const feeLabel =
+        feeSplit.feeBurden === 'client'
+          ? `client Service Fee ${feeSplit.feePercentDisplay}% (charge $${totalAmountCents / 100})`
+          : feeSplit.commissionFree
+            ? 'commission-free'
+            : `${feeSplit.feePercentDisplay}% of $${serviceAmountCents / 100} service`;
       logger.info(`Service payment split: $${platformFeeCents / 100} platform (${feeLabel}), $${barberEarnings / 100} to barber (${barberStripeAccountId})`, {
         stripeKey: formatStripeSecretKeyForSafeLog(getDefaultStripeSecretKey()),
       });
@@ -1915,6 +1954,10 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amountCents: totalAmountCents,
+        serviceAmountCents,
+        serviceFeeCents: feeSplit.serviceFeeCents,
+        feeBurden: feeSplit.feeBurden,
+        platformFeePercent: feeSplit.feePercentDisplay,
         paymentKind: 'service',
         ...(publishableKey
           ? { publishableKey, publishableKeyPrefix: publishableKeyPrefix ?? undefined }
@@ -2050,7 +2093,6 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       });
     }
 
-    const totalAmountCents = booking.priceUsdCents;
     const stripe = getDefaultStripeClient();
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     
@@ -2069,6 +2111,11 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
         error: 'Payment intent does not match this booking',
       });
     }
+
+    const totalAmountCents =
+      typeof paymentIntent.amount === 'number' && paymentIntent.amount > 0
+        ? paymentIntent.amount
+        : booking.priceUsdCents;
 
     await pool.query(
       `UPDATE bookings 
@@ -2232,7 +2279,12 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       });
     }
 
-    const totalAmountCents = booking.priceUsdCents;
+    const feeSplit = await resolveBookingPlatformFee(pool, {
+      bookingId: id,
+      barberRecordId: booking.barberId,
+      serviceAmountCents: booking.priceUsdCents,
+    });
+    const totalAmountCents = feeSplit.chargeAmountCents;
 
     await pool.query(
       `UPDATE bookings 

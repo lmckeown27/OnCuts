@@ -26,6 +26,8 @@ import onCutsAppLogo from '../../assets/logos/OnCuts_Logo.png';
 import messageService from '../../services/message.service';
 import api from '../../services/api.service';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useFrontendConfig } from '../../hooks/useFrontendConfig';
+import { quoteClientServiceFee } from '../../utils/quoteServiceFee';
 
 interface BookingDetails {
   barberId: string;
@@ -46,6 +48,7 @@ export default function BookingPaymentPage() {
   const location = useLocation();
   const bookingDetails = location.state as BookingDetails;
   const { user, isLoading: isAuthLoading } = useAuthStore();
+  const frontendConfig = useFrontendConfig();
 
   const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'error'>('confirm');
   const [bookingId, setBookingId] = useState<string>('');
@@ -160,6 +163,11 @@ export default function BookingPaymentPage() {
     hour12: true
   });
 
+  const serviceCents = Math.round(bookingDetails.servicePrice * 100);
+  const { serviceFeeCents, chargeAmountCents } = quoteClientServiceFee(serviceCents, frontendConfig);
+  const chargeDollars = chargeAmountCents / 100;
+  const serviceFeeDollars = serviceFeeCents / 100;
+
   // Success Screen
   if (step === 'success') {
     return (
@@ -170,7 +178,7 @@ export default function BookingPaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
           <p className="text-gray-600 mb-6">
-            Your appointment with {bookingDetails.barberName} has been confirmed. You'll pay ${bookingDetails.servicePrice.toFixed(2)} directly to the barber.
+            Your appointment with {bookingDetails.barberName} has been confirmed. You'll pay ${chargeDollars.toFixed(2)} in-app after they accept.
           </p>
 
           <div className="text-left bg-gray-50 p-4 rounded-lg mb-6">
@@ -194,7 +202,7 @@ export default function BookingPaymentPage() {
               </div>
               <div className="flex justify-between font-bold border-t border-gray-200 pt-2 mt-2">
                 <span>Amount Due:</span>
-                <span className="text-primary-600">${bookingDetails.servicePrice.toFixed(2)}</span>
+                <span className="text-primary-600">${chargeDollars.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-2">
                 <span>Booking ID:</span>
@@ -383,11 +391,27 @@ export default function BookingPaymentPage() {
           </div>
 
           {/* Price */}
-          <div className="border-t border-dashed border-gray-300 pt-4">
+          <div className="border-t border-dashed border-gray-300 pt-4 space-y-2">
+            {serviceFeeCents > 0 && (
+              <>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Service</span>
+                  <span className="font-medium text-gray-900">
+                    ${bookingDetails.servicePrice.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Service Fee</span>
+                  <span className="font-medium text-gray-900">
+                    ${serviceFeeDollars.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-lg font-medium text-gray-700">Amount Due</span>
               <span className="text-2xl font-bold text-primary-600">
-                ${bookingDetails.servicePrice.toFixed(2)}
+                ${chargeDollars.toFixed(2)}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 text-right">
@@ -433,7 +457,7 @@ export default function BookingPaymentPage() {
             No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your barber'} accepts your request.
           </p>
           <p>
-            By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} after acceptance to lock in your appointment.
+            By confirming, you agree to pay ${chargeDollars.toFixed(2)} after acceptance to lock in your appointment.
           </p>
         </div>
       </div>

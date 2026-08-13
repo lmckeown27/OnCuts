@@ -18,6 +18,7 @@
     "migrate:sql:service-bounds": "npx ts-node src/scripts/apply-sql-migration.ts 033",
     "migrate:sql:audit-logs": "npx ts-node src/scripts/apply-sql-migration.ts 034",
     "migrate:sql:kickback": "npx ts-node src/scripts/apply-sql-migration.ts 064",
+    "migrate:sql:fee-burden": "npx ts-node src/scripts/apply-sql-migration.ts 065",
     "postinstall": "npx prisma generate",
     "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts",
     "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts",

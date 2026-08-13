@@ -31,6 +31,8 @@ interface BookingRow {
   serviceType?: string;
   serviceName?: string | null;
   priceUsdCents?: number;
+  serviceFeeCents?: number;
+  chargeAmountCents?: number;
   location?: string | null;
   barberName?: string;
   barberAvatar?: string | null;
@@ -274,8 +276,12 @@ export default function ConsumerBookingsModal({
                   hour: 'numeric',
                   minute: '2-digit',
                 });
+                const displayCents =
+                  typeof b.chargeAmountCents === 'number' && b.chargeAmountCents > 0
+                    ? b.chargeAmountCents
+                    : b.priceUsdCents;
                 const price =
-                  b.priceUsdCents != null ? `$${(b.priceUsdCents / 100).toFixed(2)}` : '-';
+                  displayCents != null ? `$${(displayCents / 100).toFixed(2)}` : '-';
 
                 return (
                   <li

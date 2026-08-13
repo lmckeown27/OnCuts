@@ -27,6 +27,7 @@ import {
   updatePlatformSettingsPartial,
   type ConsumerHomeMode,
 } from '../utils/platform-frontend-settings';
+import { parseFeeBurden, type FeeBurden } from '../utils/platform-commission';
 import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
 import {
   assertCampusMetricsAccess,
@@ -255,6 +256,7 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
  *   platformFeePercent?: number (0–100)
  *   platformCommissionEnabled?: boolean
  *   kickbackPercent?: number (0–100; applied to all operators)
+ *   feeBurden?: 'operator' | 'client'
  *   cashPaymentEnabled?: boolean
  *   consumerHomeMode?: 'providers' | 'waitlist'
  * At least one field required.
@@ -273,13 +275,21 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       'platformCommissionEnabled'
     );
     const hasKickback = Object.prototype.hasOwnProperty.call(body, 'kickbackPercent');
+    const hasBurden = Object.prototype.hasOwnProperty.call(body, 'feeBurden');
     const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
     const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
 
-    if (!hasFee && !hasCommissionEnabled && !hasKickback && !hasCash && !hasMode) {
+    if (
+      !hasFee &&
+      !hasCommissionEnabled &&
+      !hasKickback &&
+      !hasBurden &&
+      !hasCash &&
+      !hasMode
+    ) {
       throw new ApiError(
         400,
-        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, cashPaymentEnabled, consumerHomeMode'
+        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, cashPaymentEnabled, consumerHomeMode'
       );
     }
 
@@ -287,6 +297,7 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       platformFeePercent?: number;
       platformCommissionEnabled?: boolean;
       kickbackPercent?: number;
+      feeBurden?: FeeBurden;
       cashPaymentEnabled?: boolean;
       consumerHomeMode?: ConsumerHomeMode;
     } = {};
@@ -315,6 +326,14 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
         throw new ApiError(400, 'kickbackPercent must be a number between 0 and 100');
       }
       patch.kickbackPercent = kickback;
+    }
+
+    if (hasBurden) {
+      const raw = String(body.feeBurden ?? '').trim().toLowerCase();
+      if (raw !== 'operator' && raw !== 'client') {
+        throw new ApiError(400, "feeBurden must be 'operator' or 'client'");
+      }
+      patch.feeBurden = parseFeeBurden(raw);
     }
 
     if (hasCash) {

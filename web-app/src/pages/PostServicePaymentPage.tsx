@@ -42,6 +42,10 @@ interface BookingDetails {
   serviceName: string;
   serviceType: string;
   priceUsdCents: number;
+  serviceFeeCents?: number | null;
+  chargeAmountCents?: number | null;
+  feeBurden?: 'operator' | 'client' | null;
+  platformFeePercent?: number | null;
   tipAmountCents?: number | null;
   totalPaidCents?: number | null;
   paidAt?: string | null;
@@ -250,8 +254,22 @@ function ServicePaymentForm({
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [intentError, setIntentError] = useState<string | null>(null);
   const [isProcessingCash, setIsProcessingCash] = useState(false);
+  const [intentQuote, setIntentQuote] = useState<{
+    serviceAmountCents: number;
+    serviceFeeCents: number;
+    amountCents: number;
+  } | null>(null);
 
-  const baseAmount = booking.priceUsdCents / 100;
+  const serviceCents = intentQuote?.serviceAmountCents ?? booking.priceUsdCents ?? 0;
+  const serviceFeeCents =
+    intentQuote?.serviceFeeCents ??
+    (typeof booking.serviceFeeCents === 'number' ? booking.serviceFeeCents : 0);
+  const totalCents =
+    intentQuote?.amountCents ??
+    (typeof booking.chargeAmountCents === 'number' && booking.chargeAmountCents > 0
+      ? booking.chargeAmountCents
+      : serviceCents + serviceFeeCents);
+  const baseAmount = totalCents / 100;
   const effectiveEntry =
     paymentEntry === 'cash' && !cashAllowed ? 'manual' : paymentEntry;
 
@@ -259,11 +277,29 @@ function ServicePaymentForm({
     setIsCreatingIntent(true);
     setIntentError(null);
     try {
-      const response = await api.post<{ clientSecret: string; paymentIntentId: string }>(
+      const response = await api.post<{
+        clientSecret: string;
+        paymentIntentId: string;
+        amountCents?: number;
+        serviceAmountCents?: number;
+        serviceFeeCents?: number;
+      }>(
         `/bookings-simple/${booking.id}/create-payment-intent`,
         {}
       );
       setClientSecret(response.clientSecret);
+      const serviceAmountCents = Number(response.serviceAmountCents);
+      const feeCents = Number(response.serviceFeeCents);
+      const amountCents = Number(response.amountCents);
+      if (Number.isFinite(amountCents) && amountCents > 0) {
+        setIntentQuote({
+          serviceAmountCents: Number.isFinite(serviceAmountCents)
+            ? serviceAmountCents
+            : booking.priceUsdCents,
+          serviceFeeCents: Number.isFinite(feeCents) ? feeCents : 0,
+          amountCents,
+        });
+      }
     } catch (err: any) {
       setIntentError(err.message || 'Failed to initialize payment');
     } finally {
@@ -323,6 +359,16 @@ function ServicePaymentForm({
             {getServiceDisplayName(booking.serviceName, booking.serviceType)}
           </span>
         </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Service price</span>
+          <span className="font-medium">${(serviceCents / 100).toFixed(2)}</span>
+        </div>
+        {serviceFeeCents > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Service Fee</span>
+            <span className="font-medium">${(serviceFeeCents / 100).toFixed(2)}</span>
+          </div>
+        )}
         <div className="border-t pt-3 flex justify-between text-lg">
           <span className="font-bold">Total due</span>
           <span className="font-bold text-primary-600">${baseAmount.toFixed(2)}</span>
@@ -1173,12 +1219,18 @@ export default function PostServicePaymentPage() {
               {/* Price breakdown */}
               {(() => {
                 const serviceCents = booking.priceUsdCents || 0;
-                // Derive tip from totalPaidCents if tipAmountCents is missing (only when total reflects service+tip)
+                const serviceFeeCents =
+                  typeof booking.serviceFeeCents === 'number' ? booking.serviceFeeCents : 0;
+                const chargeCents =
+                  typeof booking.chargeAmountCents === 'number' && booking.chargeAmountCents > 0
+                    ? booking.chargeAmountCents
+                    : serviceCents + serviceFeeCents;
+                // Derive tip from totalPaidCents if tipAmountCents is missing (only when total reflects charge+tip)
                 const tipAmount =
                   booking.tipAmountCents ??
                   (booking.totalPaidCents != null &&
-                  booking.totalPaidCents > serviceCents
-                    ? booking.totalPaidCents - serviceCents
+                  booking.totalPaidCents > chargeCents
+                    ? booking.totalPaidCents - chargeCents
                     : 0);
 
                 return (
@@ -1187,6 +1239,12 @@ export default function PostServicePaymentPage() {
                       <span className="text-gray-600">Service Price</span>
                       <span className="font-medium">${(serviceCents / 100).toFixed(2)}</span>
                     </div>
+                    {serviceFeeCents > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Service Fee</span>
+                        <span className="font-medium">${(serviceFeeCents / 100).toFixed(2)}</span>
+                      </div>
+                    )}
                     {tipAmount > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Tip</span>

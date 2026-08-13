@@ -31,6 +31,8 @@ import {
   clearDeferredPaymentTakeover,
   isPaymentTakeoverDeferred,
 } from '../store/deferredPaymentBookings';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import { quoteClientServiceFee } from '../utils/quoteServiceFee';
 
 interface ActiveBooking {
   id: string;
@@ -41,6 +43,9 @@ interface ActiveBooking {
   serviceType: string;
   durationMinutes?: number;
   priceUsdCents: number;
+  serviceFeeCents?: number;
+  chargeAmountCents?: number;
+  feeBurden?: 'operator' | 'client';
   scheduledTime: string;
   location?: string;
   notes?: string;
@@ -74,6 +79,7 @@ export default function ConsumerBookingStatusPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, isLoading: isAuthLoading } = useAuthStore();
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
+  const frontendConfig = useFrontendConfig();
   
   // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
@@ -672,6 +678,17 @@ export default function ConsumerBookingStatusPage() {
   };
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const quotedFee = booking
+    ? quoteClientServiceFee(booking.priceUsdCents, frontendConfig)
+    : { serviceFeeCents: 0, chargeAmountCents: 0 };
+  const serviceFeeCents =
+    typeof booking?.serviceFeeCents === 'number'
+      ? booking.serviceFeeCents
+      : quotedFee.serviceFeeCents;
+  const chargeAmountCents =
+    typeof booking?.chargeAmountCents === 'number' && booking.chargeAmountCents > 0
+      ? booking.chargeAmountCents
+      : quotedFee.chargeAmountCents || (booking?.priceUsdCents ?? 0);
 
   if (isLoading) {
     return (
@@ -1096,7 +1113,7 @@ export default function ConsumerBookingStatusPage() {
                   }}
                   className="px-12 py-4 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
-                  {needsTip ? 'Choose Tip' : `Pay $${(booking.priceUsdCents / 100).toFixed(2)}`}
+                  {needsTip ? 'Choose Tip' : `Pay ${formatPrice(chargeAmountCents)}`}
                 </button>
               </div>
             </div>
@@ -1170,12 +1187,28 @@ export default function ConsumerBookingStatusPage() {
           </div>
           
           {/* Service & Price */}
-          <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl mb-4">
-            <div>
-              <p className="text-sm text-gray-500">Service</p>
-              <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
+          <div className="p-4 bg-primary-50 rounded-xl mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Service</p>
+                <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
+              </div>
+              <p className="text-2xl font-bold text-primary-600">
+                {formatPrice(serviceFeeCents > 0 ? chargeAmountCents : booking.priceUsdCents)}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-primary-600">{formatPrice(booking.priceUsdCents)}</p>
+            {serviceFeeCents > 0 && (
+              <div className="mt-3 pt-3 border-t border-primary-100 space-y-1 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Service</span>
+                  <span>{formatPrice(booking.priceUsdCents)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Service Fee</span>
+                  <span>{formatPrice(serviceFeeCents)}</span>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Date & Time */}

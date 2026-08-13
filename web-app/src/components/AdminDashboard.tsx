@@ -662,6 +662,7 @@ export function AdminDashboard({
           platformFeePercent: number;
           platformCommissionEnabled?: boolean;
           kickbackPercent?: number;
+          feeBurden?: string;
           cashPaymentEnabled?: boolean;
           consumerHomeMode?: string;
         }>('/admin/platform-settings');
@@ -680,6 +681,7 @@ export function AdminDashboard({
         }
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
+        setPricingBurdenView(data?.feeBurden === 'client' ? 'client' : 'operator');
       } catch (error) {
         console.error('Failed to fetch platform settings:', error);
       } finally {
@@ -748,6 +750,31 @@ export function AdminDashboard({
       setCashPaymentEnabled(prevCash);
       setConsumerHomeMode(prevMode);
       toast.error(error?.message || 'Failed to update controls');
+    } finally {
+      setIsSavingControls(false);
+    }
+  };
+
+  const handleSaveFeeBurden = async (next: PricingBurdenView) => {
+    if (next === pricingBurdenView) return;
+    const prev = pricingBurdenView;
+    if (isEditingPriceControls) handleCancelEditPriceControls();
+    setPricingBurdenView(next);
+    setIsSavingControls(true);
+    try {
+      const data = await api.put<{ feeBurden?: string }>('/admin/platform-settings', {
+        feeBurden: next,
+      });
+      setPricingBurdenView(data?.feeBurden === 'client' ? 'client' : 'operator');
+      invalidateFrontendConfigCache();
+      toast.success(
+        next === 'client'
+          ? 'Client Burden: clients pay a Service Fee on top of the listed price'
+          : 'Operator Burden: commission is taken from the operator'
+      );
+    } catch (error: any) {
+      setPricingBurdenView(prev);
+      toast.error(error?.message || 'Failed to update fee burden');
     } finally {
       setIsSavingControls(false);
     }
@@ -5484,11 +5511,9 @@ export function AdminDashboard({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => {
-                    if (isEditingPriceControls) handleCancelEditPriceControls();
-                    setPricingBurdenView(opt.id);
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  onClick={() => { void handleSaveFeeBurden(opt.id); }}
+                  disabled={isSavingControls || isLoadingPlatformFee}
+                  className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
                     pricingBurdenView === opt.id
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -5501,7 +5526,9 @@ export function AdminDashboard({
 
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900">Commission</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {pricingBurdenView === 'client' ? 'Service Fee' : 'Commission'}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {pricingBurdenView === 'client'
                     ? platformCommissionEnabled
@@ -5535,7 +5562,11 @@ export function AdminDashboard({
                         ? 'border-gray-300 bg-white text-gray-900'
                         : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                     }`}
-                    aria-label="Platform commission percent"
+                    aria-label={
+                      pricingBurdenView === 'client'
+                        ? 'Service Fee percent'
+                        : 'Platform commission percent'
+                    }
                   />
                   <span
                     className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-gray-500"

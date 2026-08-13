@@ -29,6 +29,8 @@ export type DbClient = PoolClient | typeof pool;
 
 export type CommissionIncentiveMode = 'count' | 'timeframe';
 export type CommissionIncentiveDurationUnit = 'days' | 'weeks' | 'months';
+/** Who pays the platform take. */
+export type FeeBurden = 'operator' | 'client';
 
 export interface ProviderCommissionSettings {
   commissionFreeBookingsRemaining: number;
@@ -46,6 +48,12 @@ export interface PlatformFeeSplit {
   feeRate: number;
   commissionFree: boolean;
   feePercentDisplay: number;
+  /** operator = deducted from listed price; client = Service Fee added on top. */
+  feeBurden: FeeBurden;
+  /** Client-visible extra (equals platformFeeCents on client burden; 0 on operator). */
+  serviceFeeCents: number;
+  /** Amount the client is charged for the service (listed price + service fee if client burden). */
+  chargeAmountCents: number;
 }
 
 function clampFeePercent(raw: number): number {
@@ -99,6 +107,66 @@ export function invalidatePlatformFeeCache(): void {
   cachedConfiguredFeePercent = null;
   cachedCommissionEnabled = null;
   cachedFeeSettingsExpiresAt = 0;
+}
+
+let cachedFeeBurden: FeeBurden | null = null;
+let cachedFeeBurdenExpiresAt = 0;
+
+export function parseFeeBurden(raw: unknown): FeeBurden {
+  return String(raw ?? '').trim().toLowerCase() === 'client' ? 'client' : 'operator';
+}
+
+export function invalidateFeeBurdenCache(): void {
+  cachedFeeBurden = null;
+  cachedFeeBurdenExpiresAt = 0;
+}
+
+export async function getFeeBurden(client: DbClient = pool): Promise<FeeBurden> {
+  const now = Date.now();
+  if (cachedFeeBurden !== null && now < cachedFeeBurdenExpiresAt) {
+    return cachedFeeBurden;
+  }
+  try {
+    const result = await client.query(
+      `SELECT fee_burden FROM platform_settings WHERE id = 1 LIMIT 1`
+    );
+    const next = parseFeeBurden(result.rows[0]?.fee_burden);
+    cachedFeeBurden = next;
+    cachedFeeBurdenExpiresAt = now + FEE_CACHE_TTL_MS;
+    return next;
+  } catch (err) {
+    logger.warn('platform_settings fee_burden lookup failed; using operator', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return 'operator';
+  }
+}
+
+export async function setFeeBurden(
+  burden: FeeBurden,
+  updatedBy?: string | null,
+  client: DbClient = pool
+): Promise<FeeBurden> {
+  const next = parseFeeBurden(burden);
+  await client.query(
+    `INSERT INTO platform_settings (id, platform_fee_percent, fee_burden, updated_at, updated_by)
+     VALUES (
+       1,
+       COALESCE((SELECT platform_fee_percent FROM platform_settings WHERE id = 1), $1),
+       $2,
+       NOW(),
+       $3
+     )
+     ON CONFLICT (id) DO UPDATE SET
+       fee_burden = EXCLUDED.fee_burden,
+       updated_at = NOW(),
+       updated_by = EXCLUDED.updated_by`,
+    [DEFAULT_PLATFORM_FEE_PERCENT, next, updatedBy ?? null]
+  );
+  invalidateFeeBurdenCache();
+  cachedFeeBurden = next;
+  cachedFeeBurdenExpiresAt = Date.now() + FEE_CACHE_TTL_MS;
+  return next;
 }
 
 async function loadPlatformFeeSettings(
@@ -240,13 +308,30 @@ export async function setPlatformCommissionEnabled(
 
 export function calculatePlatformFeeSplit(
   serviceAmountCents: number,
-  opts?: { forceCommissionFree?: boolean; feePercent?: number }
+  opts?: { forceCommissionFree?: boolean; feePercent?: number; feeBurden?: FeeBurden }
 ): PlatformFeeSplit {
   const amount = Math.max(0, Math.round(serviceAmountCents));
+  const burden: FeeBurden = opts?.feeBurden === 'client' ? 'client' : 'operator';
   const waived = opts?.forceCommissionFree === true;
   const feePercent = clampFeePercent(
     opts?.feePercent != null ? opts.feePercent : DEFAULT_PLATFORM_FEE_PERCENT
   );
+
+  if (burden === 'client') {
+    const feeRate = waived ? 0 : feePercent / 100;
+    const serviceFeeCents = waived ? 0 : Math.round(amount * feeRate);
+    return {
+      platformFeeCents: serviceFeeCents,
+      barberEarningsCents: amount,
+      feeRate,
+      commissionFree: false,
+      feePercentDisplay: serviceFeeCents === 0 ? 0 : feePercent,
+      feeBurden: 'client',
+      serviceFeeCents,
+      chargeAmountCents: amount + serviceFeeCents,
+    };
+  }
+
   const feeRate = waived ? 0 : feePercent / 100;
   const platformFeeCents = waived ? 0 : Math.round(amount * feeRate);
   const barberEarningsCents = amount - platformFeeCents;
@@ -257,14 +342,25 @@ export function calculatePlatformFeeSplit(
     feeRate,
     commissionFree: waived,
     feePercentDisplay: waived ? 0 : feePercent,
+    feeBurden: 'operator',
+    serviceFeeCents: 0,
+    chargeAmountCents: amount,
   };
 }
 
 /** Estimate fee at booking create (does not reserve a free slot). */
 export function estimatePlatformFeeSplit(
   serviceAmountCents: number,
-  settings: ProviderCommissionSettings
+  settings: ProviderCommissionSettings,
+  feeBurden: FeeBurden = 'operator'
 ): PlatformFeeSplit {
+  if (feeBurden === 'client') {
+    return calculatePlatformFeeSplit(serviceAmountCents, {
+      forceCommissionFree: false,
+      feePercent: settings.effectiveFeeRate * 100,
+      feeBurden: 'client',
+    });
+  }
   if (settings.commissionFreeEligible) {
     return calculatePlatformFeeSplit(serviceAmountCents, { forceCommissionFree: true });
   }
@@ -419,6 +515,33 @@ export async function resolveBookingPlatformFee(
     alreadyCommissionFreeApplied?: boolean;
   }
 ): Promise<PlatformFeeSplit & { reservedNow: boolean }> {
+  const feeBurden = await getFeeBurden(client);
+
+  if (feeBurden === 'client') {
+    const enabled = await isPlatformCommissionEnabled(client);
+    const feePercent = enabled ? await getConfiguredPlatformFeePercent(client) : 0;
+    const split = calculatePlatformFeeSplit(opts.serviceAmountCents, {
+      forceCommissionFree: false,
+      feePercent,
+      feeBurden: 'client',
+    });
+    await client.query(
+      `UPDATE bookings
+       SET "platformFeeUsdCents" = $1,
+           "barberEarningsUsdCents" = $2,
+           "updatedAt" = NOW()
+       WHERE id = $3::uuid`,
+      [split.platformFeeCents, split.barberEarningsCents, opts.bookingId]
+    );
+    logger.info('Client burden Service Fee resolved', {
+      bookingId: opts.bookingId,
+      serviceFeeCents: split.serviceFeeCents,
+      chargeAmountCents: split.chargeAmountCents,
+      barberEarningsCents: split.barberEarningsCents,
+    });
+    return { ...split, reservedNow: false };
+  }
+
   if (opts.alreadyCommissionFreeApplied) {
     return {
       ...calculatePlatformFeeSplit(opts.serviceAmountCents, { forceCommissionFree: true }),

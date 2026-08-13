@@ -8,16 +8,24 @@ import api from '../services/api.service';
 
 export type ConsumerHomeMode = 'providers' | 'waitlist';
 
+export type FeeBurden = 'operator' | 'client';
+
 export interface FrontendConfig {
   cashPaymentEnabled: boolean;
   consumerHomeMode: ConsumerHomeMode;
   consumerUserCount: number;
+  platformFeePercent: number;
+  platformCommissionEnabled: boolean;
+  feeBurden: FeeBurden;
 }
 
 const DEFAULT_CONFIG: FrontendConfig = {
   cashPaymentEnabled: false,
   consumerHomeMode: 'providers',
   consumerUserCount: 0,
+  platformFeePercent: 15,
+  platformCommissionEnabled: true,
+  feeBurden: 'operator',
 };
 
 let cachedConfig: FrontendConfig | null = null;
@@ -33,11 +41,18 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
         cashPaymentEnabled?: boolean;
         consumerHomeMode?: string;
         consumerUserCount?: number;
+        platformFeePercent?: number;
+        platformCommissionEnabled?: boolean;
+        feeBurden?: string;
       }>('/platform/frontend-config');
+      const percent = Number(data?.platformFeePercent);
       const next: FrontendConfig = {
         cashPaymentEnabled: data?.cashPaymentEnabled === true,
         consumerHomeMode: data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers',
         consumerUserCount: Math.max(0, Number(data?.consumerUserCount) || 0),
+        platformFeePercent: Number.isFinite(percent) ? percent : 15,
+        platformCommissionEnabled: data?.platformCommissionEnabled !== false,
+        feeBurden: data?.feeBurden === 'client' ? 'client' : 'operator',
       };
       cachedConfig = next;
       return next;
