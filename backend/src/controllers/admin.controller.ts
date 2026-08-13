@@ -254,6 +254,7 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
  * Partial body allowed:
  *   platformFeePercent?: number (0–100)
  *   platformCommissionEnabled?: boolean
+ *   kickbackPercent?: number (0–100; applied to all operators)
  *   cashPaymentEnabled?: boolean
  *   consumerHomeMode?: 'providers' | 'waitlist'
  * At least one field required.
@@ -271,19 +272,21 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       body,
       'platformCommissionEnabled'
     );
+    const hasKickback = Object.prototype.hasOwnProperty.call(body, 'kickbackPercent');
     const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
     const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
 
-    if (!hasFee && !hasCommissionEnabled && !hasCash && !hasMode) {
+    if (!hasFee && !hasCommissionEnabled && !hasKickback && !hasCash && !hasMode) {
       throw new ApiError(
         400,
-        'Provide at least one of platformFeePercent, platformCommissionEnabled, cashPaymentEnabled, consumerHomeMode'
+        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, cashPaymentEnabled, consumerHomeMode'
       );
     }
 
     const patch: {
       platformFeePercent?: number;
       platformCommissionEnabled?: boolean;
+      kickbackPercent?: number;
       cashPaymentEnabled?: boolean;
       consumerHomeMode?: ConsumerHomeMode;
     } = {};
@@ -301,6 +304,17 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
 
     if (hasCommissionEnabled) {
       patch.platformCommissionEnabled = Boolean(body.platformCommissionEnabled);
+    }
+
+    if (hasKickback) {
+      const kickback =
+        typeof body.kickbackPercent === 'number'
+          ? body.kickbackPercent
+          : parseFloat(String(body.kickbackPercent));
+      if (!Number.isFinite(kickback) || kickback < 0 || kickback > 100) {
+        throw new ApiError(400, 'kickbackPercent must be a number between 0 and 100');
+      }
+      patch.kickbackPercent = kickback;
     }
 
     if (hasCash) {

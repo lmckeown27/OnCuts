@@ -16,6 +16,10 @@ import {
   setPlatformCommissionEnabled,
   setPlatformFeePercent,
 } from './platform-commission';
+import {
+  getConfiguredKickbackPercent,
+  setPlatformKickbackPercent,
+} from './platform-kickback';
 
 export type ConsumerHomeMode = 'providers' | 'waitlist';
 
@@ -29,6 +33,8 @@ export interface PlatformSettingsPayload extends PlatformFrontendSettings {
   platformFeePercent: number;
   /** When false, card bookings take $0 platform fee. */
   platformCommissionEnabled: boolean;
+  /** Global kickback % of service amount (0 = off). Applied to all operators on save. */
+  kickbackPercent: number;
 }
 
 export interface FrontendConfigPayload extends PlatformFrontendSettings {
@@ -151,14 +157,17 @@ export async function getFrontendConfigPayload(
 export async function getPlatformSettingsPayload(
   client: DbClient = pool
 ): Promise<PlatformSettingsPayload> {
-  const [platformFeePercent, platformCommissionEnabled, frontend] = await Promise.all([
-    getConfiguredPlatformFeePercent(client),
-    isPlatformCommissionEnabled(client),
-    getPlatformFrontendSettings(client),
-  ]);
+  const [platformFeePercent, platformCommissionEnabled, kickbackPercent, frontend] =
+    await Promise.all([
+      getConfiguredPlatformFeePercent(client),
+      isPlatformCommissionEnabled(client),
+      getConfiguredKickbackPercent(client),
+      getPlatformFrontendSettings(client),
+    ]);
   return {
     platformFeePercent,
     platformCommissionEnabled,
+    kickbackPercent,
     ...frontend,
   };
 }
@@ -167,6 +176,7 @@ export async function updatePlatformSettingsPartial(
   patch: {
     platformFeePercent?: number;
     platformCommissionEnabled?: boolean;
+    kickbackPercent?: number;
     cashPaymentEnabled?: boolean;
     consumerHomeMode?: ConsumerHomeMode;
   },
@@ -175,6 +185,7 @@ export async function updatePlatformSettingsPartial(
 ): Promise<PlatformSettingsPayload> {
   const hasFee = patch.platformFeePercent !== undefined;
   const hasCommissionEnabled = patch.platformCommissionEnabled !== undefined;
+  const hasKickback = patch.kickbackPercent !== undefined;
   const hasCash = patch.cashPaymentEnabled !== undefined;
   const hasMode = patch.consumerHomeMode !== undefined;
 
@@ -184,6 +195,10 @@ export async function updatePlatformSettingsPartial(
 
   if (hasCommissionEnabled) {
     await setPlatformCommissionEnabled(Boolean(patch.platformCommissionEnabled), updatedBy, client);
+  }
+
+  if (hasKickback) {
+    await setPlatformKickbackPercent(patch.kickbackPercent!, updatedBy, client);
   }
 
   if (hasCash || hasMode) {

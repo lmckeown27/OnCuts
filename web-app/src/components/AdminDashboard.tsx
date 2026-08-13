@@ -163,7 +163,7 @@ type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
 type ConsumerHomeMode = 'providers' | 'waitlist';
-type ControlsPage = 'payment' | 'main';
+type ControlsPage = 'payment' | 'price' | 'main';
 
 interface MetricsListWindow {
   id: string;
@@ -489,12 +489,15 @@ export function AdminDashboard({
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
   const [isSavingControls, setIsSavingControls] = useState(false);
-  /** Within Controls tab: Payment vs Main page settings */
+  /** Within Controls tab: Payment vs Price vs Main */
   const [controlsPage, setControlsPage] = useState<ControlsPage>('payment');
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
   const [isLoadingPlatformFee, setIsLoadingPlatformFee] = useState(true);
   const [isEditingPlatformFee, setIsEditingPlatformFee] = useState(false);
+  const [platformKickbackPercent, setPlatformKickbackPercent] = useState(0);
+  const [platformKickbackInput, setPlatformKickbackInput] = useState('0');
+  const [isEditingPriceControls, setIsEditingPriceControls] = useState(false);
   /** Within Operators tab: list vs onboarding bulk tools */
   const [operatorsHubTab, setOperatorsHubTab] = useState<'operators' | 'onboarding'>('operators');
   const [onboardingScope, setOnboardingScope] = useState<'all' | 'selected'>('all');
@@ -659,6 +662,7 @@ export function AdminDashboard({
         const data = await api.get<{
           platformFeePercent: number;
           platformCommissionEnabled?: boolean;
+          kickbackPercent?: number;
           cashPaymentEnabled?: boolean;
           consumerHomeMode?: string;
         }>('/admin/platform-settings');
@@ -670,6 +674,11 @@ export function AdminDashboard({
         const commissionOn = data?.platformCommissionEnabled !== false;
         setPlatformCommissionEnabled(commissionOn);
         setPlatformCommissionEnabledDraft(commissionOn);
+        const kickback = Number(data?.kickbackPercent);
+        if (Number.isFinite(kickback)) {
+          setPlatformKickbackPercent(kickback);
+          setPlatformKickbackInput(String(kickback));
+        }
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
       } catch (error) {
@@ -755,6 +764,65 @@ export function AdminDashboard({
     setPlatformFeeInput(String(platformFeePercent));
     setPlatformCommissionEnabledDraft(platformCommissionEnabled);
     setIsEditingPlatformFee(false);
+  };
+
+  const handleStartEditPriceControls = () => {
+    setPlatformFeeInput(String(platformFeePercent));
+    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformKickbackInput(String(platformKickbackPercent));
+    setIsEditingPriceControls(true);
+  };
+
+  const handleCancelEditPriceControls = () => {
+    setPlatformFeeInput(String(platformFeePercent));
+    setPlatformCommissionEnabledDraft(platformCommissionEnabled);
+    setPlatformKickbackInput(String(platformKickbackPercent));
+    setIsEditingPriceControls(false);
+  };
+
+  const handleSavePriceControls = async () => {
+    const percent = parseFloat(platformFeeInput.trim());
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      toast.error('Platform commission must be between 0 and 100');
+      return;
+    }
+    const kickback = parseFloat(platformKickbackInput.trim());
+    if (!Number.isFinite(kickback) || kickback < 0 || kickback > 100) {
+      toast.error('Kickback must be between 0 and 100');
+      return;
+    }
+    setIsSavingPlatformFee(true);
+    try {
+      const kickbackChanged = kickback !== platformKickbackPercent;
+      const data = await api.put<{
+        platformFeePercent: number;
+        platformCommissionEnabled?: boolean;
+        kickbackPercent?: number;
+      }>('/admin/platform-settings', {
+        platformFeePercent: percent,
+        platformCommissionEnabled: platformCommissionEnabledDraft,
+        ...(kickbackChanged ? { kickbackPercent: kickback } : {}),
+      });
+      const next = Number(data?.platformFeePercent ?? percent);
+      const nextEnabled = data?.platformCommissionEnabled !== false;
+      const nextKickback = Number(data?.kickbackPercent ?? kickback);
+      setPlatformFeePercent(next);
+      setPlatformFeeInput(String(next));
+      setPlatformCommissionEnabled(nextEnabled);
+      setPlatformCommissionEnabledDraft(nextEnabled);
+      setPlatformKickbackPercent(Number.isFinite(nextKickback) ? nextKickback : kickback);
+      setPlatformKickbackInput(String(Number.isFinite(nextKickback) ? nextKickback : kickback));
+      setIsEditingPriceControls(false);
+      toast.success(
+        nextEnabled
+          ? `Commission ${next}% · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
+          : `Commission off · kickback ${Number.isFinite(nextKickback) ? nextKickback : kickback}%`
+      );
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update price controls');
+    } finally {
+      setIsSavingPlatformFee(false);
+    }
   };
 
   /** Onboarding: checked = all card bookings commissionless (platform commission off). */
@@ -1565,9 +1633,10 @@ export function AdminDashboard({
   ) : null;
 
   /** Checkbox reflects current state; label is the opposite CTA. */
-  const platformCommissionChecked = isEditingPlatformFee
-    ? platformCommissionEnabledDraft
-    : platformCommissionEnabled;
+  const platformCommissionChecked =
+    isEditingPlatformFee || isEditingPriceControls
+      ? platformCommissionEnabledDraft
+      : platformCommissionEnabled;
   const platformCommissionStateLabel = platformCommissionChecked
     ? 'Disable Commission'
     : 'Enable Commission';
@@ -5365,13 +5434,17 @@ export function AdminDashboard({
                 {(
                   [
                     { id: 'payment' as const, label: 'Payment' },
+                    { id: 'price' as const, label: 'Price' },
                     { id: 'main' as const, label: 'Main' },
                   ] as const
                 ).map((page) => (
                   <button
                     key={page.id}
                     type="button"
-                    onClick={() => setControlsPage(page.id)}
+                    onClick={() => {
+                      if (isEditingPriceControls) handleCancelEditPriceControls();
+                      setControlsPage(page.id);
+                    }}
                     className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
                       controlsPage === page.id
                         ? 'bg-white text-gray-900 shadow-sm'
@@ -5418,6 +5491,151 @@ export function AdminDashboard({
               </div>
             )}
 
+            {controlsPage === 'price' && (
+              <div className="space-y-4 pt-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Commission</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {platformCommissionEnabled
+                        ? `${platformFeePercent}% of service amount. Tips are never commissioned.`
+                        : `Off — card bookings take $0 fee (saved rate ${platformFeePercent}%).`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative w-20">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        readOnly={!isEditingPriceControls}
+                        disabled={
+                          isLoadingPlatformFee ||
+                          isSavingPlatformFee ||
+                          !isEditingPriceControls ||
+                          !platformCommissionEnabledDraft
+                        }
+                        value={
+                          isEditingPriceControls ? platformFeeInput : String(platformFeePercent)
+                        }
+                        onChange={(e) => setPlatformFeeInput(e.target.value)}
+                        className={`w-full rounded-md border px-2 py-1.5 pr-6 text-sm tabular-nums ${
+                          isEditingPriceControls && platformCommissionEnabledDraft
+                            ? 'border-gray-300 bg-white text-gray-900'
+                            : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                        }`}
+                        aria-label="Platform commission percent"
+                      />
+                      <span
+                        className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-gray-500"
+                        aria-hidden
+                      >
+                        %
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={platformCommissionChecked}
+                      disabled={
+                        isLoadingPlatformFee || isSavingPlatformFee || !isEditingPriceControls
+                      }
+                      onClick={() =>
+                        setPlatformCommissionEnabledDraft(!platformCommissionEnabledDraft)
+                      }
+                      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                        platformCommissionChecked ? 'bg-brand-500' : 'bg-stone-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                          platformCommissionChecked ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Kickback</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Extra % of service paid from the platform to the operator, only on
+                      commissionless bookings. Changing this rate updates every operator.
+                    </p>
+                  </div>
+                  <div className="relative w-20 shrink-0">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      readOnly={!isEditingPriceControls}
+                      disabled={
+                        isLoadingPlatformFee || isSavingPlatformFee || !isEditingPriceControls
+                      }
+                      value={
+                        isEditingPriceControls
+                          ? platformKickbackInput
+                          : String(platformKickbackPercent)
+                      }
+                      onChange={(e) => setPlatformKickbackInput(e.target.value)}
+                      className={`w-full rounded-md border px-2 py-1.5 pr-6 text-sm tabular-nums ${
+                        isEditingPriceControls
+                          ? 'border-gray-300 bg-white text-gray-900'
+                          : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                      }`}
+                      aria-label="Provider kickback percent"
+                    />
+                    <span
+                      className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-gray-500"
+                      aria-hidden
+                    >
+                      %
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {isEditingPriceControls ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isLoadingPlatformFee || isSavingPlatformFee}
+                        onClick={() => void handleSavePriceControls()}
+                      >
+                        {isSavingPlatformFee ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Save'
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isSavingPlatformFee}
+                        onClick={handleCancelEditPriceControls}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isLoadingPlatformFee}
+                      onClick={handleStartEditPriceControls}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {controlsPage === 'main' && (
               <div className="space-y-3 pt-1">
                 <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
@@ -5458,10 +5676,10 @@ export function AdminDashboard({
               </div>
             )}
 
-            {(isLoadingPlatformFee || isSavingControls) && (
+            {(isLoadingPlatformFee || isSavingControls || isSavingPlatformFee) && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {isSavingControls ? 'Saving…' : 'Loading…'}
+                {isSavingControls || isSavingPlatformFee ? 'Saving…' : 'Loading…'}
               </div>
             )}
           </div>

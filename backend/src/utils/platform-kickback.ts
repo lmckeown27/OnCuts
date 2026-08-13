@@ -19,6 +19,20 @@ import {
 
 export type DbClient = PoolClient | typeof pool;
 
+const KICKBACK_CACHE_TTL_MS = 45_000;
+let cachedPlatformKickbackPercent: number | null = null;
+let cachedPlatformKickbackExpiresAt = 0;
+
+export function clampKickbackPercent(raw: number): number {
+  if (!Number.isFinite(raw)) return 0;
+  return Math.min(100, Math.max(0, Math.round(raw * 100) / 100));
+}
+
+export function invalidatePlatformKickbackCache(): void {
+  cachedPlatformKickbackPercent = null;
+  cachedPlatformKickbackExpiresAt = 0;
+}
+
 export function calculateKickbackCents(
   serviceAmountCents: number,
   kickbackPercent: number
@@ -27,6 +41,79 @@ export function calculateKickbackCents(
   const percent = Math.max(0, Math.min(100, Number(kickbackPercent) || 0));
   if (amount <= 0 || percent <= 0) return 0;
   return Math.round((amount * percent) / 100);
+}
+
+/** Admin-configured global kickback % (0–100). 0 = disabled. */
+export async function getConfiguredKickbackPercent(client: DbClient = pool): Promise<number> {
+  const now = Date.now();
+  if (cachedPlatformKickbackPercent !== null && now < cachedPlatformKickbackExpiresAt) {
+    return cachedPlatformKickbackPercent;
+  }
+
+  try {
+    const result = await client.query(
+      `SELECT kickback_percent FROM platform_settings WHERE id = 1 LIMIT 1`
+    );
+    const raw = result.rows[0]?.kickback_percent;
+    const percent = raw != null ? clampKickbackPercent(parseFloat(String(raw))) : 0;
+    cachedPlatformKickbackPercent = percent;
+    cachedPlatformKickbackExpiresAt = now + KICKBACK_CACHE_TTL_MS;
+    return percent;
+  } catch (err) {
+    logger.warn('platform_settings kickback lookup failed; using 0', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    cachedPlatformKickbackPercent = 0;
+    cachedPlatformKickbackExpiresAt = now + KICKBACK_CACHE_TTL_MS;
+    return 0;
+  }
+}
+
+/**
+ * Persist global kickback % and apply it to every operator so Onboarding
+ * and payment resolution stay in sync. Per-operator edits after this still win.
+ */
+export async function setPlatformKickbackPercent(
+  percent: number,
+  updatedBy?: string | null,
+  client: DbClient = pool,
+  applyToAllOperators = true
+): Promise<number> {
+  const next = clampKickbackPercent(percent);
+  await client.query(
+    `INSERT INTO platform_settings (id, platform_fee_percent, kickback_percent, updated_at, updated_by)
+     VALUES (
+       1,
+       COALESCE((SELECT platform_fee_percent FROM platform_settings WHERE id = 1), 15),
+       $1,
+       NOW(),
+       $2
+     )
+     ON CONFLICT (id) DO UPDATE SET
+       kickback_percent = EXCLUDED.kickback_percent,
+       updated_at = NOW(),
+       updated_by = EXCLUDED.updated_by`,
+    [next, updatedBy ?? null]
+  );
+  invalidatePlatformKickbackCache();
+  cachedPlatformKickbackPercent = next;
+  cachedPlatformKickbackExpiresAt = Date.now() + KICKBACK_CACHE_TTL_MS;
+
+  if (applyToAllOperators) {
+    try {
+      await client.query(
+        `UPDATE barbers SET kickback_percent = $1, "updatedAt" = NOW()`,
+        [next]
+      );
+    } catch (err) {
+      logger.warn('Failed to apply platform kickback to all operators', {
+        error: err instanceof Error ? err.message : String(err),
+        kickbackPercent: next,
+      });
+    }
+  }
+
+  return next;
 }
 
 export async function loadProviderKickbackPercent(
@@ -58,8 +145,12 @@ export async function loadProviderKickbackPercent(
 
   const raw = row.kickback_percent;
   const percent = raw != null ? parseFloat(String(raw)) : 0;
-  if (!Number.isFinite(percent) || percent <= 0) return 0;
-  return Math.min(100, Math.max(0, percent));
+  if (Number.isFinite(percent) && percent > 0) {
+    return Math.min(100, Math.max(0, percent));
+  }
+
+  // New operators default to 0 — inherit the Controls → Price rate.
+  return getConfiguredKickbackPercent(client);
 }
 
 /**
