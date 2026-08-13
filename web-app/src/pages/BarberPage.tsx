@@ -15,6 +15,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import TimeInput from '../components/TimeInput';
 import BarberProfileEditor from '../components/BarberProfileEditor';
+import BarberBookingLinkCard from '../components/BarberBookingLinkCard';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { AdminDashboard } from '../components/AdminDashboard';
@@ -107,6 +108,8 @@ export default function BarberPage() {
   // Modal states with visibility for animations
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
+  const [showBookingLink, setShowBookingLink] = useState(false);
+  const [isBookingLinkVisible, setIsBookingLinkVisible] = useState(false);
   
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [isServiceSpecialtiesVisible, setIsServiceSpecialtiesVisible] = useState(false);
@@ -172,6 +175,7 @@ export default function BarberPage() {
   // Lock body scroll when any modal is open
   const isAnyModalOpen =
     showProfileEditor ||
+    showBookingLink ||
     showServiceSpecialties ||
     showAdminDashboard ||
     showBarberChats ||
@@ -328,6 +332,8 @@ export default function BarberPage() {
   // Modal open/close handlers
   const openProfileEditor = () => openModal(setShowProfileEditor, setIsProfileEditorVisible);
   const closeProfileEditor = () => closeModal(setShowProfileEditor, setIsProfileEditorVisible);
+  const openBookingLink = () => openModal(setShowBookingLink, setIsBookingLinkVisible);
+  const closeBookingLink = () => closeModal(setShowBookingLink, setIsBookingLinkVisible);
   
   const openServiceSpecialties = () => openModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
   const closeServiceSpecialties = () => closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
@@ -395,6 +401,8 @@ export default function BarberPage() {
     setShowProfileDropdown(false);
     setShowProfileEditor(false);
     setIsProfileEditorVisible(false);
+    setShowBookingLink(false);
+    setIsBookingLinkVisible(false);
     setShowServiceSpecialties(false);
     setIsServiceSpecialtiesVisible(false);
     setShowAdminDashboard(false);
@@ -632,6 +640,16 @@ export default function BarberPage() {
                     >
                       Account
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openBookingLink();
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Booking link
+                    </button>
                     {isAdmin && (
                       <>
                         <div className="border-t border-gray-200 my-1" />
@@ -757,6 +775,40 @@ export default function BarberPage() {
             </div>
             <div className="p-6">
               <BarberProfileEditor userId={barberId} onClose={closeProfileEditor} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBookingLink && (
+        <div
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isBookingLinkVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closeBookingLink}
+        >
+          <div
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out
+              ${isBookingLinkVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
+              <div>
+                <h2 className="text-2xl font-bold">Booking link</h2>
+                <p className="text-white/80 text-sm">Share so clients can book you directly</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeBookingLink}
+                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              {barberProfile?.id ? (
+                <BarberBookingLinkCard barberRecordId={barberProfile.id} />
+              ) : (
+                <p className="text-sm text-gray-600">Loading your booking link…</p>
+              )}
             </div>
           </div>
         </div>

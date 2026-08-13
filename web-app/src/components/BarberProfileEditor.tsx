@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Upload, Image as ImageIcon, Loader2, Copy, Check, Link2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
 import MobilePhotoUpload from './MobilePhotoUpload';
+import BarberBookingLinkCard from './BarberBookingLinkCard';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import userService from '../services/user.service';
@@ -51,7 +52,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccountItem[]>([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
-  const [bookingLinkCopied, setBookingLinkCopied] = useState(false);
 
   const loadBlockedAccounts = useCallback(async () => {
     setBlockedLoading(true);
@@ -295,22 +295,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     return <Loading />;
   }
 
-  const bookingPageUrl = barber?.id
-    ? `${window.location.origin}/web/consumer/book/${barber.id}`
-    : null;
-
-  const handleCopyBookingLink = async () => {
-    if (!bookingPageUrl) return;
-    try {
-      await navigator.clipboard.writeText(bookingPageUrl);
-      setBookingLinkCopied(true);
-      toast.success('Booking link copied');
-      window.setTimeout(() => setBookingLinkCopied(false), 2000);
-    } catch {
-      toast.error('Could not copy link');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Profile Photo - matches barber card dimensions */}
@@ -412,47 +396,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         <p className="text-xs text-gray-500 mt-2">Your Instagram serves as your portfolio - students can view your work there</p>
       </Card>
 
-      {/* Direct booking link for clients */}
-      {bookingPageUrl && (
-        <Card>
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <Link2 className="w-5 h-5 text-gray-700" />
-            Booking link
-          </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Share this link so clients can book you directly without searching.
-          </p>
-          <div className="flex items-stretch gap-2">
-            <input
-              type="text"
-              readOnly
-              value={bookingPageUrl}
-              onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 truncate"
-              aria-label="Your booking page link"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleCopyBookingLink()}
-              className="shrink-0 whitespace-nowrap"
-            >
-              {bookingLinkCopied ? (
-                <>
-                  <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 mr-1.5" />
-                  Copy
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
-      )}
+      {barber?.id && <BarberBookingLinkCard barberRecordId={barber.id} />}
 
       {/* Profile Visibility */}
       <Card>
