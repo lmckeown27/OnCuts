@@ -42,6 +42,7 @@ import {
 } from '../services/service-schema.service';
 import { filterRowsEligibleForConsumerBrowse } from '../services/connect-consumer-eligibility.service';
 import {
+  getFeeBurden,
   isCommissionFreeEligible,
   isPlatformCommissionEnabled,
   parseCommissionIncentiveMode,
@@ -743,18 +744,20 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       Math.max(0, parseInt(String(barber.commission_free_bookings_remaining ?? '0'), 10) || 0);
     const commissionIncentiveMode = parseCommissionIncentiveMode(barber.commission_incentive_mode);
     const storedExpiresAt = parseIncentiveExpiresAt(barber.commission_incentive_expires_at);
-    // When platform commission is off, every booking is already $0 fee — hide per-operator
-    // commissionless UI (banner / remaining) as if no personal incentive is set.
+    // When platform commission is off, or Client Burden Service Fee is on, the operator
+    // is not paying commission — hide per-operator commissionless UI.
     const platformCommissionEnabled = await isPlatformCommissionEnabled();
+    const feeBurden = await getFeeBurden();
+    const operatorCommissionOn = platformCommissionEnabled && feeBurden !== 'client';
     const commissionIncentiveActive =
-      platformCommissionEnabled &&
+      operatorCommissionOn &&
       isCommissionFreeEligible({
         incentiveMode: commissionIncentiveMode,
         incentiveExpiresAt: storedExpiresAt,
         commissionFreeBookingsRemaining: storedFreeRemaining,
       });
-    const commissionFreeBookingsRemaining = platformCommissionEnabled ? storedFreeRemaining : 0;
-    const commissionIncentiveExpiresAt = platformCommissionEnabled
+    const commissionFreeBookingsRemaining = operatorCommissionOn ? storedFreeRemaining : 0;
+    const commissionIncentiveExpiresAt = operatorCommissionOn
       ? storedExpiresAt?.toISOString() ?? null
       : null;
     res.json({

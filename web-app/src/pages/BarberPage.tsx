@@ -45,6 +45,7 @@ import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useDynamicViewportHeight } from '../hooks';
 import { useStripeOnboardingGate } from '../hooks/useStripeOnboardingGate';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 import toast from 'react-hot-toast';
 import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storageMigration';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
@@ -1339,6 +1340,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
+  const { feeBurden } = useFrontendConfig();
+  const showCommissionlessIncentive = platformCommissionEnabled && feeBurden !== 'client';
   
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
@@ -1423,7 +1426,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <div className="flex justify-center mb-3 px-1 w-full">
       <div className="w-full max-w-md space-y-3">
         <div>
-          {platformCommissionEnabled &&
+          {showCommissionlessIncentive &&
           commissionIncentiveMode === 'timeframe' &&
           commissionIncentiveActive &&
           commissionIncentiveExpiresAt ? (
@@ -1437,7 +1440,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 })}
               </span>
             </p>
-          ) : platformCommissionEnabled && commissionFreeBookingsRemaining > 0 ? (
+          ) : showCommissionlessIncentive && commissionFreeBookingsRemaining > 0 ? (
             <p className="text-xs text-gray-500 text-center mb-1">
               Commissionless Bookings left:{' '}
               <span className="font-bold text-gray-700">{commissionFreeBookingsRemaining}</span>
