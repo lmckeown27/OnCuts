@@ -706,12 +706,16 @@ class PushNotificationService {
       role: 'consumer' | 'barber';
     }
   ): Promise<any> {
-    const { bookingId, hoursUntil, service, counterpartyName, role } = options;
+    const { bookingId, hoursUntil, service, counterpartyName } = options;
     const title =
-      hoursUntil === 1 ? 'Appointment in 1 hour' : `Appointment in ${hoursUntil} hours`;
+      hoursUntil === 0
+        ? 'Appointment starting now'
+        : hoursUntil === 1
+          ? 'Appointment in 1 hour'
+          : `Appointment in ${hoursUntil} hours`;
     const body =
-      role === 'consumer'
-        ? `${service} with ${counterpartyName} is coming up soon.`
+      hoursUntil === 0
+        ? `${service} with ${counterpartyName} is starting now.`
         : `${service} with ${counterpartyName} is coming up soon.`;
 
     const data: Record<string, string> = {

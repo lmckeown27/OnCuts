@@ -1,7 +1,7 @@
 /**
  * Booking Reminder Cron Service
  *
- * Sends APNs/FCM push reminders at 24h, 12h, 3h, and 1h before upcoming bookings
+ * Sends APNs/FCM push reminders at 24h, 12h, 3h, 1h, and at start for upcoming bookings
  * (ACCEPTED or PAID — service may already be paid). COMPLETED is never reminded.
  * Respects booking_reminders and push_notifications (defaults true). No SMTP.
  *
@@ -18,6 +18,7 @@ const REMINDER_TIERS = [
   { hours: 12, column: 'reminder_12h_sent' as const },
   { hours: 3, column: 'reminder_3h_sent' as const },
   { hours: 1, column: 'reminder_1h_sent' as const },
+  { hours: 0, column: 'reminder_0h_sent' as const },
 ];
 
 /**
@@ -55,7 +56,7 @@ export class BookingReminderCronService {
       await this.processBookingReminders();
     });
 
-    logger.info('🔔 Booking reminder cron started (push, 24h/12h/3h/1h, every 5 minutes)');
+    logger.info('🔔 Booking reminder cron started (push, 24h/12h/3h/1h/start, every 5 minutes)');
   }
 
   stop(): void {
