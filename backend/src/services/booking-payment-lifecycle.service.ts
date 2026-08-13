@@ -4,8 +4,7 @@
 
 import { logger } from '../utils/logger';
 import { getFrontendBaseUrl } from '../config/app-url';
-import notificationService from './notification.service';
-import pushNotificationService from './pushNotification.service';
+import { sendTemplatedNotification } from './notification-template.service';
 import { getSocketIO } from '../index';
 
 /** Unpaid ACCEPTED bookings auto-cancel after this many minutes (24 hours). */
@@ -32,20 +31,16 @@ export async function notifyConsumerTipAfterComplete(opts: {
   const message = `${barberName} completed your ${serviceName}. Consider leaving a tip.`;
 
   try {
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: consumerId,
+      key: 'payment_request',
+      side: 'consumer',
+      vars: { barberName, service: serviceName },
       type: 'payment_request',
-      title,
-      message,
       data: { bookingId, paymentUrl, phase: 'tip' },
+      fallbackTitle: title,
+      fallbackBody: message,
     });
-    await pushNotificationService.sendMirrorPush(
-      consumerId,
-      title,
-      message,
-      'payment_request',
-      { bookingId, paymentUrl, phase: 'tip' }
-    );
   } catch (err: any) {
     logger.warn(`Failed tip-after-complete notify for ${bookingId}: ${err?.message || err}`);
   }

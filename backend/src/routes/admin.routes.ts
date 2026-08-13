@@ -7,6 +7,7 @@
 import express from 'express';
 import { authenticate, refreshAccessRoleFromDb } from '../middleware/auth';
 import * as adminController from '../controllers/admin.controller';
+import * as adminNotificationsController from '../controllers/admin-notifications.controller';
 
 const router = express.Router();
 
@@ -20,6 +21,12 @@ router.post('/fees/withdraw', adminController.withdrawPlatformFees);
 // Global platform settings (commission %)
 router.get('/platform-settings', adminController.getPlatformSettings);
 router.put('/platform-settings', adminController.updatePlatformSettings);
+
+router.get('/notification-templates', adminNotificationsController.listTemplates);
+router.post('/notification-templates', adminNotificationsController.createTemplate);
+router.patch('/notification-templates/:id', adminNotificationsController.updateTemplate);
+router.delete('/notification-templates/:id', adminNotificationsController.deleteTemplate);
+router.post('/notification-templates/:id/send', adminNotificationsController.sendTemplate);
 
 // Reconciliation
 router.post('/reconciliation/run', adminController.runReconciliation);

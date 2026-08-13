@@ -123,6 +123,11 @@ class ApiService {
     return response.data.data as T;
   }
 
+  async patch<T = any>(url: string, data?: any): Promise<T> {
+    const response = await this.client.patch<ApiResponse<T>>(url, data);
+    return response.data.data as T;
+  }
+
   async delete<T = any>(url: string, data?: any): Promise<T> {
     const response = await this.client.delete<ApiResponse<T>>(url, { data });
     return response.data.data as T;

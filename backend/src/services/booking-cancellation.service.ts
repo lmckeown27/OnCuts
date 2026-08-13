@@ -5,8 +5,7 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import notificationService from './notification.service';
-import pushNotificationService from './pushNotification.service';
+import { sendTemplatedNotification } from './notification-template.service';
 import { sendBookingCancellationEmails } from './email.service';
 import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
 
@@ -209,11 +208,12 @@ export async function executeParticipantBookingCancellation(
 
   if (isBarber) {
     const cancelMsg = `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`;
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.consumerId,
+      key: 'booking_cancelled',
+      side: 'consumer',
+      vars: { message: cancelMsg },
       type: 'booking_cancelled',
-      title: 'Booking Cancelled',
-      message: cancelMsg,
       data: {
         bookingId: id,
         reason,
@@ -223,38 +223,21 @@ export async function executeParticipantBookingCancellation(
         campusId: booking.campus_id,
         cancelledBarberId: booking.barberId,
       },
+      fallbackTitle: 'Booking Cancelled',
+      fallbackBody: cancelMsg,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.consumerId,
-      'Booking Cancelled',
-      cancelMsg,
-      'booking_cancelled',
-      {
-        bookingId: id,
-        reason,
-        cancelledBy: 'barber',
-        scheduledTime: booking.scheduledTime,
-        serviceType: booking.serviceType,
-        campusId: booking.campus_id,
-        cancelledBarberId: booking.barberId,
-      }
-    );
   } else {
     const cancelMsgBarber = `${consumerName} has cancelled their ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`;
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'booking_cancelled',
+      side: 'operator',
+      vars: { message: cancelMsgBarber },
       type: 'booking_cancelled',
-      title: 'Booking Cancelled',
-      message: cancelMsgBarber,
       data: { bookingId: id, reason, cancelledBy: 'consumer' },
+      fallbackTitle: 'Booking Cancelled',
+      fallbackBody: cancelMsgBarber,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      'Booking Cancelled',
-      cancelMsgBarber,
-      'booking_cancelled',
-      { bookingId: id, reason, cancelledBy: 'consumer' }
-    );
   }
 
   const scheduledDate = new Date(booking.scheduledTime as string);

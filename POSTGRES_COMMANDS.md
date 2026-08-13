@@ -3351,6 +3351,16 @@ pm2 restart oncuts-backend
 
 Adds `payments.instant_payout_id` and `payments.instant_payout_status` for auto Instant Payout attempts after eligible Connect card charges. Enable with `STRIPE_INSTANT_PAYOUTS_ENABLED=true` after Instant is turned on for Connect in the Stripe Dashboard.
 
+### 066 — Notification templates (Admin Controls)
+
+```bash
+cd ~/OnCuts && git pull
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/066_notification_templates.sql
+pm2 restart oncuts-backend
+```
+
+Creates `notification_templates` and seeds automatic Consumer / Operator notification copy. Admin Controls can edit audience and text, turn rows off, and send custom announcements. Until this runs, sends keep using hardcoded fallbacks.
+
 ### 051 — Backfill paymentMethod = card for settled Stripe bookings
 ```bash
 sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/051_backfill_payment_method_card.sql

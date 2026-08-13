@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 import { getFrontendBaseUrl } from '../config/app-url';
 import notificationService from '../services/notification.service';
 import pushNotificationService from '../services/pushNotification.service';
+import { sendTemplatedNotification } from '../services/notification-template.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
 import {
@@ -571,20 +572,16 @@ router.post('/', authenticate, async (req, res, next) => {
     
     // Send notification to barber about new booking request
     if (barberUserId) {
-      await notificationService.saveNotification({
+      await sendTemplatedNotification({
         userId: barberUserId,
+        key: 'new_booking_request',
+        side: 'operator',
+        vars: { consumerName, service: serviceType },
         type: 'new_booking_request',
-        title: 'New Booking Request!',
-        message: `${consumerName} wants to book a ${serviceType} with you`,
         data: { bookingId: booking.id, consumerId, serviceType },
+        fallbackTitle: 'New Booking Request!',
+        fallbackBody: `${consumerName} wants to book a ${serviceType} with you`,
       });
-      await pushNotificationService.sendMirrorPush(
-        barberUserId,
-        'New Booking Request!',
-        `${consumerName} wants to book a ${serviceType} with you`,
-        'new_booking_request',
-        { bookingId: booking.id, consumerId, serviceType }
-      );
       logger.info(`Notification sent to barber ${barberUserId} for new booking ${booking.id}`);
       
       // Emit new-booking-request event via WebSocket for live updates
@@ -2166,20 +2163,19 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
 
     // Keep conversation open through the appointment (deleted after tip decision).
 
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'payment_received',
+      side: 'operator',
+      vars: {
+        amount: operatorEnrouteLabel,
+        message: `Service payment enroute: ${operatorEnrouteLabel}`,
+      },
       type: 'payment_received',
-      title: 'Payment Received!',
-      message: `Service payment enroute: ${operatorEnrouteLabel}`,
       data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, phase: 'service' },
+      fallbackTitle: 'Payment Received!',
+      fallbackBody: `Service payment enroute: ${operatorEnrouteLabel}`,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      'Payment Received!',
-      `Service payment enroute: ${operatorEnrouteLabel}`,
-      'payment_received',
-      { bookingId: id, amount: operatorEnrouteCents, tip: 0, phase: 'service' }
-    );
 
     logger.info(`Service payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
 
@@ -2316,20 +2312,19 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     // Keep conversation open until tip decision.
 
     const paymentMethodLabel = 'Cash';
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'payment_received',
+      side: 'operator',
+      vars: {
+        amount: operatorEnrouteLabel,
+        message: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
+      },
       type: 'payment_received',
-      title: 'Payment Received!',
-      message: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
       data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, paymentMethod, phase: 'service' },
+      fallbackTitle: 'Payment Received!',
+      fallbackBody: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      'Payment Received!',
-      `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
-      'payment_received',
-      { bookingId: id, amount: operatorEnrouteCents, tip: 0, paymentMethod, phase: 'service' }
-    );
 
     logger.info(`Cash service payment for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
 
@@ -2575,20 +2570,19 @@ router.post('/:id/confirm-tip', authenticate, async (req, res, next) => {
       tipAmountCents > 0
         ? `Tip received: $${(tipAmountCents / 100).toFixed(2)}`
         : 'Customer submitted $0 tip';
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'payment_received',
+      side: 'operator',
+      vars: {
+        amount: tipAmountCents > 0 ? `$${(tipAmountCents / 100).toFixed(2)}` : '$0.00',
+        message: tipLabel,
+      },
       type: 'payment_received',
-      title: tipAmountCents > 0 ? 'Tip Received!' : 'Tip submitted',
-      message: tipLabel,
       data: { bookingId: id, tip: tipAmountCents, phase: 'tip' },
+      fallbackTitle: tipAmountCents > 0 ? 'Tip Received!' : 'Tip submitted',
+      fallbackBody: tipLabel,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      tipAmountCents > 0 ? 'Tip Received!' : 'Tip submitted',
-      tipLabel,
-      'payment_received',
-      { bookingId: id, tip: tipAmountCents, phase: 'tip' }
-    );
 
     try {
       const io = getSocketIO();
@@ -2703,20 +2697,22 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
     const reviewMessage = `${booking.consumer_name} left you a ${satisfactionLabel} review${
       comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''
     }`;
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'new_review',
+      side: 'operator',
+      vars: {
+        satisfactionLabel,
+        consumerName: booking.consumer_name,
+        commentSuffix: comment
+          ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"`
+          : '',
+      },
       type: 'new_review',
-      title: reviewTitle,
-      message: reviewMessage,
       data: { bookingId: id, rating, comment, satisfactionLabel },
+      fallbackTitle: reviewTitle,
+      fallbackBody: reviewMessage,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      reviewTitle,
-      reviewMessage,
-      'new_review',
-      { bookingId: id, rating, comment, satisfactionLabel }
-    );
 
     logger.info(`Review submitted for booking ${id}: ${satisfactionLabel} (${rating})`);
 
@@ -2854,20 +2850,16 @@ router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
       hour: 'numeric', minute: '2-digit', timeZone,
     });
 
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.barber_user_id,
+      key: 'schedule_change_requested',
+      side: 'operator',
+      vars: { consumerName, formattedDate, formattedTime },
       type: 'reschedule_request',
-      title: 'Schedule change requested',
-      message: `${consumerName} requested to move the appointment to ${formattedDate} at ${formattedTime}`,
       data: { bookingId: id, requestedTime: requestedTime.toISOString() },
+      fallbackTitle: 'Schedule change requested',
+      fallbackBody: `${consumerName} requested to move the appointment to ${formattedDate} at ${formattedTime}`,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.barber_user_id,
-      'Schedule change requested',
-      `${consumerName} requested to move the appointment to ${formattedDate} at ${formattedTime}`,
-      'reschedule_request',
-      { bookingId: id, requestedTime: requestedTime.toISOString() }
-    );
 
     res.status(201).json({
       success: true,
@@ -2999,20 +2991,16 @@ router.post('/:id/reschedule-request/approve', authenticate, async (req, res, ne
       hour: 'numeric', minute: '2-digit', timeZone,
     });
 
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.consumerId,
+      key: 'schedule_change_approved',
+      side: 'consumer',
+      vars: { formattedDate, formattedTime },
       type: 'reschedule_approved',
-      title: 'Schedule change approved',
-      message: `Your appointment was moved to ${formattedDate} at ${formattedTime}`,
       data: { bookingId: id, scheduledTime: requestedTime.toISOString() },
+      fallbackTitle: 'Schedule change approved',
+      fallbackBody: `Your appointment was moved to ${formattedDate} at ${formattedTime}`,
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.consumerId,
-      'Schedule change approved',
-      `Your appointment was moved to ${formattedDate} at ${formattedTime}`,
-      'reschedule_approved',
-      { bookingId: id, scheduledTime: requestedTime.toISOString() }
-    );
 
     res.json({
       success: true,
@@ -3056,20 +3044,16 @@ router.post('/:id/reschedule-request/reject', authenticate, async (req, res, nex
       [userId, booking.request_id]
     );
 
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId: booking.consumerId,
+      key: 'schedule_change_declined',
+      side: 'consumer',
       type: 'reschedule_rejected',
-      title: 'Schedule change declined',
-      message: 'Your provider declined the requested schedule change. Your original appointment time still stands.',
       data: { bookingId: id },
+      fallbackTitle: 'Schedule change declined',
+      fallbackBody:
+        'Your provider declined the requested schedule change. Your original appointment time still stands.',
     });
-    await pushNotificationService.sendMirrorPush(
-      booking.consumerId,
-      'Schedule change declined',
-      'Your provider declined the requested schedule change. Your original appointment time still stands.',
-      'reschedule_rejected',
-      { bookingId: id }
-    );
 
     res.json({ success: true, message: 'Schedule change request declined' });
   } catch (error: any) {
@@ -3325,56 +3309,48 @@ router.put('/:id', authenticate, async (req, res, next) => {
       // Notify the OTHER party (not the one who made the edit)
       if (isBarber) {
         // Barber edited, notify consumer
-        await notificationService.saveNotification({
+        await sendTemplatedNotification({
           userId: booking.consumerId,
-          type: 'booking_updated',
-          title: 'Booking Updated',
-          message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
-          data: { 
-            bookingId: id, 
-            newScheduledTime: scheduledTime,
-            originalScheduledTime: originalScheduledTime,
-            editedBy: 'barber',
+          key: 'booking_rescheduled',
+          side: 'consumer',
+          vars: {
+            counterpartyName: barberName,
+            reschedulePhrase: 'your appointment',
+            formattedDate,
+            formattedTime,
           },
-        });
-        await pushNotificationService.sendMirrorPush(
-          booking.consumerId,
-          'Booking Updated',
-          `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
-          'booking_updated',
-          {
+          type: 'booking_updated',
+          data: {
             bookingId: id,
             newScheduledTime: scheduledTime,
             originalScheduledTime: originalScheduledTime,
             editedBy: 'barber',
-          }
-        );
+          },
+          fallbackTitle: 'Booking Updated',
+          fallbackBody: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
+        });
       } else {
         // Consumer edited, notify barber
-        await notificationService.saveNotification({
+        await sendTemplatedNotification({
           userId: booking.barber_user_id,
-          type: 'booking_updated',
-          title: 'Booking Updated',
-          message: `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
-          data: { 
-            bookingId: id, 
-            newScheduledTime: scheduledTime,
-            originalScheduledTime: originalScheduledTime,
-            editedBy: 'consumer',
+          key: 'booking_rescheduled',
+          side: 'operator',
+          vars: {
+            counterpartyName: consumerName,
+            reschedulePhrase: 'their appointment',
+            formattedDate,
+            formattedTime,
           },
-        });
-        await pushNotificationService.sendMirrorPush(
-          booking.barber_user_id,
-          'Booking Updated',
-          `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
-          'booking_updated',
-          {
+          type: 'booking_updated',
+          data: {
             bookingId: id,
             newScheduledTime: scheduledTime,
             originalScheduledTime: originalScheduledTime,
             editedBy: 'consumer',
-          }
-        );
+          },
+          fallbackTitle: 'Booking Updated',
+          fallbackBody: `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
+        });
       }
 
       // Get service details for email
@@ -3416,35 +3392,33 @@ router.put('/:id', authenticate, async (req, res, next) => {
       const serviceName = booking.service_name || booking.serviceType || 'Haircut';
       try {
         if (isBarber) {
-          await notificationService.saveNotification({
+          await sendTemplatedNotification({
             userId: booking.consumerId,
+            key: 'booking_details_updated',
+            side: 'consumer',
+            vars: {
+              counterpartyName: barberName,
+              detailsPhrase: `your ${serviceName} booking`,
+            },
             type: 'booking_updated',
-            title: 'Booking details updated',
-            message: `${barberName} updated details for your ${serviceName} booking.`,
             data: { bookingId: id, editedBy: 'barber' },
+            fallbackTitle: 'Booking details updated',
+            fallbackBody: `${barberName} updated details for your ${serviceName} booking.`,
           });
-          await pushNotificationService.sendMirrorPush(
-            booking.consumerId,
-            'Booking details updated',
-            `${barberName} updated details for your ${serviceName} booking.`,
-            'booking_updated',
-            { bookingId: id, editedBy: 'barber' }
-          );
         } else {
-          await notificationService.saveNotification({
+          await sendTemplatedNotification({
             userId: booking.barber_user_id,
+            key: 'booking_details_updated',
+            side: 'operator',
+            vars: {
+              counterpartyName: consumerName,
+              detailsPhrase: `the ${serviceName} booking`,
+            },
             type: 'booking_updated',
-            title: 'Booking details updated',
-            message: `${consumerName} updated details for the ${serviceName} booking.`,
             data: { bookingId: id, editedBy: 'consumer' },
+            fallbackTitle: 'Booking details updated',
+            fallbackBody: `${consumerName} updated details for the ${serviceName} booking.`,
           });
-          await pushNotificationService.sendMirrorPush(
-            booking.barber_user_id,
-            'Booking details updated',
-            `${consumerName} updated details for the ${serviceName} booking.`,
-            'booking_updated',
-            { bookingId: id, editedBy: 'consumer' }
-          );
         }
       } catch (e: any) {
         logger.warn('booking detail edit push failed (non-fatal):', e?.message || e);

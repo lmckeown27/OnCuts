@@ -706,52 +706,35 @@ class PushNotificationService {
       role: 'consumer' | 'barber';
     }
   ): Promise<any> {
-    const { bookingId, hoursUntil, service, counterpartyName } = options;
-    const title =
+    const { bookingId, hoursUntil, service, counterpartyName, role } = options;
+    const hoursUntilLabel = hoursUntil === 1 ? '1 hour' : `${hoursUntil} hours`;
+    const fallbackTitle =
       hoursUntil === 0
         ? 'Appointment starting now'
         : hoursUntil === 1
           ? 'Appointment in 1 hour'
           : `Appointment in ${hoursUntil} hours`;
-    const body =
+    const fallbackBody =
       hoursUntil === 0
         ? `${service} with ${counterpartyName} is starting now.`
         : `${service} with ${counterpartyName} is coming up soon.`;
 
-    const data: Record<string, string> = {
+    const { sendTemplatedNotification } = await import('./notification-template.service');
+    const sent = await sendTemplatedNotification({
+      userId,
+      key: hoursUntil === 0 ? 'booking_reminder_start' : 'booking_reminder',
+      side: role === 'barber' ? 'operator' : 'consumer',
+      vars: { hoursUntilLabel, hoursUntil, service, counterpartyName },
       type: 'booking_reminder',
-      action: 'open_bookings',
-      bookingId: String(bookingId),
-      hoursUntil: String(hoursUntil),
-    };
-
-    try {
-      await notificationService.saveNotification({
-        userId: String(userId),
-        type: 'booking_reminder',
-        title,
-        message: body,
-        data,
-      });
-    } catch (e) {
-      logger.warn('Failed to save booking_reminder in-app notification', {
-        userId: String(userId),
+      data: {
+        action: 'open_bookings',
         bookingId: String(bookingId),
-        err: e instanceof Error ? e.message : e,
-      });
-    }
-
-    const notification: NotificationData = {
-      title,
-      body,
-      type: 'booking_reminder',
-      category: 'REMINDER_CATEGORY',
-      sound: 'default',
-      badge: 1,
-      data,
-    };
-
-    return await this.sendNotification(userId, notification);
+        hoursUntil: String(hoursUntil),
+      },
+      fallbackTitle,
+      fallbackBody,
+    });
+    return { success: sent };
   }
 
   /**
@@ -900,7 +883,9 @@ class PushNotificationService {
     let category = 'BOOKING_CATEGORY';
     if (type === 'payment_received') category = 'PAYMENT_CATEGORY';
     else if (type === 'new_review' || type === 'review') category = 'REVIEW_CATEGORY';
-    else if (type === 'application_approved') category = 'SYSTEM_CATEGORY';
+    else if (type === 'application_approved' || type === 'admin_announcement') {
+      category = 'SYSTEM_CATEGORY';
+    }
 
     return this.sendNotification(userId, {
       title,

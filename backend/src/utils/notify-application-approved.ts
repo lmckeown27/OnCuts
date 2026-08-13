@@ -1,7 +1,6 @@
 import { logger } from './logger';
-import notificationService from '../services/notification.service';
-import pushNotificationService from '../services/pushNotification.service';
 import { inferServiceProviderType } from '../services/service-schema.service';
+import { sendTemplatedNotification } from '../services/notification-template.service';
 
 function operatorTypeLabel(specialties: unknown): 'Barber' | 'Beauty' {
   const list = Array.isArray(specialties) ? specialties : [];
@@ -25,27 +24,21 @@ export async function notifyOperatorApplicationApproved(opts: {
 
   const operatorType = operatorTypeLabel(opts.specialties);
   const message = `Your ${operatorType} application was accepted. Welcome to OnCuts`;
-  const data = {
-    applicationId: opts.applicationId,
-    operatorType,
-    action: 'open_operator_home',
-  };
-
   try {
-    await notificationService.saveNotification({
+    await sendTemplatedNotification({
       userId,
+      key: 'application_approved',
+      side: 'operator',
+      vars: { operatorType },
       type: 'application_approved',
-      title: message,
-      message,
-      data,
+      data: {
+        applicationId: opts.applicationId,
+        operatorType,
+        action: 'open_operator_home',
+      },
+      fallbackTitle: message,
+      fallbackBody: message,
     });
-    await pushNotificationService.sendMirrorPush(
-      userId,
-      message,
-      message,
-      'application_approved',
-      data
-    );
   } catch (err) {
     logger.warn('Failed to notify operator of application approval', {
       userId,

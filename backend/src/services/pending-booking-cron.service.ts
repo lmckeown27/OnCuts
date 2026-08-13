@@ -15,8 +15,7 @@ import {
   sendBarberAutoCancellationEmail,
   sendConsumerAutoCancellationEmail,
 } from './email.service';
-import notificationService from './notification.service';
-import pushNotificationService from './pushNotification.service';
+import { sendTemplatedNotification } from './notification-template.service';
 import { cancelPendingRescheduleRequestsForBooking } from './booking-cancellation.service';
 import { fetchAlternativeBarbers } from './booking-request.service';
 
@@ -375,52 +374,36 @@ export class PendingBookingCronService {
           });
 
           const consumerMsg = `Your ${serviceName} booking was automatically cancelled because the service provider did not accept it in time.`;
-          await notificationService.saveNotification({
+          await sendTemplatedNotification({
             userId: booking.consumerId,
+            key: 'booking_cancelled',
+            side: 'consumer',
+            vars: { message: consumerMsg },
             type: 'booking_cancelled',
-            title: 'Booking Cancelled',
-            message: consumerMsg,
             data: {
               bookingId: booking.id,
               reason: STALE_PENDING_CANCELLATION_REASON,
               cancelledBy: 'system',
             },
+            fallbackTitle: 'Booking Cancelled',
+            fallbackBody: consumerMsg,
           });
-          await pushNotificationService.sendMirrorPush(
-            booking.consumerId,
-            'Booking Cancelled',
-            consumerMsg,
-            'booking_cancelled',
-            {
-              bookingId: booking.id,
-              reason: STALE_PENDING_CANCELLATION_REASON,
-              cancelledBy: 'system',
-            }
-          );
 
           const barberMsg = `A pending ${serviceName} request from ${consumerName} was automatically cancelled because it was not accepted in time.`;
-          await notificationService.saveNotification({
+          await sendTemplatedNotification({
             userId: booking.barber_user_id,
+            key: 'booking_cancelled',
+            side: 'operator',
+            vars: { message: barberMsg },
             type: 'booking_cancelled',
-            title: 'Booking Auto-Cancelled',
-            message: barberMsg,
             data: {
               bookingId: booking.id,
               reason: STALE_PENDING_CANCELLATION_REASON,
               cancelledBy: 'system',
             },
+            fallbackTitle: 'Booking Auto-Cancelled',
+            fallbackBody: barberMsg,
           });
-          await pushNotificationService.sendMirrorPush(
-            booking.barber_user_id,
-            'Booking Auto-Cancelled',
-            barberMsg,
-            'booking_cancelled',
-            {
-              bookingId: booking.id,
-              reason: STALE_PENDING_CANCELLATION_REASON,
-              cancelledBy: 'system',
-            }
-          );
 
           const emailBase = {
             bookingId: booking.id.toString(),
@@ -583,36 +566,28 @@ export class PendingBookingCronService {
           const barberMsg = `A ${serviceName} booking was auto-cancelled because the customer did not pay after accept.`;
 
           if (booking.consumerId) {
-            await notificationService.saveNotification({
+            await sendTemplatedNotification({
               userId: booking.consumerId,
+              key: 'booking_cancelled',
+              side: 'consumer',
+              vars: { message: consumerMsg },
               type: 'booking_cancelled',
-              title: 'Booking Cancelled',
-              message: consumerMsg,
               data: { bookingId: booking.id, reason, cancelledBy: 'system' },
+              fallbackTitle: 'Booking Cancelled',
+              fallbackBody: consumerMsg,
             });
-            await pushNotificationService.sendMirrorPush(
-              booking.consumerId,
-              'Booking Cancelled',
-              consumerMsg,
-              'booking_cancelled',
-              { bookingId: booking.id, reason, cancelledBy: 'system' }
-            );
           }
           if (booking.barber_user_id) {
-            await notificationService.saveNotification({
+            await sendTemplatedNotification({
               userId: booking.barber_user_id,
+              key: 'booking_cancelled',
+              side: 'operator',
+              vars: { message: barberMsg },
               type: 'booking_cancelled',
-              title: 'Booking Auto-Cancelled',
-              message: barberMsg,
               data: { bookingId: booking.id, reason, cancelledBy: 'system' },
+              fallbackTitle: 'Booking Auto-Cancelled',
+              fallbackBody: barberMsg,
             });
-            await pushNotificationService.sendMirrorPush(
-              booking.barber_user_id,
-              'Booking Auto-Cancelled',
-              barberMsg,
-              'booking_cancelled',
-              { bookingId: booking.id, reason, cancelledBy: 'system' }
-            );
           }
 
           cancelledCount++;

@@ -10,9 +10,8 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import notificationService from './notification.service';
 import { assertNoBookingBlockBetween } from './ugc-moderation.service';
-import pushNotificationService from './pushNotification.service';
+import { sendTemplatedNotification } from './notification-template.service';
 import { cancelPendingRescheduleRequestsForBooking } from './booking-cancellation.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 import {
@@ -753,20 +752,16 @@ export class BookingRequestService {
         );
         const barberName = barberNameResult.rows[0]?.name || 'Your barber';
         
-        await notificationService.saveNotification({
+        await sendTemplatedNotification({
           userId: consumerUserId,
+          key: 'booking_accepted',
+          side: 'consumer',
+          vars: { barberName },
           type: 'booking_accepted',
-          title: 'Booking Accepted!',
-          message: `${barberName} accepted your booking request. Pay now to confirm.`,
           data: { conversationId, bookingId: linkedBookingId, phase: 'service' },
+          fallbackTitle: 'Booking Accepted!',
+          fallbackBody: `${barberName} accepted your booking request. Pay now to confirm.`,
         });
-        await pushNotificationService.sendMirrorPush(
-          consumerUserId,
-          'Booking Accepted!',
-          `${barberName} accepted your booking request. Pay now to confirm.`,
-          'booking_accepted',
-          { conversationId, bookingId: linkedBookingId, phase: 'service' }
-        );
 
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
@@ -835,20 +830,16 @@ export class BookingRequestService {
       const barberName = barberNameResult.rows[0]?.name || 'Your barber';
       
       // Send notification to consumer
-      await notificationService.saveNotification({
+      await sendTemplatedNotification({
         userId: consumerId,
+        key: 'booking_accepted',
+        side: 'consumer',
+        vars: { barberName },
         type: 'booking_accepted',
-        title: 'Booking Accepted!',
-        message: `${barberName} accepted your booking request. Pay now to confirm.`,
         data: { bookingId, phase: 'service' },
+        fallbackTitle: 'Booking Accepted!',
+        fallbackBody: `${barberName} accepted your booking request. Pay now to confirm.`,
       });
-      await pushNotificationService.sendMirrorPush(
-        consumerId,
-        'Booking Accepted!',
-        `${barberName} accepted your booking request. Pay now to confirm.`,
-        'booking_accepted',
-        { bookingId, phase: 'service' }
-      );
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
@@ -947,20 +938,19 @@ export class BookingRequestService {
         
         // Send notification to consumer about rejection BEFORE deleting conversation
         const rejectMsg = `${barberName} was unable to accept your booking request${reason ? `: ${reason}` : ''}`;
-        await notificationService.saveNotification({
+        await sendTemplatedNotification({
           userId: consumerUserId,
+          key: 'booking_declined',
+          side: 'consumer',
+          vars: {
+            barberName,
+            reasonSuffix: reason ? `: ${reason}` : '',
+          },
           type: 'booking_rejected',
-          title: 'Booking Declined',
-          message: rejectMsg,
           data: { bookingId: linkedBookingId, reason },
+          fallbackTitle: 'Booking Declined',
+          fallbackBody: rejectMsg,
         });
-        await pushNotificationService.sendMirrorPush(
-          consumerUserId,
-          'Booking Declined',
-          rejectMsg,
-          'booking_rejected',
-          { bookingId: linkedBookingId, reason }
-        );
 
         // Send decline email to consumer with alternative barbers
         if (consumerEmail) {
@@ -1081,20 +1071,16 @@ export class BookingRequestService {
       
       // Send notification to consumer
       const rejectMsgTraditional = `${barberName} was unable to accept your booking request`;
-      await notificationService.saveNotification({
+      await sendTemplatedNotification({
         userId: consumerId,
+        key: 'booking_declined',
+        side: 'consumer',
+        vars: { barberName, reasonSuffix: '' },
         type: 'booking_rejected',
-        title: 'Booking Declined',
-        message: rejectMsgTraditional,
         data: { bookingId, reason },
+        fallbackTitle: 'Booking Declined',
+        fallbackBody: rejectMsgTraditional,
       });
-      await pushNotificationService.sendMirrorPush(
-        consumerId,
-        'Booking Declined',
-        rejectMsgTraditional,
-        'booking_rejected',
-        { bookingId, reason }
-      );
 
       // Send decline email to consumer with alternative barbers
       if (consumerEmail) {

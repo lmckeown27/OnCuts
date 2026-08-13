@@ -28,6 +28,7 @@ import PullToRefresh from './PullToRefresh';
 import {
   ServicesManagementPanel,
 } from './AdminCampusPanels';
+import AdminNotificationControls from './AdminNotificationControls';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
 import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
@@ -5764,6 +5765,8 @@ export function AdminDashboard({
               </div>
             )}
           </div>
+
+          <AdminNotificationControls />
         </div>
       )}
 
