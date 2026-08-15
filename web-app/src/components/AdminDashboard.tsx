@@ -32,6 +32,7 @@ import AdminNotificationControls from './AdminNotificationControls';
 import { buildBarberBookingPageUrl } from './BarberBookingLinkCard';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
+import { downloadBookingLinkQr } from '../utils/bookingQr';
 import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
 import { SERVICE_TYPES } from '../config/services';
 
@@ -605,6 +606,7 @@ export function AdminDashboard({
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
   const [copiedBookingLink, setCopiedBookingLink] = useState(false);
+  const [downloadingBookingQr, setDownloadingBookingQr] = useState(false);
 
   /** Fade/scale a confirm dialog in on the next frame (matches contact modal). */
   const revealAfterMount = (setVisible: (visible: boolean) => void) => {
@@ -2177,6 +2179,7 @@ export function AdminDashboard({
   const handleBarberClick = async (barber: Barber) => {
     setSelectedApplication(null);
     setCopiedBookingLink(false);
+    setDownloadingBookingQr(false);
     setSelectedBarber(barber);
     syncCommissionFormFromBarber(barber);
     setBarberBookings([]);
@@ -3471,6 +3474,33 @@ export function AdminDashboard({
                               Copy
                             </>
                           )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          disabled={downloadingBookingQr}
+                          onClick={async () => {
+                            const url = buildBarberBookingPageUrl(selectedBarber.barberRecordId);
+                            const filename = `oncuts-booking-${slugifyForFilename(selectedBarber.name)}.png`;
+                            setDownloadingBookingQr(true);
+                            try {
+                              await downloadBookingLinkQr(url, filename);
+                              toast.success('QR code downloaded');
+                            } catch {
+                              toast.error('Could not download QR code');
+                            } finally {
+                              setDownloadingBookingQr(false);
+                            }
+                          }}
+                        >
+                          {downloadingBookingQr ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          QR
                         </Button>
                       </div>
                     ) : null}
