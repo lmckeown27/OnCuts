@@ -29,6 +29,7 @@ import {
   ServicesManagementPanel,
 } from './AdminCampusPanels';
 import AdminNotificationControls from './AdminNotificationControls';
+import { buildBarberBookingPageUrl } from './BarberBookingLinkCard';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
 import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
@@ -603,6 +604,7 @@ export function AdminDashboard({
   const [showContactModal, setShowContactModal] = useState<BarberApplication | null>(null);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
+  const [copiedBookingLink, setCopiedBookingLink] = useState(false);
 
   /** Fade/scale a confirm dialog in on the next frame (matches contact modal). */
   const revealAfterMount = (setVisible: (visible: boolean) => void) => {
@@ -2174,6 +2176,7 @@ export function AdminDashboard({
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
     setSelectedApplication(null);
+    setCopiedBookingLink(false);
     setSelectedBarber(barber);
     syncCommissionFormFromBarber(barber);
     setBarberBookings([]);
@@ -3430,6 +3433,47 @@ export function AdminDashboard({
                     </p>
                     <p className="text-xs text-gray-500">{selectedBarber.email}</p>
                     <p className="text-[11px] text-gray-400 mt-0.5">{barberLocationSubtitle(selectedBarber)}</p>
+                    {selectedBarber.barberRecordId ? (
+                      <div className="mt-2 flex items-stretch gap-1.5">
+                        <input
+                          type="text"
+                          readOnly
+                          value={buildBarberBookingPageUrl(selectedBarber.barberRecordId)}
+                          onFocus={(e) => e.currentTarget.select()}
+                          className="flex-1 min-w-0 px-2 py-1.5 border border-gray-200 rounded-md bg-white text-[11px] text-gray-700 truncate"
+                          aria-label="Operator booking link"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={async () => {
+                            const url = buildBarberBookingPageUrl(selectedBarber.barberRecordId);
+                            try {
+                              await navigator.clipboard.writeText(url);
+                              setCopiedBookingLink(true);
+                              toast.success('Booking link copied');
+                              window.setTimeout(() => setCopiedBookingLink(false), 2000);
+                            } catch {
+                              toast.error('Could not copy link');
+                            }
+                          }}
+                        >
+                          {copiedBookingLink ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                 <Button
