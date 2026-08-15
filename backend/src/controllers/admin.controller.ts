@@ -102,13 +102,9 @@ function mapBarberClientFacingFields(row: {
     weeklySchedule: row.weekly_schedule && typeof row.weekly_schedule === 'object' ? row.weekly_schedule : null,
     avgRating: row.avg_rating != null ? Number(row.avg_rating) : null,
     totalReviews: parseInt(String(row.total_reviews ?? '0'), 10) || 0,
-    yearsExperience: row.years_experience != null ? String(row.years_experience) : null,
-    instagramHandle: row.instagram_handle != null && String(row.instagram_handle).trim()
-      ? String(row.instagram_handle).trim()
-      : null,
-    displayName: row.display_name != null && String(row.display_name).trim()
-      ? String(row.display_name).trim()
-      : null,
+    yearsExperience: null,
+    instagramHandle: null,
+    displayName: null,
   };
 }
 
@@ -3125,9 +3121,6 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         b."weeklySchedule" as weekly_schedule,
         b."avgRating" as avg_rating,
         b."totalReviews" as total_reviews,
-        b."yearsExperience" as years_experience,
-        u."instagramHandle" as instagram_handle,
-        u."displayName" as display_name,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -3725,9 +3718,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."weeklySchedule" as weekly_schedule,
         b."avgRating" as avg_rating,
         b."totalReviews" as total_reviews,
-        b."yearsExperience" as years_experience,
-        u."instagramHandle" as instagram_handle,
-        u."displayName" as display_name,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
