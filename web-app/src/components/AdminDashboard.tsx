@@ -3483,7 +3483,9 @@ export function AdminDashboard({
                           disabled={downloadingBookingQr}
                           onClick={async () => {
                             const url = buildBarberBookingPageUrl(selectedBarber.barberRecordId);
-                            const filename = `oncuts-booking-${slugifyForFilename(selectedBarber.name)}.png`;
+                            const filename = `oncuts-booking-${slugifyForFilename(
+                              `${selectedBarber.firstName} ${selectedBarber.lastName}`
+                            )}.png`;
                             setDownloadingBookingQr(true);
                             try {
                               await downloadBookingLinkQr(url, filename);
