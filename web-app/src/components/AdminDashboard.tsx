@@ -3402,27 +3402,36 @@ export function AdminDashboard({
               Back to operators
             </button>
             
-            <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {selectedBarber.profileImageUrl ? (
-                  <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-sm font-bold text-gray-500">{selectedBarber.firstName.charAt(0)}{selectedBarber.lastName.charAt(0)}</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
-                  {selectedBarber.firstName} {selectedBarber.lastName}
-                  {selectedBarber.isBanned ? (
-                    <span className="text-[10px] font-medium uppercase tracking-wide text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
-                      Banned
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="w-48 aspect-square overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center shrink-0 mx-auto sm:mx-0">
+                  {selectedBarber.profileImageUrl ? (
+                    <img
+                      src={selectedBarber.profileImageUrl}
+                      alt={`${selectedBarber.firstName} ${selectedBarber.lastName}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold text-gray-500">
+                      {selectedBarber.firstName.charAt(0)}
+                      {selectedBarber.lastName.charAt(0)}
                     </span>
-                  ) : null}
-                </p>
-                <p className="text-xs text-gray-500">{selectedBarber.email}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{barberLocationSubtitle(selectedBarber)}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 flex flex-col gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                      {selectedBarber.firstName} {selectedBarber.lastName}
+                      {selectedBarber.isBanned ? (
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
+                          Banned
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs text-gray-500">{selectedBarber.email}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{barberLocationSubtitle(selectedBarber)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -3470,6 +3479,8 @@ export function AdminDashboard({
                     )}
                   </Button>
                 )}
+              </div>
+                </div>
               </div>
             </div>
 
