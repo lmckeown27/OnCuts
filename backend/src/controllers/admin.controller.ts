@@ -62,6 +62,56 @@ import {
   type CommissionIncentiveMode,
 } from '../utils/platform-commission';
 
+function parsePricingList(raw: unknown): { name: string; price: number; durationMinutes?: number }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const row = item as { name?: unknown; price?: unknown; duration_minutes?: unknown; durationMinutes?: unknown };
+      const name = String(row.name ?? '').trim();
+      const price = Number(row.price);
+      if (!name || !Number.isFinite(price)) return null;
+      const duration = Number(row.duration_minutes ?? row.durationMinutes);
+      return {
+        name,
+        price,
+        ...(Number.isFinite(duration) && duration > 0 ? { durationMinutes: duration } : {}),
+      };
+    })
+    .filter((item): item is { name: string; price: number; durationMinutes?: number } => item != null);
+}
+
+function mapBarberClientFacingFields(row: {
+  bio?: unknown;
+  specialties?: unknown;
+  pricing?: unknown;
+  weekly_schedule?: unknown;
+  avg_rating?: unknown;
+  total_reviews?: unknown;
+  years_experience?: unknown;
+  instagram_handle?: unknown;
+  display_name?: unknown;
+}) {
+  const specialties = Array.isArray(row.specialties)
+    ? row.specialties.map((s) => String(s).trim()).filter(Boolean)
+    : [];
+  return {
+    bio: row.bio != null && String(row.bio).trim() ? String(row.bio).trim() : null,
+    specialties,
+    pricing: parsePricingList(row.pricing),
+    weeklySchedule: row.weekly_schedule && typeof row.weekly_schedule === 'object' ? row.weekly_schedule : null,
+    avgRating: row.avg_rating != null ? Number(row.avg_rating) : null,
+    totalReviews: parseInt(String(row.total_reviews ?? '0'), 10) || 0,
+    yearsExperience: row.years_experience != null ? String(row.years_experience) : null,
+    instagramHandle: row.instagram_handle != null && String(row.instagram_handle).trim()
+      ? String(row.instagram_handle).trim()
+      : null,
+    displayName: row.display_name != null && String(row.display_name).trim()
+      ? String(row.display_name).trim()
+      : null,
+  };
+}
+
 function mapBarberCommissionFields(row: {
   commission_free_bookings_remaining?: unknown;
   kickback_percent?: unknown;
@@ -3069,6 +3119,15 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         b.kickback_percent,
         b.commission_incentive_mode,
         b.commission_incentive_expires_at,
+        b.bio,
+        b.specialties,
+        b.pricing,
+        b."weeklySchedule" as weekly_schedule,
+        b."avgRating" as avg_rating,
+        b."totalReviews" as total_reviews,
+        b."yearsExperience" as years_experience,
+        u."instagramHandle" as instagram_handle,
+        u."displayName" as display_name,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -3113,6 +3172,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
         ...mapBarberCommissionFields(row),
+        ...mapBarberClientFacingFields(row),
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -3659,6 +3719,15 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b.kickback_percent,
         b.commission_incentive_mode,
         b.commission_incentive_expires_at,
+        b.bio,
+        b.specialties,
+        b.pricing,
+        b."weeklySchedule" as weekly_schedule,
+        b."avgRating" as avg_rating,
+        b."totalReviews" as total_reviews,
+        b."yearsExperience" as years_experience,
+        u."instagramHandle" as instagram_handle,
+        u."displayName" as display_name,
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
@@ -3715,6 +3784,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         isBanned: row.is_banned === true,
         createdAt: row.created_at,
         ...mapBarberCommissionFields(row),
+        ...mapBarberClientFacingFields(row),
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),

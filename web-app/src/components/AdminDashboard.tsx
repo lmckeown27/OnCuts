@@ -288,6 +288,15 @@ interface Barber {
   commissionIncentiveMode?: 'count' | 'timeframe';
   commissionIncentiveExpiresAt?: string | null;
   commissionIncentiveActive?: boolean;
+  bio?: string | null;
+  specialties?: string[];
+  pricing?: { name: string; price: number; durationMinutes?: number }[];
+  weeklySchedule?: Record<string, unknown> | null;
+  avgRating?: number | null;
+  totalReviews?: number;
+  yearsExperience?: string | null;
+  instagramHandle?: string | null;
+  displayName?: string | null;
 }
 
 interface BarberBooking {
@@ -370,6 +379,48 @@ interface AdminDashboardProps {
   /** Increment to re-fetch tabs after pull-to-refresh. */
   refreshSignal?: number;
   onRefresh?: () => Promise<void> | void;
+}
+
+const WEEKDAY_ORDER = [
+  ['monday', 'Monday'],
+  ['tuesday', 'Tuesday'],
+  ['wednesday', 'Wednesday'],
+  ['thursday', 'Thursday'],
+  ['friday', 'Friday'],
+  ['saturday', 'Saturday'],
+  ['sunday', 'Sunday'],
+] as const;
+
+function formatClock(time: string): string {
+  const [hRaw, mRaw] = String(time).split(':');
+  const h = Number(hRaw);
+  const m = Number(mRaw);
+  if (!Number.isFinite(h)) return time;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour = ((h + 11) % 12) + 1;
+  const minute = Number.isFinite(m) ? String(m).padStart(2, '0') : '00';
+  return `${hour}:${minute} ${suffix}`;
+}
+
+function formatDayHours(day: unknown): string {
+  if (!day || typeof day !== 'object') return 'Closed';
+  const row = day as {
+    enabled?: boolean;
+    start?: string;
+    end?: string;
+    intervals?: { start?: string; end?: string }[];
+  };
+  const intervals =
+    Array.isArray(row.intervals) && row.intervals.length > 0
+      ? row.intervals.filter((i) => i?.start && i?.end)
+      : row.start && row.end
+        ? [{ start: row.start, end: row.end }]
+        : [];
+  const enabled = row.enabled === false ? false : intervals.length > 0;
+  if (!enabled || intervals.length === 0) return 'Closed';
+  return intervals
+    .map((i) => `${formatClock(String(i.start))} – ${formatClock(String(i.end))}`)
+    .join(', ');
 }
 
 export function AdminDashboard({ 
@@ -3422,176 +3473,117 @@ export function AdminDashboard({
               </div>
             </div>
 
-            {/* Payment settings — global commission shown; free quota + kickback per operator */}
-            <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-gray-900">Payment settings</h3>
+            {/* Client-facing profile (what consumers see) */}
+            <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-gray-900">Client-facing profile</h3>
                 <span className="text-[10px] text-gray-500">
-                  {isBurdenFeeOn('client')
-                    ? `Service Fee ${platformFeePercent}% (client pays)`
-                    : isBurdenFeeOn('operator')
-                      ? `Platform commission ${platformFeePercent}%`
-                      : `Commission off (saved ${platformFeePercent}%)`}{' '}
-                  · tips never commissioned
+                  {selectedBarber.isHidden
+                    ? 'Hidden from consumers'
+                    : selectedBarber.isActive
+                      ? 'Visible when Stripe is set up'
+                      : 'Inactive'}
                 </span>
               </div>
-              <label className="block max-w-sm mb-3">
-                <span className="text-xs text-gray-600">Platform commission % (all operators)</span>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <div className="relative w-28">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      readOnly={!isEditingPlatformFee}
-                      disabled={
-                        isLoadingPlatformFee ||
-                        isSavingPlatformFee ||
-                        !isEditingPlatformFee ||
-                        !platformCommissionEnabledDraft
-                      }
-                      value={isEditingPlatformFee ? platformFeeInput : String(platformFeePercent)}
-                      onChange={(e) => setPlatformFeeInput(e.target.value)}
-                      className={`w-full rounded-md border px-2.5 py-1.5 pr-7 text-sm transition-colors ${
-                        isEditingPlatformFee && platformCommissionEnabledDraft
-                          ? 'border-gray-300 bg-white text-gray-900'
-                          : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
-                      }`}
-                      aria-label="Platform commission percent"
-                    />
-                    <span
-                      className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm ${
-                        isEditingPlatformFee && platformCommissionEnabledDraft
-                          ? 'text-gray-500'
-                          : 'text-gray-400'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      %
+
+              {(selectedBarber.displayName ||
+                selectedBarber.instagramHandle ||
+                selectedBarber.yearsExperience ||
+                (selectedBarber.avgRating != null && selectedBarber.avgRating > 0)) && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                  {selectedBarber.displayName && (
+                    <span>Display name: {selectedBarber.displayName}</span>
+                  )}
+                  {selectedBarber.instagramHandle && (
+                    <span>@{selectedBarber.instagramHandle.replace(/^@/, '')}</span>
+                  )}
+                  {selectedBarber.yearsExperience && (
+                    <span>{selectedBarber.yearsExperience} years experience</span>
+                  )}
+                  {selectedBarber.avgRating != null && selectedBarber.avgRating > 0 && (
+                    <span>
+                      {Number(selectedBarber.avgRating).toFixed(1)} stars
+                      {selectedBarber.totalReviews
+                        ? ` (${selectedBarber.totalReviews} review${selectedBarber.totalReviews === 1 ? '' : 's'})`
+                        : ''}
                     </span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 select-none">
-                    <input
-                      id="platform-commission-enabled-payment"
-                      type="checkbox"
-                      checked={platformCommissionChecked}
-                      disabled={
-                        isLoadingPlatformFee || isSavingPlatformFee || !isEditingPlatformFee
-                      }
-                      onChange={(e) => setPlatformCommissionEnabledDraft(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
-                      aria-labelledby="platform-commission-enabled-payment-label"
-                    />
-                    <span
-                      id="platform-commission-enabled-payment-label"
-                      className="text-xs text-gray-600 whitespace-nowrap pointer-events-none"
-                    >
-                      {platformCommissionStateLabel}
-                    </span>
-                  </div>
-                  {isEditingPlatformFee ? (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={isLoadingPlatformFee || isSavingPlatformFee}
-                        onClick={() => void handleSavePlatformFee()}
-                      >
-                        {isSavingPlatformFee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isSavingPlatformFee}
-                        onClick={handleCancelEditPlatformFee}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={isLoadingPlatformFee}
-                      onClick={handleStartEditPlatformFee}
-                    >
-                      Edit
-                    </Button>
                   )}
                 </div>
-              </label>
-              <label className="block max-w-sm">
-                <span className="text-xs text-gray-600">Commission-free bookings remaining</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={commissionFreeRemainingInput}
-                  onChange={(e) => setCommissionFreeRemainingInput(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                />
-                <span className="mt-0.5 block text-[10px] text-gray-500">
-                  Next N card bookings take $0 platform fee (default 5 for every provider), then {platformFeePercent}% applies
-                </span>
-              </label>
-              <label className="mt-3 block max-w-sm">
-                <span className="text-xs text-gray-600">Provider kickback %</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={kickbackPercentInput}
-                  onChange={(e) => setKickbackPercentInput(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                />
-                <span className="mt-0.5 block text-[10px] text-gray-500">
-                  Only on commissionless bookings: platform pays this % of service (not tip) from its
-                  Stripe balance to the provider. Example: $25 cut + 10% = +$2.50 ($27.50 total). Not
-                  applied when the normal {platformFeePercent}% commission is charged.
-                </span>
-              </label>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isSavingCommission}
-                  onClick={() => void handleSaveBarberCommission()}
-                >
-                  {isSavingCommission ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save payment settings'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSavingCommission}
-                  onClick={() => setCommissionFreeRemainingInput('5')}
-                >
-                  Set 5 free
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSavingCommission}
-                  onClick={() => setKickbackPercentInput('10')}
-                >
-                  Set 10% kickback
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSavingCommission}
-                  onClick={() => {
-                    setCommissionFreeRemainingInput('5');
-                    setKickbackPercentInput('0');
-                  }}
-                >
-                  Reset to default
-                </Button>
+              )}
+
+              {selectedBarber.bio ? (
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1">About</p>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedBarber.bio}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No bio</p>
+              )}
+
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1.5">Specialties</p>
+                {selectedBarber.specialties && selectedBarber.specialties.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedBarber.specialties.map((specialty) => (
+                      <span
+                        key={specialty}
+                        className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-800 text-xs font-medium"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No specialties listed</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1.5">Prices</p>
+                {selectedBarber.pricing && selectedBarber.pricing.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {selectedBarber.pricing.map((service) => (
+                      <div
+                        key={`${service.name}-${service.price}`}
+                        className="flex justify-between gap-3 text-sm"
+                      >
+                        <span className="text-gray-900 min-w-0 truncate">{service.name}</span>
+                        <span className="shrink-0 font-medium text-gray-900">
+                          ${Number(service.price).toFixed(2)}
+                          {service.durationMinutes
+                            ? ` · ${service.durationMinutes} min`
+                            : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No prices listed</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1.5">Availability</p>
+                {selectedBarber.weeklySchedule &&
+                typeof selectedBarber.weeklySchedule === 'object' &&
+                WEEKDAY_ORDER.some(([key]) => selectedBarber.weeklySchedule?.[key]) ? (
+                  <div className="space-y-1">
+                    {WEEKDAY_ORDER.map(([key, label]) => (
+                      <div key={key} className="flex justify-between gap-3 text-sm">
+                        <span className="text-gray-600 w-24 shrink-0">{label}</span>
+                        <span className="text-gray-900 text-right">
+                          {formatDayHours(selectedBarber.weeklySchedule?.[key])}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No weekly hours listed</p>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                Location: {barberLocationSubtitle(selectedBarber)}
               </div>
             </div>
             
