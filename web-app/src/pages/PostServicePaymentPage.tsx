@@ -3,7 +3,7 @@
  * 
  * This page is shown when a barber marks a service as complete.
  * - Barber sees a "waiting for payment" view
- * - Consumer sees the Stripe payment form with Apple Pay / Google Pay support
+ * - Consumer sees the Stripe payment form with Apple Pay support
  */
 
 import { useState, useEffect } from 'react';
@@ -57,7 +57,7 @@ function DownloadOnCutsAppForWallet() {
         <span className="min-w-0">
           <p className="text-sm font-semibold text-gray-900">Download OnCuts App</p>
           <p className="text-xs text-gray-600 mt-0.5">
-            Download the app to pay with your device card (Apple Pay or Google Pay).
+            Download the app to pay with your device card (Apple Pay).
           </p>
         </span>
       </a>
@@ -195,7 +195,7 @@ function PaymentFormInner({
             options={{
               paymentMethods: {
                 applePay: 'always',
-                googlePay: 'always',
+                googlePay: 'never',
                 link: 'never',
                 paypal: 'never',
                 amazonPay: 'never',
@@ -203,9 +203,7 @@ function PaymentFormInner({
               },
             }}
             onReady={({ availablePaymentMethods }) => {
-              const hasWallet = Boolean(
-                availablePaymentMethods?.applePay || availablePaymentMethods?.googlePay
-              );
+              const hasWallet = Boolean(availablePaymentMethods?.applePay);
               setWalletAvailable(hasWallet);
             }}
             onConfirm={async () => {
@@ -251,7 +249,7 @@ function PaymentFormInner({
       <p className="text-center text-xs text-gray-500">
         {paymentEntry === 'manual'
           ? 'Secured by Stripe. Enter your card details to pay.'
-          : 'Secured by Stripe. Use Apple Pay or Google Pay with your saved wallet cards.'}
+          : 'Secured by Stripe. Use Apple Pay with your saved wallet cards.'}
       </p>
     </form>
   );
@@ -425,7 +423,7 @@ function ServicePaymentForm({
             }`}
           >
             <Wallet className="w-6 h-6" />
-            <span className="font-semibold text-sm text-center">Apple / Google Pay</span>
+            <span className="font-semibold text-sm text-center">Apple Pay</span>
           </button>
           {cashAllowed && (
             <button
@@ -595,7 +593,7 @@ function TipPaymentForm({
     }
   };
 
-  // Tips are always card (manual / Apple Pay / Google Pay) — never cash.
+  // Tips are always card (manual / Apple Pay) — never cash.
   useEffect(() => {
     if (!tipChosen || tipAmount <= 0) {
       setClientSecret(null);
