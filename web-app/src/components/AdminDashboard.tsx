@@ -607,6 +607,7 @@ export function AdminDashboard({
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
   const [copiedBookingLink, setCopiedBookingLink] = useState(false);
   const [downloadingBookingQr, setDownloadingBookingQr] = useState(false);
+  const [downloadingConsumerHomeQr, setDownloadingConsumerHomeQr] = useState(false);
 
   /** Fade/scale a confirm dialog in on the next frame (matches contact modal). */
   const revealAfterMount = (setVisible: (visible: boolean) => void) => {
@@ -5624,6 +5625,31 @@ export function AdminDashboard({
                 {isSavingControls ? 'Saving…' : 'Loading…'}
               </div>
             )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={downloadingConsumerHomeQr}
+              onClick={async () => {
+                const url = `${window.location.origin}/web/consumer`;
+                setDownloadingConsumerHomeQr(true);
+                try {
+                  await downloadBookingLinkQr(url, 'oncuts-consumer-home.png');
+                  toast.success('QR code downloaded');
+                } catch {
+                  toast.error('Could not download QR code');
+                } finally {
+                  setDownloadingConsumerHomeQr(false);
+                }
+              }}
+            >
+              {downloadingConsumerHomeQr ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Download QR Code
+            </Button>
           </div>
 
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
