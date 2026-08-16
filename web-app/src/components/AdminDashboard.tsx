@@ -5596,8 +5596,11 @@ export function AdminDashboard({
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Consumer Home
             </p>
-            <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
-              <legend className="sr-only">Consumer home</legend>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-10">
+            <fieldset className="space-y-2.5 min-w-0 flex-1" disabled={isLoadingPlatformFee || isSavingControls}>
+              <legend className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Cards
+              </legend>
               {(
                 [
                   { id: 'providers' as const, label: 'Provider cards' },
@@ -5630,7 +5633,7 @@ export function AdminDashboard({
                 </label>
               ))}
             </fieldset>
-            <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
+            <fieldset className="space-y-2.5 min-w-0 flex-1" disabled={isLoadingPlatformFee || isSavingControls}>
               <legend className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Reviews
               </legend>
@@ -5666,6 +5669,7 @@ export function AdminDashboard({
                 </label>
               ))}
             </fieldset>
+            </div>
             {(isLoadingPlatformFee || isSavingControls) && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
