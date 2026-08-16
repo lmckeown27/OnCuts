@@ -60,6 +60,12 @@ export function setBrowseDeviceTracking(enabled: boolean): void {
   window.dispatchEvent(new CustomEvent(BROWSE_DISTANCE_CHANGED_EVENT));
 }
 
+/** Consumer-home QR uses `?tracking=off` so GPS is not requested on entry. */
+export function isTrackingOffQuery(search: string): boolean {
+  const raw = new URLSearchParams(search).get('tracking');
+  return raw === 'off' || raw === '0' || raw === 'false';
+}
+
 export function milesToKmForBrowse(miles: number): number {
   return miles * 1.60934;
 }

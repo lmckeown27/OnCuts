@@ -45,6 +45,7 @@ import {
   getBrowseConstrainByDistance,
   getBrowseDeviceTracking,
   getBrowseMaxDistanceMiles,
+  isTrackingOffQuery,
   milesToKmForBrowse,
   setBrowseConstrainByDistance,
   setBrowseDeviceTracking,
@@ -1690,7 +1691,13 @@ function DiscoveryView({
   const reviewsSectionRef = useRef<HTMLDivElement>(null);
   const [maxDistanceMiles, setMaxDistanceMilesState] = useState(getBrowseMaxDistanceMiles);
   const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
-  const [deviceTracking, setDeviceTrackingState] = useState(getBrowseDeviceTracking);
+  const [deviceTracking, setDeviceTrackingState] = useState(() => {
+    if (typeof window !== 'undefined' && isTrackingOffQuery(window.location.search)) {
+      setBrowseDeviceTracking(false);
+      return false;
+    }
+    return getBrowseDeviceTracking();
+  });
   const [locationDraft, setLocationDraft] = useState('');
   const [deviceLocationLabel, setDeviceLocationLabel] = useState('');
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
@@ -1764,6 +1771,12 @@ function DiscoveryView({
       cancelled = true;
     };
   }, [location.state, user?.campus_id]);
+
+  useEffect(() => {
+    if (!isTrackingOffQuery(location.search)) return;
+    setBrowseDeviceTracking(false);
+    setDeviceTrackingState(false);
+  }, [location.search]);
 
   // Request GPS when device tracking is on
   useEffect(() => {

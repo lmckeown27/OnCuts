@@ -5631,7 +5631,7 @@ export function AdminDashboard({
               size="sm"
               disabled={downloadingConsumerHomeQr}
               onClick={async () => {
-                const url = `${window.location.origin}/web/consumer`;
+                const url = `${window.location.origin}/web/consumer?tracking=off`;
                 setDownloadingConsumerHomeQr(true);
                 try {
                   await downloadBookingLinkQr(url, 'oncuts-consumer-home.png');
