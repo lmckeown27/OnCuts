@@ -48,10 +48,16 @@ export function setBrowseConstrainByDistance(enabled: boolean): void {
 export function getBrowseDeviceTracking(): boolean {
   try {
     const raw = localStorage.getItem(DEVICE_TRACKING_KEY);
-    if (raw == null) return true;
+    if (raw == null) {
+      // Web browse defaults off (no GPS prompt). iOS /app keeps the on default.
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/web')) {
+        return false;
+      }
+      return true;
+    }
     return raw !== 'false';
   } catch {
-    return true;
+    return typeof window !== 'undefined' && !window.location.pathname.startsWith('/web');
   }
 }
 
