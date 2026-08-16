@@ -13,6 +13,7 @@ export type FeeBurden = 'operator' | 'client';
 export interface FrontendConfig {
   cashPaymentEnabled: boolean;
   consumerHomeMode: ConsumerHomeMode;
+  consumerHomeReviewsEnabled: boolean;
   consumerUserCount: number;
   platformFeePercent: number;
   platformCommissionEnabled: boolean;
@@ -22,6 +23,7 @@ export interface FrontendConfig {
 const DEFAULT_CONFIG: FrontendConfig = {
   cashPaymentEnabled: false,
   consumerHomeMode: 'providers',
+  consumerHomeReviewsEnabled: true,
   consumerUserCount: 0,
   platformFeePercent: 15,
   platformCommissionEnabled: true,
@@ -40,6 +42,7 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
       const data = await api.get<{
         cashPaymentEnabled?: boolean;
         consumerHomeMode?: string;
+        consumerHomeReviewsEnabled?: boolean;
         consumerUserCount?: number;
         platformFeePercent?: number;
         platformCommissionEnabled?: boolean;
@@ -49,6 +52,7 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
       const next: FrontendConfig = {
         cashPaymentEnabled: data?.cashPaymentEnabled === true,
         consumerHomeMode: data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers',
+        consumerHomeReviewsEnabled: data?.consumerHomeReviewsEnabled !== false,
         consumerUserCount: Math.max(0, Number(data?.consumerUserCount) || 0),
         platformFeePercent: Number.isFinite(percent) ? percent : 15,
         platformCommissionEnabled: data?.platformCommissionEnabled !== false,

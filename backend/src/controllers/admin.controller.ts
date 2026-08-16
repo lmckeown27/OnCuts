@@ -305,6 +305,7 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
  *   feeBurden?: 'operator' | 'client'
  *   cashPaymentEnabled?: boolean
  *   consumerHomeMode?: 'providers' | 'waitlist'
+ *   consumerHomeReviewsEnabled?: boolean
  * At least one field required.
  */
 export const updatePlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -324,6 +325,7 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
     const hasBurden = Object.prototype.hasOwnProperty.call(body, 'feeBurden');
     const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
     const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
+    const hasReviews = Object.prototype.hasOwnProperty.call(body, 'consumerHomeReviewsEnabled');
 
     if (
       !hasFee &&
@@ -331,11 +333,12 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       !hasKickback &&
       !hasBurden &&
       !hasCash &&
-      !hasMode
+      !hasMode &&
+      !hasReviews
     ) {
       throw new ApiError(
         400,
-        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, cashPaymentEnabled, consumerHomeMode'
+        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, cashPaymentEnabled, consumerHomeMode, consumerHomeReviewsEnabled'
       );
     }
 
@@ -346,6 +349,7 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       feeBurden?: FeeBurden;
       cashPaymentEnabled?: boolean;
       consumerHomeMode?: ConsumerHomeMode;
+      consumerHomeReviewsEnabled?: boolean;
     } = {};
 
     if (hasFee) {
@@ -392,6 +396,10 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
         throw new ApiError(400, "consumerHomeMode must be 'providers' or 'waitlist'");
       }
       patch.consumerHomeMode = mode;
+    }
+
+    if (hasReviews) {
+      patch.consumerHomeReviewsEnabled = Boolean(body.consumerHomeReviewsEnabled);
     }
 
     const data = await updatePlatformSettingsPartial(patch, req.user!.userId);

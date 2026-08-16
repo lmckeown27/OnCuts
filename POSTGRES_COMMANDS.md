@@ -3351,6 +3351,16 @@ pm2 restart oncuts-backend
 
 Adds `payments.instant_payout_id` and `payments.instant_payout_status` for auto Instant Payout attempts after eligible Connect card charges. Enable with `STRIPE_INSTANT_PAYOUTS_ENABLED=true` after Instant is turned on for Connect in the Stripe Dashboard.
 
+### 067 — Consumer home reviews toggle
+
+```bash
+cd ~/OnCuts && git pull
+sudo -u postgres psql -d oncuts -f ~/OnCuts/backend/src/database/migrations/067_consumer_home_reviews.sql
+pm2 restart oncuts-backend
+```
+
+Adds `platform_settings.consumer_home_reviews_enabled` (default true). Admin Controls → Consumer Home → Reviews shows or hides ratings on provider cards and in the profile modal.
+
 ### 066 — Notification templates (Admin Controls)
 
 ```bash

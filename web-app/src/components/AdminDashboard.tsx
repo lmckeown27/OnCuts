@@ -542,6 +542,7 @@ export function AdminDashboard({
   const [platformCommissionEnabledDraft, setPlatformCommissionEnabledDraft] = useState(true);
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
+  const [consumerHomeReviewsEnabled, setConsumerHomeReviewsEnabled] = useState(true);
   const [isSavingControls, setIsSavingControls] = useState(false);
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
@@ -723,6 +724,7 @@ export function AdminDashboard({
           feeBurden?: string;
           cashPaymentEnabled?: boolean;
           consumerHomeMode?: string;
+          consumerHomeReviewsEnabled?: boolean;
         }>('/admin/platform-settings');
         const percent = Number(data?.platformFeePercent);
         if (Number.isFinite(percent)) {
@@ -742,6 +744,7 @@ export function AdminDashboard({
         }
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
+        setConsumerHomeReviewsEnabled(data?.consumerHomeReviewsEnabled !== false);
       } catch (error) {
         console.error('Failed to fetch platform settings:', error);
       } finally {
@@ -797,27 +800,34 @@ export function AdminDashboard({
   const handleSaveControls = async (next: {
     cashPaymentEnabled: boolean;
     consumerHomeMode: ConsumerHomeMode;
+    consumerHomeReviewsEnabled: boolean;
   }) => {
     setIsSavingControls(true);
     const prevCash = cashPaymentEnabled;
     const prevMode = consumerHomeMode;
+    const prevReviews = consumerHomeReviewsEnabled;
     setCashPaymentEnabled(next.cashPaymentEnabled);
     setConsumerHomeMode(next.consumerHomeMode);
+    setConsumerHomeReviewsEnabled(next.consumerHomeReviewsEnabled);
     try {
       const data = await api.put<{
         cashPaymentEnabled?: boolean;
         consumerHomeMode?: string;
+        consumerHomeReviewsEnabled?: boolean;
       }>('/admin/platform-settings', {
         cashPaymentEnabled: next.cashPaymentEnabled,
         consumerHomeMode: next.consumerHomeMode,
+        consumerHomeReviewsEnabled: next.consumerHomeReviewsEnabled,
       });
       setCashPaymentEnabled(data?.cashPaymentEnabled === true);
       setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
+      setConsumerHomeReviewsEnabled(data?.consumerHomeReviewsEnabled !== false);
       invalidateFrontendConfigCache();
       toast.success('Controls saved');
     } catch (error: any) {
       setCashPaymentEnabled(prevCash);
       setConsumerHomeMode(prevMode);
+      setConsumerHomeReviewsEnabled(prevReviews);
       toast.error(error?.message || 'Failed to update controls');
     } finally {
       setIsSavingControls(false);
@@ -5611,6 +5621,43 @@ export function AdminDashboard({
                       void handleSaveControls({
                         cashPaymentEnabled,
                         consumerHomeMode: opt.id,
+                        consumerHomeReviewsEnabled,
+                      });
+                    }}
+                    className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                  />
+                  <span className="text-sm text-gray-900">{opt.label}</span>
+                </label>
+              ))}
+            </fieldset>
+            <fieldset className="space-y-2.5" disabled={isLoadingPlatformFee || isSavingControls}>
+              <legend className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Reviews
+              </legend>
+              {(
+                [
+                  { id: true, label: 'On' },
+                  { id: false, label: 'Off' },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={String(opt.id)}
+                  className={`flex items-center gap-3 cursor-pointer ${
+                    isLoadingPlatformFee || isSavingControls ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="consumer-home-reviews"
+                    value={opt.id ? 'on' : 'off'}
+                    checked={consumerHomeReviewsEnabled === opt.id}
+                    disabled={isLoadingPlatformFee || isSavingControls}
+                    onChange={() => {
+                      if (opt.id === consumerHomeReviewsEnabled) return;
+                      void handleSaveControls({
+                        cashPaymentEnabled,
+                        consumerHomeMode,
+                        consumerHomeReviewsEnabled: opt.id,
                       });
                     }}
                     className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
@@ -5812,6 +5859,7 @@ export function AdminDashboard({
                   void handleSaveControls({
                     cashPaymentEnabled: !cashPaymentEnabled,
                     consumerHomeMode,
+                    consumerHomeReviewsEnabled,
                   })
                 }
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${

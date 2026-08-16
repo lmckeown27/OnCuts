@@ -1668,6 +1668,7 @@ function DiscoveryView({
   const location = useLocation();
   const {
     consumerHomeMode,
+    consumerHomeReviewsEnabled,
     consumerUserCount,
     isLoading: isFrontendConfigLoading,
   } = useFrontendConfig();
@@ -2471,6 +2472,11 @@ function DiscoveryView({
           const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
           const maxPrice = prices.length > 0 ? Math.max(...prices) : undefined;
           const hasRange = minPrice !== undefined && maxPrice !== undefined && maxPrice !== minPrice;
+          const reviewCount = Number(barber.total_reviews ?? barber.review_count ?? 0);
+          const avgRating = Number(barber.average_rating);
+          const showCardReviews =
+            consumerHomeReviewsEnabled &&
+            ((Number.isFinite(avgRating) && avgRating > 0) || reviewCount > 0);
 
           // Mobile portrait: Horizontal card layout
           if (isMobilePortrait) {
@@ -2507,6 +2513,15 @@ function DiscoveryView({
                       </span>
                     )}
                   </div>
+                  {showCardReviews && (
+                    <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>
+                        {Number.isFinite(avgRating) && avgRating > 0 ? avgRating.toFixed(1) : '—'}
+                        {reviewCount > 0 ? ` (${reviewCount})` : ''}
+                      </span>
+                    </div>
+                  )}
                   {distanceLabel && (
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
@@ -2550,6 +2565,15 @@ function DiscoveryView({
                   <h3 className="text-sm sm:text-lg font-bold text-white">
                     {barber.name || barber.display_name || `${barber.first_name || barber.user?.first_name || ''} ${barber.last_name || barber.user?.last_name || ''}`.trim() || 'Barber'}
                   </h3>
+                  {showCardReviews && (
+                    <div className="flex items-center gap-1 mt-1 text-white/90 text-xs sm:text-sm">
+                      <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+                      <span>
+                        {Number.isFinite(avgRating) && avgRating > 0 ? avgRating.toFixed(1) : '—'}
+                        {reviewCount > 0 ? ` (${reviewCount})` : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {/* Price Overlay - Bottom Left */}
                 {minPrice !== undefined && (
@@ -2758,7 +2782,7 @@ function DiscoveryView({
                                 )}
 
                                 {/* Reviews Section - Collapsible */}
-                                {(selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails ? (
+                                {consumerHomeReviewsEnabled && ((selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails) ? (
                                   <div ref={reviewsSectionRef} className="pt-4 sm:pt-6 border-t border-gray-100">
                                     <button
                                       onClick={() => {

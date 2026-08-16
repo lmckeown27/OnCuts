@@ -1,5 +1,5 @@
 /**
- * Platform frontend controls (cash payments, consumer home mode).
+ * Platform frontend controls (cash payments, consumer home mode, reviews).
  * Stored on singleton platform_settings; Admin-editable via Controls tab.
  *
  * cash_payment_enabled only gates cash for bookings where BOTH the consumer
@@ -29,6 +29,7 @@ export type ConsumerHomeMode = 'providers' | 'waitlist';
 export interface PlatformFrontendSettings {
   cashPaymentEnabled: boolean;
   consumerHomeMode: ConsumerHomeMode;
+  consumerHomeReviewsEnabled: boolean;
 }
 
 export interface PlatformSettingsPayload extends PlatformFrontendSettings {
@@ -52,6 +53,7 @@ export interface FrontendConfigPayload extends PlatformFrontendSettings {
 const DEFAULTS: PlatformFrontendSettings = {
   cashPaymentEnabled: false,
   consumerHomeMode: 'providers',
+  consumerHomeReviewsEnabled: true,
 };
 
 const CACHE_TTL_MS = 30_000;
@@ -78,7 +80,7 @@ export async function getPlatformFrontendSettings(
 
   try {
     const result = await client.query(
-      `SELECT cash_payment_enabled, consumer_home_mode
+      `SELECT cash_payment_enabled, consumer_home_mode, consumer_home_reviews_enabled
        FROM platform_settings
        WHERE id = 1
        LIMIT 1`
@@ -88,6 +90,7 @@ export async function getPlatformFrontendSettings(
       const next: PlatformFrontendSettings = {
         cashPaymentEnabled: row.cash_payment_enabled === true,
         consumerHomeMode: parseHomeMode(row.consumer_home_mode),
+        consumerHomeReviewsEnabled: row.consumer_home_reviews_enabled !== false,
       };
       cachedFrontend = next;
       cachedFrontendExpiresAt = now + CACHE_TTL_MS;
@@ -197,6 +200,7 @@ export async function updatePlatformSettingsPartial(
     feeBurden?: FeeBurden;
     cashPaymentEnabled?: boolean;
     consumerHomeMode?: ConsumerHomeMode;
+    consumerHomeReviewsEnabled?: boolean;
   },
   updatedBy?: string | null,
   client: DbClient = pool
@@ -207,6 +211,7 @@ export async function updatePlatformSettingsPartial(
   const hasBurden = patch.feeBurden !== undefined;
   const hasCash = patch.cashPaymentEnabled !== undefined;
   const hasMode = patch.consumerHomeMode !== undefined;
+  const hasReviews = patch.consumerHomeReviewsEnabled !== undefined;
 
   if (hasFee) {
     await setPlatformFeePercent(patch.platformFeePercent!, updatedBy, client);
@@ -224,29 +229,34 @@ export async function updatePlatformSettingsPartial(
     await setFeeBurden(patch.feeBurden!, updatedBy, client);
   }
 
-  if (hasCash || hasMode) {
+  if (hasCash || hasMode || hasReviews) {
     const current = await getPlatformFrontendSettings(client);
     const nextCash = hasCash ? Boolean(patch.cashPaymentEnabled) : current.cashPaymentEnabled;
     const nextMode = hasMode
       ? parseHomeMode(patch.consumerHomeMode)
       : current.consumerHomeMode;
+    const nextReviews = hasReviews
+      ? Boolean(patch.consumerHomeReviewsEnabled)
+      : current.consumerHomeReviewsEnabled;
 
     await client.query(
-      `INSERT INTO platform_settings (id, platform_fee_percent, cash_payment_enabled, consumer_home_mode, updated_at, updated_by)
+      `INSERT INTO platform_settings (id, platform_fee_percent, cash_payment_enabled, consumer_home_mode, consumer_home_reviews_enabled, updated_at, updated_by)
        VALUES (
          1,
          COALESCE((SELECT platform_fee_percent FROM platform_settings WHERE id = 1), 15),
          $1,
          $2,
+         $3,
          NOW(),
-         $3
+         $4
        )
        ON CONFLICT (id) DO UPDATE SET
          cash_payment_enabled = EXCLUDED.cash_payment_enabled,
          consumer_home_mode = EXCLUDED.consumer_home_mode,
+         consumer_home_reviews_enabled = EXCLUDED.consumer_home_reviews_enabled,
          updated_at = NOW(),
          updated_by = EXCLUDED.updated_by`,
-      [nextCash, nextMode, updatedBy ?? null]
+      [nextCash, nextMode, nextReviews, updatedBy ?? null]
     );
     invalidatePlatformFrontendSettingsCache();
   }
