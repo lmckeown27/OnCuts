@@ -26,6 +26,8 @@ import {
   deferPaymentTakeover,
 } from '../store/deferredPaymentBookings';
 import SatisfactionRating from '../components/SatisfactionRating';
+import { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
+import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -35,6 +37,33 @@ const getServiceDisplayName = (serviceName?: string, serviceType?: string): stri
 };
 
 const stripePromise = loadStripe(STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
+
+function DownloadOnCutsAppForWallet() {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
+      <a
+        href={IOS_APP_STORE_LINKS.consumer}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 no-underline"
+        aria-label="Download OnCuts App"
+      >
+        <img
+          src={onCutsAppLogo}
+          alt=""
+          className="h-11 w-11 shrink-0 rounded-[10px] object-cover"
+          decoding="async"
+        />
+        <span className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900">Download OnCuts App</p>
+          <p className="text-xs text-gray-600 mt-0.5">
+            Download the app to pay with your device card (Apple Pay or Google Pay).
+          </p>
+        </span>
+      </a>
+    </div>
+  );
+}
 
 interface BookingDetails {
   id: string;
@@ -183,11 +212,7 @@ function PaymentFormInner({
               await confirmWithStripe();
             }}
           />
-          {!walletAvailable && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Apple Pay / Google Pay isn’t available in this browser. Choose Manual card input instead.
-            </p>
-          )}
+          {!walletAvailable && <DownloadOnCutsAppForWallet />}
         </div>
       )}
 
