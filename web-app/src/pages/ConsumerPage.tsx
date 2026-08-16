@@ -2722,54 +2722,8 @@ function DiscoveryView({
                                         </div>
                                       </div>
                                     )}
-                                    
-                                    {/* Locations - Mobile Only */}
-                                    {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
-                                      <div className="sm:hidden mt-4">
-                                        <div className="flex items-center justify-center text-gray-700 font-medium mb-3">
-                                          <span>Locations</span>
-                                        </div>
-                                        <div className="flex flex-wrap justify-center gap-2">
-                                          {selectedBarber.service_locations.map((location: { id: string; name: string; is_primary?: boolean }) => (
-                                            <span
-                                              key={location.id}
-                                              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                                                location.is_primary
-                                                  ? 'bg-primary-100 text-primary-700 border border-gray-200'
-                                                  : 'bg-gray-100 text-gray-700'
-                                              }`}
-                                            >
-                                              {location.name}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
-                
-                {/* Locations Section - Desktop Only (above About) */}
-                                {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
-                                  <div className="hidden sm:block pt-4 sm:pt-6 border-t border-gray-100">
-                                    <div className="flex items-center justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                                      <span>Locations</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 sm:gap-3">
-                                      {selectedBarber.service_locations.map((location: { id: string; name: string; is_primary?: boolean }) => (
-                                        <span
-                                          key={location.id}
-                                          className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                                            location.is_primary
-                                              ? 'bg-primary-100 text-primary-700 border border-gray-200'
-                                              : 'bg-gray-100 text-gray-700'
-                                          }`}
-                                        >
-                                          {location.name}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
                                 
                                 {/* Bio Section - Full width below */}
                                 {selectedBarber.bio && (
