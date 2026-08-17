@@ -100,24 +100,80 @@ export default function UniversitySelector({
         return;
       }
 
+      const q = trimmed.toLowerCase();
       setIsSearching(true);
       try {
-        const townMatches = searchCollegeTowns(towns, trimmed, 8);
-        const places =
+        const [places, campuses] = await Promise.all([
           trimmed.length >= 2
-            ? await geocodeService.searchPlaces(trimmed).catch(() => [] as GeocodePlace[])
-            : [];
+            ? geocodeService.searchPlaces(trimmed).catch(() => [] as GeocodePlace[])
+            : Promise.resolve([] as GeocodePlace[]),
+          campusService.getCampuses().catch(() => [] as Awaited<ReturnType<typeof campusService.getCampuses>>),
+        ]);
 
-        const placeTowns = places.map(collegeTownFromGeocodePlace);
-        const merged: CollegeTown[] = [...townMatches];
-        for (const placeTown of placeTowns) {
+        const candidates: CollegeTown[] = [];
+
+        // Individual campus name matches (e.g. "Cal Poly") — same source as operator PlaceSearch
+        for (const campus of campuses) {
+          if (campus.latitude == null || campus.longitude == null) continue;
+          const name = campus.name || '';
+          const city = campus.city || '';
+          if (
+            !name.toLowerCase().includes(q) &&
+            !city.toLowerCase().includes(q) &&
+            !name.toLowerCase().replace(/\s+/g, '-').includes(q.replace(/\s+/g, '-'))
+          ) {
+            continue;
+          }
+          candidates.push({
+            id: `campus-${campus.id}`,
+            name: campus.name,
+            shortName: campus.name,
+            city: campus.city || campus.name,
+            state: (campus.state || 'US').slice(0, 2).toUpperCase(),
+            latitude: campus.latitude as number,
+            longitude: campus.longitude as number,
+            campusCount: 1,
+            campusIds: [campus.id],
+            primaryCampusId: campus.id,
+          });
+        }
+
+        for (const place of places) {
+          candidates.push(collegeTownFromGeocodePlace(place));
+        }
+
+        // City/area towns — included without priority over campuses/places
+        for (const town of searchCollegeTowns(towns, trimmed, 8)) {
+          candidates.push(town);
+        }
+
+        const merged: CollegeTown[] = [];
+        for (const candidate of candidates) {
           const duplicate = merged.some(
             (m) =>
-              placesNearMatch(m.latitude, m.longitude, placeTown.latitude!, placeTown.longitude!) ||
-              m.name.toLowerCase() === placeTown.name.toLowerCase()
+              (candidate.latitude != null &&
+                candidate.longitude != null &&
+                placesNearMatch(m.latitude, m.longitude, candidate.latitude, candidate.longitude)) ||
+              m.name.toLowerCase() === candidate.name.toLowerCase()
           );
-          if (!duplicate) merged.push(placeTown);
+          if (!duplicate) merged.push(candidate);
         }
+
+        // Rank by how closely the label matches what the user typed (no campus-town preference)
+        const rank = (town: CollegeTown): number => {
+          const name = town.name.toLowerCase();
+          const short = (town.shortName || '').toLowerCase();
+          if (name === q || short === q) return 0;
+          if (name.startsWith(q) || short.startsWith(q)) return 1;
+          if (name.includes(q) || short.includes(q)) return 2;
+          return 3;
+        };
+
+        merged.sort((a, b) => {
+          const rankDiff = rank(a) - rank(b);
+          if (rankDiff !== 0) return rankDiff;
+          return a.name.localeCompare(b.name);
+        });
 
         setResults(merged.slice(0, 12));
         setHighlightedIndex(0);
@@ -343,12 +399,8 @@ export default function UniversitySelector({
                     <MapPin className="w-4 h-4 mt-1 text-gray-400 shrink-0" />
                     <span className="min-w-0">
                       <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
-                      {town.campusCount > 0 ? (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {town.campusCount === 1
-                            ? 'Campus area'
-                            : `${town.campusCount} campuses nearby`}
-                        </p>
+                      {town.campusIds.length > 0 ? (
+                        <p className="text-xs text-gray-500 mt-0.5">Campus</p>
                       ) : town.city && town.city !== town.name ? (
                         <p className="text-xs text-gray-500 mt-0.5">
                           {town.city}
