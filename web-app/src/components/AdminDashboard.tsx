@@ -285,6 +285,8 @@ interface Barber {
   totalVolumeCents?: number;
   /** Platform ban (e.g. UGC moderation); blocks sign-in */
   isBanned?: boolean;
+  /** User role (BARBER, CAMPUS_MANAGER, ADMIN) */
+  role?: string;
   commissionFreeBookingsRemaining?: number;
   kickbackPercent?: number;
   commissionIncentiveMode?: 'count' | 'timeframe';
@@ -3439,6 +3441,11 @@ export function AdminDashboard({
                   <div>
                     <p className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
                       {selectedBarber.firstName} {selectedBarber.lastName}
+                      {String(selectedBarber.role || '').toUpperCase() === 'ADMIN' ? (
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-stone-800 bg-stone-200 px-2 py-0.5 rounded-full">
+                          Admin
+                        </span>
+                      ) : null}
                       {selectedBarber.isBanned ? (
                         <span className="text-[10px] font-medium uppercase tracking-wide text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
                           Banned
