@@ -110,20 +110,36 @@ export default function UniversitySelector({
           campusService.getCampuses().catch(() => [] as Awaited<ReturnType<typeof campusService.getCampuses>>),
         ]);
 
+        const rank = (town: CollegeTown): number => {
+          const name = town.name.toLowerCase();
+          const short = (town.shortName || '').toLowerCase();
+          const city = (town.city || '').toLowerCase();
+          if (name === q || short === q || city === q) return 0;
+          if (name.startsWith(q) || short.startsWith(q) || city.startsWith(q)) return 1;
+          if (name.includes(q) || short.includes(q) || city.includes(q)) return 2;
+          return 3;
+        };
+
         const candidates: CollegeTown[] = [];
 
-        // Individual campus name matches (e.g. "Cal Poly") — same source as operator PlaceSearch
+        // Geocode places first so city/area queries (e.g. "San Luis Obispo") surface as typed
+        for (const place of places) {
+          candidates.push(collegeTownFromGeocodePlace(place));
+        }
+
+        // City/area town groupings from OnCuts campuses
+        for (const town of searchCollegeTowns(towns, trimmed, 8)) {
+          candidates.push(town);
+        }
+
+        // Campuses only when the campus *name* matches (not city) — "Cal Poly" finds Cal Poly,
+        // but "San Luis Obispo" should not collapse to Cal Poly via campus.city.
         for (const campus of campuses) {
           if (campus.latitude == null || campus.longitude == null) continue;
-          const name = campus.name || '';
-          const city = campus.city || '';
-          if (
-            !name.toLowerCase().includes(q) &&
-            !city.toLowerCase().includes(q) &&
-            !name.toLowerCase().replace(/\s+/g, '-').includes(q.replace(/\s+/g, '-'))
-          ) {
-            continue;
-          }
+          const name = (campus.name || '').toLowerCase();
+          const slug = name.replace(/\s+/g, '-');
+          const qSlug = q.replace(/\s+/g, '-');
+          if (!name.includes(q) && !slug.includes(qSlug)) continue;
           candidates.push({
             id: `campus-${campus.id}`,
             name: campus.name,
@@ -138,36 +154,34 @@ export default function UniversitySelector({
           });
         }
 
-        for (const place of places) {
-          candidates.push(collegeTownFromGeocodePlace(place));
-        }
-
-        // City/area towns — included without priority over campuses/places
-        for (const town of searchCollegeTowns(towns, trimmed, 8)) {
-          candidates.push(town);
-        }
-
         const merged: CollegeTown[] = [];
         for (const candidate of candidates) {
-          const duplicate = merged.some(
-            (m) =>
-              (candidate.latitude != null &&
-                candidate.longitude != null &&
-                placesNearMatch(m.latitude, m.longitude, candidate.latitude, candidate.longitude)) ||
-              m.name.toLowerCase() === candidate.name.toLowerCase()
+          const sameNameIndex = merged.findIndex(
+            (m) => m.name.toLowerCase() === candidate.name.toLowerCase()
           );
-          if (!duplicate) merged.push(candidate);
-        }
+          if (sameNameIndex >= 0) {
+            if (rank(candidate) < rank(merged[sameNameIndex])) {
+              merged[sameNameIndex] = candidate;
+            }
+            continue;
+          }
 
-        // Rank by how closely the label matches what the user typed (no campus-town preference)
-        const rank = (town: CollegeTown): number => {
-          const name = town.name.toLowerCase();
-          const short = (town.shortName || '').toLowerCase();
-          if (name === q || short === q) return 0;
-          if (name.startsWith(q) || short.startsWith(q)) return 1;
-          if (name.includes(q) || short.includes(q)) return 2;
-          return 3;
-        };
+          // Nearby coords: keep the better query match (don't replace "San Luis Obispo" with Cal Poly)
+          const nearbyIndex =
+            candidate.latitude != null && candidate.longitude != null
+              ? merged.findIndex((m) =>
+                  placesNearMatch(m.latitude, m.longitude, candidate.latitude!, candidate.longitude!)
+                )
+              : -1;
+          if (nearbyIndex >= 0) {
+            if (rank(candidate) < rank(merged[nearbyIndex])) {
+              merged[nearbyIndex] = candidate;
+            }
+            continue;
+          }
+
+          merged.push(candidate);
+        }
 
         merged.sort((a, b) => {
           const rankDiff = rank(a) - rank(b);
@@ -399,12 +413,18 @@ export default function UniversitySelector({
                     <MapPin className="w-4 h-4 mt-1 text-gray-400 shrink-0" />
                     <span className="min-w-0">
                       <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
-                      {town.campusIds.length > 0 ? (
+                      {town.id.startsWith('campus-') ? (
                         <p className="text-xs text-gray-500 mt-0.5">Campus</p>
                       ) : town.city && town.city !== town.name ? (
                         <p className="text-xs text-gray-500 mt-0.5">
                           {town.city}
                           {town.state ? `, ${town.state}` : ''}
+                        </p>
+                      ) : town.campusCount > 0 ? (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {town.campusCount === 1
+                            ? 'College town'
+                            : `${town.campusCount} campuses nearby`}
                         </p>
                       ) : null}
                     </span>
