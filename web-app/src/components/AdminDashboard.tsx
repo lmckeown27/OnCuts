@@ -274,6 +274,8 @@ interface Barber {
   isActive: boolean;
   /** Marketplace visibility; true = hidden from consumers */
   isHidden?: boolean;
+  /** When hidden, still allow /consumer/book/:id bookings */
+  allowHiddenDirectBooking?: boolean;
   campusId?: string | null;
   campusName?: string | null;
   serviceLocationLabel?: string | null;
@@ -531,6 +533,7 @@ export function AdminDashboard({
   const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
   const [banningUserId, setBanningUserId] = useState<string | null>(null);
   const [demotingBarberId, setDemotingBarberId] = useState<string | null>(null);
+  const [savingVisibilityBarberId, setSavingVisibilityBarberId] = useState<string | null>(null);
   const [bannedUsers, setBannedUsers] = useState<BannedPlatformUser[]>([]);
   const [isLoadingBannedUsers, setIsLoadingBannedUsers] = useState(false);
   const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
@@ -1927,6 +1930,51 @@ export function AdminDashboard({
       toast.error(msg);
     } finally {
       setDemotingBarberId(null);
+    }
+  };
+
+  const handleToggleAllowHiddenDirectBooking = async (barber: Barber) => {
+    if (!barber.barberRecordId) {
+      toast.error('Missing provider profile id');
+      return;
+    }
+    const next = !Boolean(barber.allowHiddenDirectBooking);
+    setSavingVisibilityBarberId(barber.barberRecordId);
+    try {
+      const data = await api.put<{
+        isHidden?: boolean;
+        allowHiddenDirectBooking?: boolean;
+      }>(`/admin/barbers/${barber.barberRecordId}/visibility`, {
+        allowHiddenDirectBooking: next,
+      });
+      const patched = {
+        isHidden: data?.isHidden ?? barber.isHidden,
+        allowHiddenDirectBooking:
+          data?.allowHiddenDirectBooking ?? next,
+      };
+      setBarbers((prev) =>
+        prev.map((b) =>
+          b.barberRecordId === barber.barberRecordId ? { ...b, ...patched } : b
+        )
+      );
+      setSelectedBarber((prev) =>
+        prev && prev.barberRecordId === barber.barberRecordId
+          ? { ...prev, ...patched }
+          : prev
+      );
+      toast.success(
+        next
+          ? 'Booking link stays available while hidden'
+          : 'Booking link blocked while hidden'
+      );
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to update booking link setting';
+      toast.error(msg);
+    } finally {
+      setSavingVisibilityBarberId(null);
     }
   };
 
@@ -3525,6 +3573,34 @@ export function AdminDashboard({
                       </div>
                     ) : null}
                   </div>
+                  <div className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 space-y-1.5">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 w-4 h-4 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
+                        checked={Boolean(selectedBarber.allowHiddenDirectBooking)}
+                        disabled={
+                          !selectedBarber.barberRecordId ||
+                          savingVisibilityBarberId === selectedBarber.barberRecordId
+                        }
+                        onChange={() =>
+                          void handleToggleAllowHiddenDirectBooking(selectedBarber)
+                        }
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-900">
+                          Allow booking link while hidden
+                          {savingVisibilityBarberId === selectedBarber.barberRecordId ? (
+                            <Loader2 className="inline-block w-3.5 h-3.5 ml-2 animate-spin text-gray-400" />
+                          ) : null}
+                        </span>
+                        <span className="block text-[11px] text-gray-500 mt-0.5">
+                          Keep this operator off the homepage, but let clients who already have
+                          their booking link still book.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
@@ -3584,7 +3660,9 @@ export function AdminDashboard({
                 <h3 className="text-sm font-semibold text-gray-900">Client-facing profile</h3>
                 <span className="text-[10px] text-gray-500">
                   {selectedBarber.isHidden
-                    ? 'Hidden from consumers'
+                    ? selectedBarber.allowHiddenDirectBooking
+                      ? 'Hidden from homepage · booking link open'
+                      : 'Hidden from homepage · booking link blocked'
                     : selectedBarber.isActive
                       ? 'Visible when Stripe is set up'
                       : 'Inactive'}

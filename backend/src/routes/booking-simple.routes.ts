@@ -248,7 +248,8 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Get barber record ID from barbers table (bookings.barberId references barbers.id, not users.id)
     const barberResult = await pool.query(
-      `SELECT id, "isActive", is_hidden FROM barbers WHERE id = $1 OR "userId" = $1`,
+      `SELECT id, "isActive", is_hidden, allow_hidden_direct_booking
+       FROM barbers WHERE id = $1 OR "userId" = $1`,
       [barberId]
     );
     
@@ -256,14 +257,24 @@ router.post('/', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Barber not found' });
     }
 
-    if (barberResult.rows[0].isActive === false || barberResult.rows[0].is_hidden === true) {
+    const barberRow = barberResult.rows[0];
+    if (barberRow.isActive === false) {
+      return res.status(400).json({
+        success: false,
+        error: 'This provider is not currently accepting bookings',
+      });
+    }
+    if (
+      barberRow.is_hidden === true &&
+      barberRow.allow_hidden_direct_booking !== true
+    ) {
       return res.status(400).json({
         success: false,
         error: 'This provider is not currently accepting bookings',
       });
     }
     
-    const barberRecordId = barberResult.rows[0].id;
+    const barberRecordId = barberRow.id;
 
     const barberPricingResult = await pool.query(
       'SELECT pricing FROM barbers WHERE id = $1',

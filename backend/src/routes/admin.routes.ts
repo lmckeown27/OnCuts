@@ -76,6 +76,7 @@ router.get('/campuses/:campusId/barbers', adminController.getCampusBarbers);
 router.get('/barbers', adminController.getAllBarbers);
 router.put('/barbers/commission/bulk', adminController.bulkUpdateBarberCommission);
 router.get('/barbers/:barberRecordId/bookings', adminController.getBarberBookings);
+router.put('/barbers/:barberRecordId/visibility', adminController.updateBarberVisibility);
 router.put('/barbers/:barberRecordId/commission', adminController.updateBarberCommission);
 router.get('/bookings/:bookingId/messages', adminController.getBookingMessages);
 

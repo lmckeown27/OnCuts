@@ -3114,6 +3114,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
         b.is_hidden,
+        b.allow_hidden_direct_booking,
         c.id as campus_id,
         c.name as campus_name,
         b.service_location_label,
@@ -3164,6 +3165,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
         isHidden: row.is_hidden === true,
+        allowHiddenDirectBooking: row.allow_hidden_direct_booking === true,
         campusId: row.campus_id?.toString(),
         campusName: row.campus_name,
         serviceLocationLabel: row.service_location_label
@@ -3712,6 +3714,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
         b.is_hidden,
+        b.allow_hidden_direct_booking,
         nearest.id as campus_id,
         nearest.name as campus_name,
         b.service_location_label,
@@ -3772,6 +3775,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
         isHidden: row.is_hidden === true,
+        allowHiddenDirectBooking: row.allow_hidden_direct_booking === true,
         campusId: row.campus_id?.toString() || null,
         campusName: row.campus_name || null,
         serviceLocationLabel: row.service_location_label
@@ -3789,6 +3793,69 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
       total: result.rows.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/admin/barbers/:barberRecordId/visibility
+ * Admin marketplace visibility: hide from discovery and/or allow booking link while hidden.
+ */
+export const updateBarberVisibility = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const { barberRecordId } = req.params;
+    const body = req.body ?? {};
+    const hasHidden = Object.prototype.hasOwnProperty.call(body, 'isHidden');
+    const hasAllowLink = Object.prototype.hasOwnProperty.call(body, 'allowHiddenDirectBooking');
+
+    if (!barberRecordId) {
+      throw new ApiError(400, 'barberRecordId is required');
+    }
+    if (!hasHidden && !hasAllowLink) {
+      throw new ApiError(400, 'Provide isHidden and/or allowHiddenDirectBooking');
+    }
+
+    const existing = await pool.query(
+      `SELECT id, is_hidden, allow_hidden_direct_booking
+       FROM barbers WHERE id = $1::uuid`,
+      [barberRecordId]
+    );
+    if (existing.rows.length === 0) {
+      throw new ApiError(404, 'Operator not found');
+    }
+
+    const nextHidden = hasHidden
+      ? Boolean(body.isHidden)
+      : existing.rows[0].is_hidden === true;
+    const nextAllowLink = hasAllowLink
+      ? Boolean(body.allowHiddenDirectBooking)
+      : existing.rows[0].allow_hidden_direct_booking === true;
+
+    const updated = await pool.query(
+      `UPDATE barbers
+       SET is_hidden = $1,
+           allow_hidden_direct_booking = $2,
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $3::uuid
+       RETURNING id, is_hidden, allow_hidden_direct_booking`,
+      [nextHidden, nextAllowLink, barberRecordId]
+    );
+    const row = updated.rows[0];
+
+    res.json({
+      success: true,
+      data: {
+        barberRecordId: row.id,
+        isHidden: row.is_hidden === true,
+        allowHiddenDirectBooking: row.allow_hidden_direct_booking === true,
+      },
     });
   } catch (error) {
     next(error);

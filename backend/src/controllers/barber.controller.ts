@@ -52,6 +52,9 @@ import {
 /** Marketplace hide flag + schedule / slot-interval aliases for web (snake) and iOS (camel). */
 function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
   const isHidden = barber.is_hidden === true || barber.isHidden === true;
+  const allowHiddenDirectBooking =
+    barber.allow_hidden_direct_booking === true ||
+    barber.allowHiddenDirectBooking === true;
   const weekly = barber.weekly_schedule ?? barber.weeklySchedule;
   const slotInterval = resolveBookingSlotIntervalMinutes(
     barber.booking_slot_interval_minutes ?? barber.bookingSlotIntervalMinutes
@@ -60,6 +63,8 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
     ...barber,
     is_hidden: isHidden,
     isHidden,
+    allow_hidden_direct_booking: allowHiddenDirectBooking,
+    allowHiddenDirectBooking,
     weekly_schedule: weekly,
     weeklySchedule: weekly,
     booking_slot_interval_minutes: slotInterval,
@@ -799,6 +804,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b.is_hidden,
+        b.allow_hidden_direct_booking,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u."instagramHandle" as instagram_handle,
@@ -829,8 +835,12 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
     const viewerRole = String(req.user?.role || '').toLowerCase();
     const isOwner = viewerId && String(viewerId) === String(barber.user_id);
     const isStaff = viewerRole === 'admin' || viewerRole === 'campus_manager';
-    // Hidden profiles stay off public discovery; owners/staff can still load them
-    if (barber.is_hidden === true && !isOwner && !isStaff) {
+    // Hidden profiles stay off discovery. Owners/staff always load them.
+    // Consumers may load via booking link when allow_hidden_direct_booking is on.
+    const allowHiddenDirect =
+      barber.allow_hidden_direct_booking === true ||
+      barber.allowHiddenDirectBooking === true;
+    if (barber.is_hidden === true && !allowHiddenDirect && !isOwner && !isStaff) {
       throw new ApiError(404, 'Barber not found');
     }
     if (viewerId) {
