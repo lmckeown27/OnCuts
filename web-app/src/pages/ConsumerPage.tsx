@@ -20,6 +20,7 @@ import type { CollegeTown } from '../types';
 import {
   resolveInitialCollegeTown,
   writeStoredCollegeTown,
+  collegeTownFromGeocodePlace,
 } from '../utils/collegeTowns';
 import toast from 'react-hot-toast';
 import { TivelaPlatformsLogo } from '@assets';
@@ -63,28 +64,6 @@ import BrowseUtilityPill from '../components/BrowseUtilityPill';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
-
-function collegeTownFromGeocodePlace(place: GeocodePlace): CollegeTown {
-  const parts = place.label.split(',').map((p) => p.trim()).filter(Boolean);
-  const city = parts[0] || place.label;
-  const stateToken =
-    parts.find((p) => /^[A-Za-z]{2}$/.test(p)) ||
-    parts.find((p) => /^[A-Za-z]{2}\s+\d/.test(p))?.slice(0, 2) ||
-    'US';
-  const state = stateToken.slice(0, 2).toUpperCase();
-  return {
-    id: `place-${place.latitude.toFixed(5)}-${place.longitude.toFixed(5)}`,
-    name: place.label,
-    shortName: city,
-    city,
-    state,
-    latitude: place.latitude,
-    longitude: place.longitude,
-    campusCount: place.placeType === 'campus' ? 1 : 0,
-    campusIds: [],
-    primaryCampusId: '',
-  };
-}
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {

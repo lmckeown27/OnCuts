@@ -274,3 +274,31 @@ export function searchCollegeTowns(towns: CollegeTown[], query: string, limit = 
 
   return [...startsWithMatches, ...containsMatches].slice(0, limit);
 }
+
+/** Build a browse area from a geocode / PlaceSearch result (city, campus, neighborhood). */
+export function collegeTownFromGeocodePlace(place: {
+  label: string;
+  latitude: number;
+  longitude: number;
+  placeType?: string;
+}): CollegeTown {
+  const parts = place.label.split(',').map((p) => p.trim()).filter(Boolean);
+  const city = parts[0] || place.label;
+  const stateToken =
+    parts.find((p) => /^[A-Za-z]{2}$/.test(p)) ||
+    parts.find((p) => /^[A-Za-z]{2}\s+\d/.test(p))?.slice(0, 2) ||
+    'US';
+  const state = stateToken.slice(0, 2).toUpperCase();
+  return {
+    id: `place-${place.latitude.toFixed(5)}-${place.longitude.toFixed(5)}`,
+    name: place.label,
+    shortName: city,
+    city,
+    state,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    campusCount: place.placeType === 'campus' ? 1 : 0,
+    campusIds: [],
+    primaryCampusId: '',
+  };
+}

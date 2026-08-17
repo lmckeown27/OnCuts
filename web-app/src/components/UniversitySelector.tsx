@@ -1,14 +1,17 @@
 /**
- * College town selector for consumer browse.
- * Groups campuses by city/state so users pick an area, not a single university.
+ * Location selector for consumer browse (landing + related flows).
+ * Searches OnCuts campus towns and the same place geocoder used for operator location.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, X, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import debounce from 'lodash.debounce';
+import { ChevronDown, X, Loader2, MapPin } from 'lucide-react';
 import campusService from '../services/campus.service';
+import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import type { CollegeTown } from '../types';
 import {
   buildCollegeTownsFromCampuses,
+  collegeTownFromGeocodePlace,
   searchCollegeTowns,
 } from '../utils/collegeTowns';
 
@@ -21,6 +24,8 @@ interface UniversitySelectorProps {
   placeholder?: string;
   className?: string;
 }
+
+const SEARCH_DEBOUNCE_MS = 400;
 
 let townsCache: CollegeTown[] | null = null;
 let cachePromise: Promise<CollegeTown[]> | null = null;
@@ -42,6 +47,16 @@ async function loadCollegeTowns(): Promise<CollegeTown[]> {
   return cachePromise;
 }
 
+function placesNearMatch(
+  aLat: number | null | undefined,
+  aLng: number | null | undefined,
+  bLat: number,
+  bLng: number
+): boolean {
+  if (aLat == null || aLng == null) return false;
+  return Math.abs(aLat - bLat) < 0.01 && Math.abs(aLng - bLng) < 0.01;
+}
+
 export default function UniversitySelector({
   value,
   onChange,
@@ -54,6 +69,7 @@ export default function UniversitySelector({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [allTowns, setAllTowns] = useState<CollegeTown[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,20 +86,69 @@ export default function UniversitySelector({
       })
       .catch((err) => {
         console.error('Failed to load college towns:', err);
-        setLoadError('Failed to load college towns');
+        setLoadError('Failed to load locations');
         setIsLoading(false);
       });
   }, []);
 
+  const runSearch = useCallback(
+    async (query: string, towns: CollegeTown[]) => {
+      const trimmed = query.trim();
+      if (trimmed.length < 1) {
+        setResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const townMatches = searchCollegeTowns(towns, trimmed, 8);
+        const places =
+          trimmed.length >= 2
+            ? await geocodeService.searchPlaces(trimmed).catch(() => [] as GeocodePlace[])
+            : [];
+
+        const placeTowns = places.map(collegeTownFromGeocodePlace);
+        const merged: CollegeTown[] = [...townMatches];
+        for (const placeTown of placeTowns) {
+          const duplicate = merged.some(
+            (m) =>
+              placesNearMatch(m.latitude, m.longitude, placeTown.latitude!, placeTown.longitude!) ||
+              m.name.toLowerCase() === placeTown.name.toLowerCase()
+          );
+          if (!duplicate) merged.push(placeTown);
+        }
+
+        setResults(merged.slice(0, 12));
+        setHighlightedIndex(0);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    []
+  );
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query: string, towns: CollegeTown[]) => {
+        void runSearch(query, towns);
+      }, SEARCH_DEBOUNCE_MS),
+    [runSearch]
+  );
+
   useEffect(() => {
-    if (searchQuery.length >= 1 && allTowns.length > 0) {
-      const matches = searchCollegeTowns(allTowns, searchQuery, 8);
-      setResults(matches);
-      setHighlightedIndex(0);
-    } else {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      debouncedSearch.cancel();
       setResults([]);
+      setIsSearching(false);
+      return;
     }
-  }, [searchQuery, allTowns]);
+    debouncedSearch(searchQuery, allTowns);
+  }, [searchQuery, allTowns, debouncedSearch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,8 +162,10 @@ export default function UniversitySelector({
   }, []);
 
   const handleSelect = (town: CollegeTown) => {
+    debouncedSearch.cancel();
     onChange(town);
     setSearchQuery('');
+    setResults([]);
     setIsOpen(false);
     inputRef.current?.blur();
   };
@@ -115,7 +182,7 @@ export default function UniversitySelector({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex((prev) => Math.min(prev + 1, results.length - 1));
+          setHighlightedIndex((prev) => Math.min(prev + 1, Math.max(results.length - 1, 0)));
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -133,6 +200,7 @@ export default function UniversitySelector({
           break;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleSelect closes over stable setters
     [isOpen, results, highlightedIndex]
   );
 
@@ -187,7 +255,7 @@ export default function UniversitySelector({
           <button
             onClick={handleClear}
             className="p-2.5 mr-2 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Clear selected college town"
+            aria-label="Clear selected location"
           >
             <X className="w-6 h-6" />
           </button>
@@ -206,7 +274,7 @@ export default function UniversitySelector({
             }}
             className="pr-5 pl-2 py-4 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            {isLoading ? (
+            {isLoading || isSearching ? (
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <ChevronDown className={`w-6 h-6 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -223,7 +291,7 @@ export default function UniversitySelector({
           {isLoading ? (
             <div className="p-4 text-center text-gray-500">
               <Loader2 className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin" />
-              <p>Loading college towns...</p>
+              <p>Loading locations...</p>
             </div>
           ) : loadError ? (
             <div className="p-4 text-center text-red-500">
@@ -246,14 +314,20 @@ export default function UniversitySelector({
                 Try again
               </button>
             </div>
-          ) : searchQuery.length === 0 ? (
+          ) : searchQuery.trim().length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <p>Start typing to search</p>
+              <p className="text-sm mt-1">Campus, city, or area</p>
+            </div>
+          ) : isSearching && results.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              <Loader2 className="w-6 h-6 mx-auto mb-2 text-gray-400 animate-spin" />
+              <p>Searching...</p>
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              <p>No college towns found</p>
-              <p className="text-sm mt-1">Try a city or state name</p>
+              <p>No locations found</p>
+              <p className="text-sm mt-1">Try a campus, city, or neighborhood</p>
             </div>
           ) : (
             <ul className="py-2">
@@ -262,11 +336,26 @@ export default function UniversitySelector({
                   <button
                     onClick={() => handleSelect(town)}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full px-5 py-4 text-left transition-colors ${
+                    className={`w-full px-5 py-4 text-left transition-colors flex items-start gap-3 ${
                       index === highlightedIndex ? 'bg-gray-100 text-gray-900' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
+                    <MapPin className="w-4 h-4 mt-1 text-gray-400 shrink-0" />
+                    <span className="min-w-0">
+                      <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
+                      {town.campusCount > 0 ? (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {town.campusCount === 1
+                            ? 'Campus area'
+                            : `${town.campusCount} campuses nearby`}
+                        </p>
+                      ) : town.city && town.city !== town.name ? (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {town.city}
+                          {town.state ? `, ${town.state}` : ''}
+                        </p>
+                      ) : null}
+                    </span>
                   </button>
                 </li>
               ))}
