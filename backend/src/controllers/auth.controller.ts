@@ -130,10 +130,10 @@ import {
 } from '../utils/registration-names';
 import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
-import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
+import { isValidE164, normalizeE164Phone } from '../services/sms-otp/phone-otp.service';
 import { getFrontendBaseUrl } from '../config/app-url';
 
-/** Google ID token verification for Intera / mobile (JWT exchange). */
+/** Google ID token verification for OnCuts native clients (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
 
 function parseOptionalSignupPhone(body: Record<string, unknown>): string | null {
@@ -919,7 +919,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
 /**
  * Exchange a Google ID token for OnCuts JWTs (same shape as POST /auth/login).
- * Used by Intera (iOS) and any client using Google Sign-In.
+ * Used by OnCuts iOS and any client using Google Sign-In.
  */
 export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

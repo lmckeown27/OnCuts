@@ -22,7 +22,7 @@ async function clearStaleConnectUser(userId: string): Promise<void> {
 
 /**
  * Whether a provider may appear in consumer discovery for the current platform Stripe keys.
- * Validates against Stripe (not just DB flags) and clears stale Intera-era acct_* IDs.
+ * Validates against Stripe (not just DB flags) and clears stale legacy acct_* IDs.
  */
 export async function isProviderEligibleForConsumerBrowse(
   userId: string,

@@ -1,6 +1,6 @@
 /**
  * Clear saved Stripe Connect account IDs so barbers can re-onboard on the current
- * platform (e.g. migration from Intera Platforms LLC → Pismo Platforms).
+ * platform (e.g. migration from a legacy Stripe platform account → Pismo Platforms).
  *
  * Usage:
  *   npm run clear-stripe-connect -- liam.mckeown38415@gmail.com calpolyblockchain@gmail.com

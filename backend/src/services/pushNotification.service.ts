@@ -345,7 +345,7 @@ class PushNotificationService {
 
   /**
    * Try preferred APNs environment; on sandbox/production token mismatch, retry the other gateway once and persist `apns_environment`.
-   * Helps clients (e.g. Intera) that registered before sending apnsEnvironment.
+   * Helps clients (e.g. OnCuts iOS) that registered before sending apnsEnvironment.
    */
   private async sendIOSNotificationWithEnvFallback(
     deviceToken: string,

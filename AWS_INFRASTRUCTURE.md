@@ -57,7 +57,7 @@ NOT AWS (same EC2 or external):
 | **VPC** | EC2 network | default VPC implied (`172.31.x.x`) | — | ✅ (implicit) |
 | **IAM** | Instance profile for API calls | — | Role on EC2 | ✅ No `AWS_ACCESS_KEY_*` in `.env` (role expected) |
 | **S3** | Portfolio / image storage | `us-west-1` | Instance role or env keys | ✅ `S3_BUCKET`, `S3_REGION` set |
-| **End User Messaging** (Pinpoint SMS Voice v2) | Intera phone OTP | `us-west-1` (hardcoded) | Same as S3 | ⚠️ Partial — see §4 |
+| **End User Messaging** (Pinpoint SMS Voice v2) | OnCuts phone OTP | `us-west-1` (hardcoded) | Same as S3 | ⚠️ Partial — see §4 |
 | **Route 53** | DNS (inferred) | — | Console | ❓ Not in repo; admin dashboard uses **hardcoded cost estimate** only |
 | **Data transfer / S3 billing** | Egress + storage | — | — | Estimated in admin UI, not integrated |
 
@@ -75,10 +75,9 @@ From your EC2 probe (`grep` on `~/OnCuts/backend/.env`):
 | `AWS_SECRET_ACCESS_KEY` | ❌ | Expected if using IAM role |
 | `USE_S3` | ❌ not in grep | **Important** — see §5.1 |
 | `S3_DELETE_LOCAL` | ❌ | Optional; keep local copies after S3 upload |
-| `INTERA_NOTIFY_CONFIGURATION_ID` | ❌ | Falls back to code default |
-| `INTERA_NOTIFY_TEMPLATE_ID` | ❌ | Falls back to `notify-code-verification-english-001` |
-| `INTERA_NOTIFY_TEMPLATE_OTP_KEY` | ✅ | |
-| `INTERA_NOTIFY_BRAND_NAME` | ✅ | **Not referenced in repo code** — likely dead |
+| `ONCUTS_SMS_NOTIFY_CONFIGURATION_ID` | ❌ | Falls back to code default (legacy `INTERA_*` accepted) |
+| `ONCUTS_SMS_NOTIFY_TEMPLATE_ID` | ❌ | Falls back to `notify-code-verification-english-001` |
+| `ONCUTS_SMS_NOTIFY_TEMPLATE_OTP_KEY` | ✅ | |
 | `REDIS_URL` | ✅ | Not AWS unless you point it at ElastiCache |
 
 PM2 does **not** inject these vars (`ecosystem.config.cjs` only sets `NODE_ENV`). The app loads `backend/.env` via **dotenv** at startup — so `pm2 env oncuts-backend | grep AWS` returning empty is **normal**.
@@ -127,13 +126,13 @@ Optional: `s3:ListBucket` on `arn:aws:s3:::YOUR_BUCKET` for debugging.
 
 ---
 
-### 4.2 End User Messaging — SMS OTP (Intera)
+### 4.2 End User Messaging — SMS OTP (OnCuts)
 
 | File | Behavior |
 |------|----------|
-| `backend/src/services/intera/SmsProvider.ts` | `PinpointSMSVoiceV2Client`, `SendNotifyTextMessageCommand` |
-| `backend/src/controllers/intera-otp.controller.ts` | `POST /api/v1/auth/request-otp`, `/verify-otp` |
-| `backend/src/services/intera/phone-otp.service.ts` | Stores OTP in **Redis** (`intera:sms_otp:{phone}`) |
+| `backend/src/services/sms-otp/SmsProvider.ts` | `PinpointSMSVoiceV2Client`, `SendNotifyTextMessageCommand` |
+| `backend/src/controllers/phone-otp.controller.ts` | `POST /api/v1/auth/request-otp`, `/verify-otp` |
+| `backend/src/services/sms-otp/phone-otp.service.ts` | Stores OTP in **Redis** (`oncuts:sms_otp:{phone}`) |
 
 **Region:** `us-west-1` — **hardcoded** in `SmsProvider.ts` (must match where Notify resources live).
 
@@ -141,10 +140,9 @@ Optional: `s3:ListBucket` on `arn:aws:s3:::YOUR_BUCKET` for debugging.
 
 | Variable | If unset |
 |----------|----------|
-| `INTERA_NOTIFY_CONFIGURATION_ID` | `notify-cb19ae925d014cdba7b540cca202f72d` (hardcoded default) |
-| `INTERA_NOTIFY_TEMPLATE_ID` | `notify-code-verification-english-001` |
-| `INTERA_NOTIFY_TEMPLATE_OTP_KEY` | `code` |
-| `INTERA_NOTIFY_BRAND_NAME` | *(not read by current code)* |
+| `ONCUTS_SMS_NOTIFY_CONFIGURATION_ID` | `notify-cb19ae925d014cdba7b540cca202f72d` (hardcoded default) |
+| `ONCUTS_SMS_NOTIFY_TEMPLATE_ID` | `notify-code-verification-english-001` |
+| `ONCUTS_SMS_NOTIFY_TEMPLATE_OTP_KEY` | `code` |
 
 **IAM permission needed:**
 
@@ -215,12 +213,12 @@ If prod bucket ≠ `campuscut-images`, iOS hardcoded URLs may break for some ima
 
 ### 5.4 SMS defaults may not match your AWS account
 
-Hardcoded `INTERA_NOTIFY_CONFIGURATION_ID` in repo may belong to a **different** AWS account or old setup. If prod `.env` omits it, the app uses the repo default — verify in AWS Console that ID exists in **your** account.
+Hardcoded `ONCUTS_SMS_NOTIFY_CONFIGURATION_ID` in repo may belong to a **different** AWS account or old setup. If prod `.env` omits it, the app uses the repo default — verify in AWS Console that ID exists in **your** account.
 
 ### 5.5 Duplicate / unused `.env` keys (from your grep)
 
 - `APN_*` appeared **twice** — unrelated to AWS but worth cleaning on same pass
-- `INTERA_NOTIFY_BRAND_NAME`, `APN_PRODUCTION` — not used by current backend code
+- Legacy `INTERA_*` env vars are accepted as fallbacks during migration
 
 ---
 
@@ -350,7 +348,7 @@ S3
 SMS
   Notify configuration ID:  pending (Console or CLI from laptop)
   ID in .env:               unset → code default notify-cb19ae925d014cdba7b540cca202f72d
-  INTERA_NOTIFY_TEMPLATE_OTP_KEY: set in .env ✅
+  ONCUTS_SMS_NOTIFY_TEMPLATE_OTP_KEY: set in .env ✅
   SMS on same IAM role?:    unknown — role name implies S3 only; verify policies
   SMS working in prod:      untested
 
@@ -412,7 +410,7 @@ Use discovery results before changing anything.
 | File | Relevance |
 |------|-----------|
 | `backend/src/services/s3.service.ts` | S3 client + URL builder |
-| `backend/src/services/intera/SmsProvider.ts` | SMS API |
+| `backend/src/services/sms-otp/SmsProvider.ts` | SMS API |
 | `backend/ecosystem.config.cjs` | PM2 (does not load AWS env) |
 | `server-nginx.conf` | TLS + proxy; no S3/CloudFront |
 | `POSTGRES_COMMANDS.md` | EC2 paths, Postgres on same host |

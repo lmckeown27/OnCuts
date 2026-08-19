@@ -338,7 +338,7 @@ router.put('/conversations/:conversationId/read', authenticate, async (req, res,
 
 /**
  * POST /api/messages/conversations/:conversationId/report
- * Same as POST /messages/reports but conversation id comes from the URL (Intera / mobile clients).
+ * Same as POST /messages/reports but conversation id comes from the URL (OnCuts mobile clients).
  * Body: { reason, detail?, messageId? | message_id?, reportedUserId? | reported_user_id? }
  * If reported user id is omitted, the other participant in the thread is inferred.
  */

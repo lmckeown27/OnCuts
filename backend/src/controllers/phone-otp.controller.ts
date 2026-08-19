@@ -4,7 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 import { userNeedsPlatformPassword } from '../utils/platform-password';
-import { SmsProvider } from '../services/intera/SmsProvider';
+import { SmsProvider } from '../services/sms-otp/SmsProvider';
 import {
   normalizeE164Phone,
   isValidE164,
@@ -13,7 +13,7 @@ import {
   deletePhoneOtp,
   verifyPhoneOtpCode,
   isRedisReadyForOtp,
-} from '../services/intera/phone-otp.service';
+} from '../services/sms-otp/phone-otp.service';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.utils';
 import { resolveAccessTokenRole } from '../utils/access-token-role';
 
@@ -89,7 +89,7 @@ export const requestPhoneOtp = async (req: AuthRequest, res: Response, next: Nex
       await getSmsProvider().sendVerificationSMS(phone, code);
     } catch (err: unknown) {
       await deletePhoneOtp(phone);
-      logger.error(`Intera SMS send failed: ${formatSmsAwsError(err)}`);
+      logger.error(`OnCuts SMS send failed: ${formatSmsAwsError(err)}`);
       throw new ApiError(502, 'Failed to send verification SMS. Please try again.');
     }
 
@@ -145,7 +145,7 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response, next: Next
       throw new ApiError(400, 'Invalid or expired verification code');
     }
 
-    // Intera / phone-first: if this number is on an account, sign in (same tokens as email login).
+    // Phone-first sign-in: if this number is on an account, sign in (same tokens as email login).
     const userResult = await pool.query(
       `SELECT id, email, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", phone_e164, has_platform_password
        FROM users WHERE phone_e164 = $1`,

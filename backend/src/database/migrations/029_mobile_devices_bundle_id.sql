@@ -1,5 +1,5 @@
 -- Per-app APNs topic (bundle ID). Required when multiple iOS apps share one backend
--- (e.g. CampusCuts consumer vs Intera Provider). Clients send bundleId on register-device.
+-- (e.g. OnCuts consumer vs OnCuts Operator). Clients send bundleId on register-device.
 
 ALTER TABLE mobile_devices
   ADD COLUMN IF NOT EXISTS bundle_id VARCHAR(255);

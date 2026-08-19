@@ -24,7 +24,7 @@ export type ServiceProviderReview = {
 };
 
 /**
- * Platform-agnostic provider shape for consumer clients (Intera ServiceProvider parity).
+ * Platform-agnostic provider shape for consumer clients (OnCuts ServiceProvider parity).
  * Legacy barber field names are omitted; use barberId when a barber-specific alias is needed.
  */
 export type ServiceProvider = {

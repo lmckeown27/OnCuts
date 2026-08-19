@@ -14,7 +14,7 @@ import {
   getCurrentUser,
   checkEmail,
 } from '../controllers/auth.controller';
-import { requestPhoneOtp, verifyPhoneOtp } from '../controllers/intera-otp.controller';
+import { requestPhoneOtp, verifyPhoneOtp } from '../controllers/phone-otp.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 const router: Router = express.Router();
@@ -59,7 +59,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/request-otp
- * @desc    Intera: send 6-digit SMS code (Pinpoint Notify); stored in Redis until expiry
+ * @desc    OnCuts: send 6-digit SMS code (Pinpoint Notify); stored in Redis until expiry
  * @access  Public
  */
 router.post(
@@ -74,7 +74,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/signup/send-phone-code
- * @desc    Same as request-otp (alias for iOS / Intera clients that use this path during sign-up)
+ * @desc    Same as request-otp (alias for iOS clients that use this path during sign-up)
  * @access  Public
  */
 router.post(
@@ -89,7 +89,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/verify-otp
- * @desc    Intera: verify SMS code; if users.phone_e164 matches, returns JWTs (same shape as login)
+ * @desc    OnCuts: verify SMS code; if users.phone_e164 matches, returns JWTs (same shape as login)
  * @access  Public
  */
 router.post(
@@ -109,7 +109,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/signup/verify-phone-code
- * @desc    Same as verify-otp (alias for iOS / Intera sign-up flows)
+ * @desc    Same as verify-otp (alias for iOS sign-up flows)
  * @access  Public
  */
 router.post(

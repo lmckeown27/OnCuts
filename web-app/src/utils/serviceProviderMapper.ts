@@ -57,7 +57,7 @@ function splitBusinessName(businessName: string): Pick<Barber, 'first_name' | 'l
   };
 }
 
-/** Map Intera ServiceProvider DTO into legacy Barber UI types. */
+/** Map OnCuts ServiceProvider DTO into legacy Barber UI types. */
 export function mapServiceProviderToBarber(provider: ServiceProvider): Barber {
   const names = splitBusinessName(provider.businessName);
   const specialties = provider.specialty ? [provider.specialty] : [];

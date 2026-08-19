@@ -174,7 +174,7 @@ function mapReviews(reviews: unknown): ServiceProviderReview[] | null {
   return mapped.length > 0 ? mapped : null;
 }
 
-/** Map a barber list/detail API record into the Intera ServiceProvider shape. */
+/** Map a barber list/detail API record into the OnCuts ServiceProvider shape. */
 export function mapBarberToServiceProvider(record: BarberLikeRecord): ServiceProvider {
   const providerType = normalizeProviderType(record.provider_type ?? record.providerType);
   const services = mapServices(record.pricing);

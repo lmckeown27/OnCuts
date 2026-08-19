@@ -362,7 +362,7 @@ export default function LandingPage() {
                         <li>Tap &quot;Become an Operator&quot; on this site and submit your application.</li>
                         <li>
                           Once approved, download{' '}
-                          <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
+                          <a href={IOS_APP_STORE_LINKS.oncutsOperator} target="_blank" rel="noopener noreferrer" className="font-medium text-gray-900 hover:underline">
                             OnCuts Operator
                           </a>{' '}
                           from the App Store, or use the operator web dashboard.

@@ -1930,18 +1930,18 @@ sudo -u postgres psql -d oncuts -c "\d notifications"
 | Payments fail / "No such destination" | Barber `acct_*` invalid for live keys | [Validate against server keys](#validate-connect-accounts-against-current-server-stripe-keys) |
 | Capability flags missing in DB | Migration not applied on EC2 | [Add missing Stripe columns](#add-missing-stripe-columns-on-ec2) |
 | Barber can't get paid | Not fully enabled | [Ready for payouts](#barbers-ready-to-receive-payouts) |
-| Wrong platform (Intera vs Pismo keys) | `acct_*` from old Stripe platform account | [Pismo migration](#pismo-platforms-stripe-connect-migration-de-link-intera) |
+| Wrong platform (legacy vs Pismo keys) | `acct_*` from old Stripe platform account | [Pismo migration](#pismo-platforms-stripe-connect-migration-de-link-legacy-platform) |
 
-### Pismo Platforms Stripe Connect migration (de-link Intera)
+### Pismo Platforms Stripe Connect migration (de-link legacy platform)
 
-When moving from **Intera Platforms LLC** Stripe keys to **Pismo Platforms**, you cannot rename old `acct_*` IDs — clear them in Postgres, point the server at Pismo live keys, then re-onboard each provider.
+When moving from a **legacy Stripe platform account** to **Pismo Platforms**, you cannot rename old `acct_*` IDs — clear them in Postgres, point the server at Pismo live keys, then re-onboard each provider.
 
 **1. EC2 backend `.env` (live) — only swap Stripe platform keys**
 
 You do **not** need new `FRONTEND_URL`, `STRIPE_CONNECT_BUSINESS_URL`, or `STRIPE_STATEMENT_DESCRIPTOR` lines unless you want to change them. Keep whatever `FRONTEND_URL` you already use for email links and Connect return URLs.
 
 ```bash
-STRIPE_SECRET_KEY=sk_live_…          # Pismo Dashboard (replaces Intera platform secret)
+STRIPE_SECRET_KEY=sk_live_…          # Pismo Dashboard (replaces legacy platform secret)
 STRIPE_WEBHOOK_SECRET=whsec_…          # Live webhook for this Stripe account
 STRIPE_MODE=live
 # pk_live_… in web-app env (VITE_STRIPE_PUBLISHABLE_KEY) — same Pismo account as sk_live above

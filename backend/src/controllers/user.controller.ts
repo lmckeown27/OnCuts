@@ -17,7 +17,7 @@ const PROFILE_FIELD_MAPPING: { [key: string]: string } = {
   instagramHandle: 'instagramHandle',
 };
 
-/** Map iOS / Intera camelCase name fields to DB keys. */
+/** Map iOS / OnCuts native camelCase name fields to DB keys. */
 function coerceProfileBody(raw: Record<string, unknown>): Record<string, unknown> {
   const u: Record<string, unknown> = { ...raw };
   if (u.first_name === undefined && u.firstName !== undefined) u.first_name = u.firstName;
@@ -158,7 +158,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 };
 
 /**
- * Authenticated user updates own profile (Intera / native — no user id in URL).
+ * Authenticated user updates own profile (OnCuts native — no user id in URL).
  */
 export const updateMyProfile = async (req: AuthRequest, res: Response) => {
   try {

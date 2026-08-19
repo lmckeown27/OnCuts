@@ -1,5 +1,5 @@
 /**
- * APNs apns-topic (bundle ID) routing for dual Intera apps on one backend.
+ * APNs apns-topic (bundle ID) routing for OnCuts consumer and operator iOS apps on one backend.
  *
  * Consumer and Provider share the same Team ID, Key ID, and .p8 — only the
  * `apns-topic` header differs per app. Resolution order for each send:
@@ -11,7 +11,7 @@
 
 import { pool } from '../database/connection';
 
-/** Which Intera iOS app should receive the push (drives env topic fallback). */
+/** Which OnCuts iOS app should receive the push (drives env topic fallback). */
 export type RecipientApnApp = 'consumer' | 'provider';
 
 export interface ApnTopicResolution {
@@ -23,7 +23,7 @@ export interface ApnTopicResolution {
 
 /**
  * Read bundle ID from env without altering interior characters
- * (e.g. Liam.Intera---Provider must keep three hyphens).
+ * (e.g. provider bundle IDs may use multiple hyphens — preserve exact App Store Connect value).
  */
 export function readApnBundleIdEnv(name: string): string | null {
   const raw = process.env[name];

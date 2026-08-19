@@ -203,7 +203,7 @@ export interface Booking {
   id: string;
   student_id: string;
   barber_id: string;
-  /** Alias for barber_id (Intera provider record id). */
+  /** Alias for barber_id (OnCuts provider record id). */
   provider_id?: string;
   providerId?: string;
   service_id?: string;

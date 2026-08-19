@@ -74,7 +74,7 @@ export default function AuthPage() {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  /** Sign-in with SMS (same API as Intera / iOS). */
+  /** Sign-in with SMS (OnCuts phone OTP API). */
   const [loginChannel, setLoginChannel] = useState<LoginChannel>('email');
   const [phoneLogin, setPhoneLogin] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');

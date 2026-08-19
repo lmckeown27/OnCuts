@@ -36,7 +36,7 @@ router.post('/', createBookingRequest);
 // Note: barberId here can be either the barber table ID or user ID - controller handles both
 router.get('/barber/:barberId/pending', getBarberPendingRequests);
 
-// Intera alias — providerId is the barbers.id record (same as barberId)
+// OnCuts alias — providerId is the barbers.id record (same as barberId)
 router.get('/provider/:providerId/pending', getBarberPendingRequests);
 
 // POST /api/booking-requests/:bookingId/accept - Accept booking request

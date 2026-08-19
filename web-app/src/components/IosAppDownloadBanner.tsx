@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { IOS_APP_STORE_LINKS } from './IosAppPromoSection';
 import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
-import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
+import onCutsOperatorAppLogo from '../assets/logos/iOS_OnCutsOperator_Logo.png';
 import { isAppInstalled, isIOSDevice } from '../utils/appUtils';
 import { useViewport } from '../hooks';
 
@@ -28,9 +28,9 @@ const COPY = {
   operator: {
     title: 'Get OnCuts Operator',
     subtitle: 'Open in the OnCuts Operator app',
-    href: IOS_APP_STORE_LINKS.interaProvider,
+    href: IOS_APP_STORE_LINKS.oncutsOperator,
     cta: 'Open',
-    logo: interaProviderAppLogo,
+    logo: onCutsOperatorAppLogo,
     logoAlt: 'OnCuts Operator app',
   },
 } as const;

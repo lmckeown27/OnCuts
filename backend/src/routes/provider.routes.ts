@@ -16,7 +16,7 @@ const asProvider = transformServiceProviderJsonResponse;
 
 /**
  * Service provider discovery & profile routes.
- * Reuses barber persistence and handlers; responses use the Intera ServiceProvider shape.
+ * Reuses barber persistence and handlers; responses use the OnCuts ServiceProvider shape.
  * Also mounted at /service-providers (Phase 5 canonical path).
  */
 router.get(
@@ -39,7 +39,7 @@ router.get(
   getAllBarbers
 );
 
-/** Legacy Intera fallback path (`GET /providers/list`). */
+/** Legacy fallback path (`GET /providers/list`). */
 router.get(
   '/list',
   optionalAuthenticate,

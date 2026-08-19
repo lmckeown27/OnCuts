@@ -1,4 +1,4 @@
-/** Coarse browse buckets aligned with Intera ServiceCategory. */
+/** Coarse browse buckets aligned with OnCuts ServiceCategory. */
 /** Coarse browse buckets — same as provider_type (barber | beauty). */
 export type ServiceProviderCategory = 'Barber' | 'Beauty';
 
@@ -24,7 +24,7 @@ export type ServiceProviderReview = {
   serviceName?: string | null;
 };
 
-/** Intera ServiceProvider shape returned by GET /providers. */
+/** OnCuts ServiceProvider shape returned by GET /providers. */
 export type ServiceProvider = {
   id: string;
   userId: string;

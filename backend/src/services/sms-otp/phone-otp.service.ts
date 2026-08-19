@@ -2,11 +2,11 @@ import { timingSafeEqual } from 'crypto';
 import { redisDel, redisGet, redisSet, getRedisClient } from '../../config/redis';
 import { logger } from '../../utils/logger';
 
-const OTP_KEY_PREFIX = 'intera:sms_otp:';
+const OTP_KEY_PREFIX = 'oncuts:sms_otp:';
 
-/** Default 10 minutes; override with INTERA_OTP_TTL_SECONDS */
+/** Default 10 minutes; override with ONCUTS_SMS_OTP_TTL_SECONDS (legacy: INTERA_OTP_TTL_SECONDS). */
 export function getOtpTtlSeconds(): number {
-  const raw = process.env.INTERA_OTP_TTL_SECONDS;
+  const raw = process.env.ONCUTS_SMS_OTP_TTL_SECONDS ?? process.env.INTERA_OTP_TTL_SECONDS;
   const n = raw ? parseInt(raw, 10) : 600;
   return Number.isFinite(n) && n >= 60 && n <= 3600 ? n : 600;
 }

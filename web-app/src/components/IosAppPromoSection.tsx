@@ -1,10 +1,10 @@
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
 import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
-import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
+import onCutsOperatorAppLogo from '../assets/logos/iOS_OnCutsOperator_Logo.png';
 
 export const IOS_APP_STORE_LINKS = {
   consumer: 'https://apps.apple.com/us/app/oncuts/id6789238174',
-  interaProvider: 'https://apps.apple.com/us/app/oncuts-operator/id6789008195',
+  oncutsOperator: 'https://apps.apple.com/us/app/oncuts-operator/id6789008195',
 } as const;
 
 type AppCardProps = {
@@ -144,9 +144,9 @@ export default function IosAppPromoSection() {
             heading="For Operators"
             card={{
               title: 'OnCuts Operator',
-              appLogo: interaProviderAppLogo,
+              appLogo: onCutsOperatorAppLogo,
               appLogoAlt: 'OnCuts Provider app icon',
-              storeHref: IOS_APP_STORE_LINKS.interaProvider,
+              storeHref: IOS_APP_STORE_LINKS.oncutsOperator,
               storeLabel: 'Download OnCuts Provider on the App Store',
             }}
           />
