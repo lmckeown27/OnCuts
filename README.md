@@ -1,116 +1,273 @@
 # OnCuts
 
-**A campus marketplace connecting students with barbers.**
+**A campus marketplace connecting students with barbers — web, iOS, and API.**
+
+Production: [oncuts.com](https://oncuts.com)
 
 ---
 
-## 📖 Overview
+## Overview
 
-OnCuts is a mobile-first web platform that connects college students with on-campus barbers. The platform streamlines the entire haircut booking experience—from discovering barbers at your university to scheduling appointments, messaging, and secure payment processing.
+OnCuts is a peer-to-peer barber marketplace for college communities. Students discover providers near their campus, book appointments, message, pay after service, and leave reviews. Barbers manage availability, accept bookings, and get paid via **Stripe Connect**.
 
-### What is OnCuts?
+The platform ships as:
 
-OnCuts solves a common problem on college campuses: finding reliable, affordable haircuts nearby. Instead of searching for off-campus barbershops or relying on word-of-mouth, students can browse verified barbers right at their university, view portfolios, check availability, and book appointments in minutes.
+| Client | Path | Notes |
+|--------|------|--------|
+| **Web PWA** | `web-app/` | Primary surface — consumer, barber, and admin UIs at `/web` and `/app` |
+| **OnCuts** (iOS) | App Store + `ios-module/` | Native consumer app (SwiftUI SPM module) |
+| **OnCuts Operator** (iOS) | App Store + `ios-module/` | Native barber/operator app |
+| **API** | `backend/` | Node.js REST + Socket.IO on AWS EC2 |
 
-### How It Works
+`ios-app/` is a legacy standalone Xcode prototype; production iOS builds embed **`ios-module`** (`CampusCutsModule`).
 
-**For Students (Consumers):**
-1. **Select your university** from 100+ supported campuses
-2. **Browse barbers** - view profiles, portfolios, ratings, and pricing
-3. **Book an appointment** - choose a service, date, time, and location
-4. **Message your barber** - coordinate details or ask questions
-5. **Get your haircut** - meet at the scheduled time and location
-6. **Pay after service** - pay with card or cash, add an optional tip
-7. **Leave a review** - help other students find great barbers
-
-**For Barbers:**
-1. **Apply to join** - submit an application with experience and portfolio
-2. **Set your schedule** - define weekly availability with flexible time slots
-3. **List your services** - set custom pricing for different haircut types
-4. **Receive bookings** - get notified when students request appointments
-5. **Accept or negotiate** - message students to confirm details
-6. **Complete the service** - mark as done when finished
-7. **Get paid** - receive payment minus a small platform fee
-
-### Key Benefits
-
-| For Students | For Barbers |
-|--------------|-------------|
-| Find barbers at your campus | Reach students at your school |
-| View portfolios before booking | Flexible scheduling |
-| Real-time availability | Build your client base |
-| Secure post-service payments | Track earnings and reviews |
-| No upfront payment required | Professional portfolio hosting |
-| Rate and review barbers | Instagram integration |
-
-### Platform Highlights
-
-- **100+ Universities** - Campuses across the United States
-- **Real-Time Messaging** - Chat directly with barbers before and after booking
-- **Smart Scheduling** - 1-hour appointment blocks prevent double-bookings
-- **Flexible Payments** - Pay with card (Stripe) or cash after service
-- **Mobile-First Design** - Optimized for phones, works on all devices
-- **Campus Manager Tools** - University staff can oversee local barbers
+Architecture diagrams: [`OnCuts_C4_Model`](OnCuts_C4_Model) (draw.io, L1–L3). Infrastructure details: [`AWS_INFRASTRUCTURE.md`](AWS_INFRASTRUCTURE.md).
 
 ---
 
-## 🚀 Quick Start
+## How It Works
+
+**For students (consumers):**
+1. Pick a campus or location
+2. Browse barbers — profiles, portfolios, ratings, pricing
+3. Book a time slot (1-hour blocks prevent double-booking)
+4. Message the barber before or after booking
+5. Get the service at the scheduled time
+6. Pay with card (Stripe) or cash after service; optional tip
+7. Leave a review
+
+**For barbers (operators):**
+1. Apply to join (registered or guest application flow)
+2. Complete **Stripe Connect** onboarding for payouts
+3. Set weekly availability and service pricing
+4. Accept or reject booking requests; message clients
+5. Mark services complete
+6. Receive payout minus platform commission (15% default)
+
+**For platform admins:**
+- Full operations via the embedded **Admin Dashboard** in the web app (users, campuses, bookings, moderation, platform settings, metrics)
+
+---
+
+## Platform Highlights
+
+- **100+ campuses** seeded across the United States
+- **Post-service payments** — card (Stripe), cash (admin-toggleable), Apple Pay / Google Pay on web
+- **Stripe Connect** — barber onboarding, Express payouts, webhook-driven status sync
+- **Real-time messaging** — Socket.IO on web; REST polling on iOS
+- **Push notifications** — APN for iOS (booking reminders, status updates)
+- **Location-aware discovery** — campus catalog, provider service pins, Nominatim geocoding
+- **Marketplace engine** — dynamic pricing signals and provider ranking (cron)
+- **Beauty services** — barber and beauty provider types (braids, nails, etc.)
+- **Admin Dashboard** — campus oversight, user roles, UGC moderation, notification templates
+
+---
+
+## Quick Start
 
 ```bash
-# Clone repository
 git clone https://github.com/lmckeown27/OnCuts.git
 cd OnCuts
 
-# Backend setup
+# Backend
 cd backend
 npm install --legacy-peer-deps
+cp .env.example .env   # configure DATABASE_URL, JWT, Stripe, etc.
 npm run build
+npm run dev            # http://localhost:3000 (set PORT=3001 in .env if needed)
 
-# Frontend setup
+# Web (separate terminal)
 cd ../web-app
 npm install
-npm run build
+cp .env.example .env   # VITE_API_URL, Stripe publishable key
+npm run dev            # http://localhost:5173
+```
 
-# Start API (NODE_ENV=production — do not use bare `pm2 start dist/index.js` without --env production)
+**Production API** (requires `NODE_ENV=production`):
+
+```bash
 cd backend && pm2 start ecosystem.config.cjs --env production
 ```
 
 ---
 
-## 📋 Tech Stack
+## Tech Stack
 
-### **Backend**
-- Node.js + TypeScript + Express
-- PostgreSQL (+ PostGIS)
-- Redis (OTP/session cache)
-- Stripe (payments)
-- Socket.IO (real-time messaging & updates)
-- JWT authentication
-- Nodemailer (SMTP email)
-- AWS S3 (image storage)
-- Luxon (timezone handling)
+### Backend (`backend/`)
+- Node.js, TypeScript, Express 4, Socket.IO
+- PostgreSQL (+ PostGIS) via `pg`; Prisma schema in `backend/prisma/`
+- Redis — OTP cache, sessions, messaging helpers
+- Stripe (payments + Connect webhooks)
+- AWS S3 (images), AWS Pinpoint SMS Voice v2 (phone OTP)
+- Nodemailer (SMTP), APN + Firebase Admin (push scaffold)
+- node-cron (scheduled jobs), Multer + Sharp (uploads)
+- Google / Apple ID token verification (`google-auth-library`, `jwks-rsa`)
 
-### **Frontend**
-- React 18 + TypeScript + Vite (PWA)
-- TailwindCSS
-- Zustand (state management)
-- React Router v6
-- Lucide React (icons)
-- React Hot Toast (notifications)
-- **Typography:** Source Serif 4 (Medium weight, 500) - Google Fonts
+Payments are **Stripe off-chain only** in production. Legacy Aptos/Sui/Circle paths are disabled.
 
-### **Mobile**
-- SwiftUI (iOS Consumer + OnCuts Operator apps in `ios-app/`)
-- REST API client (URLSession); push via APN
+### Web (`web-app/`)
+- React 19, TypeScript, Vite 5, TailwindCSS
+- Zustand, TanStack React Query, React Router 6
+- Socket.IO client, Stripe.js, Leaflet, Chart.js
+- Typography: **Inter** (Google Fonts)
+
+### iOS (`ios-module/` + App Store apps)
+- SwiftUI, SwiftPM (iOS 17+), URLSession REST client
+- Stripe iOS SDK, APN via `UserNotifications`
+- Shared module consumed by **OnCuts** and **OnCuts Operator** host apps
 
 ---
 
-## 🗄️ Database Setup
+## Architecture
 
-### **1. Create Database**
+OnCuts uses the [C4 model](https://c4model.com/) (Levels 1–3). Open [`OnCuts_C4_Model`](OnCuts_C4_Model) in [draw.io](https://app.diagrams.net/).
+
+| Page | Scope |
+|------|--------|
+| L1 — System Context | People, OnCuts, external systems |
+| L2 — Containers | Web, API, iOS apps, PostgreSQL, Redis, Nginx |
+| L3 — API Application | Backend domain components |
+| L3 — Web Application | React PWA components |
+| L3 — iOS Consumer / Operator | SwiftUI modules |
+
+### L1 — Personas & externals
+
+| Persona | Description |
+|---------|-------------|
+| **CONSUMER** | Books, messages, pays, reviews |
+| **BARBER** | Availability, bookings, Connect payouts |
+| **ADMIN** | Platform ops via Admin Dashboard |
+
+| External system | Purpose |
+|-----------------|---------|
+| Google OAuth / Apple Sign-In | ID token auth (web Google; native Google + Apple) |
+| AWS | EC2 compute, S3 storage, SMS APIs |
+| Stripe | Card payments and Connect payouts |
+| APN | iOS push |
+| SMS OTP | Phone verification (API + web UI; requires Redis) |
+| SMTP | Transactional email |
+| OpenStreetMap Nominatim | Geocoding |
+
+### L2 — Containers
+
+Hosted on **AWS EC2 (Ubuntu)** with **Nginx** terminating TLS, serving static web assets, and proxying `/api` and `/socket.io`.
+
+| Container | Technology |
+|-----------|------------|
+| Web Application | React + Vite PWA |
+| API Application | Node.js + Express + Socket.IO |
+| iOS Consumer / Operator | SwiftUI (`ios-module`) |
+| Database | PostgreSQL (+ PostGIS) |
+| Cache | Redis |
+| Reverse Proxy | Nginx |
+
+Web uses **HTTPS REST + WebSocket**. iOS uses **REST only** (no Socket.IO client in production module).
+
+### Booking flow
+
+```
+Consumer books → Barber accepts/rejects → Service performed →
+Barber marks complete → Consumer pays (card or cash) → PAID
+```
+
+### Real-time events (web)
+
+```
+Socket.IO: booking-update, payment-received, new-message, notification
+```
+
+---
+
+## Authentication & Roles
+
+### Sign-in methods
+
+| Method | Web | iOS | Backend |
+|--------|-----|-----|---------|
+| Email + password | ✅ | ✅ | `POST /auth/login`, `/register` |
+| Email verification (6-digit) | ✅ | ✅ | `POST /auth/verify-email` |
+| Google Sign-In | ✅ | ✅ (native) | `POST /auth/google` |
+| Apple Sign-In | — | ✅ (native) | `POST /auth/apple` |
+| SMS OTP | ✅ | ✅ (module) | `POST /auth/request-otp`, `/verify-otp` |
+| Password reset | ✅ | — | `POST /auth/request-password-reset` |
+
+All auth goes through the API. Admin access is granted via the database `ADMIN` role only — no hardcoded client credentials.
+
+### Roles (database)
+
+| DB role | Web UI type | Description |
+|---------|-------------|-------------|
+| `CONSUMER` | `student` | Books appointments |
+| `BARBER` | `barber` | Service provider |
+| `CAMPUS_MANAGER` | `barber` | Legacy role; no dedicated UI — campus ops are **admin-only** |
+| `ADMIN` | `admin` | Full platform access via Admin Dashboard |
+
+Promote admins via the Admin Dashboard or SQL (see `POSTGRES_COMMANDS.md`).
+
+### JWT
+
+- Access token (default 7 days)
+- Refresh token (default 3650 days in `.env.example`)
+- Role-based middleware on all protected routes
 
 ```bash
-# Create PostgreSQL database
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
+## Payments
+
+**Stripe Connect** is the production payment rail.
+
+| Feature | Status |
+|---------|--------|
+| Post-service card checkout | ✅ |
+| Optional tips (15%, 20%, 25%, custom) | ✅ |
+| Cash payments | ✅ (admin-toggleable) |
+| Apple Pay / Google Pay (web) | ✅ |
+| Barber Connect onboarding | ✅ |
+| Platform commission | 15% default (admin-configurable incentives) |
+| Wallet API (`/api/v2/wallet`) | ✅ |
+| Circle / Aptos / Sui on-chain | ❌ disabled |
+
+```
+Barber marks complete → Consumer receives email → Consumer pays → Funds via Connect
+```
+
+---
+
+## Key Features
+
+### Consumers
+- Campus and location-based barber discovery
+- Booking with availability and conflict prevention
+- Real-time messaging (web) / REST chat (iOS)
+- Post-service card or cash payment with tips
+- Reviews and ratings
+- Booking status tracking
+
+### Barbers / operators
+- Weekly schedule and custom service pricing
+- Accept/reject bookings; reschedule requests
+- Stripe Connect onboarding and earnings
+- Portfolio uploads (S3), Instagram link
+- Visibility toggle (hidden from discovery, direct-booking links)
+- Analytics panel (earnings, bookings)
+- Barber application flow (consumer → operator)
+
+### Platform (admin)
+- Embedded Admin Dashboard (users, campuses, bookings, moderation)
+- Platform settings (fees, cash payments, waitlist home mode)
+- Notification templates and custom announcements
+- Live transaction feed, audit logs, UGC reports
+- Barber application review
+
+---
+
+## Database Setup
+
+```bash
 sudo -u postgres psql
 CREATE DATABASE oncuts;
 CREATE USER oncuts_user WITH PASSWORD 'your_secure_password';
@@ -119,622 +276,306 @@ GRANT ALL PRIVILEGES ON DATABASE oncuts TO oncuts_user;
 GRANT ALL ON SCHEMA public TO oncuts_user;
 ```
 
-### **2. Run Migrations**
+**Run migrations** (65+ SQL files in `backend/src/database/migrations/`):
 
 ```bash
 cd backend
-# Run all migrations in order
 for f in src/database/migrations/*.sql; do
   sudo -u postgres psql -d oncuts -f "$f"
 done
-
-# Seed campus data
 sudo -u postgres psql -d oncuts -f src/database/seed_campuses.sql
 ```
 
+Prisma schema: `backend/prisma/schema.prisma`. Optional: `npm run migrate:deploy` in `backend/`.
+
+See [`POSTGRES_COMMANDS.md`](POSTGRES_COMMANDS.md) for operational queries.
+
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
-### **Backend `.env`**
+Copy `backend/.env.example` → `backend/.env` and `web-app/.env.example` → `web-app/.env`.
+
+### Backend (essential)
 
 ```bash
-# Server
 NODE_ENV=production
 PORT=3001
+DATABASE_URL=postgresql://oncuts_user:password@localhost:5432/oncuts
+REDIS_URL=redis://127.0.0.1:6379
 
-# Database
-DATABASE_URL="postgresql://oncuts_user:password@localhost:5432/oncuts?schema=public"
-
-# JWT Authentication
-JWT_SECRET=your_64_character_secret_here
-JWT_REFRESH_SECRET=your_64_character_refresh_secret_here
+JWT_SECRET=
+JWT_REFRESH_SECRET=
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_EXPIRES_IN=3650d
 
-# Payment System
-STRIPE_SECRET_KEY=sk_live_your_stripe_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET_ACCOUNT=
+STRIPE_WEBHOOK_SECRET_CONNECT=
+STRIPE_MODE=auto
 
-# Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_16_char_app_password
+SMTP_USER=
+SMTP_PASS=
 EMAIL_FROM="OnCuts <oncutshelp@gmail.com>"
 FRONTEND_URL=https://oncuts.com
 AUTO_VERIFY_EMAILS=false
 
-# AWS S3 (Image Storage)
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_REGION=us-west-1
-S3_BUCKET_NAME=campuscut-images
+USE_S3=true
+S3_BUCKET=campuscut-images
+S3_REGION=us-west-1
+
+GOOGLE_OAUTH_IOS_CLIENT_ID=
+GOOGLE_OAUTH_WEB_CLIENT_ID=
+APPLE_CLIENT_ID=
+APPLE_PROVIDER_CLIENT_ID=
+
+# SMS OTP (requires REDIS_URL)
+# ONCUTS_SMS_NOTIFY_CONFIGURATION_ID=
+# ONCUTS_SMS_NOTIFY_TEMPLATE_ID=
+
+# iOS push (APN)
+# APN_KEY_ID=
+# APN_TEAM_ID=
+# APN_PRIVATE_KEY=
+# APN_BUNDLE_ID=
 ```
 
-### **Frontend `.env`**
+### Web
 
 ```bash
 VITE_API_URL=https://oncuts.com/api/v1
+VITE_API_ORIGIN=https://oncuts.com
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_…
+VITE_GOOGLE_OAUTH_CLIENT_ID=
 ```
+
+Legacy blockchain env vars in older example files (`env.production.example`) are **not** used by the current payment architecture.
 
 ---
 
-## 💳 Payment System
-
-### **Stripe Integration**
-
-Secure payment flow with post-service payments:
-
-```
-Barber marks complete → Consumer receives email → Consumer pays → Funds to barber
-```
-
-**Payment Options:**
-- **Pay with Card** - Stripe payment processing with optional tips
-- **Pay with Cash** - Mark as paid for in-person cash transactions
-
-**Features:**
-- Post-service payment collection
-- Optional tip selection (15%, 20%, 25%, or custom)
-- Real-time payment status updates via WebSocket
-- Email notification with payment link when service completes
-- Platform fee: 15% (configurable)
-
----
-
-## 🔐 Authentication
-
-### **JWT-Based Authentication**
-
-- Access tokens (7 days default)
-- Refresh tokens (30 days default)
-- Role-based access control
-- Email verification required
-
-### **User Roles**
-
-| Role | Description |
-|------|-------------|
-| `student` | Consumer - can book appointments |
-| `barber` | Service provider - manages bookings |
-| `campus_manager` | Oversees campus barbers and applications |
-| `ADMIN` | Full platform access |
-
-### **Generate Secrets**
+## Development
 
 ```bash
-# Generate JWT_SECRET (64 characters)
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Backend (nodemon, default port 3000)
+cd backend && npm run dev
 
-# Generate JWT_REFRESH_SECRET (64 characters)
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Web (Vite, port 5173)
+cd web-app && npm run dev
+
+# iOS module (SwiftPM)
+swift build   # from repo root (Package.swift)
+```
+
+### Useful API checks
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/campus
+curl "http://localhost:3000/api/v1/barbers?campusId=<uuid>"
+```
+
+### Stripe test cards
+
+```
+4242 4242 4242 4242  — success
+4000 0000 0000 0002  — decline
+4000 0000 0000 9995  — insufficient funds
 ```
 
 ---
 
-## 📧 Email Notifications
+## Deployment
 
-Automated email notifications for:
+Production runs on a single **AWS EC2** instance (Ubuntu):
 
-- **Registration** - 6-digit verification code
-- **Booking Confirmation** - When barber accepts booking
-- **Service Complete** - Payment link sent to consumer
-- **Payment Received** - Confirmation to both parties
-
-**Configure SMTP:**
-- Gmail: Use app-specific password (16 characters)
-- Set `AUTO_VERIFY_EMAILS=false` for production
-
----
-
-## 🔗 API Keys Required
-
-### **Essential (Required)**
-
-| Service | Key | Where to Get |
-|---------|-----|--------------|
-| **Stripe** | `STRIPE_SECRET_KEY` | https://dashboard.stripe.com/apikeys |
-| **Stripe Webhooks** | `STRIPE_WEBHOOK_SECRET` | https://dashboard.stripe.com/webhooks |
-| **Gmail SMTP** | `SMTP_PASS` | Gmail → Security → App Passwords |
-| **AWS S3** | `AWS_ACCESS_KEY_ID` | AWS IAM Console |
-
----
-
-## 🚢 Deployment
-
-### **Production Deployment**
+1. PostgreSQL and Redis on-host (or Upstash for Redis)
+2. **PM2** fork mode, 1 API instance (`backend/ecosystem.config.cjs`)
+3. **Nginx** — TLS, static files at `/var/www/oncuts/dist`, proxy to API
+4. **S3** for image storage (`us-west-1`)
 
 ```bash
-# 1. Clone on server
 git clone https://github.com/lmckeown27/OnCuts.git
 cd OnCuts
 
-# 2. Setup database
-sudo -u postgres createdb oncuts
-sudo -u postgres psql -c "CREATE USER oncuts_user WITH PASSWORD 'your_secure_password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE oncuts TO oncuts_user;"
-for f in backend/src/database/migrations/*.sql; do
-  sudo -u postgres psql -d oncuts -f "$f"
-done
+# Database + migrations (see Database Setup)
+cp backend/.env.example backend/.env && nano backend/.env
 
-# 3. Configure environment
-cp backend/.env.example backend/.env
-nano backend/.env  # Add your keys
+cd backend && npm install --legacy-peer-deps && npm run build
+cd ../web-app && npm install && npm run build
 
-# 4. Install dependencies
-cd backend && npm install --legacy-peer-deps
-cd ../web-app && npm install
+cd ../backend && pm2 start ecosystem.config.cjs --env production
+pm2 startup && pm2 save
 
-# 5. Build
-cd ../backend && npm run build
-cd ../web-app && npm run build
-
-# 6. Start with PM2 (ecosystem sets NODE_ENV=production when using --env production)
-cd backend && pm2 start ecosystem.config.cjs --env production
-pm2 startup
-pm2 save
-
-# 7. Deploy frontend static files for nginx
-cd ../web-app
 sudo mkdir -p /var/www/oncuts/dist
-sudo rsync -a --delete dist/ /var/www/oncuts/dist/
-sudo chown -R www-data:www-data /var/www/oncuts
-
-# 8. Setup nginx reverse proxy
-sudo cp server-nginx.conf /etc/nginx/sites-available/oncuts
+sudo rsync -a --delete ../web-app/dist/ /var/www/oncuts/dist/
+sudo cp ../server-nginx.conf /etc/nginx/sites-available/oncuts
 sudo ln -sf /etc/nginx/sites-available/oncuts /etc/nginx/sites-enabled/oncuts
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**After code updates on the server:**
+**Deploy updates:**
 
 ```bash
-cd ~/OnCuts
-git pull origin main
+cd ~/OnCuts && git pull origin main
 cd backend && npm install && npm run build && pm2 restart oncuts-backend --update-env
 cd ../web-app && npm install && npm run build
 sudo rsync -a --delete dist/ /var/www/oncuts/dist/
 ```
 
----
-
-## 📱 Key Features
-
-### **For Consumers (Students)**
-- ✅ Browse barbers by university campus
-- ✅ Dynamic university selection (100+ campuses)
-- ✅ Real-time availability with time slot blocking
-- ✅ Book appointments with date/time picker
-- ✅ Real-time messaging with barbers
-- ✅ Pay with card or cash after service
-- ✅ Optional tips for barbers
-- ✅ Rate and review barbers
-- ✅ View booking status in real-time
-
-### **For Barbers**
-- ✅ Manage weekly availability schedule
-- ✅ Multiple time intervals per day
-- ✅ Accept/reject booking requests
-- ✅ Real-time messaging with consumers
-- ✅ Mark services as complete
-- ✅ Portfolio/gallery management (S3)
-- ✅ Instagram integration
-- ✅ Custom service pricing
-- ✅ Visibility toggle (hide/show profile)
-
-### **For Campus Managers**
-- ✅ View all campus barbers (including hidden)
-- ✅ Review barber applications
-- ✅ Schedule interviews via email
-- ✅ View campus booking statistics
-- ✅ Filter bookings by barber and date
-
-### **Platform Features**
-- ✅ Email verification
-- ✅ JWT authentication with refresh tokens
-- ✅ Role-based access control
-- ✅ Real-time WebSocket updates
-- ✅ 1-hour appointment time blocking
-- ✅ Time conflict prevention
-- ✅ Responsive mobile-first design
-- ✅ Unread message notifications
+CI: `.github/workflows/ci.yml` (Node 24, Redis service, backend tests).
 
 ---
 
-## 🏗️ Architecture
+## Database Schema
 
-OnCuts is documented with the [C4 model](https://c4model.com/) (Levels 1–3). The canonical diagrams are in [`OnCuts_C4_Model`](OnCuts_C4_Model) — open in [draw.io](https://app.diagrams.net/) or the VS Code Draw.io extension.
-
-| Page | Scope |
-|------|--------|
-| L1 — System Context | People, OnCuts, and external systems |
-| L2 — Containers | Web, API, iOS apps, PostgreSQL, Redis, Nginx |
-| L3 — API Application | Backend components inside the Node process |
-| L3 — Web Application | React PWA components |
-| L3 — iOS Consumer App | Student-facing SwiftUI modules |
-| L3 — iOS Operator App | Barber-facing SwiftUI modules |
-
-### **L1 — System Context**
-
-**OnCuts** — P2P SaaS barber marketplace for campus communities.
-
-| Persona | Role |
-|---------|------|
-| **CONSUMER** | Books haircuts, chats with barbers, pays after service, leaves reviews |
-| **BARBER** | Manages availability, accepts bookings, completes services, gets paid via Stripe Connect |
-| **ADMIN** | Full platform operations via the embedded Admin Dashboard |
-
-| External system | Purpose |
-|-----------------|---------|
-| Google OAuth / Apple Sign-In | Authenticates users via ID tokens |
-| AWS Cloud Infrastructure | Hosts compute; provides S3 storage and SMS APIs |
-| Stripe | Card payments and barber payouts |
-| APN | iOS push notifications |
-| SMS OTP | Phone verification codes (API live; web UI dormant) |
-| SMTP (Nodemailer) | Transactional email |
-| OpenStreetMap Nominatim | Geocodes campus location searches |
-
-### **L2 — Containers**
-
-Hosted on **AWS EC2 (Ubuntu)** inside the OnCuts system boundary.
-
-| Container | Technology | Description |
-|-----------|------------|-------------|
-| **Web Application** | React + Vite + TypeScript (PWA) | Browser UI for consumers, barbers, campus managers, and admins (`/web`, `/app`) |
-| **API Application** | Node.js + Express + Socket.IO + TypeScript | REST API, auth, booking, payments, messaging, webhooks, cron jobs |
-| **iOS Consumer App** | SwiftUI (`ios-app` / OnCuts) | Native consumer discovery, booking, messaging |
-| **iOS Operator App** | SwiftUI (OnCuts Operator) | Native barber dashboard and appointments |
-| **Reverse Proxy** | Nginx | Serves static web assets; proxies `/api` and `/socket.io` to the API |
-| **Database** | PostgreSQL (+ PostGIS) | Source of truth for users, barbers, bookings, messages, campuses |
-| **Cache** | Redis | OTP/session cache, messaging helpers, optional job support |
-
-Clients call the API over **HTTPS / REST**. The web app also uses **WebSocket** (Socket.IO) for realtime updates; iOS apps use REST only. Nginx terminates TLS and routes traffic in production.
-
-### **L3 — Components**
-
-**API Application** (in-process modules in a single Node deployment):
-
-| Component | Technology | Responsibility |
-|-----------|------------|----------------|
-| API Gateway / HTTP Server | Express, Helmet, CORS | REST and WebSocket entry; security, routing, errors |
-| Auth | JWT, bcrypt | Authentication and session tokens |
-| User | PostgreSQL | Accounts, profiles, access state |
-| Provider / Barber | PostgreSQL | Provider profiles, availability, onboarding |
-| Booking | PostgreSQL | Appointment lifecycle |
-| Payment | Stripe SDK | Payments, Connect, payouts |
-| Messaging | Socket.IO | Real-time chat (web); REST for iOS |
-| Notification | Nodemailer, APNs | Email, push, in-app alerts |
-| Campus & Location | PostGIS | Campus catalog, locations, geocoding |
-| Review | PostgreSQL | Post-service ratings |
-| Media / Upload | Multer, Sharp, AWS SDK | Image uploads to S3 |
-| Marketplace / Pricing | node-cron | Provider ranking and pricing signals |
-| Admin | PostgreSQL | Platform management APIs |
-| Background Jobs | node-cron | Scheduled reminders and maintenance |
-| Data Access | pg, Redis | SQL persistence and cache |
-
-**Web Application:** App Shell / Router, Landing UI, Auth UI, Consumer UI, Barber UI, Admin UI, Messaging UI, Payment UI, Shared UI Kit, API Client, Client State (Zustand), Realtime Client (Socket.IO).
-
-**iOS Consumer App:** App Shell, Auth UI, Discovery UI, Booking UI, Messaging UI, Payment UI, Profile UI, View Models, API Client, Session Store, Push Client.
-
-**iOS Operator App:** App Shell, Dashboard UI, Schedule UI, Earnings UI, Profile UI, Messaging UI, View Models, API Client, Session Store, Push Client.
-
-### **Real-Time Communication**
-
-```
-Socket.IO Events:
-├── booking-update     → Booking status changes
-├── payment-received   → Payment confirmations
-├── new-message        → Chat messages
-└── notification       → System notifications
-```
-
-### **Booking Flow**
-
-```
-1. Consumer selects barber & time
-2. Consumer submits booking request
-3. Barber receives notification
-4. Barber accepts/rejects
-5. Service is performed
-6. Barber marks complete
-7. Consumer receives payment email
-8. Consumer pays (card or cash)
-9. Booking marked as PAID
-```
-
----
-
-## 🛠️ Development
-
-### **Backend Development**
-
-```bash
-cd backend
-npm run dev  # Start with nodemon (auto-reload)
-```
-
-### **Frontend Development**
-
-```bash
-cd web-app
-npm run dev  # Start Vite dev server (port 5173)
-```
-
-### **Database Management**
-
-```bash
-# Connect to database
-sudo -u postgres psql -d oncuts
-
-# Check tables
-\dt
-
-# View barbers
-SELECT u.first_name, u.last_name, u.email, b."isActive" 
-FROM barbers b 
-JOIN users u ON b."userId" = u.id;
-
-# View bookings
-SELECT * FROM bookings ORDER BY "createdAt" DESC LIMIT 10;
-```
-
-See `POSTGRES_COMMANDS.md` for comprehensive database queries.
-
----
-
-## 🧪 Testing
-
-### **Test Payment System**
-
-```bash
-# Stripe test cards
-4242 4242 4242 4242  # Success
-4000 0000 0000 0002  # Decline
-4000 0000 0000 9995  # Insufficient funds
-```
-
-### **Test Endpoints**
-
-```bash
-# Health check
-curl http://localhost:3001/health
-
-# Get campuses
-curl http://localhost:3001/api/v1/campus
-
-# Get barbers by campus
-curl http://localhost:3001/api/v1/barbers?campusId=<campus-id>
-```
-
----
-
-## 📊 Database Schema
-
-### **Key Tables**
+### Key tables
 
 | Table | Description |
 |-------|-------------|
-| `users` | All users (students, barbers, managers, admins) |
-| `barbers` | Barber profiles, availability, pricing |
-| `bookings` | Appointment records with status tracking |
-| `reviews` | Consumer reviews and ratings |
-| `campuses` | University/college data |
-| `conversations` | Messaging threads |
-| `messages` | Individual chat messages |
-| `barber_applications` | Registered user applications |
-| `guest_barber_applications` | Non-registered applications |
-| `notifications` | In-app notifications |
+| `users` | Accounts, roles, Stripe Connect fields |
+| `barbers` | Provider profiles, availability, pricing, service location |
+| `bookings` | Appointments and status lifecycle |
+| `reviews` | Post-service ratings |
+| `campuses` | University catalog |
+| `conversations` / `messages` | Messaging |
+| `barber_applications` / `guest_barber_applications` | Operator onboarding |
+| `notifications` / `notification_templates` | In-app and push copy |
+| `platform_settings` | Admin-editable platform config |
 
-### **Booking Statuses**
+### Booking statuses
 
 | Status | Description |
 |--------|-------------|
 | `PENDING` | Awaiting barber response |
-| `ACCEPTED` | Barber accepted, service upcoming |
-| `COMPLETED` | Service finished, awaiting payment |
+| `ACCEPTED` | Confirmed, upcoming |
+| `COMPLETED` | Service done, awaiting payment |
 | `PAID` | Payment received |
 | `CANCELLED` | Cancelled by consumer |
 | `REJECTED` | Rejected by barber |
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### **Backend won't start**
-
+**Backend won't start**
 ```bash
-# Check logs
 pm2 logs oncuts-backend --lines 50
-
-# Rebuild
-cd backend
-rm -rf dist
-npm run build
-pm2 restart oncuts-backend --update-env
+cd backend && rm -rf dist && npm run build && pm2 restart oncuts-backend --update-env
 ```
 
-### **Database connection failed**
-
+**Database connection**
 ```bash
-# Test connection
 sudo -u postgres psql -d oncuts -c "SELECT 1;"
-
-# Check .env
 grep DATABASE_URL backend/.env
-
-# Verify user exists
-sudo -u postgres psql -c "\du"
 ```
 
-### **Email not sending**
+**Email not sending** — verify `SMTP_*`, app password, `EMAIL_FROM`, spam folder.
 
-```bash
-# Check SMTP config
-grep SMTP backend/.env
+**Images not uploading** — verify `USE_S3`, `S3_BUCKET`, `S3_REGION`, bucket CORS.
 
-# Verify app password is correct (16 chars, no spaces)
-# Check spam folder
-# Verify EMAIL_FROM format
-```
+**SMS OTP failing** — requires `REDIS_URL` and AWS Pinpoint notify config (`ONCUTS_SMS_*`).
 
-### **Images not uploading**
-
-```bash
-# Check S3 config
-grep AWS backend/.env
-grep S3 backend/.env
-
-# Verify bucket permissions and CORS
-```
-
-### **Build errors**
-
-```bash
-# Clean install
-cd backend
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install --legacy-peer-deps
-npm run build
-```
+**Stripe Connect stale** — `npm run clear-stripe-connect -- --validate-stale` in `backend/`.
 
 ---
 
-## 📈 Performance
+## Performance
 
-### **Current Metrics**
-
-- **Payment processing:** ~2-3 seconds (Stripe)
-- **Database queries:** <50ms average
-- **API response time:** <200ms average
-- **WebSocket latency:** <100ms
-- **Concurrent users:** 100+ supported
-
-### **Optimization**
-
-- PostgreSQL connection pooling (configured)
-- PM2 cluster mode for multiple processes
-- Nginx reverse proxy with caching
-- S3 for static asset storage
-- Cache-Control headers for availability data
+- Payment processing: ~2–3s (Stripe)
+- Database queries: <50ms typical
+- API response: <200ms typical
+- WebSocket latency: <100ms (web)
+- PM2 single fork instance; scale via instance size or future cluster config
 
 ---
 
-## 🔒 Security
+## Security
 
-### **Implemented**
-
-- ✅ JWT authentication with refresh tokens
-- ✅ Password hashing (bcrypt)
-- ✅ Email verification required
-- ✅ Role-based access control
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ CORS configuration
-- ✅ HTTPS in production
-- ✅ Rate limiting on auth endpoints
-- ✅ Input validation and sanitization
-
-### **Recommendations**
-
-- Rotate JWT secrets every 90 days
-- Enable 2FA for admin accounts
-- Regular security audits
-- Keep dependencies updated
-- Monitor for unusual activity
+- JWT + refresh tokens, bcrypt password hashing
+- Email verification on signup
+- Google / Apple ID token verification
+- Role-based access control
+- Parameterized SQL, Helmet, CORS, rate limits on auth
+- HTTPS in production (Nginx)
+- Admin promotion via database role only (no client-side bypass)
 
 ---
 
-## 🚀 Roadmap
+## Roadmap
 
-### **Phase 1: MVP ✅ Complete**
-- ✅ Stripe payments (post-service)
-- ✅ Email verification
-- ✅ Booking system with availability
-- ✅ Real-time messaging
-- ✅ Review system
-- ✅ Campus manager dashboard
-- ✅ Pay with cash option
+### Shipped
+- Stripe post-service payments + Connect payouts
+- Web PWA (consumer, barber, admin)
+- Native iOS apps (OnCuts + OnCuts Operator)
+- Email verification, SMS OTP, Google / Apple auth
+- Real-time messaging (web), push notifications (APN)
+- Admin Dashboard, marketplace pricing, location discovery
+- Beauty provider types, waitlist home mode, UGC moderation
 
-### **Phase 2: Enhancement (In Progress)**
-- ⏳ Push notifications
-- ⏳ Advanced analytics dashboard
-- ⏳ Recurring appointments
-- ⏳ Waitlist feature
-
-### **Phase 3: Scale**
-- ⏳ Multi-campus expansion tools
-- ⏳ Mobile apps (React Native)
-- ⏳ Loyalty/rewards program
-- ⏳ Barber scheduling assistant
+### In progress / planned
+- Deeper analytics and exports
+- Full waitlist product (beyond landing mode)
+- Recurring appointments
+- Android app
+- Loyalty / rewards program
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 OnCuts/
 ├── backend/
 │   ├── src/
-│   │   ├── controllers/     # Route handlers
-│   │   ├── routes/          # API endpoints
-│   │   ├── services/        # Business logic
-│   │   ├── middleware/      # Auth, validation
-│   │   ├── database/        # Migrations, seeds
-│   │   └── index.ts         # Entry point
-│   └── dist/                # Compiled output
-├── web-app/
-│   ├── src/
-│   │   ├── components/      # Reusable UI
-│   │   ├── pages/           # Route pages
-│   │   ├── services/        # API clients
-│   │   ├── stores/          # Zustand state
-│   │   ├── hooks/           # Custom hooks
-│   │   └── types/           # TypeScript types
-│   └── dist/                # Built assets
-├── ios-app/                 # SwiftUI consumer + operator apps
-├── OnCuts_C4_Model          # C4 architecture diagrams (draw.io)
-├── POSTGRES_COMMANDS.md     # Database queries
-└── README.md                # This file
+│   │   ├── controllers/       # Route handlers
+│   │   ├── routes/              # API mounts
+│   │   ├── services/            # Business logic (payments, SMS OTP, push, etc.)
+│   │   ├── middleware/          # Auth, validation
+│   │   ├── database/migrations/ # Primary SQL migrations (65+)
+│   │   └── index.ts             # API entry
+│   ├── prisma/                  # Prisma schema
+│   └── ecosystem.config.cjs     # PM2 config
+├── web-app/                     # React PWA
+├── ios-module/                  # SwiftPM shared iOS module (production)
+├── ios-app/                     # Legacy Xcode prototype
+├── e2e/                         # Playwright tests
+├── scripts/                     # Deploy / ops scripts
+├── OnCuts_C4_Model              # C4 architecture (draw.io)
+├── AWS_INFRASTRUCTURE.md        # AWS inventory and ops notes
+├── POSTGRES_COMMANDS.md         # Database runbook
+├── server-nginx.conf            # Production Nginx config
+└── README.md
 ```
 
 ---
 
-## 📞 Support
+## Related Documentation
 
-- **Issues:** Open a GitHub issue
+| Document | Contents |
+|----------|----------|
+| [`OnCuts_C4_Model`](OnCuts_C4_Model) | L1–L3 architecture diagrams |
+| [`AWS_INFRASTRUCTURE.md`](AWS_INFRASTRUCTURE.md) | EC2, S3, SMS, IAM, production topology |
+| [`POSTGRES_COMMANDS.md`](POSTGRES_COMMANDS.md) | SQL runbook, admin promotion, Stripe diagnostics |
+
+---
+
+## Support
+
+- **Issues:** [GitHub Issues](https://github.com/lmckeown27/OnCuts/issues)
 - **Email:** oncutshelp@gmail.com
-- **Production URL:** https://oncuts.com
+- **Production:** https://oncuts.com
+- **iOS:** [OnCuts](https://apps.apple.com/us/app/oncuts/id6789238174) · [OnCuts Operator](https://apps.apple.com/us/app/oncuts-operator/id6789008195)
 
 ---
 
-## 📄 License
+## License
 
-MIT License - See LICENSE file for details
+MIT License — see [LICENSE](LICENSE).
 
 ---
 
-**Built with ❤️ for campus communities**
+**Built for campus communities.**
 
-Platform Version: 2.0.0  
-Last Updated: February 2026
+Platform version: 2.1.0 · Last updated: August 2026
