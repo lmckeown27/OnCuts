@@ -576,6 +576,4 @@ MIT License — see [LICENSE](LICENSE).
 
 ---
 
-**Built for campus communities.**
-
 Platform version: 2.1.0 · Last updated: August 2026
