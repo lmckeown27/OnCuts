@@ -33,9 +33,6 @@ interface AuthState {
   getPendingVerificationEmail: () => string | null;
 }
 
-// Hardcoded admin credentials (empty - all auth goes through real API)
-const ADMIN_CREDENTIALS: Array<{ email: string; password: string; user: User }> = [];
-
 function mapBackendUser(responseUser: Record<string, unknown>): User {
   const rawRole = ((responseUser.role || responseUser.user_type || '') as string).toString().toLowerCase();
   const mappedRole = rawRole === 'consumer' ? 'student' : rawRole === 'campus_manager' ? 'barber' : rawRole;
@@ -79,26 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
-    
-    const adminMatch = ADMIN_CREDENTIALS.find(
-      admin => admin.email === email && admin.password === password
-    );
-    
-    if (adminMatch) {
-      const adminUser = adminMatch.user;
-      localStorage.setItem('user', JSON.stringify(adminUser));
-      localStorage.setItem('accessToken', 'admin-token-' + Date.now());
-      
-      set({ 
-        user: adminUser, 
-        isAuthenticated: true, 
-        isLoading: false,
-        activeRole: null
-      });
-      socketService.connect();
-      return { isAdmin: true };
-    }
-    
+
     try {
       const response = await authService.login({ email, password });
       const user = mapBackendUser(response.user as unknown as Record<string, unknown>);

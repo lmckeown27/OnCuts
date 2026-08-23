@@ -3,7 +3,7 @@
  * platform (e.g. migration from a legacy Stripe platform account → Pismo Platforms).
  *
  * Usage:
- *   npm run clear-stripe-connect -- liam.mckeown38415@gmail.com calpolyblockchain@gmail.com
+ *   npm run clear-stripe-connect -- barber@example.com other@example.com
  *   npm run clear-stripe-connect -- --all-with-accounts
  *   npm run clear-stripe-connect -- --validate-stale
  *

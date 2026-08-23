@@ -38,9 +38,10 @@ OnCuts uses a role-based permission system with the following hierarchy:
 - Admin functions are managed via PostgreSQL commands (no UI pages for security)
 - When admin logs in, they are redirected to the barber page with full platform access
 
-### Current Admin
-- **Email**: `liam.mckeown38415@gmail.com`
-- **Role**: `ADMIN`
+### List admin users
+```bash
+sudo -u postgres psql -d oncuts -c "SELECT email, first_name, last_name, role FROM users WHERE role = 'ADMIN';"
+```
 
 ---
 
@@ -87,7 +88,7 @@ ORDER BY \"createdAt\" DESC;
 sudo -u postgres psql -d oncuts -x -c "SELECT * FROM users WHERE email = 'EMAIL';"
 
 # Example:
-sudo -u postgres psql -d oncuts -x -c "SELECT * FROM users WHERE email = 'liam.mckeown38415@gmail.com';"
+sudo -u postgres psql -d oncuts -x -c "SELECT * FROM users WHERE email = 'user@example.com';"
 ```
 
 ### View User with All Details
@@ -1955,7 +1956,7 @@ UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
     stripe_payouts_enabled = false
-WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gmail.com')
+WHERE email IN ('barber@example.com', 'other@example.com')
 RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
 "
 ```
@@ -1963,7 +1964,7 @@ RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabl
 **3. Or use the backend script (from repo on EC2)**
 ```bash
 cd ~/OnCuts/backend
-npm run clear-stripe-connect -- liam.mckeown38415@gmail.com calpolyblockchain@gmail.com
+npm run clear-stripe-connect -- barber@example.com other@example.com
 # Or auto-detect IDs invalid for current keys:
 npm run clear-stripe-connect -- --validate-stale
 ```
@@ -1975,7 +1976,7 @@ npm run clear-stripe-connect -- --validate-stale
 npm run sync-stripe-status
 sudo -u postgres psql -d oncuts -c "
 SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
-FROM users WHERE email IN ('liam.mckeown38415@gmail.com', 'calpolyblockchain@gmail.com');
+FROM users WHERE email IN ('barber@example.com', 'other@example.com');
 "
 ```
 
@@ -2285,7 +2286,7 @@ http=$(curl -s -o /dev/null -w "%{http_code}" -u "${LIVE_KEY}:" \
 [ "$http" = "200" ] && echo "t" || echo "f"
 ```
 
-#### Diagnose test Connect account on live server (example: `liam.mckeown38415@gmail.com`)
+#### Diagnose stale Connect account on live server (example: `barber@example.com`)
 
 Stripe Express auth fails when Postgres still holds an `acct_*` from **test** onboarding or an **old platform** while EC2 runs **live** keys. Postgres shows the saved id and flags; use the steps below in order.
 
@@ -2303,7 +2304,7 @@ SELECT
         ELSE 'incomplete_or_stale'
     END AS connect_state
 FROM users u
-WHERE u.email = 'liam.mckeown38415@gmail.com';
+WHERE u.email = 'barber@example.com';
 "
 ```
 Typical auth-failure pattern: `stripe_account_id` is set, both flags are **`f`**, `connect_state` = **`incomplete_or_stale`**.
@@ -2314,7 +2315,7 @@ sudo -u postgres psql -d oncuts -c "
 SELECT u.email, u.stripe_account_id, b.\"isActive\"
 FROM users u
 LEFT JOIN barbers b ON b.\"userId\" = u.id
-WHERE u.email ILIKE 'liam.mckeown%';
+WHERE u.email = 'barber@example.com';
 "
 ```
 
@@ -2324,7 +2325,7 @@ Uses the `acct_*` from Step 1. **`f`** = not on live keys (test account, wrong p
 cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 LIVE_KEY="${STRIPE_SECRET_KEY_LIVE:-${STRIPE_LIVE_SECRET_KEY:-$STRIPE_SECRET_KEY}}"
-EMAIL='liam.mckeown38415@gmail.com'
+EMAIL='barber@example.com'
 
 ACCT=$(sudo -u postgres psql -d oncuts -t -A -c \
   "SELECT stripe_account_id FROM users WHERE email = '${EMAIL}' LIMIT 1;")
@@ -2340,7 +2341,7 @@ Postgres stores the id only; this tells you if it is a **test** Connect account.
 cd ~/OnCuts/backend
 set -a && [ -f .env ] && . ./.env; set +a
 ACCT=$(sudo -u postgres psql -d oncuts -t -A -c \
-  "SELECT stripe_account_id FROM users WHERE email = 'liam.mckeown38415@gmail.com' LIMIT 1;")
+  "SELECT stripe_account_id FROM users WHERE email = 'barber@example.com' LIMIT 1;")
 
 echo "acct: ${ACCT}"
 echo -n "live key: "
@@ -2360,7 +2361,7 @@ UPDATE users
 SET stripe_account_id = NULL,
     stripe_charges_enabled = false,
     stripe_payouts_enabled = false
-WHERE email = 'liam.mckeown38415@gmail.com'
+WHERE email = 'barber@example.com'
 RETURNING email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled;
 "
 ```
@@ -2371,7 +2372,7 @@ Provider should use **Continue with Stripe** on the sign-in step (not **Open Str
 sudo -u postgres psql -d oncuts -c "
 SELECT email, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled
 FROM users
-WHERE email = 'liam.mckeown38415@gmail.com';
+WHERE email = 'barber@example.com';
 "
 ```
 Expect `stripe_account_id` **NULL**, both flags **`f`**, until live onboarding completes.
