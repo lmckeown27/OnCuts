@@ -81,7 +81,8 @@ cd backend && pm2 start ecosystem.config.cjs --env production
 
 ### **Backend**
 - Node.js + TypeScript + Express
-- PostgreSQL (database with raw queries)
+- PostgreSQL (+ PostGIS)
+- Redis (OTP/session cache)
 - Stripe (payments)
 - Socket.IO (real-time messaging & updates)
 - JWT authentication
@@ -90,13 +91,17 @@ cd backend && pm2 start ecosystem.config.cjs --env production
 - Luxon (timezone handling)
 
 ### **Frontend**
-- React 18 + TypeScript + Vite
+- React 18 + TypeScript + Vite (PWA)
 - TailwindCSS
 - Zustand (state management)
 - React Router v6
 - Lucide React (icons)
 - React Hot Toast (notifications)
 - **Typography:** Source Serif 4 (Medium weight, 500) - Google Fonts
+
+### **Mobile**
+- SwiftUI (iOS Consumer + OnCuts Operator apps in `ios-app/`)
+- REST API client (URLSession); push via APN
 
 ---
 
@@ -359,24 +364,80 @@ sudo rsync -a --delete dist/ /var/www/oncuts/dist/
 
 ## 🏗️ Architecture
 
-### **System Architecture**
+OnCuts is documented with the [C4 model](https://c4model.com/) (Levels 1–3). The canonical diagrams are in [`OnCuts_C4_Model`](OnCuts_C4_Model) — open in [draw.io](https://app.diagrams.net/) or the VS Code Draw.io extension.
 
-```
-┌─────────────────────────────────────────┐
-│           Frontend (React)              │
-│  Booking UI, Messages, User Dashboard   │
-└──────────────┬──────────────────────────┘
-               │ REST API + WebSocket
-┌──────────────▼──────────────────────────┐
-│       Backend (Node.js/Express)         │
-│   Routes, Controllers, Services         │
-└──────┬─────────────┬───────────┬────────┘
-       │             │           │
-┌──────▼─────┐ ┌─────▼─────┐ ┌───▼────┐
-│ PostgreSQL │ │   Stripe  │ │  AWS   │
-│  Database  │ │ Payments  │ │   S3   │
-└────────────┘ └───────────┘ └────────┘
-```
+| Page | Scope |
+|------|--------|
+| L1 — System Context | People, OnCuts, and external systems |
+| L2 — Containers | Web, API, iOS apps, PostgreSQL, Redis, Nginx |
+| L3 — API Application | Backend components inside the Node process |
+| L3 — Web Application | React PWA components |
+| L3 — iOS Consumer App | Student-facing SwiftUI modules |
+| L3 — iOS Operator App | Barber-facing SwiftUI modules |
+
+### **L1 — System Context**
+
+**OnCuts** — P2P SaaS barber marketplace for campus communities.
+
+| Persona | Role |
+|---------|------|
+| **CONSUMER** | Books haircuts, chats with barbers, pays after service, leaves reviews |
+| **BARBER** | Manages availability, accepts bookings, completes services, gets paid via Stripe Connect |
+| **ADMIN** | Full platform operations via the embedded Admin Dashboard |
+
+| External system | Purpose |
+|-----------------|---------|
+| Google OAuth / Apple Sign-In | Authenticates users via ID tokens |
+| AWS Cloud Infrastructure | Hosts compute; provides S3 storage and SMS APIs |
+| Stripe | Card payments and barber payouts |
+| APN | iOS push notifications |
+| SMS OTP | Phone verification codes (API live; web UI dormant) |
+| SMTP (Nodemailer) | Transactional email |
+| OpenStreetMap Nominatim | Geocodes campus location searches |
+
+### **L2 — Containers**
+
+Hosted on **AWS EC2 (Ubuntu)** inside the OnCuts system boundary.
+
+| Container | Technology | Description |
+|-----------|------------|-------------|
+| **Web Application** | React + Vite + TypeScript (PWA) | Browser UI for consumers, barbers, campus managers, and admins (`/web`, `/app`) |
+| **API Application** | Node.js + Express + Socket.IO + TypeScript | REST API, auth, booking, payments, messaging, webhooks, cron jobs |
+| **iOS Consumer App** | SwiftUI (`ios-app` / OnCuts) | Native consumer discovery, booking, messaging |
+| **iOS Operator App** | SwiftUI (OnCuts Operator) | Native barber dashboard and appointments |
+| **Reverse Proxy** | Nginx | Serves static web assets; proxies `/api` and `/socket.io` to the API |
+| **Database** | PostgreSQL (+ PostGIS) | Source of truth for users, barbers, bookings, messages, campuses |
+| **Cache** | Redis | OTP/session cache, messaging helpers, optional job support |
+
+Clients call the API over **HTTPS / REST**. The web app also uses **WebSocket** (Socket.IO) for realtime updates; iOS apps use REST only. Nginx terminates TLS and routes traffic in production.
+
+### **L3 — Components**
+
+**API Application** (in-process modules in a single Node deployment):
+
+| Component | Technology | Responsibility |
+|-----------|------------|----------------|
+| API Gateway / HTTP Server | Express, Helmet, CORS | REST and WebSocket entry; security, routing, errors |
+| Auth | JWT, bcrypt | Authentication and session tokens |
+| User | PostgreSQL | Accounts, profiles, access state |
+| Provider / Barber | PostgreSQL | Provider profiles, availability, onboarding |
+| Booking | PostgreSQL | Appointment lifecycle |
+| Payment | Stripe SDK | Payments, Connect, payouts |
+| Messaging | Socket.IO | Real-time chat (web); REST for iOS |
+| Notification | Nodemailer, APNs | Email, push, in-app alerts |
+| Campus & Location | PostGIS | Campus catalog, locations, geocoding |
+| Review | PostgreSQL | Post-service ratings |
+| Media / Upload | Multer, Sharp, AWS SDK | Image uploads to S3 |
+| Marketplace / Pricing | node-cron | Provider ranking and pricing signals |
+| Admin | PostgreSQL | Platform management APIs |
+| Background Jobs | node-cron | Scheduled reminders and maintenance |
+| Data Access | pg, Redis | SQL persistence and cache |
+
+**Web Application:** App Shell / Router, Landing UI, Auth UI, Consumer UI, Barber UI, Admin UI, Messaging UI, Payment UI, Shared UI Kit, API Client, Client State (Zustand), Realtime Client (Socket.IO).
+
+**iOS Consumer App:** App Shell, Auth UI, Discovery UI, Booking UI, Messaging UI, Payment UI, Profile UI, View Models, API Client, Session Store, Push Client.
+
+**iOS Operator App:** App Shell, Dashboard UI, Schedule UI, Earnings UI, Profile UI, Messaging UI, View Models, API Client, Session Store, Push Client.
 
 ### **Real-Time Communication**
 
@@ -651,6 +712,8 @@ OnCuts/
 │   │   ├── hooks/           # Custom hooks
 │   │   └── types/           # TypeScript types
 │   └── dist/                # Built assets
+├── ios-app/                 # SwiftUI consumer + operator apps
+├── OnCuts_C4_Model          # C4 architecture diagrams (draw.io)
 ├── POSTGRES_COMMANDS.md     # Database queries
 └── README.md                # This file
 ```
