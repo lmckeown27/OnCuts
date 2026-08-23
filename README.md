@@ -103,8 +103,6 @@ cd backend && pm2 start ecosystem.config.cjs --env production
 - node-cron (scheduled jobs), Multer + Sharp (uploads)
 - Google / Apple ID token verification (`google-auth-library`, `jwks-rsa`)
 
-Payments are **Stripe off-chain only** in production. Legacy Aptos/Sui/Circle paths are disabled.
-
 ### Web (`web-app/`)
 - React 19, TypeScript, Vite 5, TailwindCSS
 - Zustand, TanStack React Query, React Router 6
@@ -229,7 +227,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | Barber Connect onboarding | ✅ |
 | Platform commission | 15% default (admin-configurable incentives) |
 | Wallet API (`/api/v2/wallet`) | ✅ |
-| Circle / Aptos / Sui on-chain | ❌ disabled |
 
 ```
 Barber marks complete → Consumer receives email → Consumer pays → Funds via Connect
@@ -350,8 +347,6 @@ VITE_API_ORIGIN=https://oncuts.com
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_…
 VITE_GOOGLE_OAUTH_CLIENT_ID=
 ```
-
-Legacy blockchain env vars in older example files (`env.production.example`) are **not** used by the current payment architecture.
 
 ---
 
