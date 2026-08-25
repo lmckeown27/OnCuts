@@ -25,6 +25,10 @@ import {
   isNullIslandCoordinate,
   MAX_DEVICE_SERVICE_LOCATION_JUMP_KM,
 } from '../utils/geo-distance';
+import {
+  shouldApplyDeviceLocationJumpGuard,
+  shouldPreserveDevicePrivacyLabel,
+} from '../utils/service-location-jump-guard';
 
 interface UpdateLocationBody {
   latitude: number;
@@ -473,7 +477,8 @@ export const updateBarberServiceLocation = async (
       }
 
       const anchors = await pool.query(
-        `SELECT service_latitude, service_longitude FROM barbers WHERE id = $1`,
+        `SELECT service_latitude, service_longitude, service_location_source
+         FROM barbers WHERE id = $1`,
         [barberId]
       );
       const prevLat =
@@ -485,7 +490,18 @@ export const updateBarberServiceLocation = async (
           ? Number(anchors.rows[0].service_longitude)
           : NaN;
       const hasServiceAnchor = Number.isFinite(prevLat) && Number.isFinite(prevLng);
-      if (hasServiceAnchor) {
+      const prevSource = normalizeServiceLocationSource(
+        anchors.rows[0]?.service_location_source
+      );
+      const resumeDeviceTracking =
+        webOnlyUpdate === false || currentWebOnly === true;
+      if (
+        shouldApplyDeviceLocationJumpGuard({
+          hasServiceAnchor,
+          previousSource: prevSource,
+          resumeDeviceTracking,
+        })
+      ) {
         const jumpFromServiceKm = haversineDistanceKm(prevLat, prevLng, latitude, longitude);
         if (jumpFromServiceKm > MAX_DEVICE_SERVICE_LOCATION_JUMP_KM) {
           logger.warn('Ignoring implausible device service-location jump', {
@@ -526,12 +542,15 @@ export const updateBarberServiceLocation = async (
       typeof longitude === 'number'
     ) {
       const existingLabel = await pool.query(
-        `SELECT service_location_label FROM barbers WHERE id = $1`,
+        `SELECT service_location_label, service_location_source FROM barbers WHERE id = $1`,
         [barberId]
       );
       const currentLabel = existingLabel.rows[0]?.service_location_label;
-      if (typeof currentLabel === 'string' && currentLabel.trim().length > 0) {
-        // Preserve operator-chosen estimate (e.g. UCSB / Santa Barbara) — do not overwrite
+      const labelSource = normalizeServiceLocationSource(
+        existingLabel.rows[0]?.service_location_source
+      );
+      if (shouldPreserveDevicePrivacyLabel(currentLabel, labelSource)) {
+        // Preserve device privacy estimate (e.g. UCSB) — do not overwrite with reverse geocode
         label = undefined;
       } else {
         try {

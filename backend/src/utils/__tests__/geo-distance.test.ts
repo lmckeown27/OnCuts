@@ -23,6 +23,14 @@ describe('haversineDistanceKm', () => {
     const km = haversineDistanceKm(35.2828, -120.6596, 35.1214, -120.5913); // Pismo Beach
     expect(km).toBeLessThan(MAX_DEVICE_SERVICE_LOCATION_JUMP_KM);
   });
+
+  it('measures San Jose to San Luis Obispo as over the device jump threshold', () => {
+    // Manual pin resume: this distance must not block updates when jump guard is skipped
+    const km = haversineDistanceKm(37.33, -121.89, 35.2828, -120.6596);
+    expect(km).toBeGreaterThan(MAX_DEVICE_SERVICE_LOCATION_JUMP_KM);
+    expect(km).toBeGreaterThan(200);
+    expect(km).toBeLessThan(300);
+  });
 });
 
 describe('isNullIslandCoordinate', () => {
