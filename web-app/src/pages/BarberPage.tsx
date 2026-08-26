@@ -3081,6 +3081,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
 // Bookings Modal Component - View and manage all bookings
 function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; onClose: () => void; barberId: string }) {
+  const { paymentTimingMode } = useFrontendConfig();
+  const payOnAccept = paymentTimingMode !== 'after_complete';
   const [activeTab, setActiveTab] = useState<'upcoming' | 'today' | 'past'>('today');
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
