@@ -276,6 +276,9 @@ export async function sendTemplatedNotification(opts: {
   data?: Record<string, unknown>;
   fallbackTitle?: string;
   fallbackBody?: string;
+  /** When set, replaces the DB/template body (e.g. payment-timing-specific copy). */
+  overrideBody?: string;
+  overrideTitle?: string;
 }): Promise<boolean> {
   const userId = String(opts.userId ?? '').trim();
   if (!userId) return false;
@@ -284,8 +287,18 @@ export async function sendTemplatedNotification(opts: {
   if (!tpl.enabled || !shouldSend(tpl.audience, opts.side)) return false;
 
   const vars = opts.vars ?? {};
-  const title = interpolate(tpl.title, vars) || opts.fallbackTitle || '';
-  const body = interpolate(tpl.body, vars) || opts.fallbackBody || title;
+  const title =
+    (opts.overrideTitle != null && opts.overrideTitle !== ''
+      ? opts.overrideTitle
+      : interpolate(tpl.title, vars)) ||
+    opts.fallbackTitle ||
+    '';
+  const body =
+    (opts.overrideBody != null && opts.overrideBody !== ''
+      ? opts.overrideBody
+      : interpolate(tpl.body, vars)) ||
+    opts.fallbackBody ||
+    title;
   if (!title && !body) return false;
 
   const type = opts.type || opts.key;

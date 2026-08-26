@@ -1265,19 +1265,35 @@ export default function PostServicePaymentPage() {
 
   // Barber View - waiting for service pay / tip, or confirmed
   if (isBarber) {
-    const awaitingServicePay = booking.status === 'ACCEPTED' && !booking.paidAt;
+    const payOnAccept = paymentTimingMode !== 'after_complete';
+    const awaitingServicePay =
+      payOnAccept && booking.status === 'ACCEPTED' && !booking.paidAt;
     const servicePaid = booking.status === 'PAID' || !!booking.paidAt;
-    const awaitingTip = booking.status === 'COMPLETED' && !booking.tipDecidedAt;
+    const awaitingTip =
+      payOnAccept && booking.status === 'COMPLETED' && !booking.tipDecidedAt;
+    const awaitingPostCompletePay =
+      !payOnAccept && booking.status === 'COMPLETED' && !booking.paidAt;
     const tipDone = !!booking.tipDecidedAt;
+    const acceptedConfirmed =
+      !payOnAccept && booking.status === 'ACCEPTED' && !booking.paidAt;
 
-    if (!awaitingServicePay && !servicePaid && !awaitingTip && !tipDone) {
+    if (
+      !awaitingServicePay &&
+      !servicePaid &&
+      !awaitingTip &&
+      !awaitingPostCompletePay &&
+      !tipDone &&
+      !acceptedConfirmed
+    ) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
             <AlertCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-gray-900 mb-2">Nothing to show yet</h2>
             <p className="text-gray-600 mb-6">
-              Accept the booking so the customer can pay, then mark complete after the service for a tip.
+              {payOnAccept
+                ? 'Accept the booking so the customer can pay, then mark complete after the service for a tip.'
+                : 'Accept the booking, mark complete after the service, then the customer can pay.'}
             </p>
             <button
               onClick={() => navigate('/web/barber')}
@@ -1308,7 +1324,7 @@ export default function PostServicePaymentPage() {
 
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            {tipDone || (servicePaid && !awaitingTip) ? (
+            {tipDone || (servicePaid && !awaitingTip && !awaitingPostCompletePay) ? (
               <>
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Check className="w-10 h-10 text-green-600" />
@@ -1323,9 +1339,21 @@ export default function PostServicePaymentPage() {
                 </h2>
                 {!tipDone && (
                   <p className="text-gray-600 mb-6">
-                    {`${booking.consumer.firstName} paid for the service. Mark complete after the appointment to request a tip.`}
+                    {payOnAccept
+                      ? `${booking.consumer.firstName} paid for the service. Mark complete after the appointment to request a tip.`
+                      : `${booking.consumer.firstName} paid for the service.`}
                   </p>
                 )}
+              </>
+            ) : acceptedConfirmed ? (
+              <>
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Check className="w-10 h-10 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed</h2>
+                <p className="text-gray-600 mb-6">
+                  Payment is collected after you mark the service complete.
+                </p>
               </>
             ) : (
               <>
@@ -1338,7 +1366,9 @@ export default function PostServicePaymentPage() {
                 </h2>
                 {!awaitingTip && (
                   <p className="text-gray-600 mb-6">
-                    {booking.consumer.firstName} needs to pay for the service to confirm this booking.
+                    {awaitingPostCompletePay
+                      ? `${booking.consumer.firstName} needs to pay for the completed service.`
+                      : `${booking.consumer.firstName} needs to pay for the service to confirm this booking.`}
                   </p>
                 )}
               </>
@@ -1439,7 +1469,11 @@ export default function PostServicePaymentPage() {
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <AlertCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Payment not available</h2>
-          <p className="text-gray-600 mb-6">This booking is not ready for payment or tipping.</p>
+          <p className="text-gray-600 mb-6">
+            {paymentTimingMode === 'after_complete' && booking.status === 'ACCEPTED'
+              ? 'Your booking is confirmed. Payment is collected after the service is marked complete.'
+              : 'This booking is not ready for payment or tipping.'}
+          </p>
           <button
             onClick={() => navigate('/web/consumer')}
             className="px-6 py-3 bg-brand-500 text-white rounded-xl"

@@ -1576,12 +1576,16 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const awaitingPaymentBookings = useMemo(
     () =>
-      visibleConfirmedBookings.filter(
-        (b) =>
-          (b.status === 'ACCEPTED' && !b.paidAt) ||
-          (b.status === 'COMPLETED' && !b.tipDecidedAt)
-      ),
-    [visibleConfirmedBookings]
+      visibleConfirmedBookings.filter((b) => {
+        if (payOnAccept) {
+          return (
+            (b.status === 'ACCEPTED' && !b.paidAt) ||
+            (b.status === 'COMPLETED' && !b.tipDecidedAt)
+          );
+        }
+        return b.status === 'COMPLETED' && !b.paidAt;
+      }),
+    [visibleConfirmedBookings, payOnAccept]
   );
 
   const adjacentWeekBookingCounts = useMemo(() => {
@@ -2088,12 +2092,19 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     try {
       await api.post(`/bookings-simple/${selectedBookingInline.id}/request-payment`, {});
-      toast.success('Tip request sent to customer');
+      toast.success(
+        payOnAccept ? 'Tip request sent to customer' : 'Payment request sent to customer'
+      );
       closeDayModal();
       navigate(`/web/payment/${selectedBookingInline.id}`);
     } catch (error: any) {
       console.error('Failed to request tip:', error);
-      toast.error(error.message || 'Failed to mark complete — customer must pay first');
+      toast.error(
+        error.message ||
+          (payOnAccept
+            ? 'Failed to mark complete — customer must pay first'
+            : 'Failed to mark complete')
+      );
     }
   };
 

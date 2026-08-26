@@ -19,6 +19,7 @@ import {
   BarberPricingEntry,
 } from '../utils/service-duration.utils';
 import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
+import { isPayOnAccept } from '../utils/platform-frontend-settings';
 
 function mergeConversationLocation(
   loc: string | null | undefined,
@@ -751,6 +752,10 @@ export class BookingRequestService {
           [barberId]
         );
         const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+        const payOnAccept = await isPayOnAccept(client);
+        const acceptBody = payOnAccept
+          ? `${barberName} accepted your booking request. Pay now to confirm.`
+          : `${barberName} accepted your booking request. Your appointment is confirmed.`;
         
         await sendTemplatedNotification({
           userId: consumerUserId,
@@ -758,9 +763,14 @@ export class BookingRequestService {
           side: 'consumer',
           vars: { barberName },
           type: 'booking_accepted',
-          data: { conversationId, bookingId: linkedBookingId, phase: 'service' },
+          data: {
+            conversationId,
+            bookingId: linkedBookingId,
+            phase: payOnAccept ? 'service' : 'confirmed',
+          },
           fallbackTitle: 'Booking Accepted!',
-          fallbackBody: `${barberName} accepted your booking request. Pay now to confirm.`,
+          fallbackBody: acceptBody,
+          overrideBody: acceptBody,
         });
 
         await client.query('COMMIT');
@@ -828,6 +838,10 @@ export class BookingRequestService {
         [barberId]
       );
       const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+      const payOnAccept = await isPayOnAccept(client);
+      const acceptBody = payOnAccept
+        ? `${barberName} accepted your booking request. Pay now to confirm.`
+        : `${barberName} accepted your booking request. Your appointment is confirmed.`;
       
       // Send notification to consumer
       await sendTemplatedNotification({
@@ -836,9 +850,10 @@ export class BookingRequestService {
         side: 'consumer',
         vars: { barberName },
         type: 'booking_accepted',
-        data: { bookingId, phase: 'service' },
+        data: { bookingId, phase: payOnAccept ? 'service' : 'confirmed' },
         fallbackTitle: 'Booking Accepted!',
-        fallbackBody: `${barberName} accepted your booking request. Pay now to confirm.`,
+        fallbackBody: acceptBody,
+        overrideBody: acceptBody,
       });
 
       await client.query('COMMIT');

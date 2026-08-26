@@ -20,6 +20,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import Button from './Button';
 import Avatar from './Avatar';
 import { clearDeferredPaymentTakeover } from '../store/deferredPaymentBookings';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 
 type Tab = 'upcoming' | 'today' | 'past';
 
@@ -112,6 +113,8 @@ export default function ConsumerBookingsModal({
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user } = useAuthStore();
+  const { paymentTimingMode } = useFrontendConfig();
+  const payOnAccept = paymentTimingMode !== 'after_complete';
 
   const [tab, setTab] = useState<Tab>('today');
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -328,8 +331,11 @@ export default function ConsumerBookingsModal({
                     </div>
 
                     <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">
-                      {((b.status?.toUpperCase() === 'ACCEPTED' && !b.paidAt) ||
-                        (b.status?.toUpperCase() === 'COMPLETED' && !b.tipDecidedAt)) && (
+                      {((payOnAccept &&
+                        b.status?.toUpperCase() === 'ACCEPTED' &&
+                        !b.paidAt) ||
+                        (b.status?.toUpperCase() === 'COMPLETED' &&
+                          (payOnAccept ? !b.tipDecidedAt : !b.paidAt))) && (
                         <Button
                           size="sm"
                           variant="primary"
@@ -337,7 +343,9 @@ export default function ConsumerBookingsModal({
                           onClick={() => goPay(b.id)}
                         >
                           <CreditCard className="w-4 h-4" />
-                          {b.status?.toUpperCase() === 'COMPLETED' ? 'Choose tip' : 'Pay now'}
+                          {b.status?.toUpperCase() === 'COMPLETED' && payOnAccept
+                            ? 'Choose tip'
+                            : 'Pay now'}
                         </Button>
                       )}
                       {['PENDING', 'ACCEPTED', 'PAID', 'COMPLETED'].includes(

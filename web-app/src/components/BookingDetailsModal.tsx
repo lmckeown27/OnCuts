@@ -36,6 +36,7 @@ export default function BookingDetailsModal({
 }: BookingDetailsModalProps) {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { paymentTimingMode } = useFrontendConfig();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -379,7 +380,6 @@ export default function BookingDetailsModal({
     booking.status === 'ACCEPTED' ||
     booking.status === 'PENDING' ||
     booking.status === 'PAID';
-  const { paymentTimingMode } = useFrontendConfig();
   const canComplete =
     paymentTimingMode === 'after_complete'
       ? booking.status === 'ACCEPTED'

@@ -94,6 +94,13 @@ export class PaymentReminderCronService {
           b.status,
           CASE
             WHEN b.status = 'ACCEPTED' THEN 'service'
+            WHEN b.status = 'COMPLETED'
+              AND COALESCE(
+                (SELECT payment_timing_mode FROM platform_settings WHERE id = 1 LIMIT 1),
+                'on_accept'
+              ) = 'after_complete'
+              AND b."paidAt" IS NULL
+              THEN 'service'
             ELSE 'tip'
           END as reminder_phase,
           c.location,
@@ -120,12 +127,32 @@ export class PaymentReminderCronService {
               AND b.paid_at IS NULL
               AND b."acceptedAt" IS NOT NULL
               AND b."acceptedAt" < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
+              AND COALESCE(
+                (SELECT payment_timing_mode FROM platform_settings WHERE id = 1 LIMIT 1),
+                'on_accept'
+              ) = 'on_accept'
             )
             OR (
               b.status = 'COMPLETED'
-              AND b."tipDecidedAt" IS NULL
-              AND COALESCE(b."tipRequestedAt", b."completedAt") IS NOT NULL
-              AND COALESCE(b."tipRequestedAt", b."completedAt") < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
+              AND (
+                (
+                  COALESCE(
+                    (SELECT payment_timing_mode FROM platform_settings WHERE id = 1 LIMIT 1),
+                    'on_accept'
+                  ) = 'on_accept'
+                  AND b."tipDecidedAt" IS NULL
+                )
+                OR (
+                  COALESCE(
+                    (SELECT payment_timing_mode FROM platform_settings WHERE id = 1 LIMIT 1),
+                    'on_accept'
+                  ) = 'after_complete'
+                  AND b."paidAt" IS NULL
+                  AND b.paid_at IS NULL
+                )
+              )
+              AND COALESCE(b."tipRequestedAt", b."completedAt", b."paymentRequestedAt") IS NOT NULL
+              AND COALESCE(b."tipRequestedAt", b."completedAt", b."paymentRequestedAt") < NOW() - INTERVAL '${this.REMINDER_DELAY_HOURS} hours'
             )
           )
       `);
