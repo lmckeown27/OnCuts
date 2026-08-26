@@ -28,6 +28,7 @@ import {
 import SatisfactionRating from '../components/SatisfactionRating';
 import { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
+import { useFrontendConfig, type PaymentTimingMode } from '../hooks/useFrontendConfig';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -255,48 +256,83 @@ function PaymentFormInner({
   );
 }
 
-function resolvePayPageMode(booking: BookingDetails): PayPageMode | 'done' | 'invalid' {
+function resolvePayPageMode(
+  booking: BookingDetails,
+  paymentTimingMode: PaymentTimingMode
+): PayPageMode | 'done' | 'invalid' {
   if (booking.tipDecidedAt) return 'done';
+  if (paymentTimingMode === 'after_complete') {
+    if (booking.status === 'PAID' || booking.paidAt) return 'done';
+    if (booking.status === 'COMPLETED' && !booking.paidAt) return 'service';
+    return 'invalid';
+  }
   if (booking.status === 'COMPLETED') return 'tip';
   if (booking.status === 'ACCEPTED' && !booking.paidAt) return 'service';
   if (booking.status === 'PAID') return 'done';
   return 'invalid';
 }
 
-// Service payment (pay-on-accept) — no tip on this charge
+// Service payment — tip optional only when payment_timing is after_complete
 function ServicePaymentForm({
   booking,
   onSuccess,
+  includeOptionalTip = false,
 }: {
   booking: BookingDetails;
   onSuccess: () => void;
+  includeOptionalTip?: boolean;
 }) {
   const cashAllowed = booking.cashPaymentAllowed === true;
   const [paymentEntry, setPaymentEntry] = useState<PaymentEntryMode>('manual');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [isUpdatingTip, setIsUpdatingTip] = useState(false);
   const [intentError, setIntentError] = useState<string | null>(null);
   const [isProcessingCash, setIsProcessingCash] = useState(false);
+  const [selectedTip, setSelectedTip] = useState(0);
+  const [customTip, setCustomTip] = useState('');
   const [intentQuote, setIntentQuote] = useState<{
     serviceAmountCents: number;
     serviceFeeCents: number;
     amountCents: number;
   } | null>(null);
 
+  const tipAmount = includeOptionalTip
+    ? customTip
+      ? parseFloat(customTip) || 0
+      : selectedTip
+    : 0;
+  const tipAmountCents = Math.round(tipAmount * 100);
+
   const serviceCents = intentQuote?.serviceAmountCents ?? booking.priceUsdCents ?? 0;
   const serviceFeeCents =
     intentQuote?.serviceFeeCents ??
     (typeof booking.serviceFeeCents === 'number' ? booking.serviceFeeCents : 0);
   const totalCents =
-    intentQuote?.amountCents ??
-    (typeof booking.chargeAmountCents === 'number' && booking.chargeAmountCents > 0
-      ? booking.chargeAmountCents
-      : serviceCents + serviceFeeCents);
-  const baseAmount = totalCents / 100;
+    (intentQuote?.amountCents ??
+      (typeof booking.chargeAmountCents === 'number' && booking.chargeAmountCents > 0
+        ? booking.chargeAmountCents
+        : serviceCents + serviceFeeCents)) +
+    (includeOptionalTip && !intentQuote ? tipAmountCents : 0);
+  // When quote includes tip already (from create/update), don't double-add
+  const displayTotal =
+    includeOptionalTip && intentQuote
+      ? (intentQuote.amountCents ?? 0) / 100
+      : totalCents / 100;
+  const baseAmount = displayTotal;
   const effectiveEntry =
     paymentEntry === 'cash' && !cashAllowed ? 'manual' : paymentEntry;
 
-  const createPaymentIntent = async () => {
+  const tipOptions = [
+    { label: '$0', value: 0 },
+    { label: '$2', value: 2 },
+    { label: '$5', value: 5 },
+    { label: '$8', value: 8 },
+    { label: '$10', value: 10 },
+  ];
+
+  const createPaymentIntent = async (tipCents = tipAmountCents) => {
     setIsCreatingIntent(true);
     setIntentError(null);
     try {
@@ -306,11 +342,11 @@ function ServicePaymentForm({
         amountCents?: number;
         serviceAmountCents?: number;
         serviceFeeCents?: number;
-      }>(
-        `/bookings-simple/${booking.id}/create-payment-intent`,
-        {}
-      );
+      }>(`/bookings-simple/${booking.id}/create-payment-intent`, {
+        tipAmountCents: includeOptionalTip ? tipCents : 0,
+      });
       setClientSecret(response.clientSecret);
+      setPaymentIntentId(response.paymentIntentId);
       const serviceAmountCents = Number(response.serviceAmountCents);
       const feeCents = Number(response.serviceFeeCents);
       const amountCents = Number(response.amountCents);
@@ -336,10 +372,45 @@ function ServicePaymentForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveEntry]);
 
+  useEffect(() => {
+    if (!includeOptionalTip || !paymentIntentId || effectiveEntry === 'cash') return;
+    const timer = setTimeout(() => {
+      setIsUpdatingTip(true);
+      void api
+        .post(`/bookings-simple/${booking.id}/update-payment-intent`, {
+          paymentIntentId,
+          tipAmountCents,
+        })
+        .then((response: any) => {
+          const amountCents = Number(response?.amountCents ?? response?.totalAmountCents);
+          const serviceAmountCents = Number(response?.serviceAmountCents);
+          const feeCents = Number(response?.serviceFeeCents);
+          if (Number.isFinite(amountCents) && amountCents > 0) {
+            setIntentQuote((prev) => ({
+              serviceAmountCents: Number.isFinite(serviceAmountCents)
+                ? serviceAmountCents
+                : prev?.serviceAmountCents ?? booking.priceUsdCents,
+              serviceFeeCents: Number.isFinite(feeCents)
+                ? feeCents
+                : prev?.serviceFeeCents ?? 0,
+              amountCents,
+            }));
+          }
+        })
+        .catch((err) => console.error('Failed to update tip on payment intent', err))
+        .finally(() => setIsUpdatingTip(false));
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipAmountCents, includeOptionalTip, paymentIntentId, effectiveEntry]);
+
   const handleCashPayment = async () => {
     setIsProcessingCash(true);
     try {
-      await api.post(`/bookings-simple/${booking.id}/pay`, { paymentMethod: 'cash' });
+      await api.post(`/bookings-simple/${booking.id}/pay`, {
+        paymentMethod: 'cash',
+        tipAmountCents: includeOptionalTip ? tipAmountCents : 0,
+      });
       toast.success('Cash payment recorded!');
       onSuccess();
     } catch (err: any) {
@@ -364,7 +435,7 @@ function ServicePaymentForm({
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
         <p className="text-red-600 mb-4">{intentError}</p>
         <button
-          onClick={createPaymentIntent}
+          onClick={() => void createPaymentIntent()}
           className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
         >
           Try Again
@@ -392,11 +463,62 @@ function ServicePaymentForm({
             <span className="font-medium">${(serviceFeeCents / 100).toFixed(2)}</span>
           </div>
         )}
+        {includeOptionalTip && tipAmount > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Tip</span>
+            <span className="font-semibold text-green-600">+${tipAmount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="border-t pt-3 flex justify-between text-lg">
           <span className="font-bold">Total due</span>
           <span className="font-bold text-primary-600">${baseAmount.toFixed(2)}</span>
         </div>
       </div>
+
+      {includeOptionalTip && effectiveEntry !== 'cash' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Add a tip (optional)
+          </label>
+          <div className="grid grid-cols-5 gap-2 mb-2">
+            {tipOptions.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => {
+                  if (selectedTip === option.value && !customTip) {
+                    setSelectedTip(0);
+                  } else {
+                    setSelectedTip(option.value);
+                    setCustomTip('');
+                  }
+                }}
+                className={`py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                  selectedTip === option.value && !customTip
+                    ? 'border-gray-900 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Custom tip amount"
+            value={customTip}
+            onChange={(e) => {
+              setCustomTip(e.target.value);
+              setSelectedTip(0);
+            }}
+            className={`w-full rounded-lg border px-3 py-2 text-sm ${
+              customTip ? 'border-gray-900 bg-primary-50' : 'border-gray-300'
+            }`}
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to pay?</label>
@@ -447,42 +569,22 @@ function ServicePaymentForm({
           type="button"
           onClick={handleCashPayment}
           disabled={isProcessingCash}
-          className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
         >
-          {isProcessingCash ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Banknote className="w-5 h-5" />
-          )}
-          Confirm Cash Payment ${baseAmount.toFixed(2)}
+          {isProcessingCash ? 'Recording…' : `Confirm cash $${baseAmount.toFixed(2)}`}
         </button>
-      ) : (
-        clientSecret && (
-          <Elements
-            key={`${booking.id}-service`}
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: {
-                theme: 'stripe',
-                variables: {
-                  colorPrimary: '#059669',
-                  fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-                },
-              },
-            }}
-          >
-            <PaymentFormInner
-              booking={booking}
-              tipAmount={0}
-              totalAmount={baseAmount}
-              paymentEntry={effectiveEntry === 'wallet' ? 'wallet' : 'manual'}
-              onSuccess={onSuccess}
-              isUpdatingIntent={isCreatingIntent}
-            />
-          </Elements>
-        )
-      )}
+      ) : clientSecret ? (
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <PaymentFormInner
+            booking={booking}
+            tipAmount={tipAmount}
+            totalAmount={baseAmount}
+            paymentEntry={effectiveEntry === 'wallet' ? 'wallet' : 'manual'}
+            onSuccess={onSuccess}
+            isUpdatingIntent={isCreatingIntent || isUpdatingTip}
+          />
+        </Elements>
+      ) : null}
     </div>
   );
 }
@@ -781,15 +883,23 @@ function PaymentForm({
   booking,
   onSuccess,
   mode,
+  includeOptionalTip = false,
 }: {
   booking: BookingDetails;
   onSuccess: () => void;
   mode: PayPageMode;
+  includeOptionalTip?: boolean;
 }) {
   if (mode === 'tip') {
     return <TipPaymentForm booking={booking} onSuccess={onSuccess} />;
   }
-  return <ServicePaymentForm booking={booking} onSuccess={onSuccess} />;
+  return (
+    <ServicePaymentForm
+      booking={booking}
+      onSuccess={onSuccess}
+      includeOptionalTip={includeOptionalTip}
+    />
+  );
 }
 
 // Review Form Component — satisfaction faces (not 5-star)
@@ -883,6 +993,7 @@ export default function PostServicePaymentPage() {
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, isLoading: isAuthLoading } = useAuthStore();
+  const { paymentTimingMode } = useFrontendConfig();
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -938,7 +1049,7 @@ export default function PostServicePaymentPage() {
 
   useEffect(() => {
     if (!booking) return;
-    const mode = resolvePayPageMode(booking);
+    const mode = resolvePayPageMode(booking, paymentTimingMode);
     if (mode === 'done' && step === 'payment') {
       setStep('review');
     }
@@ -1066,7 +1177,7 @@ export default function PostServicePaymentPage() {
 
   const handlePaymentSuccess = () => {
     // Service pay → stay done for now (appointment upcoming). Tip pay → review.
-    if (booking && resolvePayPageMode(booking) === 'tip') {
+    if (booking && resolvePayPageMode(booking, paymentTimingMode) === 'tip') {
       setStep('review');
     } else {
       toast.success('Booking confirmed — see you at your appointment!');
@@ -1321,7 +1432,7 @@ export default function PostServicePaymentPage() {
     );
   }
 
-  const consumerMode = resolvePayPageMode(booking);
+  const consumerMode = resolvePayPageMode(booking, paymentTimingMode);
   if (consumerMode === 'invalid') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -1375,7 +1486,11 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-brand-500 to-brand-600 p-6 text-white">
               <h1 className="text-3xl font-bold text-center">
-                {consumerMode === 'tip' ? 'Consider a Tip' : 'Pay to Confirm Booking'}
+                {consumerMode === 'tip'
+                  ? 'Consider a Tip'
+                  : paymentTimingMode === 'after_complete'
+                    ? 'Complete Payment'
+                    : 'Pay to Confirm Booking'}
               </h1>
             </div>
 
@@ -1406,6 +1521,9 @@ export default function PostServicePaymentPage() {
                 booking={booking}
                 onSuccess={handlePaymentSuccess}
                 mode={consumerMode === 'tip' ? 'tip' : 'service'}
+                includeOptionalTip={
+                  paymentTimingMode === 'after_complete' && consumerMode === 'service'
+                }
               />
               {step === 'payment' && consumerMode === 'service' && (
                 <button

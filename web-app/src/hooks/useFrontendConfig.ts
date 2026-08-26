@@ -1,6 +1,6 @@
 /**
- * Cached public platform frontend config (cash payments, consumer home mode).
- * Defaults to cash off / providers mode if the fetch fails.
+ * Cached public platform frontend config (cash payments, consumer home mode,
+ * payment timing). Defaults to cash off / providers / pay-on-accept if fetch fails.
  */
 
 import { useEffect, useState } from 'react';
@@ -10,10 +10,13 @@ export type ConsumerHomeMode = 'providers' | 'waitlist';
 
 export type FeeBurden = 'operator' | 'client';
 
+export type PaymentTimingMode = 'on_accept' | 'after_complete';
+
 export interface FrontendConfig {
   cashPaymentEnabled: boolean;
   consumerHomeMode: ConsumerHomeMode;
   consumerHomeReviewsEnabled: boolean;
+  paymentTimingMode: PaymentTimingMode;
   consumerUserCount: number;
   platformFeePercent: number;
   platformCommissionEnabled: boolean;
@@ -24,6 +27,7 @@ const DEFAULT_CONFIG: FrontendConfig = {
   cashPaymentEnabled: false,
   consumerHomeMode: 'providers',
   consumerHomeReviewsEnabled: true,
+  paymentTimingMode: 'on_accept',
   consumerUserCount: 0,
   platformFeePercent: 15,
   platformCommissionEnabled: true,
@@ -43,6 +47,7 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
         cashPaymentEnabled?: boolean;
         consumerHomeMode?: string;
         consumerHomeReviewsEnabled?: boolean;
+        paymentTimingMode?: string;
         consumerUserCount?: number;
         platformFeePercent?: number;
         platformCommissionEnabled?: boolean;
@@ -53,6 +58,8 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
         cashPaymentEnabled: data?.cashPaymentEnabled === true,
         consumerHomeMode: data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers',
         consumerHomeReviewsEnabled: data?.consumerHomeReviewsEnabled !== false,
+        paymentTimingMode:
+          data?.paymentTimingMode === 'after_complete' ? 'after_complete' : 'on_accept',
         consumerUserCount: Math.max(0, Number(data?.consumerUserCount) || 0),
         platformFeePercent: Number.isFinite(percent) ? percent : 15,
         platformCommissionEnabled: data?.platformCommissionEnabled !== false,

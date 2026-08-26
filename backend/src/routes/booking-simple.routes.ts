@@ -59,10 +59,12 @@ import { processProviderKickback } from '../utils/platform-kickback';
 import {
   isCashPaymentAllowedForRoles,
   isCashPaymentEnabled,
+  isPayOnAccept,
 } from '../utils/platform-frontend-settings';
 import {
   bookingPaymentUrl,
   notifyConsumerTipAfterComplete,
+  notifyConsumerPayAfterComplete,
 } from '../services/booking-payment-lifecycle.service';
 
 const router = express.Router();
@@ -1236,23 +1238,43 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 
     const booking = barberCheck.rows[0];
 
-    // Service must already be paid (pay-on-accept)
+    const payOnAccept = await isPayOnAccept();
     const statusCheck = await pool.query(
       `SELECT status, "paidAt", paid_at, "tipDecidedAt" FROM bookings WHERE id = $1`,
       [id]
     );
     const current = statusCheck.rows[0];
-    if (!current || current.status !== 'PAID') {
-      return res.status(400).json({
-        success: false,
-        error: 'Can only mark complete after the consumer has paid for the service',
-      });
+    if (!current) {
+      return res.status(404).json({ success: false, error: 'Booking not found' });
     }
-    if (current.tipDecidedAt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tip already submitted for this booking',
-      });
+
+    if (payOnAccept) {
+      // Service must already be paid (pay-on-accept)
+      if (current.status !== 'PAID') {
+        return res.status(400).json({
+          success: false,
+          error: 'Can only mark complete after the consumer has paid for the service',
+        });
+      }
+      if (current.tipDecidedAt) {
+        return res.status(400).json({
+          success: false,
+          error: 'Tip already submitted for this booking',
+        });
+      }
+    } else {
+      // Legacy: complete from ACCEPTED, then collect payment
+      if (current.status !== 'ACCEPTED') {
+        return res.status(400).json({
+          success: false,
+          error:
+            current.status === 'COMPLETED'
+              ? 'Booking is already marked complete'
+              : current.status === 'PAID'
+                ? 'This booking was already paid under the previous payment structure'
+                : 'Can only mark complete for accepted bookings',
+        });
+      }
     }
 
     const mergedServiceLocation = mergeConversationLocation(
@@ -1260,16 +1282,23 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
       booking.conv_location_details
     );
 
-    // Service done → tip decision requested
     const result = await pool.query(
-      `UPDATE bookings 
-       SET status = 'COMPLETED',
-           "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
-           "tipRequestedAt" = CURRENT_TIMESTAMP,
-           "paymentRequestedAt" = CURRENT_TIMESTAMP,
-           "updatedAt" = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id, status, "tipRequestedAt", "completedAt"`,
+      payOnAccept
+        ? `UPDATE bookings 
+           SET status = 'COMPLETED',
+               "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+               "tipRequestedAt" = CURRENT_TIMESTAMP,
+               "paymentRequestedAt" = CURRENT_TIMESTAMP,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE id = $1
+           RETURNING id, status, "tipRequestedAt", "completedAt"`
+        : `UPDATE bookings 
+           SET status = 'COMPLETED',
+               "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+               "paymentRequestedAt" = CURRENT_TIMESTAMP,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE id = $1
+           RETURNING id, status, "paymentRequestedAt", "completedAt"`,
       [id]
     );
 
@@ -1285,18 +1314,31 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     
     const paymentUrl = bookingPaymentUrl(id);
 
-    await notifyConsumerTipAfterComplete({
-      bookingId: id,
-      consumerId: booking.consumerId,
-      barberName: booking.barber_name,
-      serviceName,
-      priceUsdCents: booking.priceUsdCents,
-      scheduledDate,
-      scheduledTime,
-      location: mergedServiceLocation,
-    });
+    if (payOnAccept) {
+      await notifyConsumerTipAfterComplete({
+        bookingId: id,
+        consumerId: booking.consumerId,
+        barberName: booking.barber_name,
+        serviceName,
+        priceUsdCents: booking.priceUsdCents,
+        scheduledDate,
+        scheduledTime,
+        location: mergedServiceLocation,
+      });
+    } else {
+      await notifyConsumerPayAfterComplete({
+        bookingId: id,
+        consumerId: booking.consumerId,
+        barberName: booking.barber_name,
+        serviceName,
+        priceUsdCents: booking.priceUsdCents,
+        scheduledDate,
+        scheduledTime,
+        location: mergedServiceLocation,
+      });
+    }
 
-    logger.info(`[COMPLETE ENDPOINT] About to send tip-request emails for booking ${id}`);
+    logger.info(`[COMPLETE ENDPOINT] About to send ${payOnAccept ? 'tip' : 'payment'}-request emails for booking ${id}`);
     try {
       await sendBookingCompletedEmails({
         bookingId: id,
@@ -1388,17 +1430,19 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
       });
     }
 
-    // Revert to PAID (service already paid); clear tip request stamps
+    // Revert: pay-on-accept → PAID; after-complete → ACCEPTED
+    const payOnAccept = await isPayOnAccept();
+    const revertStatus = payOnAccept ? 'PAID' : 'ACCEPTED';
     const result = await pool.query(
       `UPDATE bookings 
-       SET status = 'PAID', 
+       SET status = $2, 
            "paymentRequestedAt" = NULL,
            "tipRequestedAt" = NULL,
            "completedAt" = NULL,
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING id, status`,
-      [id]
+      [id, revertStatus]
     );
 
     await pool.query(
@@ -1406,7 +1450,7 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
       [id]
     );
 
-    logger.info(`Booking ${id} reverted from COMPLETED to PAID by barber ${userId}`);
+    logger.info(`Booking ${id} reverted from COMPLETED to ${revertStatus} by barber ${userId}`);
 
     try {
       await notificationService.saveNotification({
@@ -1414,7 +1458,7 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
         type: 'booking_status',
         title: 'Booking updated',
         message: 'The barber reverted the service completion — your booking is active again.',
-        data: { bookingId: id, status: 'PAID' },
+        data: { bookingId: id, status: revertStatus },
       });
     } catch (_) {
       /* non-fatal */
@@ -1425,7 +1469,7 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
         'Booking updated',
         'The barber reverted the completion — your booking is open again.',
         'booking_status',
-        { bookingId: id, status: 'PAID' }
+        { bookingId: id, status: revertStatus }
       );
     } catch (_) {
       /* non-fatal */
@@ -1435,7 +1479,7 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
     if (io) {
       io.to(`user-${booking.consumerId}`).emit('booking-status-changed', {
         bookingId: id,
-        status: 'PAID',
+        status: revertStatus,
         message: 'The barber has reverted the service completion.',
       });
     }
@@ -1742,31 +1786,48 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       });
     }
 
-    if (booking.status !== 'PAID') {
+    const payOnAccept = await isPayOnAccept();
+    if (payOnAccept) {
+      if (booking.status !== 'PAID') {
+        return res.status(400).json({
+          success: false,
+          error: 'Can only mark complete after the consumer has paid for the service',
+        });
+      }
+      if (booking.tipDecidedAt) {
+        return res.status(400).json({
+          success: false,
+          error: 'Tip already submitted for this booking',
+        });
+      }
+    } else if (booking.status !== 'ACCEPTED') {
       return res.status(400).json({
         success: false,
-        error: 'Can only mark complete after the consumer has paid for the service',
-      });
-    }
-    if (booking.tipDecidedAt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tip already submitted for this booking',
+        error: 'Can only mark complete for accepted bookings',
       });
     }
 
     await pool.query(
-      `UPDATE bookings 
-       SET status = 'COMPLETED',
-           "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
-           "tipRequestedAt" = CURRENT_TIMESTAMP,
-           "paymentRequestedAt" = CURRENT_TIMESTAMP, 
-           "updatedAt" = CURRENT_TIMESTAMP
-       WHERE id = $1`,
+      payOnAccept
+        ? `UPDATE bookings 
+           SET status = 'COMPLETED',
+               "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+               "tipRequestedAt" = CURRENT_TIMESTAMP,
+               "paymentRequestedAt" = CURRENT_TIMESTAMP,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE id = $1`
+        : `UPDATE bookings 
+           SET status = 'COMPLETED',
+               "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+               "paymentRequestedAt" = CURRENT_TIMESTAMP,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE id = $1`,
       [id]
     );
 
-    logger.info(`Tip requested for booking ${id} by barber ${userId}, status set to COMPLETED`);
+    logger.info(
+      `${payOnAccept ? 'Tip' : 'Payment'} requested for booking ${id} by barber ${userId}, status set to COMPLETED`
+    );
 
     const paymentUrl = bookingPaymentUrl(id);
     const serviceName = booking.service_name || 'Haircut';
@@ -1778,16 +1839,29 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone })
       : 'N/A';
 
-    await notifyConsumerTipAfterComplete({
-      bookingId: id,
-      consumerId: booking.consumerId,
-      barberName: booking.barber_name,
-      serviceName,
-      priceUsdCents: booking.priceUsdCents,
-      scheduledDate,
-      scheduledTime,
-      location: mergedPaymentLocation,
-    });
+    if (payOnAccept) {
+      await notifyConsumerTipAfterComplete({
+        bookingId: id,
+        consumerId: booking.consumerId,
+        barberName: booking.barber_name,
+        serviceName,
+        priceUsdCents: booking.priceUsdCents,
+        scheduledDate,
+        scheduledTime,
+        location: mergedPaymentLocation,
+      });
+    } else {
+      await notifyConsumerPayAfterComplete({
+        bookingId: id,
+        consumerId: booking.consumerId,
+        barberName: booking.barber_name,
+        serviceName,
+        priceUsdCents: booking.priceUsdCents,
+        scheduledDate,
+        scheduledTime,
+        location: mergedPaymentLocation,
+      });
+    }
     
     try {
       await sendBookingCompletedEmails({
@@ -1809,9 +1883,9 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Tip request sent to consumer',
+      message: payOnAccept ? 'Tip request sent to consumer' : 'Payment request sent to consumer',
       paymentRequestedAt: new Date().toISOString(),
-      tipRequestedAt: new Date().toISOString(),
+      tipRequestedAt: payOnAccept ? new Date().toISOString() : undefined,
     });
   } catch (error: any) {
     logger.error('Error requesting tip/payment:', error.message || error);
@@ -1821,12 +1895,17 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
 
 /**
  * POST /api/v1/bookings-simple/:id/create-payment-intent
- * Create a Stripe payment intent for the SERVICE (pay-on-accept). Tips use create-tip-intent.
+ * Create a Stripe payment intent for the SERVICE.
+ * Pay-on-accept: ACCEPTED only (no tip). After-complete: COMPLETED (+ optional tip).
  */
 router.post('/:id/create-payment-intent', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.userId;
+    const tipAmountCents = Math.max(
+      0,
+      Math.round(Number((req.body as any)?.tipAmountCents) || 0)
+    );
 
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
@@ -1850,15 +1929,30 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     }
 
     const booking = bookingCheck.rows[0];
+    const payOnAccept = await isPayOnAccept();
 
-    if (booking.status !== 'ACCEPTED') {
+    if (payOnAccept) {
+      if (booking.status !== 'ACCEPTED') {
+        return res.status(400).json({
+          success: false,
+          error: booking.status === 'COMPLETED'
+            ? 'Service is already paid — use the tip flow instead'
+            : 'Can only pay for accepted bookings awaiting payment',
+        });
+      }
+      if (tipAmountCents > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Tips are collected after the service is marked complete',
+        });
+      }
+    } else if (booking.status !== 'COMPLETED') {
       return res.status(400).json({
         success: false,
-        error: booking.status === 'COMPLETED'
-          ? 'Service is already paid — use the tip flow instead'
-          : 'Can only pay for accepted bookings awaiting payment',
+        error: 'Can only pay after the operator marks the booking complete',
       });
     }
+
     if (booking.paidAt || booking.paid_at) {
       return res.status(400).json({
         success: false,
@@ -1888,9 +1982,11 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       alreadyCommissionFreeApplied: booking.commission_free_applied === true,
     });
     const platformFeeCents = feeSplit.platformFeeCents;
-    const totalAmountCents = feeSplit.chargeAmountCents;
+    const totalAmountCents = feeSplit.chargeAmountCents + tipAmountCents;
 
     const statementDescriptor = getOptionalStatementDescriptor();
+    const tipInfo =
+      tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : '';
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
@@ -1906,15 +2002,16 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         barber_user_id: booking.barber_user_id,
         service_name: booking.service_name || 'Haircut',
         payment_kind: 'service',
-        tip_amount_cents: '0',
+        tip_amount_cents: tipAmountCents.toString(),
         platform_fee_cents: platformFeeCents.toString(),
         platform_fee_percent: String(feeSplit.feePercentDisplay),
         service_fee_cents: String(feeSplit.serviceFeeCents),
         fee_burden: feeSplit.feeBurden,
         commission_free: feeSplit.commissionFree ? 'true' : 'false',
+        payment_timing: payOnAccept ? 'on_accept' : 'after_complete',
         platform: 'OnCuts',
       },
-      description: `OnCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
+      description: `OnCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}${tipInfo}`,
     };
 
     if (barberStripeAccountId) {
@@ -1964,6 +2061,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         amountCents: totalAmountCents,
         serviceAmountCents,
         serviceFeeCents: feeSplit.serviceFeeCents,
+        tipAmountCents,
         feeBurden: feeSplit.feeBurden,
         platformFeePercent: feeSplit.feePercentDisplay,
         paymentKind: 'service',
@@ -1986,77 +2084,101 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 
 /**
  * POST /api/v1/bookings-simple/:id/update-payment-intent
- * Update tip-only PaymentIntent amount when tip selection changes.
+ * Update tip-only PaymentIntent (pay-on-accept) or service+tip amount (after-complete).
  */
 router.post('/:id/update-payment-intent', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { paymentIntentId, tipAmountCents = 0 } = req.body;
+    const tipCents = Math.max(0, Math.round(Number(tipAmountCents) || 0));
     const userId = (req as any).user.userId;
 
     if (!paymentIntentId) {
-      return res.status(400).json({
-        success: false,
-        error: 'paymentIntentId is required'
-      });
-    }
-
-    const tipCents = Math.max(0, Math.round(Number(tipAmountCents) || 0));
-    if (tipCents < 50) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tip payment intents require at least $0.50. Use confirm-tip with $0 instead.',
-      });
+      return res.status(400).json({ success: false, error: 'paymentIntentId is required' });
     }
 
     const bookingCheck = await pool.query(
-      `SELECT b.id, b."consumerId", b.status, b."tipDecidedAt"
+      `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              b.commission_free_applied
        FROM bookings b
        WHERE b.id = $1 AND b."consumerId" = $2`,
       [id, userId]
     );
-
     if (bookingCheck.rows.length === 0) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Booking not found or access denied' 
-      });
+      return res.status(403).json({ success: false, error: 'Booking not found or access denied' });
     }
-
     const booking = bookingCheck.rows[0];
-    if (booking.status !== 'COMPLETED' || booking.tipDecidedAt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Can only update tip intents while awaiting a tip decision',
-      });
-    }
+    const payOnAccept = await isPayOnAccept();
 
     const stripe = getDefaultStripeClient();
     const existing = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (existing.metadata?.payment_kind !== 'tip' || existing.metadata?.booking_id !== id) {
+    if (existing.metadata?.booking_id !== id) {
       return res.status(400).json({
         success: false,
-        error: 'Payment intent is not a tip intent for this booking',
+        error: 'Payment intent does not match this booking',
       });
     }
 
+    if (payOnAccept || existing.metadata?.payment_kind === 'tip') {
+      if (existing.metadata?.payment_kind !== 'tip') {
+        return res.status(400).json({
+          success: false,
+          error: 'Payment intent is not a tip intent for this booking',
+        });
+      }
+      await stripe.paymentIntents.update(paymentIntentId, {
+        amount: tipCents,
+        metadata: {
+          ...existing.metadata,
+          booking_id: id,
+          tip_amount_cents: tipCents.toString(),
+          payment_kind: 'tip',
+        },
+      });
+      logger.info('Tip payment intent updated', { bookingId: id, paymentIntentId, tipCents });
+      return res.json({
+        success: true,
+        data: { totalAmountCents: tipCents, tipAmountCents: tipCents },
+      });
+    }
+
+    // after_complete: update service PI with optional tip
+    if (booking.status !== 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Can only update payment for completed bookings awaiting payment',
+      });
+    }
+    const feeSplit = await resolveBookingPlatformFee(pool, {
+      bookingId: id,
+      barberRecordId: booking.barberId,
+      serviceAmountCents: booking.priceUsdCents,
+      alreadyCommissionFreeApplied: booking.commission_free_applied === true,
+    });
+    const totalAmountCents = feeSplit.chargeAmountCents + tipCents;
     await stripe.paymentIntents.update(paymentIntentId, {
-      amount: tipCents,
+      amount: totalAmountCents,
       metadata: {
         ...existing.metadata,
         booking_id: id,
         tip_amount_cents: tipCents.toString(),
-        payment_kind: 'tip',
+        payment_kind: 'service',
+        platform_fee_cents: String(feeSplit.platformFeeCents),
       },
     });
-
-    logger.info('Tip payment intent updated', { bookingId: id, paymentIntentId, tipCents });
-
+    logger.info('Service+tip payment intent updated', {
+      bookingId: id,
+      paymentIntentId,
+      totalAmountCents,
+      tipCents,
+    });
     res.json({
       success: true,
       data: {
-        totalAmountCents: tipCents,
+        totalAmountCents,
         tipAmountCents: tipCents,
+        serviceAmountCents: booking.priceUsdCents,
+        serviceFeeCents: feeSplit.serviceFeeCents,
       },
     });
   } catch (error: any) {
@@ -2067,7 +2189,7 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
 
 /**
  * POST /api/v1/bookings-simple/:id/confirm-payment
- * Confirm SERVICE payment (pay-on-accept). Keeps conversation open until tip decision.
+ * Confirm SERVICE payment. Pay-on-accept: ACCEPTED→PAID. After-complete: COMPLETED→PAID (+ tip).
  */
 router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
   try {
@@ -2095,10 +2217,14 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
-    if (booking.status !== 'ACCEPTED') {
+    const payOnAccept = await isPayOnAccept();
+    const allowedStatus = payOnAccept ? 'ACCEPTED' : 'COMPLETED';
+    if (booking.status !== allowedStatus) {
       return res.status(400).json({
         success: false,
-        error: 'Can only confirm service payment for accepted bookings',
+        error: payOnAccept
+          ? 'Can only confirm service payment for accepted bookings'
+          : 'Can only confirm payment after the booking is marked complete',
       });
     }
 
@@ -2121,35 +2247,71 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       });
     }
 
+    const tipFromMeta = Math.max(
+      0,
+      Math.round(Number(paymentIntent.metadata?.tip_amount_cents) || 0)
+    );
+    const tipAmountCents = payOnAccept ? 0 : tipFromMeta;
+
     const totalAmountCents =
       typeof paymentIntent.amount === 'number' && paymentIntent.amount > 0
         ? paymentIntent.amount
-        : booking.priceUsdCents;
+        : booking.priceUsdCents + tipAmountCents;
     const storedEarnings = Number(booking.barberEarningsUsdCents);
     const platformFeeFromPi = Number(
       paymentIntent.metadata?.platform_fee_cents ?? paymentIntent.application_fee_amount ?? NaN
     );
     const operatorEnrouteCents =
       booking.barberEarningsUsdCents != null && Number.isFinite(storedEarnings) && storedEarnings >= 0
-        ? Math.round(storedEarnings)
+        ? Math.round(storedEarnings) + tipAmountCents
         : Number.isFinite(platformFeeFromPi)
           ? Math.max(0, totalAmountCents - Math.round(platformFeeFromPi))
-          : Number(booking.priceUsdCents) || 0;
+          : Number(booking.priceUsdCents) + tipAmountCents || 0;
     const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
-    await pool.query(
-      `UPDATE bookings 
-       SET status = 'PAID',
-           "tipAmountCents" = 0,
-           "totalPaidCents" = $1,
-           "paidAt" = CURRENT_TIMESTAMP,
-           paid_at = CURRENT_TIMESTAMP,
-           "paymentMethod" = 'card',
-           payment_intent_id = COALESCE(payment_intent_id, $3),
-           "updatedAt" = CURRENT_TIMESTAMP
-       WHERE id = $2 AND status = 'ACCEPTED'`,
-      [totalAmountCents, id, paymentIntentId]
-    );
+    if (payOnAccept) {
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'PAID',
+             "tipAmountCents" = 0,
+             "totalPaidCents" = $1,
+             "paidAt" = CURRENT_TIMESTAMP,
+             paid_at = CURRENT_TIMESTAMP,
+             "paymentMethod" = 'card',
+             payment_intent_id = COALESCE(payment_intent_id, $3),
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $2 AND status = 'ACCEPTED'`,
+        [totalAmountCents, id, paymentIntentId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'PAID',
+             "tipAmountCents" = $1,
+             tip_amount_cents = $1,
+             "totalPaidCents" = $2,
+             "paidAt" = CURRENT_TIMESTAMP,
+             paid_at = CURRENT_TIMESTAMP,
+             "paymentMethod" = 'card',
+             payment_intent_id = COALESCE(payment_intent_id, $4),
+             "tipDecidedAt" = COALESCE("tipDecidedAt", CURRENT_TIMESTAMP),
+             "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $3 AND status = 'COMPLETED'`,
+        [tipAmountCents, totalAmountCents, id, paymentIntentId]
+      );
+      try {
+        await archiveBookingMessages(id);
+        await pool.query(
+          `DELETE FROM messages
+           WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+          [id]
+        );
+        await pool.query(`DELETE FROM conversations WHERE booking_id = $1`, [id]);
+      } catch {
+        /* non-fatal */
+      }
+    }
 
     try {
       const destinationRaw = paymentIntent.transfer_data?.destination;
@@ -2172,23 +2334,33 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       );
     }
 
-    // Keep conversation open through the appointment (deleted after tip decision).
-
     await sendTemplatedNotification({
       userId: booking.barber_user_id,
       key: 'payment_received',
       side: 'operator',
       vars: {
         amount: operatorEnrouteLabel,
-        message: `Service payment enroute: ${operatorEnrouteLabel}`,
+        message: tipAmountCents > 0
+          ? `Payment enroute: ${operatorEnrouteLabel} (includes $${(tipAmountCents / 100).toFixed(2)} tip)`
+          : `Service payment enroute: ${operatorEnrouteLabel}`,
       },
       type: 'payment_received',
-      data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, phase: 'service' },
+      data: {
+        bookingId: id,
+        amount: operatorEnrouteCents,
+        tip: tipAmountCents,
+        phase: 'service',
+      },
       fallbackTitle: 'Payment Received!',
-      fallbackBody: `Service payment enroute: ${operatorEnrouteLabel}`,
+      fallbackBody:
+        tipAmountCents > 0
+          ? `Payment enroute: ${operatorEnrouteLabel} (includes $${(tipAmountCents / 100).toFixed(2)} tip)`
+          : `Service payment enroute: ${operatorEnrouteLabel}`,
     });
 
-    logger.info(`Service payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
+    logger.info(
+      `Service payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} (tip: $${(tipAmountCents / 100).toFixed(2)})`
+    );
 
     try {
       const io = getSocketIO();
@@ -2205,8 +2377,10 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
           consumerId: userId,
           consumerName,
           amountPaid: operatorEnrouteCents,
-          tipAmount: 0,
+          tipAmount: tipAmountCents,
           totalFormatted: operatorEnrouteLabel,
+          tipFormatted:
+            tipAmountCents > 0 ? `$${(tipAmountCents / 100).toFixed(2)}` : undefined,
           phase: 'service',
         });
       }
@@ -2220,7 +2394,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       data: {
         bookingId: id,
         amountPaid: totalAmountCents,
-        tipAmount: 0,
+        tipAmount: tipAmountCents,
         status: 'PAID',
       },
     });
@@ -2232,12 +2406,13 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
 
 /**
  * POST /api/v1/bookings-simple/:id/pay
- * Cash (or legacy) service payment on accept. Tips use confirm-tip.
+ * Cash (or legacy) service payment. Tips use confirm-tip when pay-on-accept.
  */
 router.post('/:id/pay', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { paymentMethod = 'cash' } = req.body;
+    const { paymentMethod = 'cash', tipAmountCents: tipRaw = 0 } = req.body;
+    const tipAmountCents = Math.max(0, Math.round(Number(tipRaw) || 0));
     const userId = (req as any).user.userId;
 
     if (!['card', 'cash'].includes(paymentMethod)) {
@@ -2291,10 +2466,20 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       });
     }
 
-    if (booking.status !== 'ACCEPTED') {
+    const payOnAccept = await isPayOnAccept();
+    const allowedStatus = payOnAccept ? 'ACCEPTED' : 'COMPLETED';
+    if (booking.status !== allowedStatus) {
       return res.status(400).json({
         success: false,
-        error: 'Can only pay for accepted bookings awaiting payment'
+        error: payOnAccept
+          ? 'Can only pay for accepted bookings awaiting payment'
+          : 'Can only pay after the operator marks the booking complete',
+      });
+    }
+    if (payOnAccept && tipAmountCents > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tips are collected after the service is marked complete',
       });
     }
 
@@ -2303,24 +2488,42 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       barberRecordId: booking.barberId,
       serviceAmountCents: booking.priceUsdCents,
     });
-    const totalAmountCents = feeSplit.chargeAmountCents;
-    const operatorEnrouteCents = feeSplit.barberEarningsCents;
+    const totalAmountCents = feeSplit.chargeAmountCents + (payOnAccept ? 0 : tipAmountCents);
+    const operatorEnrouteCents = feeSplit.barberEarningsCents + (payOnAccept ? 0 : tipAmountCents);
     const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
-    await pool.query(
-      `UPDATE bookings 
-       SET status = 'PAID',
-           "tipAmountCents" = 0,
-           "totalPaidCents" = $1,
-           "paidAt" = CURRENT_TIMESTAMP,
-           paid_at = CURRENT_TIMESTAMP,
-           "paymentMethod" = $2,
-           "updatedAt" = CURRENT_TIMESTAMP
-       WHERE id = $3 AND status = 'ACCEPTED'`,
-      [totalAmountCents, paymentMethod, id]
-    );
+    if (payOnAccept) {
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'PAID',
+             "tipAmountCents" = 0,
+             "totalPaidCents" = $1,
+             "paidAt" = CURRENT_TIMESTAMP,
+             paid_at = CURRENT_TIMESTAMP,
+             "paymentMethod" = $2,
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $3 AND status = 'ACCEPTED'`,
+        [totalAmountCents, paymentMethod, id]
+      );
+    } else {
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'PAID',
+             "tipAmountCents" = $1,
+             tip_amount_cents = $1,
+             "totalPaidCents" = $2,
+             "paidAt" = CURRENT_TIMESTAMP,
+             paid_at = CURRENT_TIMESTAMP,
+             "paymentMethod" = $3,
+             "tipDecidedAt" = COALESCE("tipDecidedAt", CURRENT_TIMESTAMP),
+             "completedAt" = COALESCE("completedAt", CURRENT_TIMESTAMP),
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $4 AND status = 'COMPLETED'`,
+        [tipAmountCents, totalAmountCents, paymentMethod, id]
+      );
+    }
 
-    // Keep conversation open until tip decision.
+    // Keep conversation open until tip decision (pay-on-accept only).
 
     const paymentMethodLabel = 'Cash';
     await sendTemplatedNotification({
@@ -2329,54 +2532,52 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       side: 'operator',
       vars: {
         amount: operatorEnrouteLabel,
-        message: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
+        message: `Service payment recorded (${paymentMethodLabel}): ${operatorEnrouteLabel}`,
       },
       type: 'payment_received',
-      data: { bookingId: id, amount: operatorEnrouteCents, tip: 0, paymentMethod, phase: 'service' },
+      data: {
+        bookingId: id,
+        amount: operatorEnrouteCents,
+        tip: payOnAccept ? 0 : tipAmountCents,
+        phase: 'service',
+      },
       fallbackTitle: 'Payment Received!',
-      fallbackBody: `Service payment enroute: ${operatorEnrouteLabel} (${paymentMethodLabel})`,
+      fallbackBody: `Service payment recorded (${paymentMethodLabel}): ${operatorEnrouteLabel}`,
     });
 
-    logger.info(`Cash service payment for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`);
+    logger.info(
+      `Cash service payment for booking ${id}: $${(totalAmountCents / 100).toFixed(2)}`
+    );
 
     try {
       const io = getSocketIO();
       if (io) {
-        const consumerResult = await pool.query(
-          `SELECT first_name, last_name FROM users WHERE id = $1`,
-          [userId]
-        );
-        const consumer = consumerResult.rows[0];
-        const consumerName = consumer ? `${consumer.first_name} ${consumer.last_name}` : 'Customer';
-
         io.to(`user-${booking.barber_user_id}`).emit('payment-received', {
           bookingId: id,
           consumerId: userId,
-          consumerName,
           amountPaid: operatorEnrouteCents,
-          tipAmount: 0,
+          tipAmount: payOnAccept ? 0 : tipAmountCents,
           totalFormatted: operatorEnrouteLabel,
-          paymentMethod,
           phase: 'service',
         });
       }
-    } catch (wsError: any) {
-      logger.error(`[payment-received] Error emitting WebSocket event: ${wsError.message}`);
+    } catch {
+      /* non-fatal */
     }
 
     res.json({
       success: true,
-      message: 'Service payment processed successfully',
+      message: 'Payment recorded',
       data: {
         bookingId: id,
         amountPaid: totalAmountCents,
-        tipAmount: 0,
-        paymentMethod,
+        tipAmount: payOnAccept ? 0 : tipAmountCents,
         status: 'PAID',
+        paymentMethod,
       },
     });
   } catch (error: any) {
-    logger.error('Error processing payment:', error.message || error);
+    logger.error('Error recording cash payment:', error.message || error);
     next(error);
   }
 });

@@ -166,6 +166,7 @@ type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
 type ConsumerHomeMode = 'providers' | 'waitlist';
+type PaymentTimingMode = 'on_accept' | 'after_complete';
 type PricingBurdenView = 'client' | 'operator';
 
 interface MetricsListWindow {
@@ -548,6 +549,7 @@ export function AdminDashboard({
   const [cashPaymentEnabled, setCashPaymentEnabled] = useState(false);
   const [consumerHomeMode, setConsumerHomeMode] = useState<ConsumerHomeMode>('providers');
   const [consumerHomeReviewsEnabled, setConsumerHomeReviewsEnabled] = useState(true);
+  const [paymentTimingMode, setPaymentTimingMode] = useState<PaymentTimingMode>('on_accept');
   const [isSavingControls, setIsSavingControls] = useState(false);
   const [platformFeeInput, setPlatformFeeInput] = useState('15');
   const [isSavingPlatformFee, setIsSavingPlatformFee] = useState(false);
@@ -730,6 +732,7 @@ export function AdminDashboard({
           cashPaymentEnabled?: boolean;
           consumerHomeMode?: string;
           consumerHomeReviewsEnabled?: boolean;
+          paymentTimingMode?: string;
         }>('/admin/platform-settings');
         const percent = Number(data?.platformFeePercent);
         if (Number.isFinite(percent)) {
@@ -750,6 +753,9 @@ export function AdminDashboard({
         setCashPaymentEnabled(data?.cashPaymentEnabled === true);
         setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
         setConsumerHomeReviewsEnabled(data?.consumerHomeReviewsEnabled !== false);
+        setPaymentTimingMode(
+          data?.paymentTimingMode === 'after_complete' ? 'after_complete' : 'on_accept'
+        );
       } catch (error) {
         console.error('Failed to fetch platform settings:', error);
       } finally {
@@ -806,33 +812,42 @@ export function AdminDashboard({
     cashPaymentEnabled: boolean;
     consumerHomeMode: ConsumerHomeMode;
     consumerHomeReviewsEnabled: boolean;
+    paymentTimingMode: PaymentTimingMode;
   }) => {
     setIsSavingControls(true);
     const prevCash = cashPaymentEnabled;
     const prevMode = consumerHomeMode;
     const prevReviews = consumerHomeReviewsEnabled;
+    const prevTiming = paymentTimingMode;
     setCashPaymentEnabled(next.cashPaymentEnabled);
     setConsumerHomeMode(next.consumerHomeMode);
     setConsumerHomeReviewsEnabled(next.consumerHomeReviewsEnabled);
+    setPaymentTimingMode(next.paymentTimingMode);
     try {
       const data = await api.put<{
         cashPaymentEnabled?: boolean;
         consumerHomeMode?: string;
         consumerHomeReviewsEnabled?: boolean;
+        paymentTimingMode?: string;
       }>('/admin/platform-settings', {
         cashPaymentEnabled: next.cashPaymentEnabled,
         consumerHomeMode: next.consumerHomeMode,
         consumerHomeReviewsEnabled: next.consumerHomeReviewsEnabled,
+        paymentTimingMode: next.paymentTimingMode,
       });
       setCashPaymentEnabled(data?.cashPaymentEnabled === true);
       setConsumerHomeMode(data?.consumerHomeMode === 'waitlist' ? 'waitlist' : 'providers');
       setConsumerHomeReviewsEnabled(data?.consumerHomeReviewsEnabled !== false);
+      setPaymentTimingMode(
+        data?.paymentTimingMode === 'after_complete' ? 'after_complete' : 'on_accept'
+      );
       invalidateFrontendConfigCache();
       toast.success('Controls saved');
     } catch (error: any) {
       setCashPaymentEnabled(prevCash);
       setConsumerHomeMode(prevMode);
       setConsumerHomeReviewsEnabled(prevReviews);
+      setPaymentTimingMode(prevTiming);
       toast.error(error?.message || 'Failed to update controls');
     } finally {
       setIsSavingControls(false);
@@ -5710,6 +5725,7 @@ export function AdminDashboard({
                         cashPaymentEnabled,
                         consumerHomeMode: opt.id,
                         consumerHomeReviewsEnabled,
+                        paymentTimingMode,
                       });
                     }}
                     className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
@@ -5746,6 +5762,7 @@ export function AdminDashboard({
                         cashPaymentEnabled,
                         consumerHomeMode,
                         consumerHomeReviewsEnabled: opt.id,
+                        paymentTimingMode,
                       });
                     }}
                     className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
@@ -5932,6 +5949,57 @@ export function AdminDashboard({
             </div>
             )}
 
+            <div className="space-y-2.5">
+              <p className="text-sm font-semibold text-gray-900">Payment Structure</p>
+              <p className="text-xs text-gray-500">
+                Choose when consumers pay for the service. Tips never carry a platform fee.
+              </p>
+              <fieldset
+                className="space-y-2.5"
+                disabled={isLoadingPlatformFee || isSavingControls}
+              >
+                <legend className="sr-only">Payment structure</legend>
+                {(
+                  [
+                    {
+                      id: 'on_accept' as const,
+                      label: 'Payment before booking completion',
+                      hint: 'Consumer pays when the booking is accepted. Tip is requested after complete.',
+                    },
+                    {
+                      id: 'after_complete' as const,
+                      label: 'Payment after booking completion',
+                      hint: 'Consumer pays after the operator marks the service complete (optional tip on the same charge).',
+                    },
+                  ] as const
+                ).map((opt) => (
+                  <label key={opt.id} className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment-timing-mode"
+                      value={opt.id}
+                      checked={paymentTimingMode === opt.id}
+                      disabled={isLoadingPlatformFee || isSavingControls}
+                      onChange={() => {
+                        if (opt.id === paymentTimingMode) return;
+                        void handleSaveControls({
+                          cashPaymentEnabled,
+                          consumerHomeMode,
+                          consumerHomeReviewsEnabled,
+                          paymentTimingMode: opt.id,
+                        });
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-gray-900">{opt.label}</span>
+                      <span className="block text-xs text-gray-500 mt-0.5">{opt.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900">Cash Option</p>
@@ -5949,6 +6017,7 @@ export function AdminDashboard({
                     cashPaymentEnabled: !cashPaymentEnabled,
                     consumerHomeMode,
                     consumerHomeReviewsEnabled,
+                    paymentTimingMode,
                   })
                 }
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${

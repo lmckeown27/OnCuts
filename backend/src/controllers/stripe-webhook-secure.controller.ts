@@ -739,7 +739,7 @@ async function handlePaymentIntentSucceeded(
              "paymentMethod" = COALESCE("paymentMethod", 'card'),
              "updatedAt" = NOW()
          WHERE id = $3
-           AND status IN ('ACCEPTED', 'PENDING', 'PAID')
+           AND status IN ('ACCEPTED', 'PENDING', 'PAID', 'COMPLETED')
          RETURNING *`,
         [paymentIntent.id, amountCents, booking_id]
       );
@@ -764,6 +764,35 @@ async function handlePaymentIntentSucceeded(
         booking = fallback.rows[0];
       } else {
         booking = updateBookingResult.rows[0];
+        const tipFromMeta = Math.max(
+          0,
+          Math.round(Number(tip_amount_cents) || 0)
+        );
+        // After-complete charges may include an optional tip on the same PI
+        if (tipFromMeta > 0) {
+          await client.query(
+            `UPDATE bookings
+             SET "tipAmountCents" = $1,
+                 tip_amount_cents = $1,
+                 "tipDecidedAt" = COALESCE("tipDecidedAt", NOW()),
+                 "completedAt" = COALESCE("completedAt", NOW()),
+                 "updatedAt" = NOW()
+             WHERE id = $2`,
+            [tipFromMeta, booking_id]
+          );
+          booking.tipAmountCents = tipFromMeta;
+          try {
+            await archiveBookingMessages(booking_id, client);
+            await client.query(
+              `DELETE FROM messages
+               WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+              [booking_id]
+            );
+            await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
+          } catch {
+            logger.debug(`No conversation to delete for after-complete pay on ${booking_id}`);
+          }
+        }
       }
       logger.info(`✅ Booking ${booking_id} marked as PAID (service)`);
 

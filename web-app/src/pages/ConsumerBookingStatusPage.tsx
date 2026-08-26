@@ -1086,10 +1086,16 @@ export default function ConsumerBookingStatusPage() {
 
         {/* Payment Required Alert */}
         {(() => {
-          // Service pay on accept, or tip decision after complete
-          const needsServicePay = booking.status === 'ACCEPTED' && !booking.paidAt;
+          // Pay-on-accept: service on ACCEPTED, tip on COMPLETED.
+          // After-complete: service (+ tip) on unpaid COMPLETED.
+          const payOnAccept = frontendConfig.paymentTimingMode !== 'after_complete';
+          const needsServicePay = payOnAccept
+            ? booking.status === 'ACCEPTED' && !booking.paidAt
+            : booking.status === 'COMPLETED' && !booking.paidAt;
           const needsTip =
-            booking.status === 'COMPLETED' && !(booking as any).tipDecidedAt;
+            payOnAccept &&
+            booking.status === 'COMPLETED' &&
+            !(booking as any).tipDecidedAt;
           const isPaymentRequired = needsServicePay || needsTip;
           
           if (!isPaymentRequired) return null;
@@ -1103,7 +1109,9 @@ export default function ConsumerBookingStatusPage() {
                 <p className="text-gray-600 text-sm mb-4">
                   {needsTip
                     ? `${booking.barberName} completed your service. Consider leaving a tip.`
-                    : `${booking.barberName} accepted your booking. Pay now to confirm.`}
+                    : payOnAccept
+                      ? `${booking.barberName} accepted your booking. Pay now to confirm.`
+                      : `${booking.barberName} completed your service. Please complete payment.`}
                 </p>
                 
                 <button

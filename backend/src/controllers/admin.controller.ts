@@ -26,6 +26,7 @@ import {
   getPlatformSettingsPayload,
   updatePlatformSettingsPartial,
   type ConsumerHomeMode,
+  type PaymentTimingMode,
 } from '../utils/platform-frontend-settings';
 import { parseFeeBurden, type FeeBurden } from '../utils/platform-commission';
 import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
@@ -306,6 +307,7 @@ export const getPlatformSettings = async (req: AuthRequest, res: Response, next:
  *   cashPaymentEnabled?: boolean
  *   consumerHomeMode?: 'providers' | 'waitlist'
  *   consumerHomeReviewsEnabled?: boolean
+ *   paymentTimingMode?: 'on_accept' | 'after_complete'
  * At least one field required.
  */
 export const updatePlatformSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -326,6 +328,7 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
     const hasCash = Object.prototype.hasOwnProperty.call(body, 'cashPaymentEnabled');
     const hasMode = Object.prototype.hasOwnProperty.call(body, 'consumerHomeMode');
     const hasReviews = Object.prototype.hasOwnProperty.call(body, 'consumerHomeReviewsEnabled');
+    const hasPaymentTiming = Object.prototype.hasOwnProperty.call(body, 'paymentTimingMode');
 
     if (
       !hasFee &&
@@ -334,11 +337,12 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       !hasBurden &&
       !hasCash &&
       !hasMode &&
-      !hasReviews
+      !hasReviews &&
+      !hasPaymentTiming
     ) {
       throw new ApiError(
         400,
-        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, cashPaymentEnabled, consumerHomeMode, consumerHomeReviewsEnabled'
+        'Provide at least one of platformFeePercent, platformCommissionEnabled, kickbackPercent, feeBurden, cashPaymentEnabled, consumerHomeMode, consumerHomeReviewsEnabled, paymentTimingMode'
       );
     }
 
@@ -350,6 +354,7 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
       cashPaymentEnabled?: boolean;
       consumerHomeMode?: ConsumerHomeMode;
       consumerHomeReviewsEnabled?: boolean;
+      paymentTimingMode?: PaymentTimingMode;
     } = {};
 
     if (hasFee) {
@@ -400,6 +405,14 @@ export const updatePlatformSettings = async (req: AuthRequest, res: Response, ne
 
     if (hasReviews) {
       patch.consumerHomeReviewsEnabled = Boolean(body.consumerHomeReviewsEnabled);
+    }
+
+    if (hasPaymentTiming) {
+      const timing = String(body.paymentTimingMode ?? '').trim().toLowerCase();
+      if (timing !== 'on_accept' && timing !== 'after_complete') {
+        throw new ApiError(400, "paymentTimingMode must be 'on_accept' or 'after_complete'");
+      }
+      patch.paymentTimingMode = timing;
     }
 
     const data = await updatePlatformSettingsPartial(patch, req.user!.userId);

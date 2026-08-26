@@ -16,6 +16,7 @@ import DatePicker from './DatePicker';
 import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { useAuthStore } from '../store/useAuthStore';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 import type { Barber } from '../types';
 
 interface BookingDetailsModalProps {
@@ -378,9 +379,16 @@ export default function BookingDetailsModal({
     booking.status === 'ACCEPTED' ||
     booking.status === 'PENDING' ||
     booking.status === 'PAID';
-  const canComplete = booking.status === 'PAID';
+  const { paymentTimingMode } = useFrontendConfig();
+  const canComplete =
+    paymentTimingMode === 'after_complete'
+      ? booking.status === 'ACCEPTED'
+      : booking.status === 'PAID';
   const canRemove = isAdmin && (booking.status === 'COMPLETED' || booking.status === 'PAID');
-  const canUndoComplete = booking.status === 'COMPLETED' && !(booking as any).tipDecidedAt;
+  const canUndoComplete =
+    booking.status === 'COMPLETED' &&
+    !(booking as any).tipDecidedAt &&
+    (paymentTimingMode === 'after_complete' ? !(booking as any).paidAt : true);
 
   return (
     <div

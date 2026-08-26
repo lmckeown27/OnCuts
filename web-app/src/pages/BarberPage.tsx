@@ -1341,7 +1341,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
-  const { feeBurden } = useFrontendConfig();
+  const { feeBurden, paymentTimingMode } = useFrontendConfig();
+  const payOnAccept = paymentTimingMode !== 'after_complete';
   const showCommissionlessIncentive = platformCommissionEnabled && feeBurden !== 'client';
   
   // Helper to get the current date in campus timezone
@@ -2675,7 +2676,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           selectedBookingInline.status === 'ACCEPTED' ||
                           selectedBookingInline.status === 'PENDING' ||
                           selectedBookingInline.status === 'PAID';
-                        const canComplete = selectedBookingInline.status === 'PAID';
+                        const canComplete = payOnAccept
+                          ? selectedBookingInline.status === 'PAID'
+                          : selectedBookingInline.status === 'ACCEPTED';
                         const canRemove = isAdmin && (selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID');
                         const canUndoComplete =
                           selectedBookingInline.status === 'COMPLETED' &&
@@ -3225,13 +3228,21 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
       return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Complete</span>;
     }
     if (booking.status === 'COMPLETED') {
-      return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Tip</span>;
+      return (
+        <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">
+          {booking.paidAt ? 'Awaiting Tip' : 'Awaiting Payment'}
+        </span>
+      );
     }
     if (booking.status === 'PAID' || booking.paidAt) {
       return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">Paid</span>;
     }
     if (booking.status === 'ACCEPTED') {
-      return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Payment</span>;
+      return payOnAccept ? (
+        <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Payment</span>
+      ) : (
+        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Confirmed</span>
+      );
     }
     if (isPaymentDue(booking)) {
       return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Payment Due</span>;
@@ -3313,7 +3324,9 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
               {filteredBookings.map((booking) => {
                 const { date, time } = formatDateTime(booking.scheduledTime);
                 // Mark complete only after service is paid (pay-on-accept)
-                const showMarkComplete = booking.status === 'PAID';
+                const showMarkComplete = payOnAccept
+                  ? booking.status === 'PAID'
+                  : booking.status === 'ACCEPTED';
                 
                 return (
                   <div 

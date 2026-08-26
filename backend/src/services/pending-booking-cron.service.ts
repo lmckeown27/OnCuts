@@ -484,6 +484,10 @@ export class PendingBookingCronService {
    * - scheduled start has passed while still unpaid
    */
   async processUnpaidAcceptedCancellations(): Promise<void> {
+    const { isPayOnAccept } = await import('../utils/platform-frontend-settings');
+    if (!(await isPayOnAccept())) {
+      return;
+    }
     const { UNPAID_ACCEPTED_CANCEL_AFTER_MINUTES } = await import(
       './booking-payment-lifecycle.service'
     );

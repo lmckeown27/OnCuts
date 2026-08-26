@@ -151,6 +151,8 @@ export default function ConsumerPage() {
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
+  const { paymentTimingMode } = useFrontendConfig();
+  const payOnAccept = paymentTimingMode !== 'after_complete';
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -298,6 +300,7 @@ export default function ConsumerPage() {
     amount: b.priceUsdCents || 0,
     scheduledTime: b.scheduledTime,
     status: String(b.status || '').toUpperCase(),
+    paidAt: b.paidAt || b.paid_at || null,
   });
 
   const refreshConsumerHomeBookings = async () => {
@@ -314,11 +317,16 @@ export default function ConsumerPage() {
       const bookings = response.bookings || [];
 
       const pendingPay = bookings
-        .filter(
-          (b: any) =>
-            (b.status === 'ACCEPTED' && !b.paidAt) ||
-            (b.status === 'COMPLETED' && !b.tipDecidedAt)
-        )
+        .filter((b: any) => {
+          if (payOnAccept) {
+            return (
+              (b.status === 'ACCEPTED' && !b.paidAt) ||
+              (b.status === 'COMPLETED' && !b.tipDecidedAt)
+            );
+          }
+          // after_complete: pay when COMPLETED and unpaid
+          return b.status === 'COMPLETED' && !b.paidAt;
+        })
         .map(mapConsumerBookingCard);
       setPendingPaymentBookings(pendingPay);
 
@@ -2161,7 +2169,11 @@ function DiscoveryView({
                           {booking.barberName}
                         </p>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
-                          {booking.status === 'COMPLETED' ? 'Awaiting Tip' : 'Awaiting payment'}
+                          {booking.status === 'COMPLETED' && !booking.paidAt
+                            ? 'Awaiting payment'
+                            : booking.status === 'COMPLETED'
+                              ? 'Awaiting Tip'
+                              : 'Awaiting payment'}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
@@ -2331,7 +2343,11 @@ function DiscoveryView({
                         {booking.barberName}
                       </p>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5">
-                        {booking.status === 'COMPLETED' ? 'Awaiting Tip' : 'Awaiting payment'}
+                        {booking.status === 'COMPLETED' && !(booking as any).paidAt
+                          ? 'Awaiting payment'
+                          : booking.status === 'COMPLETED'
+                            ? 'Awaiting Tip'
+                            : 'Awaiting payment'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 mt-2 truncate">{booking.serviceName}</p>
