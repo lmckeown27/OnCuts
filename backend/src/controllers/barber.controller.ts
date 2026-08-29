@@ -1741,22 +1741,73 @@ export const getBarberAnalytics = async (req: AuthRequest, res: Response, next: 
       throw new ApiError(403, 'Not authorized');
     }
 
-    // Aggregate analytics data
+    // Prefer payment ledger when present; booking aggregates are the source of truth for counts.
+    let ledgerLifetime = 0;
+    let ledgerAvg: number | null = null;
+    try {
+      const ledger = await pool.query(
+        `SELECT
+           COALESCE(SUM(barber_payout), 0) AS lifetime_earnings,
+           AVG(amount) FILTER (WHERE status = 'succeeded') AS avg_booking_value
+         FROM payment_transactions
+         WHERE barber_id = $1`,
+        [id]
+      );
+      ledgerLifetime = Number(ledger.rows[0]?.lifetime_earnings) || 0;
+      const avg = Number(ledger.rows[0]?.avg_booking_value);
+      ledgerAvg = Number.isFinite(avg) ? avg : null;
+    } catch (ledgerErr: unknown) {
+      const pe = ledgerErr as { code?: string };
+      // 42501 = insufficient_privilege; 42P01 = undefined_table
+      if (pe.code !== '42501' && pe.code !== '42P01') {
+        throw ledgerErr;
+      }
+    }
+
+    // Aggregate from bookings (UUID ids). Do not join legacy bigint blockchain_booking_id
+    // to payment_transactions.booking_id (uuid) — that comparison fails at runtime.
     const analytics = await pool.query(
-      `SELECT 
-        COUNT(DISTINCT bm.client_id) as unique_clients,
-        COUNT(*) as total_bookings,
-        AVG(pt.amount) as avg_booking_value,
-        SUM(pt.barber_payout) as lifetime_earnings
-      FROM booking_metadata bm
-      LEFT JOIN payment_transactions pt ON bm.blockchain_booking_id = pt.booking_id
-      WHERE bm.barber_id = $1`,
+      `SELECT
+         COUNT(DISTINCT "consumerId") FILTER (
+           WHERE UPPER(status::text) IN ('PAID', 'COMPLETED')
+         ) AS unique_clients,
+         COUNT(*) AS total_bookings,
+         AVG(
+           CASE WHEN UPPER(status::text) IN ('PAID', 'COMPLETED')
+             THEN GREATEST(
+               COALESCE("totalPaidCents", 0),
+               COALESCE("priceUsdCents", 0) + COALESCE("tipAmountCents", 0)
+             ) / 100.0
+           END
+         ) AS avg_booking_value,
+         COALESCE(SUM(
+           CASE WHEN UPPER(status::text) IN ('PAID', 'COMPLETED')
+             THEN GREATEST(
+               COALESCE("totalPaidCents", 0) - COALESCE("platformFeeUsdCents", 0),
+               0
+             )
+             ELSE 0
+           END
+         ), 0) / 100.0 AS booking_lifetime_earnings
+       FROM bookings
+       WHERE "barberId" = $1`,
       [id]
     );
 
+    const row = analytics.rows[0] || {};
+    const bookingLifetime = Number(row.booking_lifetime_earnings) || 0;
+    const bookingAvg = Number(row.avg_booking_value);
+
     res.json({
       success: true,
-      data: analytics.rows[0],
+      data: {
+        unique_clients: Number(row.unique_clients) || 0,
+        total_bookings: Number(row.total_bookings) || 0,
+        avg_booking_value: Number.isFinite(bookingAvg)
+          ? bookingAvg
+          : ledgerAvg ?? 0,
+        lifetime_earnings: ledgerLifetime > 0 ? ledgerLifetime : bookingLifetime,
+      },
     });
   } catch (error) {
     next(error);

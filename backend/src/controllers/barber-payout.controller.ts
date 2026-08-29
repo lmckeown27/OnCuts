@@ -204,11 +204,13 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
     }
 
     const platformFeeRate = await getPlatformFeeRate();
+    // Cast fee rate as numeric — Postgres otherwise infers $2 as integer from priceUsdCents * $2
+    // and rejects fractional rates like 0.05 (22P02).
     const [bookingRow, recentRow, opsRow, repeatRow] = await Promise.all([
       pool.query(
         `SELECT 
           COALESCE(SUM(
-            (b."priceUsdCents" - ROUND(b."priceUsdCents" * $2)::bigint)
+            (b."priceUsdCents" - ROUND(b."priceUsdCents"::numeric * $2::numeric)::bigint)
             + COALESCE(b."tipAmountCents", 0)::bigint
           ), 0)::bigint AS est_cents,
           COUNT(*)::int AS cnt
@@ -218,7 +220,7 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
       ),
       pool.query(
         `SELECT COALESCE(SUM(
-            (b."priceUsdCents" - ROUND(b."priceUsdCents" * $2)::bigint)
+            (b."priceUsdCents" - ROUND(b."priceUsdCents"::numeric * $2::numeric)::bigint)
             + COALESCE(b."tipAmountCents", 0)::bigint
           ), 0)::bigint AS est_cents
          FROM bookings b
