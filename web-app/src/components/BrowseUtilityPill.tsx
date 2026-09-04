@@ -75,6 +75,9 @@ export default function BrowseUtilityPill({
   missingTownCoords = false,
 }: BrowseUtilityPillProps) {
   const [mode, setMode] = useState<BrowseUtilityPillMode>('collapsed');
+  const [milesDraft, setMilesDraft] = useState(() => String(Math.round(displayDistanceMiles)));
+  const [isEditingMiles, setIsEditingMiles] = useState(false);
+  const milesInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectedCategory =
     BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseCategory) ??
@@ -91,6 +94,37 @@ export default function BrowseUtilityPill({
     }
     return undefined;
   }, [mode]);
+
+  useEffect(() => {
+    if (mode === 'radius' && !isEditingMiles) {
+      setMilesDraft(String(Math.round(displayDistanceMiles)));
+    }
+  }, [displayDistanceMiles, mode, isEditingMiles]);
+
+  useEffect(() => {
+    if (mode === 'radius') {
+      setMilesDraft(String(Math.round(displayDistanceMiles)));
+      setIsEditingMiles(false);
+    }
+  }, [mode]);
+
+  const clampMilesInput = (raw: string): number => {
+    const parsed = Number.parseFloat(raw);
+    if (!Number.isFinite(parsed)) {
+      return Math.round(displayDistanceMiles);
+    }
+    return Math.min(
+      BROWSE_MAX_DISTANCE_MILES,
+      Math.max(BROWSE_MIN_DISTANCE_MILES, Math.round(parsed))
+    );
+  };
+
+  const commitMilesDraft = () => {
+    const next = clampMilesInput(milesDraft);
+    setMilesDraft(String(next));
+    setIsEditingMiles(false);
+    onMaxDistanceCommitted(next);
+  };
 
   const closeAllModes = () => setMode('collapsed');
 
@@ -210,9 +244,51 @@ export default function BrowseUtilityPill({
               >
                 No limit
               </button>
-              <p className="text-sm font-semibold text-gray-900 text-center">
-                {Math.round(displayDistanceMiles)} miles away
-              </p>
+              <div className="flex items-center justify-center gap-1.5">
+                <input
+                  ref={milesInputRef}
+                  type="number"
+                  inputMode="numeric"
+                  min={BROWSE_MIN_DISTANCE_MILES}
+                  max={BROWSE_MAX_DISTANCE_MILES}
+                  step={1}
+                  value={isEditingMiles ? milesDraft : String(Math.round(displayDistanceMiles))}
+                  onFocus={() => {
+                    setIsEditingMiles(true);
+                    setMilesDraft(String(Math.round(displayDistanceMiles)));
+                    window.setTimeout(() => milesInputRef.current?.select(), 0);
+                  }}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setMilesDraft(next);
+                    setIsEditingMiles(true);
+                    if (next.trim() === '') return;
+                    const parsed = Number.parseFloat(next);
+                    if (!Number.isFinite(parsed)) return;
+                    const clamped = Math.min(
+                      BROWSE_MAX_DISTANCE_MILES,
+                      Math.max(BROWSE_MIN_DISTANCE_MILES, Math.round(parsed))
+                    );
+                    onMaxDistancePreview(clamped);
+                  }}
+                  onBlur={commitMilesDraft}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      commitMilesDraft();
+                      milesInputRef.current?.blur();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setMilesDraft(String(Math.round(displayDistanceMiles)));
+                      setIsEditingMiles(false);
+                      milesInputRef.current?.blur();
+                    }
+                  }}
+                  aria-label="Search radius in miles"
+                  className="w-14 text-center text-sm font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-gray-900 focus:outline-none tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="text-sm font-semibold text-gray-900">miles away</span>
+              </div>
               <button
                 type="button"
                 onClick={commitRadius}
