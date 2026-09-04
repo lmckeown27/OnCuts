@@ -68,13 +68,25 @@ function timeToMinutes(time24: string): number {
   return h * 60 + m;
 }
 
-/** Location group key from operator public label (city-ish first token). */
+/** Location group key from operator public service area (general pin label). */
 export function locationGroupKey(barber: Barber): string {
   const label = (barber.service_location_label || '').trim();
   if (label) {
     const first = label.split(',')[0]?.trim();
     if (first) return first;
   }
+
+  // Fallback: primary assigned campus / service spot name
+  const spots = barber.service_locations;
+  if (Array.isArray(spots) && spots.length > 0) {
+    const primary = spots.find((s) => s.is_primary) ?? spots[0];
+    const name = (primary?.name || '').trim();
+    if (name) {
+      const first = name.split(',')[0]?.trim();
+      if (first) return first;
+    }
+  }
+
   return 'Other';
 }
 

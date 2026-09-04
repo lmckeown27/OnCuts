@@ -1881,10 +1881,16 @@ function DiscoveryView({
 
       await Promise.all(
         ids.map(async (id) => {
-          if (providersById.has(id)) return;
+          const existing = providersById.get(id);
+          const hasGeneralLocation = Boolean(
+            (existing?.service_location_label || '').trim() ||
+              (Array.isArray(existing?.service_locations) &&
+                existing.service_locations.some((s) => (s.name || '').trim()))
+          );
+          if (existing && hasGeneralLocation) return;
           try {
             const detailed = await barberService.getBarberById(id);
-            providersById.set(id, detailed);
+            providersById.set(id, existing ? { ...existing, ...detailed } : detailed);
           } catch {
             // Skip missing / deleted operators
           }

@@ -788,10 +788,12 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
 export const getBarberById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const labelSelect = await barberServiceLocationLabelSelectSql();
+    const sourceSelect = await barberServiceLocationSourceSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
 
     // Get barber from PostgreSQL
-    // Column names match Prisma schema
+    // Column names match Prisma schema — include public service pin for discovery / My Barbers grouping
     const barberResult = await pool.query(
       `SELECT 
         b.id,
@@ -807,6 +809,9 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b.allow_hidden_direct_booking,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
+        b.service_latitude,
+        b.service_longitude,
+        b.service_radius_km${labelSelect}${sourceSelect},
         u."instagramHandle" as instagram_handle,
         u.email,
         u.first_name,
