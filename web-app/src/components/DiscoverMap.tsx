@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const OLIVE = colors.olive[500];
-const GREY = '#9ca3af';
+const UNSELECTED = '#000000';
 const SEARCH_RADIUS_COLOR = '#708d81';
 
 interface DiscoverMapProps {
@@ -124,8 +124,8 @@ export default function DiscoverMap({
       const selected = selectedAreaKey === area.key;
       const circle = L.circle([area.latitude, area.longitude], {
         radius: area.radiusKm * 1000,
-        color: selected ? OLIVE : GREY,
-        fillColor: selected ? OLIVE : GREY,
+        color: selected ? OLIVE : UNSELECTED,
+        fillColor: selected ? OLIVE : UNSELECTED,
         fillOpacity: selected ? 0.35 : 0.18,
         weight: selected ? 3 : 2,
       });
