@@ -293,7 +293,7 @@ export default function ConsumerPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
   // Get consumer ID from auth
-  const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
+  const { user, setUser, isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const consumerId = user?.id || '';
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
 
