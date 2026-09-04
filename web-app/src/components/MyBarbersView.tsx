@@ -1,4 +1,4 @@
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { Barber } from '../types';
 import BarberPhotoTile from './BarberPhotoTile';
 import type { MyBarberEntry } from '../utils/myBarbersDiscover';
@@ -7,9 +7,6 @@ import { groupBarbersByLocationLabel } from '../utils/myBarbersDiscover';
 interface MyBarbersViewProps {
   entries: MyBarberEntry[];
   loading: boolean;
-  deviceTracking: boolean;
-  deviceTrackingBusy?: boolean;
-  onDeviceTrackingToggle: () => void;
   onSelectBarber: (barber: Barber) => void;
   onGoDiscover: () => void;
   isAuthenticated: boolean;
@@ -18,9 +15,6 @@ interface MyBarbersViewProps {
 export default function MyBarbersView({
   entries,
   loading,
-  deviceTracking,
-  deviceTrackingBusy = false,
-  onDeviceTrackingToggle,
   onSelectBarber,
   onGoDiscover,
   isAuthenticated,
@@ -28,27 +22,7 @@ export default function MyBarbersView({
   const groups = groupBarbersByLocationLabel(entries);
 
   return (
-    <div className="mt-4 sm:mt-6">
-      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
-        <p className="text-sm text-gray-600">
-          Operators you&apos;ve booked, grouped by where they serve.
-        </p>
-        <button
-          type="button"
-          onClick={onDeviceTrackingToggle}
-          disabled={deviceTrackingBusy}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors shrink-0 ${
-            deviceTracking
-              ? 'bg-brand-50 border-brand-300 text-brand-700'
-              : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-          }`}
-          aria-pressed={deviceTracking}
-        >
-          <Navigation className={`w-3.5 h-3.5 ${deviceTracking ? 'text-brand-600' : ''}`} />
-          {deviceTrackingBusy ? 'Locating…' : deviceTracking ? 'Tracking on' : 'Tracking off'}
-        </button>
-      </div>
-
+    <div className="mt-2 sm:mt-4">
       {loading && (
         <div className="py-16 text-center text-gray-500 text-sm">Loading your barbers…</div>
       )}

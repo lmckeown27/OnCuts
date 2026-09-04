@@ -2440,47 +2440,42 @@ function DiscoveryView({
         </div>
       )}
 
+      <BrowseUtilityPill
+        locationLabel={locationLabel}
+        locationDraft={locationDraft}
+        onLocationDraftChange={setLocationDraft}
+        onSelectPlace={handleSelectBrowsePlace}
+        deviceTracking={deviceTracking}
+        onDeviceTrackingChange={handleDeviceTrackingToggle}
+        deviceTrackingBusy={deviceTracking && geo.loading}
+        searchQuery={barberSearchQuery}
+        onSearchQueryChange={setBarberSearchQuery}
+        searchSuggestions={searchSuggestions}
+        onSearchSuggestionSelect={(id) => {
+          const barber = barbers.find((entry) => entry.id === id);
+          if (barber) void handleBarberSelect(barber);
+        }}
+        browseCategory={browseProviderCategory}
+        onBrowseCategoryChange={handleBrowseCategoryChange}
+        constrainByDistance={constrainByDistance}
+        onConstrainByDistanceChange={handleConstrainByDistanceChange}
+        maxDistanceMiles={maxDistanceMiles}
+        displayDistanceMiles={displayDistanceMiles}
+        onMaxDistancePreview={handleMaxDistancePreview}
+        onMaxDistanceCommitted={handleMaxDistanceCommitted}
+        missingTownCoords={latitude == null || longitude == null}
+      />
+
       {homeSegment === 'my_barbers' ? (
         <MyBarbersView
           entries={myBarberEntries}
           loading={myBarbersLoading}
-          deviceTracking={deviceTracking}
-          deviceTrackingBusy={deviceTracking && geo.loading}
-          onDeviceTrackingToggle={handleDeviceTrackingToggle}
           onSelectBarber={(barber) => void handleBarberSelect(barber)}
           onGoDiscover={() => onHomeSegmentChange('discover')}
           isAuthenticated={isAuthenticated}
         />
       ) : (
         <>
-      <div className="relative mb-4 sm:mb-5">
-        <BrowseUtilityPill
-          locationLabel={locationLabel}
-          locationDraft={locationDraft}
-          onLocationDraftChange={setLocationDraft}
-          onSelectPlace={handleSelectBrowsePlace}
-          deviceTracking={deviceTracking}
-          onDeviceTrackingChange={handleDeviceTrackingToggle}
-          deviceTrackingBusy={deviceTracking && geo.loading}
-          searchQuery={barberSearchQuery}
-          onSearchQueryChange={setBarberSearchQuery}
-          searchSuggestions={searchSuggestions}
-          onSearchSuggestionSelect={(id) => {
-            const barber = barbers.find((entry) => entry.id === id);
-            if (barber) void handleBarberSelect(barber);
-          }}
-          browseCategory={browseProviderCategory}
-          onBrowseCategoryChange={handleBrowseCategoryChange}
-          constrainByDistance={constrainByDistance}
-          onConstrainByDistanceChange={handleConstrainByDistanceChange}
-          maxDistanceMiles={maxDistanceMiles}
-          displayDistanceMiles={displayDistanceMiles}
-          onMaxDistancePreview={handleMaxDistancePreview}
-          onMaxDistanceCommitted={handleMaxDistanceCommitted}
-          missingTownCoords={latitude == null || longitude == null}
-        />
-      </div>
-
       {loading ? (
         <Loading />
       ) : (
