@@ -283,6 +283,9 @@ export type DiscoverArea = {
   barberIds: string[];
 };
 
+/** Map-only blob size — keeps areas general without huge service-radius circles. */
+export const DISCOVER_MAP_AREA_RADIUS_KM = 0.4;
+
 /** Cluster listed operators by location label for map selection. */
 export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
   const groups = new Map<
@@ -291,7 +294,6 @@ export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
       label: string;
       lats: number[];
       lngs: number[];
-      radii: number[];
       barberIds: string[];
     }
   >();
@@ -307,13 +309,10 @@ export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
       label,
       lats: [],
       lngs: [],
-      radii: [],
       barberIds: [],
     };
     g.lats.push(lat);
     g.lngs.push(lng);
-    const r = Number(barber.service_radius_km);
-    g.radii.push(Number.isFinite(r) && r > 0 ? r : 5);
     g.barberIds.push(barber.id);
     groups.set(key, g);
   }
@@ -325,7 +324,7 @@ export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
       label: g.label,
       latitude: avg(g.lats),
       longitude: avg(g.lngs),
-      radiusKm: Math.max(...g.radii),
+      radiusKm: DISCOVER_MAP_AREA_RADIUS_KM,
       barberIds: g.barberIds,
     };
   });

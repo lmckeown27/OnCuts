@@ -122,7 +122,7 @@ export default function DiscoverMap({
         }
       } else if (!fittedRef.current) {
         fittedRef.current = true;
-        map.fitBounds(bounds.pad(0.35), { maxZoom: 13 });
+        map.fitBounds(bounds.pad(0.6), { maxZoom: 15 });
       } else if (areas.length === 1) {
         const only = areas[0];
         map.setView(
