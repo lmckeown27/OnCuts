@@ -163,8 +163,9 @@ export default function ConsumerPage() {
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
-  const { paymentTimingMode } = useFrontendConfig();
+  const { paymentTimingMode, consumerHomeMode } = useFrontendConfig();
   const payOnAccept = paymentTimingMode !== 'after_complete';
+  const [homeSegment, setHomeSegment] = useState<ConsumerHomeSegment>('discover');
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -295,6 +296,15 @@ export default function ConsumerPage() {
   const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
   const consumerId = user?.id || '';
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
+
+  // Default signed-in clients to My Barbers (header + DiscoveryView share this)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setHomeSegment('my_barbers');
+    } else {
+      setHomeSegment('discover');
+    }
+  }, [isAuthenticated]);
   const isOperator =
     user?.user_type === 'barber' || Boolean(user?.has_barber_profile);
   
@@ -801,23 +811,18 @@ export default function ConsumerPage() {
               )}
             </div>
             
-            {/* Center: Admin (admins) or logo home (everyone else) */}
-            {isAdmin ? (
+            {/* Center: My Barbers / Discover (browse home) or logo (waitlist) */}
+            {consumerHomeMode === 'waitlist' ? (
               <button
-                type="button"
-                onClick={openAdminDashboard}
-                className="absolute left-1/2 -translate-x-1/2 flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
-                aria-label="Admin"
-              >
-                <span className="text-xs font-semibold text-gray-700">Admin</span>
-              </button>
-            ) : (
-              <button 
                 onClick={() => navigate('/')}
                 className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
               >
                 <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
               </button>
+            ) : (
+              <div className="absolute left-1/2 -translate-x-1/2 z-10">
+                <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
+              </div>
             )}
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
@@ -986,6 +991,8 @@ export default function ConsumerPage() {
           onOpenPayment={openPaymentTakeover}
           activeReminderBookings={activeReminderBookings}
           onOpenActiveBooking={openActiveBookingReminder}
+          homeSegment={homeSegment}
+          onHomeSegmentChange={setHomeSegment}
         />
       </div>
 
@@ -1633,6 +1640,8 @@ function DiscoveryView({
   onOpenPayment,
   activeReminderBookings = [],
   onOpenActiveBooking,
+  homeSegment,
+  onHomeSegmentChange,
 }: {
   navigate: any;
   onBecomeBarberClick: () => void;
@@ -1663,6 +1672,8 @@ function DiscoveryView({
     status: string;
   }>;
   onOpenActiveBooking?: () => void;
+  homeSegment: ConsumerHomeSegment;
+  onHomeSegmentChange: (segment: ConsumerHomeSegment) => void;
 }) {
   const location = useLocation();
   const {
@@ -1709,7 +1720,6 @@ function DiscoveryView({
     getBrowseProviderCategory,
   );
   const [townHydrated, setTownHydrated] = useState(false);
-  const [homeSegment, setHomeSegment] = useState<ConsumerHomeSegment>('discover');
   const [myBarberEntries, setMyBarberEntries] = useState<MyBarberEntry[]>([]);
   const [myBarbersLoading, setMyBarbersLoading] = useState(false);
   const [selectedDiscoverAreaKey, setSelectedDiscoverAreaKey] = useState<string | null>(null);
@@ -1717,15 +1727,6 @@ function DiscoveryView({
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
   const geo = useGeolocation();
-
-  // Default signed-in clients to My Barbers
-  useEffect(() => {
-    if (isAuthenticated) {
-      setHomeSegment('my_barbers');
-    } else {
-      setHomeSegment('discover');
-    }
-  }, [isAuthenticated]);
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -2327,10 +2328,6 @@ function DiscoveryView({
 
   return (
     <>
-      <div className="flex justify-center mb-4 sm:mb-5">
-        <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
-      </div>
-
       {(activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
         <div className="mb-4 flex flex-col items-center gap-2">
           {activeReminderBookings.map((booking) => {
@@ -2451,7 +2448,7 @@ function DiscoveryView({
           deviceTrackingBusy={deviceTracking && geo.loading}
           onDeviceTrackingToggle={handleDeviceTrackingToggle}
           onSelectBarber={(barber) => void handleBarberSelect(barber)}
-          onGoDiscover={() => setHomeSegment('discover')}
+          onGoDiscover={() => onHomeSegmentChange('discover')}
           isAuthenticated={isAuthenticated}
         />
       ) : (

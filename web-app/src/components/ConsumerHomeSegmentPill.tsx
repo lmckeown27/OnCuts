@@ -18,7 +18,7 @@ export default function ConsumerHomeSegmentPill({
 }: ConsumerHomeSegmentPillProps) {
   return (
     <div
-      className={`inline-flex p-1 rounded-full bg-stone-200/90 border border-stone-300/80 ${className}`}
+      className={`inline-flex p-0.5 sm:p-1 rounded-full bg-stone-200/90 border border-stone-300/80 ${className}`}
       role="tablist"
       aria-label="Home sections"
     >
@@ -31,7 +31,7 @@ export default function ConsumerHomeSegmentPill({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(seg.id)}
-            className={`px-4 sm:px-5 py-1.5 sm:py-2 text-sm font-semibold rounded-full transition-colors ${
+            className={`px-3 sm:px-5 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
               selected
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
