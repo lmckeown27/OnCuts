@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import type { DiscoverArea } from '../utils/myBarbersDiscover';
 import { mapZoomForRadiusKm } from '../constants/serviceAreaPresets';
 import { colors } from '../utils/colors';
+import { milesToKmForBrowse } from '../utils/consumerBrowseDistancePreference';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -17,14 +18,19 @@ L.Icon.Default.mergeOptions({
 
 const OLIVE = colors.olive[500];
 const GREY = '#9ca3af';
+const SEARCH_RADIUS_COLOR = '#708d81';
 
 interface DiscoverMapProps {
   areas: DiscoverArea[];
   selectedAreaKey: string | null;
   onSelectArea: (key: string | null) => void;
   className?: string;
-  /** Fallback center when no areas */
+  /** Browse / device center */
   fallbackCenter?: { lat: number; lng: number } | null;
+  /** Miles from BrowseUtilityPill (displayDistanceMiles) */
+  searchRadiusMiles?: number | null;
+  /** When false ("ALL"), no search-radius circle */
+  constrainByDistance?: boolean;
 }
 
 export default function DiscoverMap({
@@ -33,12 +39,14 @@ export default function DiscoverMap({
   onSelectArea,
   className = '',
   fallbackCenter = null,
+  searchRadiusMiles = null,
+  constrainByDistance = false,
 }: DiscoverMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const onSelectRef = useRef(onSelectArea);
-  const fittedRef = useRef(false);
+  const lastSearchFitKey = useRef('');
 
   useEffect(() => {
     onSelectRef.current = onSelectArea;
@@ -74,7 +82,7 @@ export default function DiscoverMap({
       map.remove();
       mapRef.current = null;
       layerRef.current = null;
-      fittedRef.current = false;
+      lastSearchFitKey.current = '';
     };
   }, []);
 
@@ -84,7 +92,33 @@ export default function DiscoverMap({
     if (!map || !layer) return;
 
     layer.clearLayers();
-    const bounds = L.latLngBounds([]);
+
+    const searchKm =
+      constrainByDistance &&
+      searchRadiusMiles != null &&
+      Number.isFinite(searchRadiusMiles) &&
+      searchRadiusMiles > 0
+        ? milesToKmForBrowse(searchRadiusMiles)
+        : null;
+
+    let searchCircle: L.Circle | null = null;
+    if (fallbackCenter && searchKm != null) {
+      searchCircle = L.circle([fallbackCenter.lat, fallbackCenter.lng], {
+        radius: searchKm * 1000,
+        color: SEARCH_RADIUS_COLOR,
+        fillColor: SEARCH_RADIUS_COLOR,
+        fillOpacity: 0.08,
+        weight: 2,
+        dashArray: '6 6',
+        interactive: false,
+      });
+      searchCircle.addTo(layer);
+      searchCircle.bindTooltip(`${Math.round(searchRadiusMiles!)} mi search`, {
+        permanent: false,
+        direction: 'center',
+        className: 'discover-map-tooltip',
+      });
+    }
 
     for (const area of areas) {
       const selected = selectedAreaKey === area.key;
@@ -92,7 +126,7 @@ export default function DiscoverMap({
         radius: area.radiusKm * 1000,
         color: selected ? OLIVE : GREY,
         fillColor: selected ? OLIVE : GREY,
-        fillOpacity: selected ? 0.28 : 0.12,
+        fillOpacity: selected ? 0.35 : 0.18,
         weight: selected ? 3 : 2,
       });
 
@@ -107,36 +141,43 @@ export default function DiscoverMap({
       });
 
       circle.addTo(layer);
-      bounds.extend([area.latitude, area.longitude]);
     }
 
-    if (areas.length > 0) {
-      if (selectedAreaKey) {
-        const selected = areas.find((a) => a.key === selectedAreaKey);
-        if (selected) {
-          map.flyTo(
-            [selected.latitude, selected.longitude],
-            mapZoomForRadiusKm(selected.radiusKm),
-            { duration: 0.5 }
-          );
-        }
-      } else if (!fittedRef.current) {
-        fittedRef.current = true;
-        map.fitBounds(bounds.pad(0.6), { maxZoom: 15 });
-      } else if (areas.length === 1) {
-        const only = areas[0];
-        map.setView(
-          [only.latitude, only.longitude],
-          mapZoomForRadiusKm(only.radiusKm)
+    if (selectedAreaKey) {
+      const selected = areas.find((a) => a.key === selectedAreaKey);
+      if (selected) {
+        map.flyTo(
+          [selected.latitude, selected.longitude],
+          mapZoomForRadiusKm(Math.max(selected.radiusKm, 1)),
+          { duration: 0.5 }
         );
       }
+    } else if (searchCircle && fallbackCenter) {
+      const fitKey = `${fallbackCenter.lat},${fallbackCenter.lng},${searchKm}`;
+      if (lastSearchFitKey.current !== fitKey) {
+        lastSearchFitKey.current = fitKey;
+        map.fitBounds(searchCircle.getBounds().pad(0.08), {
+          maxZoom: mapZoomForRadiusKm(searchKm!),
+          animate: true,
+        });
+      }
+    } else if (areas.length > 0) {
+      const bounds = L.latLngBounds(
+        areas.map((a) => [a.latitude, a.longitude] as L.LatLngTuple)
+      );
+      map.fitBounds(bounds.pad(0.6), { maxZoom: 15 });
     } else if (fallbackCenter) {
-      fittedRef.current = false;
-      map.setView([fallbackCenter.lat, fallbackCenter.lng], 13);
+      map.setView([fallbackCenter.lat, fallbackCenter.lng], 12);
     }
 
     window.setTimeout(() => map.invalidateSize(), 50);
-  }, [areas, selectedAreaKey, fallbackCenter]);
+  }, [
+    areas,
+    selectedAreaKey,
+    fallbackCenter,
+    searchRadiusMiles,
+    constrainByDistance,
+  ]);
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -145,7 +186,9 @@ export default function DiscoverMap({
         className="w-full flex-1 h-[280px] sm:h-[420px] lg:h-full min-h-[280px] rounded-xl border border-gray-200 overflow-hidden z-0 bg-stone-100"
       />
       <p className="text-[10px] text-gray-400 mt-1.5 text-right shrink-0">
-        Service areas are approximate · © OpenStreetMap
+        {constrainByDistance && searchRadiusMiles != null
+          ? `Search radius ${Math.round(searchRadiusMiles)} mi · areas approximate · © OpenStreetMap`
+          : 'Service areas are approximate · © OpenStreetMap'}
       </p>
     </div>
   );

@@ -2498,6 +2498,8 @@ function DiscoveryView({
                 ? { lat: latitude, lng: longitude }
                 : null
             }
+            searchRadiusMiles={displayDistanceMiles}
+            constrainByDistance={constrainByDistance}
             className="h-full"
           />
           {selectedDiscoverAreaKey && (
