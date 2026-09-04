@@ -2328,7 +2328,8 @@ function DiscoveryView({
 
   return (
     <>
-      {(activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
+      {homeSegment === 'my_barbers' &&
+        (activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
         <div className="mb-4 flex flex-col items-center gap-2">
           {activeReminderBookings.map((booking) => {
             const when = booking.scheduledTime ? new Date(booking.scheduledTime) : null;
