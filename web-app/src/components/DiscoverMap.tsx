@@ -183,7 +183,7 @@ export default function DiscoverMap({
     <div className={`flex flex-col ${className}`}>
       <div
         ref={containerRef}
-        className="w-full flex-1 h-[280px] sm:h-[420px] lg:h-full min-h-[280px] rounded-xl border border-gray-200 overflow-hidden z-0 bg-stone-100"
+        className="w-full flex-1 h-[min(62dvh,720px)] sm:h-[min(68dvh,800px)] lg:h-full min-h-[380px] sm:min-h-[480px] rounded-xl border border-gray-200 overflow-hidden z-0 bg-stone-100"
       />
       <p className="text-[10px] text-gray-400 mt-1.5 text-right shrink-0">
         {constrainByDistance && searchRadiusMiles != null

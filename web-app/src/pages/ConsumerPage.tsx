@@ -2559,8 +2559,8 @@ function DiscoveryView({
         <Loading />
       ) : (
         <>
-      <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[480px]">
-        <div className="lg:flex-1 min-w-0 relative">
+      <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[min(68dvh,800px)]">
+        <div className="lg:flex-1 min-w-0 relative lg:min-h-[min(68dvh,800px)]">
           <DiscoverMap
             areas={discoverAreas}
             selectedAreaKey={selectedDiscoverAreaKey}
@@ -2572,7 +2572,7 @@ function DiscoveryView({
             }
             searchRadiusMiles={displayDistanceMiles}
             constrainByDistance={constrainByDistance}
-            className="h-full"
+            className="h-full min-h-[380px] sm:min-h-[480px] lg:min-h-[min(68dvh,800px)]"
           />
           {selectedDiscoverAreaKey && (
             <button
@@ -2597,7 +2597,7 @@ function DiscoveryView({
           </div>
 
           {discoverListBarbers.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[480px] lg:overflow-y-auto lg:pr-1">
+            <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[min(68dvh,800px)] lg:overflow-y-auto lg:pr-1">
               {discoverListBarbers.map((barber) => {
                 const distanceLabel = constrainByDistance
                   ? formatBarberDistanceFromUser(
