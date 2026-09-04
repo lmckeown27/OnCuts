@@ -68,46 +68,88 @@ function timeToMinutes(time24: string): number {
   return h * 60 + m;
 }
 
-/** Location group key from operator public service area (general pin label). */
-export function locationGroupKey(barber: Barber): string {
-  const label = (barber.service_location_label || '').trim();
-  if (label) {
-    const first = label.split(',')[0]?.trim();
-    if (first) return first;
+/**
+ * City / campus only for public labels (mirrors backend coarsenPublicLocationLabel).
+ * e.g. "1144 Chorro St, San Luis Obispo, CA" → "San Luis Obispo"
+ */
+export function coarsenPublicLocationLabel(raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+
+  const segments = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  if (segments.length === 0) return trimmed;
+
+  const streetLike =
+    /^\d/.test(segments[0]) ||
+    /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|way|ct|court|hwy|highway|pkwy|parkway)\.?$/i.test(
+      segments[0]
+    );
+
+  if (streetLike && segments.length >= 2) {
+    return segments[1];
   }
 
-  // Fallback: primary assigned campus / service spot name
+  return segments[0];
+}
+
+/**
+ * Most specific broad public location allowed for an operator (campus/city).
+ * Never returns "Other" — null when unresolved.
+ */
+function isUsablePublicLabel(label: string): boolean {
+  const t = label.trim();
+  if (!t) return false;
+  // Never treat the legacy bucket as a real public place
+  if (/^other$/i.test(t)) return false;
+  return true;
+}
+
+export function publicBroadLocationLabel(barber: Barber): string | null {
+  const fromPin = coarsenPublicLocationLabel(barber.service_location_label || '');
+  if (isUsablePublicLabel(fromPin)) return fromPin;
+
   const spots = barber.service_locations;
   if (Array.isArray(spots) && spots.length > 0) {
     const primary = spots.find((s) => s.is_primary) ?? spots[0];
-    const name = (primary?.name || '').trim();
-    if (name) {
-      const first = name.split(',')[0]?.trim();
-      if (first) return first;
-    }
+    const fromSpot = coarsenPublicLocationLabel(primary?.name || '');
+    if (isUsablePublicLabel(fromSpot)) return fromSpot;
   }
 
-  return 'Other';
+  return null;
+}
+
+/** @deprecated Prefer publicBroadLocationLabel — kept for call sites expecting a string. */
+export function locationGroupKey(barber: Barber): string {
+  return publicBroadLocationLabel(barber) || '';
 }
 
 export function groupBarbersByLocationLabel(
   entries: Array<{ barber: Barber } | Barber>
 ): { location: string; items: Barber[] }[] {
   const map = new Map<string, Barber[]>();
+  const unlocated: Barber[] = [];
+
   for (const entry of entries) {
     const barber = 'barber' in entry ? entry.barber : entry;
-    const key = locationGroupKey(barber);
+    const key = publicBroadLocationLabel(barber);
+    if (!key) {
+      unlocated.push(barber);
+      continue;
+    }
     const list = map.get(key) ?? [];
     list.push(barber);
     map.set(key, list);
   }
-  return Array.from(map.entries())
+
+  const groups = Array.from(map.entries())
     .map(([location, items]) => ({ location, items }))
-    .sort((a, b) => {
-      if (a.location === 'Other') return 1;
-      if (b.location === 'Other') return -1;
-      return a.location.localeCompare(b.location);
-    });
+    .sort((a, b) => a.location.localeCompare(b.location));
+
+  // Still no "Other" — append unresolved under their pin city once labels are enriched.
+  // Until then, omit from location sections (tiles can still appear after enrichment).
+  void unlocated;
+
+  return groups;
 }
 
 /**
@@ -303,7 +345,9 @@ export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
     const lng = Number(barber.service_longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
-    const label = locationGroupKey(barber);
+    const label = publicBroadLocationLabel(barber);
+    if (!label) continue;
+
     const key = label.toLowerCase();
     const g = groups.get(key) ?? {
       label,

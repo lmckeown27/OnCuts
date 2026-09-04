@@ -2,7 +2,10 @@ import { MapPin } from 'lucide-react';
 import type { Barber } from '../types';
 import BarberPhotoTile from './BarberPhotoTile';
 import type { MyBarberEntry } from '../utils/myBarbersDiscover';
-import { groupBarbersByLocationLabel } from '../utils/myBarbersDiscover';
+import {
+  groupBarbersByLocationLabel,
+  publicBroadLocationLabel,
+} from '../utils/myBarbersDiscover';
 
 interface MyBarbersViewProps {
   entries: MyBarberEntry[];
@@ -20,6 +23,10 @@ export default function MyBarbersView({
   isAuthenticated,
 }: MyBarbersViewProps) {
   const groups = groupBarbersByLocationLabel(entries);
+  const groupedIds = new Set(groups.flatMap((g) => g.items.map((b) => b.id)));
+  const unlocated = entries.filter(
+    (e) => !groupedIds.has(e.barber.id) && !publicBroadLocationLabel(e.barber)
+  );
 
   return (
     <div className="mt-2 sm:mt-4">
@@ -83,6 +90,21 @@ export default function MyBarbersView({
             </div>
           </section>
         ))}
+
+      {!loading && unlocated.length > 0 && (
+        <section className="mb-8 sm:mb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            {unlocated.map((entry) => (
+              <BarberPhotoTile
+                key={entry.barber.id}
+                barber={entry.barber}
+                isMain={entry.isMain}
+                onClick={() => onSelectBarber(entry.barber)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

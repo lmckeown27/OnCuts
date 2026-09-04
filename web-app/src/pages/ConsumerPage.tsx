@@ -73,7 +73,9 @@ import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/
 import {
   buildDiscoverAreas,
   buildMyBarbersFromBookings,
+  coarsenPublicLocationLabel,
   type MyBarberEntry,
+  publicBroadLocationLabel,
   sortDiscoverBarbers,
 } from '../utils/myBarbersDiscover';
 
@@ -1723,6 +1725,8 @@ function DiscoveryView({
   const [myBarberEntries, setMyBarberEntries] = useState<MyBarberEntry[]>([]);
   const [myBarbersLoading, setMyBarbersLoading] = useState(false);
   const [selectedDiscoverAreaKey, setSelectedDiscoverAreaKey] = useState<string | null>(null);
+  /** Coarse public labels resolved via reverse geocode when service_location_label is empty */
+  const [resolvedPublicLabels, setResolvedPublicLabels] = useState<Record<string, string>>({});
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1747,6 +1751,13 @@ function DiscoveryView({
         selectedCollegeTown?.shortName ||
         selectedCollegeTown?.name ||
         'Set a location');
+
+  const withResolvedPublicLabel = (barber: Barber): Barber => {
+    if (publicBroadLocationLabel(barber)) return barber;
+    const resolved = resolvedPublicLabels[barber.id];
+    if (!resolved) return barber;
+    return { ...barber, service_location_label: resolved };
+  };
 
   // Load saved college town when available; browse works without one (all providers).
   useEffect(() => {
@@ -2103,18 +2114,79 @@ function DiscoveryView({
       }));
   }, [barbers, barberSearchQuery]);
 
+  const filteredBarbersLabeled = useMemo(
+    () => filteredBarbers.map(withResolvedPublicLabel),
+    [filteredBarbers, resolvedPublicLabels]
+  );
+
+  const myBarberEntriesLabeled = useMemo(
+    () =>
+      myBarberEntries.map((entry) => ({
+        ...entry,
+        barber: withResolvedPublicLabel(entry.barber),
+      })),
+    [myBarberEntries, resolvedPublicLabels]
+  );
+
+  // Resolve missing public broad labels from operator pins (campus/city — never "Other")
+  useEffect(() => {
+    const candidates = [
+      ...barbers,
+      ...myBarberEntries.map((e) => e.barber),
+    ];
+    const needsLabel = candidates.filter((b) => {
+      if (publicBroadLocationLabel(b) || resolvedPublicLabels[b.id]) return false;
+      const lat = Number(b.service_latitude);
+      const lng = Number(b.service_longitude);
+      return Number.isFinite(lat) && Number.isFinite(lng);
+    });
+    if (needsLabel.length === 0) return;
+
+    let cancelled = false;
+    const coordCache = new Map<string, string>();
+
+    (async () => {
+      const updates: Record<string, string> = {};
+      for (const barber of needsLabel) {
+        if (cancelled) return;
+        const lat = Number(barber.service_latitude);
+        const lng = Number(barber.service_longitude);
+        const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        try {
+          let label = coordCache.get(coordKey);
+          if (!label) {
+            const place = await geocodeService.reverseGeocode(lat, lng);
+            label = coarsenPublicLocationLabel(place.label || '');
+            if (label && !/^other$/i.test(label)) coordCache.set(coordKey, label);
+            else label = undefined;
+          }
+          if (label) updates[barber.id] = label;
+        } catch {
+          // Skip — keep off the map until a public label exists
+        }
+      }
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setResolvedPublicLabels((prev) => ({ ...prev, ...updates }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [barbers, myBarberEntries, resolvedPublicLabels]);
+
   const discoverAreas = useMemo(
-    () => buildDiscoverAreas(filteredBarbers),
-    [filteredBarbers]
+    () => buildDiscoverAreas(filteredBarbersLabeled),
+    [filteredBarbersLabeled]
   );
 
   const discoverListBarbers = useMemo(() => {
-    if (!selectedDiscoverAreaKey) return filteredBarbers;
+    if (!selectedDiscoverAreaKey) return filteredBarbersLabeled;
     const area = discoverAreas.find((a) => a.key === selectedDiscoverAreaKey);
-    if (!area) return filteredBarbers;
+    if (!area) return filteredBarbersLabeled;
     const idSet = new Set(area.barberIds);
-    return filteredBarbers.filter((b) => idSet.has(b.id));
-  }, [filteredBarbers, selectedDiscoverAreaKey, discoverAreas]);
+    return filteredBarbersLabeled.filter((b) => idSet.has(b.id));
+  }, [filteredBarbersLabeled, selectedDiscoverAreaKey, discoverAreas]);
 
   const applyFilters = () => {
     let filtered = [...barbers];
@@ -2475,7 +2547,7 @@ function DiscoveryView({
 
       {homeSegment === 'my_barbers' ? (
         <MyBarbersView
-          entries={myBarberEntries}
+          entries={myBarberEntriesLabeled}
           loading={myBarbersLoading}
           onSelectBarber={(barber) => void handleBarberSelect(barber)}
           onGoDiscover={() => onHomeSegmentChange('discover')}
