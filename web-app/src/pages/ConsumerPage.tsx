@@ -2487,82 +2487,6 @@ function DiscoveryView({
         <Loading />
       ) : (
         <>
-      {constrainByDistance &&
-        (!filteredBarbers || filteredBarbers.length === 0) &&
-        barbers.length === 0 &&
-        (latitude != null || selectedCollegeTown) &&
-        !filterCriteria.serviceType &&
-        !loading && (
-        <Card className="text-center py-8 sm:py-12">
-          <p className="text-gray-600 text-base sm:text-lg mb-2">
-            No barbers within {Math.round(maxDistanceMiles)} mi of {locationLabel}
-          </p>
-          <p className="text-xs sm:text-sm text-gray-500 mb-4">
-            {barbersMeta?.total_before_distance_filter
-              ? `${barbersMeta.total_before_distance_filter} barber${barbersMeta.total_before_distance_filter !== 1 ? 's' : ''} with a public location are outside your radius.`
-              : 'Try increasing your search radius or turn off distance limiting to see all barbers.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => handleMaxDistanceChange(Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10))}
-            className="text-primary-600 hover:text-black underline"
-          >
-            Expand to {Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10)} mi
-          </button>
-        </Card>
-      )}
-
-      {!constrainByDistance &&
-        (!filteredBarbers || filteredBarbers.length === 0) &&
-        !filterCriteria.serviceType &&
-        !loading && (
-        <Card className="text-center py-8 sm:py-12">
-          <div className="mb-10">
-            <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers available yet</p>
-            <p className="text-xs sm:text-sm text-gray-500 mb-4">
-              Check back soon as more barbers join the platform!
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-4 pt-8 border-t border-gray-200">
-            <p className="text-base sm:text-lg text-gray-600 font-medium">
-              Want to be a barber{selectedCollegeTown ? ` in ${selectedCollegeTown.shortName}` : ''}?
-            </p>
-            <button
-              onClick={onBecomeBarberClick}
-              className="px-6 py-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors shadow-lg hover:shadow-xl active:scale-95"
-            >
-              Become a Barber
-            </button>
-          </div>
-        </Card>
-      )}
-
-      {barberSearchQuery.trim() &&
-        filteredBarbers.length === 0 &&
-        barbers.length > 0 &&
-        !loading && (
-        <Card className="text-center py-8 sm:py-12 mt-4">
-          <p className="text-gray-600 text-base sm:text-lg mb-2">
-            No barbers match &ldquo;{barberSearchQuery.trim()}&rdquo;
-          </p>
-          <button
-            type="button"
-            onClick={() => setBarberSearchQuery('')}
-            className="text-primary-600 hover:text-black underline text-sm"
-          >
-            Clear search
-          </button>
-        </Card>
-      )}
-
-      {(!filteredBarbers || filteredBarbers.length === 0) && filterCriteria.serviceType && (
-        <Card className="text-center py-8 sm:py-12">
-          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers match your criteria</p>
-          <p className="text-xs sm:text-sm text-gray-500">Try adjusting your filters or check back later</p>
-        </Card>
-      )}
-
-      {filteredBarbers.length > 0 && (
       <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[480px]">
         <div className="lg:flex-1 min-w-0 relative">
           <DiscoverMap
@@ -2597,27 +2521,90 @@ function DiscoveryView({
               {discoverListBarbers.length} operator{discoverListBarbers.length === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[480px] lg:overflow-y-auto lg:pr-1">
-            {discoverListBarbers.map((barber) => {
-              const distanceLabel = constrainByDistance
-                ? formatBarberDistanceFromUser(
-                    getBarberDistanceMilesFromTown(barber, latitude, longitude)
-                  )
-                : null;
-              return (
-                <BarberPhotoTile
-                  key={barber.id}
-                  barber={barber}
-                  showDistance={Boolean(distanceLabel)}
-                  distanceLabel={distanceLabel}
-                  onClick={() => void handleBarberSelect(barber)}
-                />
-              );
-            })}
-          </div>
+
+          {discoverListBarbers.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[480px] lg:overflow-y-auto lg:pr-1">
+              {discoverListBarbers.map((barber) => {
+                const distanceLabel = constrainByDistance
+                  ? formatBarberDistanceFromUser(
+                      getBarberDistanceMilesFromTown(barber, latitude, longitude)
+                    )
+                  : null;
+                return (
+                  <BarberPhotoTile
+                    key={barber.id}
+                    barber={barber}
+                    showDistance={Boolean(distanceLabel)}
+                    distanceLabel={distanceLabel}
+                    onClick={() => void handleBarberSelect(barber)}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">
+              {constrainByDistance &&
+              (latitude != null || selectedCollegeTown) &&
+              !filterCriteria.serviceType &&
+              !barberSearchQuery.trim() ? (
+                <>
+                  <p className="text-gray-700 text-sm font-medium mb-2">
+                    No barbers within {Math.round(maxDistanceMiles)} mi of {locationLabel}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    {barbersMeta?.total_before_distance_filter
+                      ? `${barbersMeta.total_before_distance_filter} barber${barbersMeta.total_before_distance_filter !== 1 ? 's' : ''} with a public location are outside your radius.`
+                      : 'Try increasing your search radius or turn off distance limiting to see all barbers.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleMaxDistanceChange(
+                        Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10)
+                      )
+                    }
+                    className="text-primary-600 hover:text-black underline text-sm"
+                  >
+                    Expand to {Math.min(BROWSE_MAX_DISTANCE_MILES, maxDistanceMiles + 10)} mi
+                  </button>
+                </>
+              ) : barberSearchQuery.trim() ? (
+                <>
+                  <p className="text-gray-700 text-sm font-medium mb-2">
+                    No barbers match &ldquo;{barberSearchQuery.trim()}&rdquo;
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setBarberSearchQuery('')}
+                    className="text-primary-600 hover:text-black underline text-sm"
+                  >
+                    Clear search
+                  </button>
+                </>
+              ) : filterCriteria.serviceType ? (
+                <>
+                  <p className="text-gray-700 text-sm font-medium mb-1">No barbers match your criteria</p>
+                  <p className="text-xs text-gray-500">Try adjusting your filters or check back later</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700 text-sm font-medium mb-2">No barbers available yet</p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Check back soon as more barbers join the platform!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onBecomeBarberClick}
+                    className="px-4 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors"
+                  >
+                    Become a Barber
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      )}
         </>
       )}
         </>

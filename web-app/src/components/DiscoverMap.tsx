@@ -131,7 +131,8 @@ export default function DiscoverMap({
         );
       }
     } else if (fallbackCenter) {
-      map.setView([fallbackCenter.lat, fallbackCenter.lng], 11);
+      fittedRef.current = false;
+      map.setView([fallbackCenter.lat, fallbackCenter.lng], 13);
     }
 
     window.setTimeout(() => map.invalidateSize(), 50);
