@@ -61,9 +61,21 @@ import {
   type BrowseProviderCategory,
 } from '../config/providerCategories';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
+import BarberPhotoTile from '../components/BarberPhotoTile';
+import ConsumerHomeSegmentPill, {
+  type ConsumerHomeSegment,
+} from '../components/ConsumerHomeSegmentPill';
+import DiscoverMap from '../components/DiscoverMap';
+import MyBarbersView from '../components/MyBarbersView';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
+import {
+  buildDiscoverAreas,
+  buildMyBarbersFromBookings,
+  type MyBarberEntry,
+  sortDiscoverBarbers,
+} from '../utils/myBarbersDiscover';
 
 // Helper to format service names from SNAKE_CASE to Title Case
 const formatServiceName = (name: string): string => {
@@ -1697,10 +1709,23 @@ function DiscoveryView({
     getBrowseProviderCategory,
   );
   const [townHydrated, setTownHydrated] = useState(false);
+  const [homeSegment, setHomeSegment] = useState<ConsumerHomeSegment>('discover');
+  const [myBarberEntries, setMyBarberEntries] = useState<MyBarberEntry[]>([]);
+  const [myBarbersLoading, setMyBarbersLoading] = useState(false);
+  const [selectedDiscoverAreaKey, setSelectedDiscoverAreaKey] = useState<string | null>(null);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
   const geo = useGeolocation();
+
+  // Default signed-in clients to My Barbers
+  useEffect(() => {
+    if (isAuthenticated) {
+      setHomeSegment('my_barbers');
+    } else {
+      setHomeSegment('discover');
+    }
+  }, [isAuthenticated]);
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -1818,9 +1843,75 @@ function DiscoveryView({
     longitude,
   ]);
 
+  const loadMyBarbers = async () => {
+    if (!isAuthenticated || !user) {
+      setMyBarberEntries([]);
+      return;
+    }
+    setMyBarbersLoading(true);
+    try {
+      const response = await api.get<{
+        bookings: Array<{
+          barberId?: string;
+          scheduledTime?: string;
+          status?: string;
+        }>;
+      }>('/bookings-simple', {
+        role: 'consumer',
+        _t: Date.now(),
+      });
+      const list =
+        response.bookings ||
+        (response as { data?: { bookings?: typeof response.bookings } }).data?.bookings ||
+        [];
+      const bookings = Array.isArray(list) ? list : [];
+      const ids = [
+        ...new Set(
+          bookings
+            .map((b) => b.barberId)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0)
+        ),
+      ];
+
+      const providersById = new Map<string, Barber>();
+      for (const b of barbers) {
+        providersById.set(b.id, b);
+      }
+
+      await Promise.all(
+        ids.map(async (id) => {
+          if (providersById.has(id)) return;
+          try {
+            const detailed = await barberService.getBarberById(id);
+            providersById.set(id, detailed);
+          } catch {
+            // Skip missing / deleted operators
+          }
+        })
+      );
+
+      setMyBarberEntries(buildMyBarbersFromBookings(bookings, providersById));
+    } catch (error) {
+      console.error('Failed to load my barbers:', error);
+      setMyBarberEntries([]);
+    } finally {
+      setMyBarbersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (homeSegment === 'my_barbers' && isAuthenticated) {
+      void loadMyBarbers();
+    }
+  }, [homeSegment, isAuthenticated, user?.id]);
+
   useEffect(() => {
     applyFilters();
   }, [barbers, filterCriteria, latitude, longitude, barberSearchQuery]);
+
+  useEffect(() => {
+    setSelectedDiscoverAreaKey(null);
+  }, [barbers, barberSearchQuery, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
 
   // Lock body scroll when barber modal is open (fixes mobile viewport issues)
   useEffect(() => {
@@ -2005,6 +2096,19 @@ function DiscoveryView({
       }));
   }, [barbers, barberSearchQuery]);
 
+  const discoverAreas = useMemo(
+    () => buildDiscoverAreas(filteredBarbers),
+    [filteredBarbers]
+  );
+
+  const discoverListBarbers = useMemo(() => {
+    if (!selectedDiscoverAreaKey) return filteredBarbers;
+    const area = discoverAreas.find((a) => a.key === selectedDiscoverAreaKey);
+    if (!area) return filteredBarbers;
+    const idSet = new Set(area.barberIds);
+    return filteredBarbers.filter((b) => idSet.has(b.id));
+  }, [filteredBarbers, selectedDiscoverAreaKey, discoverAreas]);
+
   const applyFilters = () => {
     let filtered = [...barbers];
 
@@ -2038,9 +2142,8 @@ function DiscoveryView({
       );
     }
 
-    // Preserve backend order (sorted by 5-star review count)
-
-    setFilteredBarbers(filtered);
+    // Discover: proximity then next open (not five-star / tenure)
+    setFilteredBarbers(sortDiscoverBarbers(filtered));
   };
 
   const handleFilterChange = (filters: FilterCriteria) => {
@@ -2224,31 +2327,9 @@ function DiscoveryView({
 
   return (
     <>
-      <BrowseUtilityPill
-        locationLabel={locationLabel}
-        locationDraft={locationDraft}
-        onLocationDraftChange={setLocationDraft}
-        onSelectPlace={handleSelectBrowsePlace}
-        deviceTracking={deviceTracking}
-        onDeviceTrackingChange={handleDeviceTrackingToggle}
-        deviceTrackingBusy={deviceTracking && geo.loading}
-        searchQuery={barberSearchQuery}
-        onSearchQueryChange={setBarberSearchQuery}
-        searchSuggestions={searchSuggestions}
-        onSearchSuggestionSelect={(id) => {
-          const barber = barbers.find((entry) => entry.id === id);
-          if (barber) void handleBarberSelect(barber);
-        }}
-        browseCategory={browseProviderCategory}
-        onBrowseCategoryChange={handleBrowseCategoryChange}
-        constrainByDistance={constrainByDistance}
-        onConstrainByDistanceChange={handleConstrainByDistanceChange}
-        maxDistanceMiles={maxDistanceMiles}
-        displayDistanceMiles={displayDistanceMiles}
-        onMaxDistancePreview={handleMaxDistancePreview}
-        onMaxDistanceCommitted={handleMaxDistanceCommitted}
-        missingTownCoords={latitude == null || longitude == null}
-      />
+      <div className="flex justify-center mb-4 sm:mb-5">
+        <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
+      </div>
 
       {(activeReminderBookings.length > 0 || pendingPaymentBookings.length > 0) && (
         <div className="mb-4 flex flex-col items-center gap-2">
@@ -2362,11 +2443,51 @@ function DiscoveryView({
         </div>
       )}
 
+      {homeSegment === 'my_barbers' ? (
+        <MyBarbersView
+          entries={myBarberEntries}
+          loading={myBarbersLoading}
+          deviceTracking={deviceTracking}
+          deviceTrackingBusy={deviceTracking && geo.loading}
+          onDeviceTrackingToggle={handleDeviceTrackingToggle}
+          onSelectBarber={(barber) => void handleBarberSelect(barber)}
+          onGoDiscover={() => setHomeSegment('discover')}
+          isAuthenticated={isAuthenticated}
+        />
+      ) : (
+        <>
+      <div className="relative mb-4 sm:mb-5">
+        <BrowseUtilityPill
+          locationLabel={locationLabel}
+          locationDraft={locationDraft}
+          onLocationDraftChange={setLocationDraft}
+          onSelectPlace={handleSelectBrowsePlace}
+          deviceTracking={deviceTracking}
+          onDeviceTrackingChange={handleDeviceTrackingToggle}
+          deviceTrackingBusy={deviceTracking && geo.loading}
+          searchQuery={barberSearchQuery}
+          onSearchQueryChange={setBarberSearchQuery}
+          searchSuggestions={searchSuggestions}
+          onSearchSuggestionSelect={(id) => {
+            const barber = barbers.find((entry) => entry.id === id);
+            if (barber) void handleBarberSelect(barber);
+          }}
+          browseCategory={browseProviderCategory}
+          onBrowseCategoryChange={handleBrowseCategoryChange}
+          constrainByDistance={constrainByDistance}
+          onConstrainByDistanceChange={handleConstrainByDistanceChange}
+          maxDistanceMiles={maxDistanceMiles}
+          displayDistanceMiles={displayDistanceMiles}
+          onMaxDistancePreview={handleMaxDistancePreview}
+          onMaxDistanceCommitted={handleMaxDistanceCommitted}
+          missingTownCoords={latitude == null || longitude == null}
+        />
+      </div>
+
       {loading ? (
         <Loading />
       ) : (
         <>
-      {/* No Results - Radius */}
       {constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
         barbers.length === 0 &&
@@ -2392,21 +2513,17 @@ function DiscoveryView({
         </Card>
       )}
 
-      {/* No Results - Browse */}
       {!constrainByDistance &&
         (!filteredBarbers || filteredBarbers.length === 0) &&
         !filterCriteria.serviceType &&
         !loading && (
         <Card className="text-center py-8 sm:py-12">
-          {/* No barbers empty state */}
           <div className="mb-10">
             <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers available yet</p>
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
               Check back soon as more barbers join the platform!
             </p>
           </div>
-          
-          {/* Become a barber CTA - separated with vertical space */}
           <div className="flex flex-col items-center gap-4 pt-8 border-t border-gray-200">
             <p className="text-base sm:text-lg text-gray-600 font-medium">
               Want to be a barber{selectedCollegeTown ? ` in ${selectedCollegeTown.shortName}` : ''}?
@@ -2421,12 +2538,11 @@ function DiscoveryView({
         </Card>
       )}
 
-      {/* No Results - Search */}
       {barberSearchQuery.trim() &&
         filteredBarbers.length === 0 &&
         barbers.length > 0 &&
         !loading && (
-        <Card className="text-center py-8 sm:py-12 mt-8">
+        <Card className="text-center py-8 sm:py-12 mt-4">
           <p className="text-gray-600 text-base sm:text-lg mb-2">
             No barbers match &ldquo;{barberSearchQuery.trim()}&rdquo;
           </p>
@@ -2440,7 +2556,6 @@ function DiscoveryView({
         </Card>
       )}
 
-      {/* No Results - Filter Based */}
       {(!filteredBarbers || filteredBarbers.length === 0) && filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
           <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers match your criteria</p>
@@ -2448,151 +2563,63 @@ function DiscoveryView({
         </Card>
       )}
 
-
-      {/* Barbers Grid - Responsive: 1 col portrait mobile, 2 col landscape/tablet, 3-5 col desktop */}
       {filteredBarbers.length > 0 && (
-      <div className={`grid gap-3 sm:gap-4 mt-8 sm:mt-10 ${
-        isMobilePortrait 
-          ? 'grid-cols-1' 
-          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-      }`}>
-        {(filteredBarbers || []).map((barber) => {
-          const distanceLabel = constrainByDistance
-            ? formatBarberDistanceFromUser(
-                getBarberDistanceMilesFromTown(barber, latitude, longitude)
-              )
-            : null;
-          // Calculate price display - show range if multiple different prices
-          const prices = barber.pricing?.map(p => p.price) || [];
-          const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
-          const maxPrice = prices.length > 0 ? Math.max(...prices) : undefined;
-          const hasRange = minPrice !== undefined && maxPrice !== undefined && maxPrice !== minPrice;
-          const reviewCount = Number(barber.total_reviews ?? barber.review_count ?? 0);
-          const avgRating = Number(barber.average_rating);
-          const showCardReviews =
-            consumerHomeReviewsEnabled &&
-            ((Number.isFinite(avgRating) && avgRating > 0) || reviewCount > 0);
-
-          // Mobile portrait: Horizontal card layout
-          if (isMobilePortrait) {
-            return (
-              <Card
-                key={barber.id}
-                className="cursor-pointer active:scale-98 transition-all duration-200 flex flex-row rounded-xl overflow-hidden"
-                onClick={() => handleBarberSelect(barber)}
-              >
-                {/* Barber Profile Picture - Left Side */}
-                <div className="relative w-28 h-28 flex-shrink-0 bg-gray-200">
-                  {barber.profile_picture_url ? (
-                    <img
-                      src={barber.profile_picture_url}
-                      alt={`${barber.user?.first_name || 'Barber'}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <UsersIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                {/* Info - Right Side */}
-                <div className="flex-1 p-3 flex flex-col justify-center">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-bold text-gray-900 text-lg">
-                      {barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Barber'}
-                    </h3>
-                    {minPrice !== undefined && (
-                      <span className="text-gray-900 font-bold text-xl flex-shrink-0 mr-2">
-                        {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
-                      </span>
-                    )}
-                  </div>
-                  {showCardReviews && (
-                    <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>
-                        {Number.isFinite(avgRating) && avgRating > 0 ? avgRating.toFixed(1) : '—'}
-                        {reviewCount > 0 ? ` (${reviewCount})` : ''}
-                      </span>
-                    </div>
-                  )}
-                  {distanceLabel && (
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                      <span className="text-sm text-gray-600 font-medium">{distanceLabel}</span>
-                    </div>
-                  )}
-                  {barber.instagram_handle && (
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
-                      <Instagram className="w-4 h-4 flex-shrink-0" />
-                      <span>@{barber.instagram_handle}</span>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            );
-          }
-
-          // Default: Vertical card layout (tablet, desktop)
-          return (
-            <Card
-              key={barber.id}
-              className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden bg-transparent p-0 shadow-none hover:bg-transparent"
-              onClick={() => handleBarberSelect(barber)}
+      <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[480px]">
+        <div className="lg:flex-1 min-w-0 relative">
+          <DiscoverMap
+            areas={discoverAreas}
+            selectedAreaKey={selectedDiscoverAreaKey}
+            onSelectArea={setSelectedDiscoverAreaKey}
+            fallbackCenter={
+              latitude != null && longitude != null
+                ? { lat: latitude, lng: longitude }
+                : null
+            }
+            className="h-full"
+          />
+          {selectedDiscoverAreaKey && (
+            <button
+              type="button"
+              onClick={() => setSelectedDiscoverAreaKey(null)}
+              className="absolute top-3 right-3 z-[500] px-3 py-1.5 rounded-full bg-white/95 border border-gray-200 text-xs font-semibold text-gray-700 shadow-sm hover:bg-white"
             >
-              {/* Barber Profile Picture with Name & Price Overlays */}
-              <div className="relative mb-2 sm:mb-3 w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200 mx-auto">
-                {barber.profile_picture_url ? (
-                  <img
-                    src={barber.profile_picture_url}
-                    alt={`${barber.user?.first_name || 'Barber'}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <UsersIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
-                  </div>
-                )}
-                {/* Name Overlay - Top */}
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2 sm:p-3">
-                  <h3 className="text-sm sm:text-lg font-bold text-white">
-                    {barber.name || barber.display_name || `${barber.first_name || barber.user?.first_name || ''} ${barber.last_name || barber.user?.last_name || ''}`.trim() || 'Barber'}
-                  </h3>
-                  {showCardReviews && (
-                    <div className="flex items-center gap-1 mt-1 text-white/90 text-xs sm:text-sm">
-                      <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
-                      <span>
-                        {Number.isFinite(avgRating) && avgRating > 0 ? avgRating.toFixed(1) : '—'}
-                        {reviewCount > 0 ? ` (${reviewCount})` : ''}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                {/* Price Overlay - Bottom Left */}
-                {minPrice !== undefined && (
-                  <div className="absolute bottom-0 left-0 bg-gray-900/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tr-lg rounded-bl-lg">
-                    <div className="flex items-center text-white">
-                      <span className="font-bold text-sm sm:text-base">
-                        {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {distanceLabel && (
-                  <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-1.5 py-1 rounded-tl-md rounded-br-lg">
-                    <div className="flex items-center gap-0.5 text-white">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="font-semibold text-[10px] leading-none">{distanceLabel}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          );
-        })}
+              Clear area
+            </button>
+          )}
+        </div>
+        <div className="lg:w-[340px] xl:w-[380px] shrink-0">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+              {selectedDiscoverAreaKey
+                ? (discoverAreas.find((a) => a.key === selectedDiscoverAreaKey)?.label || 'Area')
+                : 'Nearby'}
+            </h2>
+            <span className="text-xs text-gray-500">
+              {discoverListBarbers.length} operator{discoverListBarbers.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[480px] lg:overflow-y-auto lg:pr-1">
+            {discoverListBarbers.map((barber) => {
+              const distanceLabel = constrainByDistance
+                ? formatBarberDistanceFromUser(
+                    getBarberDistanceMilesFromTown(barber, latitude, longitude)
+                  )
+                : null;
+              return (
+                <BarberPhotoTile
+                  key={barber.id}
+                  barber={barber}
+                  showDistance={Boolean(distanceLabel)}
+                  distanceLabel={distanceLabel}
+                  onClick={() => void handleBarberSelect(barber)}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
+      )}
+        </>
       )}
         </>
       )}
