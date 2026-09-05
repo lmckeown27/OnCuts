@@ -70,8 +70,7 @@ export default function MyBarbersView({
       {!loading &&
         groups.map(({ location, items }) => (
           <section key={location} className="mb-8 sm:mb-10">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-brand-600 shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
               {location}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
