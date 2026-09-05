@@ -791,8 +791,17 @@ export default function ConsumerPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
+            {/* Left section — logo home + Become a Barber / Barber View */}
             <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="cursor-pointer shrink-0"
+                title="OnCuts home"
+                aria-label="Go to OnCuts landing page"
+              >
+                <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8 sm:h-10 w-auto" />
+              </button>
               {/* Operators: Barber View. Everyone else (incl. consumer-admins): Become a Barber. */}
               {isOperator ? (
                 <button
@@ -813,15 +822,8 @@ export default function ConsumerPage() {
               )}
             </div>
             
-            {/* Center: My Barbers / Discover (browse home) or logo (waitlist) */}
-            {consumerHomeMode === 'waitlist' ? (
-              <button
-                onClick={() => navigate('/')}
-                className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
-              >
-                <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-10 sm:h-12 w-auto" />
-              </button>
-            ) : (
+            {/* Center: My Barbers / Discover (browse home only) */}
+            {consumerHomeMode !== 'waitlist' && (
               <div className="absolute left-1/2 -translate-x-1/2 z-10">
                 <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
               </div>
