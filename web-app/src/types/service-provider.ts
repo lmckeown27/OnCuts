@@ -49,5 +49,7 @@ export type ServiceProvider = {
   weeklySchedule?: unknown;
   serviceLatitude?: number | null;
   serviceLongitude?: number | null;
+  /** Coarse public place name (campus/city) for discover map grouping */
+  serviceLocationLabel?: string | null;
   campusId?: string | null;
 };

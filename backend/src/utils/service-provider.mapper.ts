@@ -4,6 +4,7 @@ import type {
   ServiceProviderReview,
   ServiceProviderService,
 } from '../types/service-provider.types';
+import { coarsenPublicLocationLabel } from '../services/geocode.service';
 
 type BarberLikeRecord = Record<string, unknown>;
 
@@ -217,6 +218,12 @@ export function mapBarberToServiceProvider(record: BarberLikeRecord): ServicePro
     weeklySchedule: record.weekly_schedule ?? record.weeklySchedule,
     serviceLatitude: asNumber(record.service_latitude ?? record.serviceLatitude),
     serviceLongitude: asNumber(record.service_longitude ?? record.serviceLongitude),
+    serviceLocationLabel: (() => {
+      const raw = asString(record.service_location_label ?? record.serviceLocationLabel);
+      if (!raw) return null;
+      const coarse = coarsenPublicLocationLabel(raw);
+      return coarse || null;
+    })(),
     campusId: asString(record.campus_id ?? record.campusId),
   };
 }

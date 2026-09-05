@@ -328,7 +328,10 @@ export type DiscoverArea = {
 /** Map-only blob size — keeps areas general without huge service-radius circles. */
 export const DISCOVER_MAP_AREA_RADIUS_KM = 0.4;
 
-/** Cluster listed operators by location label for map selection. */
+/** Cluster listed operators by public location label for map selection.
+ * Operators with a pin but no label yet still appear (coord bucket) so signed-out
+ * Discover is complete before reverse-geocode enrichment finishes.
+ */
 export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
   const groups = new Map<
     string,
@@ -346,15 +349,17 @@ export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
     const label = publicBroadLocationLabel(barber);
-    if (!label) continue;
-
-    const key = label.toLowerCase();
+    // ~1 km buckets keep unlabeled pins visible without inventing an "Other" place name
+    const key = label
+      ? label.toLowerCase()
+      : `pin:${lat.toFixed(2)},${lng.toFixed(2)}`;
     const g = groups.get(key) ?? {
-      label,
+      label: label || '',
       lats: [],
       lngs: [],
       barberIds: [],
     };
+    if (label && !g.label) g.label = label;
     g.lats.push(lat);
     g.lngs.push(lng);
     g.barberIds.push(barber.id);

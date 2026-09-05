@@ -134,11 +134,13 @@ export default function DiscoverMap({
         onSelectRef.current(selected ? null : area.key);
       });
 
-      circle.bindTooltip(area.label, {
-        permanent: false,
-        direction: 'center',
-        className: 'discover-map-tooltip',
-      });
+      if (area.label) {
+        circle.bindTooltip(area.label, {
+          permanent: false,
+          direction: 'center',
+          className: 'discover-map-tooltip',
+        });
+      }
 
       circle.addTo(layer);
     }

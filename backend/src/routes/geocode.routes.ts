@@ -1,10 +1,11 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth';
 import { reverseGeocodePlace, searchGeocodePlaces } from '../controllers/geocode.controller';
 
 const router = express.Router();
 
-router.get('/search', authenticate, searchGeocodePlaces);
-router.get('/reverse', authenticate, reverseGeocodePlace);
+// Public: coarse place search / reverse only (city/campus — no street addresses).
+// Needed for signed-out Discover browse and map area labels.
+router.get('/search', searchGeocodePlaces);
+router.get('/reverse', reverseGeocodePlace);
 
 export default router;

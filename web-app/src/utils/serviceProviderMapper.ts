@@ -81,6 +81,7 @@ export function mapServiceProviderToBarber(provider: ServiceProvider): Barber {
     weekly_schedule: provider.weeklySchedule as Barber['weekly_schedule'],
     service_latitude: provider.serviceLatitude ?? undefined,
     service_longitude: provider.serviceLongitude ?? undefined,
+    service_location_label: provider.serviceLocationLabel ?? undefined,
     distance_miles: provider.distanceMilesFromUser ?? undefined,
     campus_id: provider.campusId ?? undefined,
     service_locations: mapServiceLocations(provider.locations),
