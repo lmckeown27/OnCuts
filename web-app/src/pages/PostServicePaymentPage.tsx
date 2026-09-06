@@ -1119,7 +1119,7 @@ export default function PostServicePaymentPage() {
         if (data.status === 'PAID' || data.status === 'ACCEPTED') {
           toast.success(
             data.status === 'PAID'
-              ? 'The barber reverted completion. Tip is no longer requested.'
+              ? 'The operator reverted completion. Tip is no longer requested.'
               : 'Booking updated.'
           );
           navigate('/web/consumer');

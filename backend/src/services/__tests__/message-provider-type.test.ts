@@ -7,6 +7,7 @@ import {
   formatInboxConversation,
   resolveMessagingProviderType,
 } from '../message.service';
+import { UNCLEAR_OPERATOR_TYPE } from '../../utils/service-provider.mapper';
 
 describe('resolveMessagingProviderType', () => {
   it('returns "barber" for a barber provider', () => {
@@ -17,9 +18,10 @@ describe('resolveMessagingProviderType', () => {
     expect(resolveMessagingProviderType('beauty')).toBe('beauty');
   });
 
-  it('returns "barber" when provider_type is null or missing', () => {
-    expect(resolveMessagingProviderType(null)).toBe('barber');
-    expect(resolveMessagingProviderType(undefined)).toBe('barber');
+  it('returns "Unclear operator type" when provider_type is null or missing', () => {
+    expect(resolveMessagingProviderType(null)).toBe(UNCLEAR_OPERATOR_TYPE);
+    expect(resolveMessagingProviderType(undefined)).toBe(UNCLEAR_OPERATOR_TYPE);
+    expect(resolveMessagingProviderType('')).toBe(UNCLEAR_OPERATOR_TYPE);
   });
 });
 
@@ -30,8 +32,8 @@ describe('bookingProviderTypeFields', () => {
       provider_type: 'beauty',
     });
     expect(bookingProviderTypeFields(null)).toEqual({
-      providerType: 'barber',
-      provider_type: 'barber',
+      providerType: UNCLEAR_OPERATOR_TYPE,
+      provider_type: UNCLEAR_OPERATOR_TYPE,
     });
   });
 });
@@ -93,14 +95,14 @@ describe('formatInboxConversation (conversation-list booking)', () => {
     });
   });
 
-  it('defaults missing provider_type to "barber"', () => {
+  it('returns Unclear operator type when provider_type is missing', () => {
     const conv = formatInboxConversation({
       ...baseRow,
       barber_provider_type: null,
     });
     expect(conv.booking).toMatchObject({
-      providerType: 'barber',
-      provider_type: 'barber',
+      providerType: UNCLEAR_OPERATOR_TYPE,
+      provider_type: UNCLEAR_OPERATOR_TYPE,
     });
   });
 });
@@ -121,7 +123,7 @@ describe('thread endpoint booking provider fields', () => {
     };
   }
 
-  it('includes both fields for barber, beauty, and null on the thread booking', () => {
+  it('includes both fields for barber, beauty, and unclear on the thread booking', () => {
     expect(formatThreadBooking({ booking_id_ref: 'b1', barber_provider_type: 'barber' })).toMatchObject({
       providerType: 'barber',
       provider_type: 'barber',
@@ -131,8 +133,8 @@ describe('thread endpoint booking provider fields', () => {
       provider_type: 'beauty',
     });
     expect(formatThreadBooking({ booking_id_ref: 'b1', barber_provider_type: null })).toMatchObject({
-      providerType: 'barber',
-      provider_type: 'barber',
+      providerType: UNCLEAR_OPERATOR_TYPE,
+      provider_type: UNCLEAR_OPERATOR_TYPE,
     });
   });
 });

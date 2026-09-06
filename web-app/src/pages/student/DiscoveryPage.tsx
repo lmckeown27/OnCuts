@@ -41,20 +41,20 @@ export default function DiscoveryPage() {
   );
 
   if (isLoading) {
-    return <Loading fullScreen text="Finding barbers..." />;
+    return <Loading fullScreen text="Finding operators..." />;
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Discover Barbers</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Discover Operators</h1>
         
         <div className="flex gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
-              placeholder="Search barbers, styles, specialties..."
+              placeholder="Search operators, styles, specialties..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -109,7 +109,7 @@ export default function DiscoveryPage() {
 
       {filteredBarbers.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-600">No barbers found matching your search</p>
+          <p className="text-gray-600">No operators found matching your search</p>
         </div>
       )}
     </div>

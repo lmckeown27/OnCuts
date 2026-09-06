@@ -1,6 +1,13 @@
 /** Coarse browse buckets — same as provider_type (barber | beauty). */
 export type ServiceProviderCategory = 'Barber' | 'Beauty';
 
+/** Displayed when an operator has not chosen Barber vs Beauty. */
+export const UNCLEAR_OPERATOR_TYPE = 'Unclear operator type';
+
+export type ServiceProviderCategoryOrUnclear =
+  | ServiceProviderCategory
+  | typeof UNCLEAR_OPERATOR_TYPE;
+
 export type ServiceProviderService = {
   name: string;
   price: number;
@@ -39,8 +46,9 @@ export type ServiceProvider = {
   completedBookings: number | null;
   isAvailableNow: boolean | null;
   priceRange: ServiceProviderPriceRange | null;
-  category: ServiceProviderCategory;
+  category: ServiceProviderCategoryOrUnclear;
   specialty: string;
+  /** `barber` | `beauty` | `Unclear operator type` when unset. */
   providerType: string;
   services: ServiceProviderService[] | null;
   availability: unknown | null;

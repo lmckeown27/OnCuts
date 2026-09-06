@@ -185,7 +185,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">Chat with barbers on your campus</p>
+              <p className="text-sm text-gray-500">Chat with operators on your campus</p>
             )}
           </div>
           <button
@@ -202,7 +202,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search barbers..."
+              placeholder="Search operators..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
@@ -220,7 +220,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
               <Send className="w-12 h-12 text-gray-300 mb-3" />
               <p className="text-sm">
-                {searchQuery ? 'No barbers found' : 'No other barbers on your campus yet'}
+                {searchQuery ? 'No operators found' : 'No other operators on your campus yet'}
               </p>
             </div>
           ) : (

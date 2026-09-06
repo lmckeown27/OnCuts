@@ -396,9 +396,9 @@ export default function BrowseUtilityPill({
                   type="search"
                   value={searchQuery}
                   onChange={(e) => onSearchQueryChange(e.target.value)}
-                  placeholder="Search barbers"
+                  placeholder="Search operators"
                   className="flex-1 min-w-0 bg-transparent text-base sm:text-lg font-semibold text-gray-900 placeholder-gray-400 focus:outline-none"
-                  aria-label="Search barbers"
+                  aria-label="Search operators"
                 />
                 <button
                   type="button"
@@ -415,7 +415,7 @@ export default function BrowseUtilityPill({
                   type="button"
                   onClick={openSearch}
                   className="flex-1 flex items-center justify-center py-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors active:scale-95"
-                  aria-label="Search barbers"
+                  aria-label="Search operators"
                 >
                   <Search className="w-5 h-5" />
                 </button>

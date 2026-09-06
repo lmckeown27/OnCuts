@@ -139,7 +139,7 @@ export default function BookingPaymentPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">No Booking Details</h2>
           <p className="text-gray-600 mb-4">
-            Please start from the barber selection page
+            Please start from the operator selection page
           </p>
           <Button onClick={() => navigate('/web/consumer')}>
             Back to Dashboard
@@ -214,7 +214,7 @@ export default function BookingPaymentPage() {
           <div className="p-3 rounded-lg mb-6 text-sm bg-amber-50 border border-amber-200">
             <p className="text-amber-700 font-medium mb-1">Payment Due at Appointment</p>
             <p className="text-amber-600">
-              Please pay your barber directly when your service is complete.
+              Please pay your operator directly when your service is complete.
             </p>
           </div>
 
@@ -240,7 +240,7 @@ export default function BookingPaymentPage() {
               className="w-full flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4" />
-              Message {bookingDetails.barberName?.split(' ')[0] || 'Barber'}
+              Message {bookingDetails.barberName?.split(' ')[0] || 'Operator'}
             </Button>
             <Button onClick={() => navigate('/web/consumer')} className="w-full">
               Back to Dashboard
@@ -415,7 +415,7 @@ export default function BookingPaymentPage() {
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 text-right">
-              Paid in-app after the barber accepts
+              Paid in-app after the operator accepts
             </p>
           </div>
         </Card>
@@ -454,7 +454,7 @@ export default function BookingPaymentPage() {
         {/* Info Text */}
         <div className="text-xs text-gray-500 text-center mt-4 space-y-1">
           <p>
-            No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your barber'} accepts your request.
+            No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your operator'} accepts your request.
           </p>
           <p>
             By confirming, you agree to pay ${chargeDollars.toFixed(2)} after acceptance to lock in your appointment.

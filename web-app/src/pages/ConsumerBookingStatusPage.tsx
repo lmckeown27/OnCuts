@@ -264,7 +264,7 @@ export default function ConsumerBookingStatusPage() {
             cancelledBarberId: data.barberId || booking.barberId,
             barberName: booking.barberName,
           });
-          toast('Your booking has been cancelled by the barber', { icon: 'ℹ️' });
+          toast('Your booking has been cancelled by the operator', { icon: 'ℹ️' });
         }
         
         // Clear the current booking to show "No Active Booking" with alternatives
@@ -496,7 +496,7 @@ export default function ConsumerBookingStatusPage() {
             
             // Extract barber name from the message (format: "Barber Name has cancelled...")
             const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
-            const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
+            const barberName = barberNameMatch ? barberNameMatch[1] : 'Your operator';
             
             const details = {
               scheduledTime: cancellationData.scheduledTime,
@@ -719,7 +719,7 @@ export default function ConsumerBookingStatusPage() {
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-black"
             >
-              Find Barbers
+              Find Operators
             </button>
           </div>
         </div>
@@ -756,10 +756,10 @@ export default function ConsumerBookingStatusPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">
                   {loadingAlternativeBarbers 
-                    ? 'Finding available barbers...' 
+                    ? 'Finding available operators...' 
                     : alternativeBarbers.length > 0 
-                      ? `${alternativeBarbers.length} barber${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
-                      : 'No barbers available at this time'
+                      ? `${alternativeBarbers.length} operator${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
+                      : 'No operators available at this time'
                   }
                 </h3>
 
@@ -819,13 +819,13 @@ export default function ConsumerBookingStatusPage() {
                 ) : (
                   <div className="text-center py-4">
                     <p className="text-gray-500 text-sm">
-                      No other barbers are available at this specific time.
+                      No other operators are available at this specific time.
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Browse All Barbers Button */}
+              {/* Browse All Operators Button */}
               <div className="text-center pt-4">
                 <button
                   onClick={async () => {
@@ -843,7 +843,7 @@ export default function ConsumerBookingStatusPage() {
                   }}
                   className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
                 >
-                  Browse All Barbers
+                  Browse All Operators
                 </button>
               </div>
             </div>
@@ -857,7 +857,7 @@ export default function ConsumerBookingStatusPage() {
             onClick={handleBackToDiscover}
             className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
           >
-            Find a Barber
+            Find an Operator
           </button>
             </div>
           )}
@@ -1057,7 +1057,7 @@ export default function ConsumerBookingStatusPage() {
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-primary-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-primary-800">Waiting for barber confirmation</p>
+                  <p className="font-semibold text-primary-800">Waiting for operator confirmation</p>
                   <p className="text-sm text-primary-600 mt-1">
                     {booking.barberName} will review and confirm your booking request.
                   </p>
@@ -1135,7 +1135,7 @@ export default function ConsumerBookingStatusPage() {
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
                 <Pencil className="w-6 h-6 text-amber-600" />
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">Barber Made Changes</h3>
+              <h3 className="font-bold text-gray-900 mb-2">Operator Made Changes</h3>
               <p className="text-gray-600 text-sm mb-4">
                 {booking.barberName} has updated some details of your booking. Please review the changes below.
               </p>
@@ -1168,7 +1168,7 @@ export default function ConsumerBookingStatusPage() {
                   className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  Message Barber
+                  Message Operator
                 </button>
               </div>
             </div>
@@ -1189,7 +1189,7 @@ export default function ConsumerBookingStatusPage() {
               )}
             </div>
             <div>
-              <p className="text-sm text-gray-500">Barber</p>
+              <p className="text-sm text-gray-500">Operator</p>
               <p className="font-bold text-gray-900">{booking.barberName}</p>
             </div>
           </div>
@@ -1316,7 +1316,7 @@ export default function ConsumerBookingStatusPage() {
             <p className="text-sm text-gray-600 mb-4">
               {isPending
                 ? 'Update your appointment details. Changes apply immediately while your request is still pending.'
-                : 'Pick a new date and time. Your appointment updates right away and your barber is notified.'}
+                : 'Pick a new date and time. Your appointment updates right away and your operator is notified.'}
             </p>
             
             <div className="space-y-4">
@@ -1368,7 +1368,7 @@ export default function ConsumerBookingStatusPage() {
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Any special requests or notes for your barber..."
+                  placeholder="Any special requests or notes for your operator..."
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
@@ -1417,7 +1417,7 @@ export default function ConsumerBookingStatusPage() {
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Let the barber know why you're cancelling..."
+                placeholder="Let the operator know why you're cancelling..."
                 rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-gray-900 resize-none"
               />
@@ -1670,7 +1670,7 @@ export default function ConsumerBookingStatusPage() {
                 }}
                 className="w-full px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
-                Find Another Barber
+                Find Another Operator
               </button>
             </div>
           </div>

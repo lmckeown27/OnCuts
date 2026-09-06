@@ -128,7 +128,7 @@ export default function LandingPage() {
               On-Demand Haircuts
             </h1>
             <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-600">
-              Search below to browse and book barbers near you
+              Search below to browse and book operators near you
             </p>
           </div>
           
@@ -142,7 +142,7 @@ export default function LandingPage() {
             </div>
             {selectedCollegeTown && (
             <p className="mt-4 text-base sm:text-lg text-gray-600 text-center">
-                Searching barbers near {selectedCollegeTown.shortName}
+                Searching operators near {selectedCollegeTown.shortName}
               </p>
             )}
           </div>

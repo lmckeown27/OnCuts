@@ -32,6 +32,7 @@ import {
 } from '../services/barber-provider-schema.service';
 import {
   normalizeProviderType,
+  providerTypeApiValue,
   providerTypeSlugFromCategoryOrType,
 } from '../utils/service-provider.mapper';
 import {
@@ -59,6 +60,8 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
   const slotInterval = resolveBookingSlotIntervalMinutes(
     barber.booking_slot_interval_minutes ?? barber.bookingSlotIntervalMinutes
   );
+  const rawProviderType = barber.provider_type ?? barber.providerType;
+  const providerType = providerTypeApiValue(rawProviderType);
   return {
     ...barber,
     is_hidden: isHidden,
@@ -69,6 +72,8 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
     weeklySchedule: weekly,
     booking_slot_interval_minutes: slotInterval,
     bookingSlotIntervalMinutes: slotInterval,
+    provider_type: providerType,
+    providerType,
   };
 }
 
@@ -375,6 +380,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         five_star_review_count: parseInt(barber.five_star_review_count || '0', 10),
         // Stripe status - fully set up (visible to consumers) vs not
         has_stripe_setup: !!barber.stripe_account_id && barber.stripe_payouts_enabled === true,
+        provider_type: providerTypeApiValue(barber.provider_type),
+        providerType: providerTypeApiValue(barber.provider_type),
       };
     }));
 
@@ -1086,10 +1093,15 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         `SELECT LOWER(${providerTypeExpr}) AS provider_type FROM barbers b WHERE b.id = $1`,
         [id]
       );
+      const rawKind = typeResult.rows[0]?.provider_type;
       const providerKind =
-        String(typeResult.rows[0]?.provider_type || 'barber').toLowerCase() === 'beauty'
-          ? 'beauty'
-          : 'barber';
+        rawKind == null || String(rawKind).trim() === ''
+          ? null
+          : String(rawKind).toLowerCase() === 'beauty'
+            ? 'beauty'
+            : String(rawKind).toLowerCase() === 'barber'
+              ? 'barber'
+              : null;
 
       const hasDurationCols = await serviceDurationColumnsExist();
       const hasProviderTypeCol = await serviceProviderTypeColumnExist();
@@ -1102,6 +1114,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         catalogResult.rows
           .filter(
             (row: Record<string, unknown>) =>
+              providerKind == null ||
               inferServiceProviderType(row.slug, row.name, row.provider_type) === providerKind
           )
           .map((row: Record<string, unknown>) => String(row.name).toLowerCase())

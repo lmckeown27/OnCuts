@@ -11,6 +11,11 @@ type BarberLikeRecord = Record<string, unknown>;
 /** Canonical provider_type slugs stored in Postgres. */
 export type ProviderTypeSlug = 'barber' | 'beauty';
 
+/** Returned on APIs when provider_type is null / unrecognized. */
+export const UNCLEAR_OPERATOR_TYPE = 'Unclear operator type';
+
+export type ProviderTypeApiValue = ProviderTypeSlug | typeof UNCLEAR_OPERATOR_TYPE;
+
 export const SERVICE_PROVIDER_CATEGORIES: ServiceProviderCategory[] = ['Barber', 'Beauty'];
 
 export const PROVIDER_TYPE_SLUGS: ProviderTypeSlug[] = ['barber', 'beauty'];
@@ -48,10 +53,15 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
-/** Normalize DB / query value to `barber` | `beauty` (default barber). */
-export function normalizeProviderType(raw: unknown): ProviderTypeSlug {
+/**
+ * Parse a stored / inbound provider kind.
+ * Returns null when unset or unrecognized — never invents "barber".
+ */
+export function parseProviderTypeSlug(raw: unknown): ProviderTypeSlug | null {
   const value = asString(raw)?.toLowerCase();
+  if (!value) return null;
   if (value === 'beauty') return 'beauty';
+  if (value === 'barber') return 'barber';
   // Legacy fine-grained beauty slugs (if any remain in DB)
   if (
     value === 'braids' ||
@@ -62,7 +72,24 @@ export function normalizeProviderType(raw: unknown): ProviderTypeSlug {
   ) {
     return 'beauty';
   }
-  return 'barber';
+  // Explicit unclear / display label from a prior response
+  if (value === 'unclear' || value === UNCLEAR_OPERATOR_TYPE.toLowerCase()) {
+    return null;
+  }
+  return null;
+}
+
+/** API / UI value: barber | beauty | "Unclear operator type". */
+export function providerTypeApiValue(raw: unknown): ProviderTypeApiValue {
+  return parseProviderTypeSlug(raw) ?? UNCLEAR_OPERATOR_TYPE;
+}
+
+/**
+ * Normalize browse/filter query values to `barber` | `beauty`.
+ * Only use for client filter params that must be a real category — not for stored DB values.
+ */
+export function normalizeProviderType(raw: unknown): ProviderTypeSlug {
+  return parseProviderTypeSlug(raw) ?? 'barber';
 }
 
 export function isServiceProviderCategory(value: string): value is ServiceProviderCategory {
@@ -78,11 +105,14 @@ export function providerTypeSlugFromCategoryOrType(
   const fromMap = CATEGORY_TO_SLUG[key] ?? CATEGORY_TO_SLUG[key.toLowerCase()];
   if (fromMap) return fromMap;
   if (isServiceProviderCategory(key)) return CATEGORY_TO_SLUG[key] ?? null;
-  return null;
+  return parseProviderTypeSlug(key);
 }
 
-export function categoryForProviderType(providerType: string): ServiceProviderCategory {
-  const slug = normalizeProviderType(providerType);
+export function categoryForProviderType(
+  providerType: unknown
+): ServiceProviderCategory | typeof UNCLEAR_OPERATOR_TYPE {
+  const slug = parseProviderTypeSlug(providerType);
+  if (!slug) return UNCLEAR_OPERATOR_TYPE;
   return SLUG_TO_CATEGORY[slug];
 }
 
@@ -92,8 +122,9 @@ export function providerTypesForCategory(category: ServiceProviderCategory | str
   return slug ? [slug] : [];
 }
 
-export function specialtyForProviderType(providerType: string): string {
-  const slug = normalizeProviderType(providerType);
+export function specialtyForProviderType(providerType: unknown): string {
+  const slug = parseProviderTypeSlug(providerType);
+  if (!slug) return 'Operator';
   return PROVIDER_TYPE_LABEL[slug];
 }
 
@@ -177,7 +208,8 @@ function mapReviews(reviews: unknown): ServiceProviderReview[] | null {
 
 /** Map a barber list/detail API record into the OnCuts ServiceProvider shape. */
 export function mapBarberToServiceProvider(record: BarberLikeRecord): ServiceProvider {
-  const providerType = normalizeProviderType(record.provider_type ?? record.providerType);
+  const rawType = record.provider_type ?? record.providerType;
+  const providerType = providerTypeApiValue(rawType);
   const services = mapServices(record.pricing);
   const firstName = asString(record.first_name);
   const lastName = asString(record.last_name);
@@ -192,7 +224,7 @@ export function mapBarberToServiceProvider(record: BarberLikeRecord): ServicePro
   const specialty =
     firstSpecialtyFromRecord(record) ??
     services?.[0]?.name ??
-    specialtyForProviderType(providerType);
+    specialtyForProviderType(rawType);
 
   return {
     id,
@@ -206,7 +238,7 @@ export function mapBarberToServiceProvider(record: BarberLikeRecord): ServicePro
     completedBookings: asNumber(record.total_bookings ?? record.totalBookings),
     isAvailableNow: typeof record.is_active === 'boolean' ? record.is_active : null,
     priceRange: mapPriceRange(services),
-    category: categoryForProviderType(providerType),
+    category: categoryForProviderType(rawType),
     specialty,
     providerType,
     services,

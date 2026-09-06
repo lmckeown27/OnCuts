@@ -31,12 +31,12 @@ export default function MyBarbersView({
   return (
     <div className="mt-2 sm:mt-4">
       {loading && (
-        <div className="py-16 text-center text-gray-500 text-sm">Loading your barbers…</div>
+        <div className="py-16 text-center text-gray-500 text-sm">Loading your operators…</div>
       )}
 
       {!loading && !isAuthenticated && (
         <div className="rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-white px-6 py-12 text-center">
-          <h3 className="text-lg font-semibold text-gray-900">Sign in to see My Barbers</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Sign in to see My Operators</h3>
           <p className="mt-2 text-sm text-gray-600 max-w-sm mx-auto">
             Or go to &apos;Discover&apos; to find your Operator
           </p>
@@ -53,7 +53,7 @@ export default function MyBarbersView({
       {!loading && isAuthenticated && entries.length === 0 && (
         <div className="rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-white px-6 py-12 text-center">
           <MapPin className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900">No barbers yet</h3>
+          <h3 className="text-lg font-semibold text-gray-900">No operators yet</h3>
           <p className="mt-2 text-sm text-gray-600 max-w-sm mx-auto">
             Book once and they&apos;ll land here as a regular. Find someone new on Discover.
           </p>
@@ -62,7 +62,7 @@ export default function MyBarbersView({
             onClick={onGoDiscover}
             className="mt-6 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors"
           >
-            Discover barbers
+            Discover operators
           </button>
         </div>
       )}

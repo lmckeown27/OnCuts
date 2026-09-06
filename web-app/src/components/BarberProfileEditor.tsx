@@ -111,7 +111,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       }
       
       if (!data) {
-        toast.error('No barber profile found');
+        toast.error('No operator profile found');
         setIsLoading(false);
         return;
       }
@@ -135,7 +135,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
 
   const handleSaveProfile = async () => {
     if (!barber) {
-      toast.error('No barber profile loaded');
+      toast.error('No operator profile loaded');
       return;
     }
     
@@ -300,7 +300,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       {/* Profile Photo - matches barber card dimensions */}
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
-        <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
+        <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your operator card</p>
         {isMobileDevice() ? (
           /* Mobile: Use camera/gallery picker with square shape for barbers */
           <MobilePhotoUpload
@@ -353,7 +353,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       {/* Display Name */}
       <Card>
         <h3 className="text-lg font-semibold mb-2">Display Name</h3>
-        <p className="text-sm text-gray-600 mb-4">This is the name shown on your barber card</p>
+        <p className="text-sm text-gray-600 mb-4">This is the name shown on your operator card</p>
         <input
           type="text"
           value={displayName}
@@ -411,7 +411,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
             />
             <div>
               <span className="font-medium text-gray-900">Hide my profile from consumers</span>
-              <p className="text-sm text-gray-500">Your barber card will not appear in search results</p>
+              <p className="text-sm text-gray-500">Your operator card will not appear in search results</p>
             </div>
           </label>
           

@@ -77,7 +77,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
           'Preferred customer status'
         ],
         improvement_tips: [
-          'Increase engagement score by trying new barbers',
+          'Increase engagement score by trying new operators',
           'Keep attending appointments to maintain excellent score',
           'Leave more reviews to help the community'
         ],
@@ -207,7 +207,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
           <div className="text-sm text-gray-600 space-y-1">
             <div>Total Spent: ${score.metrics.total_spent_dollars}</div>
             <div>Avg Tip: {score.metrics.avg_tip_percentage}%</div>
-            <div>Favorite Barbers: {score.metrics.favorite_barbers_count}</div>
+            <div>Favorite Operators: {score.metrics.favorite_barbers_count}</div>
           </div>
           <div className="mt-3 text-xs text-gray-500">
             20% of your overall score
@@ -364,7 +364,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
 
           {score.overall_score < 85 && (
             <div className="p-3 bg-blue-100 rounded-lg text-xs text-blue-800">
-              <strong>Why review weight matters:</strong> To protect barbers from unfair reviews, we weight reviews based on customer reliability and fairness. Improve your score to make your reviews count more!
+              <strong>Why review weight matters:</strong> To protect operators from unfair reviews, we weight reviews based on customer reliability and fairness. Improve your score to make your reviews count more!
             </div>
           )}
         </div>
@@ -458,7 +458,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
                   <li>• Show up to ALL scheduled appointments</li>
                   <li>• Leave fair, balanced reviews (not overly harsh)</li>
                   <li>• Avoid last-minute cancellations</li>
-                  <li>• Be respectful to barbers</li>
+                  <li>• Be respectful to operators</li>
                 </ul>
               </div>
             </div>

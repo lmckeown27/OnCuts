@@ -90,9 +90,9 @@ export default function LoginPrompt({
   const getActionText = () => {
     switch (action) {
       case 'schedule':
-        return 'schedule a service with this barber';
+        return 'schedule a service with this operator';
       case 'become_barber':
-        return 'apply to become a barber';
+        return 'apply to become an operator';
       default:
         return 'access this feature';
     }

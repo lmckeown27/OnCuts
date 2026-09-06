@@ -512,9 +512,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <UserX className="w-8 h-8" />
             </div>
             
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Barber Access Removed</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Operator Access Removed</h3>
             <p className="text-gray-600 mb-6">
-              Your barber privileges have been removed by the OnCuts team. You no longer have access to the barber dashboard or booking features.
+              Your operator privileges have been removed by the OnCuts team. You no longer have access to the operator dashboard or booking features.
             </p>
 
             {/* Info box */}
@@ -524,7 +524,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </p>
               <ul className="text-sm text-gray-500 mt-2 space-y-1 list-disc list-inside">
                 <li>You can no longer receive booking requests</li>
-                <li>Your barber profile is no longer visible to consumers</li>
+                <li>Your operator profile is no longer visible to consumers</li>
                 <li>You can still use the platform as a consumer</li>
               </ul>
             </div>
@@ -535,7 +535,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 Think this was a mistake? Contact us:
               </p>
               <a 
-                href="mailto:oncutshelp@gmail.com?subject=Barber Access Removed - Appeal"
+                href="mailto:oncutshelp@gmail.com?subject=Operator Access Removed - Appeal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
@@ -652,7 +652,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 Having issues or think your application wasn't submitted?
               </p>
               <a 
-                href="mailto:oncutshelp@gmail.com?subject=Barber Application Issue"
+                href="mailto:oncutshelp@gmail.com?subject=Operator Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-black font-medium text-sm"
@@ -822,7 +822,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Do you need barber tools?
+                    Do you need tools?
                   </label>
                   <div className="flex gap-4 mb-2">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -932,7 +932,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Why do you want to be an OnCuts barber? *
+                  Why do you want to be an OnCuts operator? *
                 </label>
                 <textarea
                   value={form.whyBeBarber}

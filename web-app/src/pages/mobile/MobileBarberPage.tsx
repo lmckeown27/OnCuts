@@ -112,7 +112,7 @@ export default function MobileBarberPage() {
         userType: user.user_type,
         hasBarberProfile: user.has_barber_profile
       });
-      toast.error('You need a barber profile to access this page');
+      toast.error('You need an operator profile to access this page');
       navigate(`${platformPrefix}/consumer`);
     }
   }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);

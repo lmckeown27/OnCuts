@@ -357,7 +357,7 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
       <Card className="p-6">
         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
           <Calendar className="w-12 h-12 mb-3" />
-          <p className="text-sm">No barbers found for this campus</p>
+          <p className="text-sm">No operators found for this campus</p>
         </div>
       </Card>
     );
@@ -455,7 +455,7 @@ export const AllCampusesLocationsPanel: React.FC<{ campuses: CampusRef[] }> = ({
     return (
       <Card className="text-center py-8 sm:py-12">
         <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-700 font-medium text-sm sm:text-base">No campuses with barbers yet</p>
+        <p className="text-gray-700 font-medium text-sm sm:text-base">No campuses with operators yet</p>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">
           Locations appear here once barbers are active on a campus.
         </p>
@@ -993,7 +993,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     className="text-gray-900 focus:ring-gray-400"
                   />
                   <div>
-                    <span className="font-medium text-gray-900">All Barbers</span>
+                    <span className="font-medium text-gray-900">All Operators</span>
                     <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
                   </div>
                 </label>
@@ -1219,12 +1219,12 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
         {loadingBarberAssignments ? (
           <Card className="text-center py-8">
             <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
-            <p className="text-gray-500 text-sm">Loading barber assignments...</p>
+            <p className="text-gray-500 text-sm">Loading operator assignments...</p>
           </Card>
         ) : barbersWithLocations.length === 0 ? (
           <Card className="text-center py-8 bg-gray-50">
             <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">No barbers found</p>
+            <p className="text-gray-600 font-medium">No operators found</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -1509,7 +1509,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                       className="text-green-600 focus:ring-green-400"
                     />
                     <div>
-                      <span className="font-medium text-gray-900">All Barbers (Universal)</span>
+                      <span className="font-medium text-gray-900">All Operators (Universal)</span>
                       <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
                     </div>
                   </label>
@@ -1523,7 +1523,7 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
                     />
                     <div>
                       <span className="font-medium text-gray-900">Only the Requesting Barber</span>
-                      <p className="text-xs text-gray-500">Only {approvalLocation.created_by_name || 'the barber who requested'} can use this</p>
+                      <p className="text-xs text-gray-500">Only {approvalLocation.created_by_name || 'the operator who requested'} can use this</p>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -2171,7 +2171,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: Ca
                       onChange={(e) => setSelectedBarberId(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
                     >
-                      <option value="all">All Barbers</option>
+                      <option value="all">All Operators</option>
                       {barbers.map((barber) => (
                         <option key={barber.id} value={barber.id}>{barber.name}</option>
                       ))}

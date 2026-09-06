@@ -7,7 +7,7 @@ interface ConsumerHomeSegmentPillProps {
 }
 
 const SEGMENTS: { id: ConsumerHomeSegment; label: string }[] = [
-  { id: 'my_barbers', label: 'My Barbers' },
+  { id: 'my_barbers', label: 'My Operators' },
   { id: 'discover', label: 'Discover' },
 ];
 

@@ -105,7 +105,7 @@ export default function CustomerBookingTracker({ customerId }: Props) {
         <div className="text-center py-8">
           <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-600">No active booking requests</p>
-          <p className="text-sm text-gray-500 mt-1">Browse barbers and send a request to get started</p>
+          <p className="text-sm text-gray-500 mt-1">Browse operators and send a request to get started</p>
         </div>
       </Card>
     );

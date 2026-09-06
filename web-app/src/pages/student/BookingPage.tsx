@@ -143,7 +143,7 @@ export default function BookingPage() {
   }
 
   if (!barber) {
-    return <div className="text-center py-12">Barber not found</div>;
+    return <div className="text-center py-12">Operator not found</div>;
   }
 
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i));
@@ -400,7 +400,7 @@ export default function BookingPage() {
             <div className="bg-primary-50 border border-gray-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-primary-800">
                 <strong>Secure Payment:</strong> Your payment will be held in escrow until service completion. 
-                You can also add a tip for your barber on the next screen.
+                You can also add a tip for your operator on the next screen.
               </p>
             </div>
 
@@ -421,7 +421,7 @@ export default function BookingPage() {
                       || barber?.display_name 
                       || (barber?.user?.first_name ? `${barber.user.first_name} ${barber.user.last_name || ''}`.trim() : null)
                       || (barber?.first_name ? `${barber.first_name} ${barber.last_name || ''}`.trim() : null)
-                      || 'Barber';
+                      || 'Operator';
                     
                     navigate('/web/student/booking/payment', {
                       state: {

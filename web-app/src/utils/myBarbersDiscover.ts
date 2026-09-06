@@ -1,5 +1,5 @@
 /**
- * Client helpers for My Barbers / Discover (no backend changes).
+ * Client helpers for My Operators / Discover (no backend changes).
  * Deferred later: true next bookable slot, user-set MAIN, dedicated /my-barbers API.
  */
 
@@ -236,7 +236,7 @@ export function barberDisplayName(barber: Barber): string {
     barber.name ||
     barber.display_name ||
     `${barber.first_name || ''} ${barber.last_name || ''}`.trim() ||
-    'Barber'
+    'Operator'
   );
 }
 

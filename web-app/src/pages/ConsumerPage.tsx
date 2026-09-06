@@ -299,7 +299,7 @@ export default function ConsumerPage() {
   const consumerId = user?.id || '';
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
 
-  // Default signed-in clients to My Barbers (header + DiscoveryView share this)
+  // Default signed-in clients to My Operators (header + DiscoveryView share this)
   useEffect(() => {
     if (isAuthenticated) {
       setHomeSegment('my_barbers');
@@ -510,7 +510,7 @@ export default function ConsumerPage() {
     }
   }, [location.state?.openBookings]);
 
-  // Handle "Become a Barber" button click
+  // Handle "Become an Operator" button click
   const handleBecomeBarberClick = () => {
     // Check if user is authenticated first
     if (!user) {
@@ -700,7 +700,7 @@ export default function ConsumerPage() {
       clearDeferredPaymentTakeover(data.bookingId);
 
       toast.success(
-        data.message || 'The barber has cancelled the payment request. Your booking stays active.',
+        data.message || 'The operator has cancelled the payment request. Your booking stays active.',
         { duration: 5000 }
       );
 
@@ -791,7 +791,7 @@ export default function ConsumerPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section — logo home + Become a Barber / Barber View */}
+            {/* Left section — logo home + Become an Operator / Operator View */}
             <div className="flex items-center gap-2 sm:gap-4">
               <button
                 type="button"
@@ -802,27 +802,27 @@ export default function ConsumerPage() {
               >
                 <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8 sm:h-10 w-auto" />
               </button>
-              {/* Operators: Barber View. Everyone else (incl. consumer-admins): Become a Barber. */}
+              {/* Operators: Operator View. Everyone else (incl. consumer-admins): Become an Operator. */}
               {isOperator ? (
                 <button
                   onClick={() => navigate('/web/barber')}
                   className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
-                  title="Switch to barber view"
+                  title="Switch to operator view"
                 >
-                  <span className="text-xs sm:text-sm font-medium text-primary-700">Barber View</span>
+                  <span className="text-xs sm:text-sm font-medium text-primary-700">Operator View</span>
                 </button>
               ) : (
                 <button
                   onClick={handleBecomeBarberClick}
                   className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
-                  title="Apply to become a barber"
+                  title="Apply to become an operator"
                 >
-                  <span className="text-sm sm:text-base font-semibold text-white">Become a Barber</span>
+                  <span className="text-sm sm:text-base font-semibold text-white">Become an Operator</span>
                 </button>
               )}
             </div>
             
-            {/* Center: My Barbers / Discover (browse home only) */}
+            {/* Center: My Operators / Discover (browse home only) */}
             {consumerHomeMode !== 'waitlist' && (
               <div className="absolute left-1/2 -translate-x-1/2 z-10">
                 <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
@@ -1101,7 +1101,7 @@ export default function ConsumerPage() {
             <p className="text-sm text-gray-500 mb-6">
               If you suspect your application was not sent, please contact{' '}
               <a 
-                href="mailto:oncutshelp@gmail.com?subject=Barber Application Issue"
+                href="mailto:oncutshelp@gmail.com?subject=Operator Application Issue"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-600 hover:text-black font-medium"
@@ -1163,7 +1163,7 @@ export default function ConsumerPage() {
         </div>
       )}
 
-      {/* Login Prompt for unauthenticated users trying to become a barber */}
+      {/* Login Prompt for unauthenticated users trying to become an operator */}
       <LoginPrompt
         isOpen={showLoginPrompt}
         onClose={() => setShowLoginPrompt(false)}
@@ -1275,7 +1275,7 @@ export default function ConsumerPage() {
                         // Payment request - go straight to payment page (clears Pay Later deferral)
                         openPaymentTakeover({
                           bookingId: data.bookingId,
-                          barberName: data.barberName || 'Your Barber',
+                          barberName: data.barberName || 'Your Operator',
                           serviceName: data.serviceName || 'Service',
                           amount: data.amount || 0,
                         });
@@ -1284,7 +1284,7 @@ export default function ConsumerPage() {
                         // Booking declined - show decline details modal
                         // Extract barber name from the message (format: "Barber Name was unable to accept...")
                         const barberNameMatch = notification.message?.match(/^(.+?) was unable to accept/);
-                        const barberName = barberNameMatch ? barberNameMatch[1] : 'The barber';
+                        const barberName = barberNameMatch ? barberNameMatch[1] : 'The operator';
                         setDeclinedModalData({
                           barberName,
                           reason: data.reason || '',
@@ -1296,7 +1296,7 @@ export default function ConsumerPage() {
                         // Barber cancelled - show alternative barbers modal
                         // Extract barber name from the message (format: "Barber Name has cancelled...")
                         const barberNameMatch = notification.message?.match(/^(.+?) has cancelled/);
-                        const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
+                        const barberName = barberNameMatch ? barberNameMatch[1] : 'Your operator';
                         setAlternativeBarbersData({
                           scheduledTime: data.scheduledTime,
                           serviceType: data.serviceType,
@@ -1450,7 +1450,7 @@ export default function ConsumerPage() {
                 }}
                 className="w-full px-6 py-2.5 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors"
               >
-                Find Another Barber
+                Find Another Operator
               </button>
             </div>
           </div>
@@ -1473,7 +1473,7 @@ export default function ConsumerPage() {
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
               <div className="flex flex-col items-center text-center">
                 <h2 className="text-xl font-bold text-white">Booking Cancelled</h2>
-                <p className="text-white/80 text-sm mt-1">Find an available barber for this time</p>
+                <p className="text-white/80 text-sm mt-1">Find an available operator for this time</p>
               </div>
               <button 
                 className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -1520,8 +1520,8 @@ export default function ConsumerPage() {
                 {loadingAlternativeBarbers 
                   ? 'Checking availability...' 
                   : alternativeBarbers.length > 0 
-                    ? `${alternativeBarbers.length} barber${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
-                    : 'No barbers available at this time'
+                    ? `${alternativeBarbers.length} operator${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
+                    : 'No operators available at this time'
                 }
               </h4>
 
@@ -1580,7 +1580,7 @@ export default function ConsumerPage() {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-gray-500 text-sm mb-4">
-                    No other barbers are available at this specific time.
+                    No other operators are available at this specific time.
                   </p>
                   <button
                     onClick={() => {
@@ -1590,7 +1590,7 @@ export default function ConsumerPage() {
                     }}
                     className="text-primary-600 font-medium text-sm hover:text-black"
                   >
-                    Browse all barbers
+                    Browse all operators
                   </button>
                 </div>
               )}
@@ -2625,12 +2625,12 @@ function DiscoveryView({
               !barberSearchQuery.trim() ? (
                 <>
                   <p className="text-gray-700 text-sm font-medium mb-2">
-                    No barbers within {Math.round(maxDistanceMiles)} mi of {locationLabel}
+                    No operators within {Math.round(maxDistanceMiles)} mi of {locationLabel}
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
                     {barbersMeta?.total_before_distance_filter
-                      ? `${barbersMeta.total_before_distance_filter} barber${barbersMeta.total_before_distance_filter !== 1 ? 's' : ''} with a public location are outside your radius.`
-                      : 'Try increasing your search radius or turn off distance limiting to see all barbers.'}
+                      ? `${barbersMeta.total_before_distance_filter} operator${barbersMeta.total_before_distance_filter !== 1 ? 's' : ''} with a public location are outside your radius.`
+                      : 'Try increasing your search radius or turn off distance limiting to see all operators.'}
                   </p>
                   <button
                     type="button"
@@ -2647,7 +2647,7 @@ function DiscoveryView({
               ) : barberSearchQuery.trim() ? (
                 <>
                   <p className="text-gray-700 text-sm font-medium mb-2">
-                    No barbers match &ldquo;{barberSearchQuery.trim()}&rdquo;
+                    No operators match &ldquo;{barberSearchQuery.trim()}&rdquo;
                   </p>
                   <button
                     type="button"
@@ -2659,21 +2659,21 @@ function DiscoveryView({
                 </>
               ) : filterCriteria.serviceType ? (
                 <>
-                  <p className="text-gray-700 text-sm font-medium mb-1">No barbers match your criteria</p>
+                  <p className="text-gray-700 text-sm font-medium mb-1">No operators match your criteria</p>
                   <p className="text-xs text-gray-500">Try adjusting your filters or check back later</p>
                 </>
               ) : (
                 <>
-                  <p className="text-gray-700 text-sm font-medium mb-2">No barbers available yet</p>
+                  <p className="text-gray-700 text-sm font-medium mb-2">No operators available yet</p>
                   <p className="text-xs text-gray-500 mb-4">
-                    Check back soon as more barbers join the platform!
+                    Check back soon as more operators join the platform!
                   </p>
                   <button
                     type="button"
                     onClick={onBecomeBarberClick}
                     className="px-4 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors"
                   >
-                    Become a Barber
+                    Become an Operator
                   </button>
                 </>
               )}
@@ -2721,7 +2721,7 @@ function DiscoveryView({
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between rounded-t-2xl z-10">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
+                {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Operator'}
               </h2>
               <div className="flex items-center gap-3">
                 {selectedBarber.instagram_handle && (
@@ -2753,7 +2753,7 @@ function DiscoveryView({
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
-                        alt={`${selectedBarber.user?.first_name || 'Barber'}`}
+                        alt={`${selectedBarber.user?.first_name || 'Operator'}`}
                         className="w-full h-full object-cover"
                       />
                     ) : (

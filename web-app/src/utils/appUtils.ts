@@ -307,7 +307,7 @@ export async function activateUpdate(): Promise<void> {
 
 export async function shareApp(
   title: string = 'OnCuts',
-  text: string = 'Check out OnCuts - Fair prices for students, great earnings for barbers!',
+  text: string = 'Check out OnCuts - Fair prices for students, great earnings for operators!',
   url: string = window.location.origin
 ): Promise<boolean> {
   if ('share' in navigator) {

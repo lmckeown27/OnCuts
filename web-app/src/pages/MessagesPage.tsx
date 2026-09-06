@@ -1202,13 +1202,13 @@ export default function MessagesPage() {
             <p className="text-gray-500 mb-4">
               {isBarberView 
                 ? "When customers book with you, you can message them here."
-                : "When you book a service, you can message your barber here."}
+                : "When you book a service, you can message your operator here."}
             </p>
             <Button 
               onClick={() => navigate(isBarberView ? `${platformPrefix}/barber` : `${platformPrefix}/consumer`)} 
               variant="primary"
             >
-              {isBarberView ? "Go to Dashboard" : "Find a Barber"}
+              {isBarberView ? "Go to Dashboard" : "Find an Operator"}
             </Button>
           </div>
         ) : (
@@ -1380,7 +1380,7 @@ export default function MessagesPage() {
               <div className="flex items-center gap-2 text-yellow-700">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <p className="text-sm">
-                  <span className="font-medium">Request Pending</span> - Your messages will be delivered once the barber accepts your booking request.
+                  <span className="font-medium">Request Pending</span> - Your messages will be delivered once the operator accepts your booking request.
                 </p>
               </div>
             </div>
@@ -1594,7 +1594,7 @@ export default function MessagesPage() {
                 return renderMessageComposer(
                   <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Barber reached out – reply to discuss details</span>
+                    <span>Operator reached out – reply to discuss details</span>
                   </div>
                 );
               }
@@ -1603,7 +1603,7 @@ export default function MessagesPage() {
               return (
                 <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-sm">
                   <Lock className="w-4 h-4" />
-                  <span>Waiting for barber to respond to your request</span>
+                  <span>Waiting for operator to respond to your request</span>
                 </div>
               );
             }
@@ -1692,7 +1692,7 @@ export default function MessagesPage() {
                           className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-gray-50 flex items-center gap-3"
                         >
                           <Scissors className="w-4 h-4 text-primary-500" />
-                          Switch to Barber
+                          Switch to Operator View
                         </button>
                       )
                     )}

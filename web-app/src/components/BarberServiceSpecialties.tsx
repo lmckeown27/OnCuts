@@ -39,6 +39,7 @@ interface Props {
 }
 
 type ProviderKind = 'barber' | 'beauty';
+type ProviderKindOrUnclear = ProviderKind | 'unclear';
 
 type LedgerCategory =
   | 'haircuts'
@@ -106,8 +107,13 @@ function sortServicesInSection(a: BarberService, b: BarberService): number {
   return a.serviceName.localeCompare(b.serviceName);
 }
 
-function normalizeProviderKind(raw: unknown): ProviderKind {
-  return String(raw ?? 'barber').trim().toLowerCase() === 'beauty' ? 'beauty' : 'barber';
+function normalizeProviderKind(raw: unknown): ProviderKindOrUnclear {
+  const value = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (value === 'beauty') return 'beauty';
+  if (value === 'barber') return 'barber';
+  return 'unclear';
 }
 
 function resolveCatalogProviderType(service: {
@@ -148,7 +154,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [barberServices, setBarberServices] = useState<BarberService[]>([]);
-  const [providerKind, setProviderKind] = useState<ProviderKind>('barber');
+  const [providerKind, setProviderKind] = useState<ProviderKindOrUnclear>('unclear');
   const [inlineToast, setInlineToast] = useState<string | null>(null);
   const barberServicesRef = useRef(barberServices);
   const toastTimerRef = useRef<number | null>(null);
@@ -200,6 +206,12 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         minDurationMinutes: number;
         maxDurationMinutes: number;
       }[] = [];
+
+      if (kind === 'unclear') {
+        setBarberServices([]);
+        barberServicesRef.current = [];
+        return;
+      }
 
       try {
         const token = localStorage.getItem('accessToken');
@@ -429,7 +441,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     try {
       const barberData = await barberService.getBarberByUserId(barberId);
       if (!barberData?.id) {
-        throw new Error('Could not determine your barber profile. Pull to refresh.');
+        throw new Error('Could not determine your operator profile. Pull to refresh.');
       }
 
       const specialties = services.filter((s) => s.isOffered).map((s) => s.serviceName);
@@ -676,7 +688,9 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       </div>
 
       <p className="text-[11px] text-gray-400 pt-1">
-        Showing {providerKind === 'beauty' ? 'Beauty' : 'Barber'} services for your provider type.
+        {providerKind === 'unclear'
+          ? 'Unclear operator type — choose Barber or Beauty on your application/profile before editing services.'
+          : `Showing ${providerKind === 'beauty' ? 'Beauty' : 'Barber'} services for your provider type.`}
       </p>
     </div>
   );

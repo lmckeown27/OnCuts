@@ -15,6 +15,7 @@ import { redisGet, redisSet, redisDel, generateCacheKey, CACHE_TTL } from '../co
 import pushNotificationService from './pushNotification.service';
 import notificationService from './notification.service';
 import { ApiError } from '../middleware/errorHandler';
+import { UNCLEAR_OPERATOR_TYPE } from '../utils/service-provider.mapper';
 import {
   assertNoMessagingBlockBetween,
   isUgcModerationSchemaReady,
@@ -71,7 +72,7 @@ const INBOX_CONVERSATION_SELECT = `
   b."priceUsdCents" as booking_price_cents,
   COALESCE(b."requestedAt", c.scheduled_time) as booking_scheduled_time,
   b.status as linked_booking_status,
-  COALESCE(booking_barber.provider_type, 'barber') AS barber_provider_type,
+  booking_barber.provider_type AS barber_provider_type,
   (
     SELECT m.content
     FROM messages m
@@ -113,10 +114,18 @@ const INBOX_CONVERSATION_JOINS = `
   LEFT JOIN bookings b ON c.booking_id = b.id
   LEFT JOIN barbers booking_barber ON booking_barber.id = b."barberId"`;
 
-/** Null/undefined provider_type → "barber"; preserve stored values like "beauty". */
+/** Null/unrecognized provider_type → "Unclear operator type". */
 export function resolveMessagingProviderType(raw: unknown): string {
-  if (raw == null) return 'barber';
-  return String(raw);
+  if (raw == null) return UNCLEAR_OPERATOR_TYPE;
+  const value = String(raw).trim();
+  if (!value) return UNCLEAR_OPERATOR_TYPE;
+  const lower = value.toLowerCase();
+  if (lower === 'beauty') return 'beauty';
+  if (lower === 'barber') return 'barber';
+  if (lower === 'unclear' || lower === UNCLEAR_OPERATOR_TYPE.toLowerCase()) {
+    return UNCLEAR_OPERATOR_TYPE;
+  }
+  return UNCLEAR_OPERATOR_TYPE;
 }
 
 /** Compatibility keys on booking payloads for client apps. */
@@ -398,7 +407,7 @@ class MessageService {
           b."priceUsdCents" as booking_price_cents,
           COALESCE(b."requestedAt", c.scheduled_time) as booking_scheduled_time,
           b.status as linked_booking_status,
-          COALESCE(booking_barber.provider_type, 'barber') AS barber_provider_type
+          booking_barber.provider_type AS barber_provider_type
         FROM conversations c
         LEFT JOIN bookings b ON c.booking_id = b.id
         LEFT JOIN barbers booking_barber ON booking_barber.id = b."barberId"

@@ -98,7 +98,7 @@ export default function BarberProfilePage() {
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading barber profile...</p>
+          <p className="mt-4 text-gray-600">Loading operator profile...</p>
         </div>
       </div>
     );
@@ -108,9 +108,9 @@ export default function BarberProfilePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center p-4">
         <Card className="text-center max-w-md">
-          <p className="text-gray-600">Barber not found</p>
+          <p className="text-gray-600">Operator not found</p>
           <Button onClick={() => navigate('/discover')} className="mt-4">
-            Browse Barbers
+            Browse Operators
           </Button>
         </Card>
       </div>
@@ -417,7 +417,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              placeholder="Tell the barber what style you're looking for, or any special requests..."
+              placeholder="Tell the operator what style you're looking for, or any special requests..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               rows={4}
             />

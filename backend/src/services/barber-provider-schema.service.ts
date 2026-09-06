@@ -31,18 +31,18 @@ export async function warnIfBarberProviderTypeMissing(): Promise<void> {
   }
 }
 
-/** SELECT fragment for provider kind discriminator. */
+/** SELECT fragment for provider kind discriminator (null when unset — never invent barber). */
 export async function barberProviderTypeSelectSql(): Promise<string> {
   const exists = await barberProviderTypeColumnExists();
   return exists
-    ? ",\n        COALESCE(b.provider_type, 'barber') as provider_type"
-    : ",\n        'barber'::text as provider_type";
+    ? ',\n        b.provider_type'
+    : ',\n        NULL::text as provider_type';
 }
 
-/** SQL expression for filtering by provider kind. */
+/** SQL expression for filtering by provider kind (null types do not match barber/beauty filters). */
 export async function barberProviderTypeExpr(): Promise<string> {
   const exists = await barberProviderTypeColumnExists();
-  return exists ? "COALESCE(b.provider_type, 'barber')" : "'barber'";
+  return exists ? 'b.provider_type' : 'NULL::text';
 }
 
 /** INSERT fragments for provider_type (empty when migration 036 is not applied). */
@@ -58,7 +58,7 @@ export async function barberProviderTypeInsertFragments(
 
   return {
     columns: ', provider_type',
-    values: valuePlaceholder ? `, ${valuePlaceholder}` : ", 'barber'",
+    values: valuePlaceholder ? `, ${valuePlaceholder}` : ', NULL',
     onConflict: `, provider_type = COALESCE(${writeRelation}.provider_type, EXCLUDED.provider_type)`,
   };
 }

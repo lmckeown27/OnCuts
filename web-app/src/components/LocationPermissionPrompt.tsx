@@ -87,7 +87,7 @@ export default function LocationPermissionPrompt({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 text-center mb-4">
-            OnCuts needs your location to show you the <strong>closest barbers</strong> on your campus.
+            OnCuts needs your location to show you the <strong>closest operators</strong> on your campus.
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -95,7 +95,7 @@ export default function LocationPermissionPrompt({
             <ul className="text-sm text-gray-600 space-y-2">
               <li className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span>Find barbers nearest to you</span>
+                <span>Find operators nearest to you</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />

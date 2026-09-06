@@ -1,7 +1,7 @@
 // @ts-nocheck
 // @ts-nocheck
 /**
- * Discover Barbers Page
+ * Discover Operators Page
  * 
  * Progressive filtering system with questionnaire
  * Filters barbers by service, availability, and location in real-time
@@ -149,7 +149,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Finding great barbers...</p>
+          <p className="mt-4 text-gray-600">Finding great operators...</p>
         </div>
       </div>
     );
@@ -163,7 +163,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Discover Barbers</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Discover Operators</h1>
           <p className="text-gray-600">Answer a few questions to find the perfect match</p>
         </div>
 
@@ -196,7 +196,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
                 </div>
               </div>
               <p className="text-sm text-gray-700">
-                <strong>Why so affordable?</strong> Traditional shops charge $35+ and barbers only keep 40-60%. 
+                <strong>Why so affordable?</strong> Traditional shops charge $35+ and operators only keep 40-60%. 
                 We eliminated the middleman. Barbers keep 85%, so they can charge less while earning more!
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary-400" />
             <h2 className="text-2xl font-bold text-gray-900">
-              {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Barber' : 'Barbers'} Available
+              {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Operator' : 'Operators'} Available
             </h2>
           </div>
           {filterCriteria.serviceType && (
@@ -227,7 +227,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
         {/* No Results */}
         {filteredBarbers.length === 0 && filterCriteria.serviceType && (
           <Card className="text-center py-12">
-            <p className="text-gray-600 text-lg mb-2">No barbers match your criteria</p>
+            <p className="text-gray-600 text-lg mb-2">No operators match your criteria</p>
             <p className="text-sm text-gray-500">Try adjusting your filters or check back later</p>
           </Card>
         )}
@@ -357,7 +357,7 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
           {barber.verified && (
             <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full flex items-center gap-2 font-semibold">
               <Award className="w-5 h-5" />
-              Verified Barber
+              Verified Operator
             </div>
           )}
         </div>
@@ -628,12 +628,12 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
           {/* Message */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message to Barber (Optional)
+              Message to Operator (Optional)
             </label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              placeholder="Tell the barber what style you're looking for, or any special requests..."
+              placeholder="Tell the operator what style you're looking for, or any special requests..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
               rows={4}
             />

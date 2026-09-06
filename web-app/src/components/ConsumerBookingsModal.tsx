@@ -294,13 +294,13 @@ export default function ConsumerBookingsModal({
                     <div className="flex items-start gap-3">
                       <Avatar
                         src={b.barberAvatar || undefined}
-                        alt={b.barberName || 'Barber'}
+                        alt={b.barberName || 'Operator'}
                         size="lg"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-semibold text-gray-900 truncate">
-                            {b.barberName || 'Barber'}
+                            {b.barberName || 'Operator'}
                           </p>
                           <span
                             className={

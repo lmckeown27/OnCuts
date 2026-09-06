@@ -271,7 +271,7 @@ export default function MobileConsumerPage() {
           {isAuthLoading || !townHydrated
             ? 'Loading...'
             : selectedCollegeTown
-              ? `Finding barbers near ${selectedCollegeTown.shortName}...`
+              ? `Finding operators near ${selectedCollegeTown.shortName}...`
               : 'Finding providers...'}
         </p>
       </div>
@@ -282,10 +282,10 @@ export default function MobileConsumerPage() {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <GraduationCap className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">No Barbers Found</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">No Operators Found</h2>
         <p className="text-gray-600 text-center mb-4">
           {selectedCollegeTown
-            ? `We couldn't find any barbers near ${selectedCollegeTown.shortName}.`
+            ? `We couldn't find any operators near ${selectedCollegeTown.shortName}.`
             : 'No providers are available yet.'}
         </p>
         <p className="text-sm text-gray-500 text-center mb-6">
@@ -446,7 +446,7 @@ export default function MobileConsumerPage() {
               {(currentBarber.profile_photo_url || currentBarber.profile_picture_url) ? (
                 <img
                   src={currentBarber.profile_photo_url || currentBarber.profile_picture_url}
-                  alt={currentBarber.user?.first_name || 'Barber'}
+                  alt={currentBarber.user?.first_name || 'Operator'}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -484,7 +484,7 @@ export default function MobileConsumerPage() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {currentBarber.user?.first_name || 'Barber'} {currentBarber.user?.last_name?.[0] || ''}.
+                    {currentBarber.user?.first_name || 'Operator'} {currentBarber.user?.last_name?.[0] || ''}.
                   </h2>
                   {currentBarber.years_experience && (
                     <div className="flex items-center gap-2 mt-1">
@@ -622,7 +622,7 @@ export default function MobileConsumerPage() {
               {(currentBarber.profile_photo_url || currentBarber.profile_picture_url) ? (
                 <img
                   src={currentBarber.profile_photo_url || currentBarber.profile_picture_url}
-                  alt={currentBarber.user?.first_name || 'Barber'}
+                  alt={currentBarber.user?.first_name || 'Operator'}
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (
@@ -634,7 +634,7 @@ export default function MobileConsumerPage() {
               )}
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  {currentBarber.user?.first_name || 'Barber'} {currentBarber.user?.last_name?.[0] || ''}.
+                  {currentBarber.user?.first_name || 'Operator'} {currentBarber.user?.last_name?.[0] || ''}.
                 </h3>
                 {getDistanceString(currentBarber) && (
                   <p className="text-gray-500">{getDistanceString(currentBarber)}</p>

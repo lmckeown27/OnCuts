@@ -21,10 +21,10 @@ export const BarberConnectOnboarding = () => {
         <p className="text-gray-600 mb-4">
           Customer payments run through <strong>Stripe</strong>. Your earnings are paid out with{' '}
           <strong>Stripe Connect</strong>. OnCuts does <strong>not</strong> hold barber money in a platform balance.
-          Complete Connect onboarding (bank account) when prompted from your barber dashboard or Stripe.
+          Complete Connect onboarding (bank account) when prompted from your operator dashboard or Stripe.
         </p>
         <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2 mb-6">
-          <li>Open Payout Settings from your barber dashboard to finish Stripe Connect.</li>
+          <li>Open Payout Settings from your operator dashboard to finish Stripe Connect.</li>
           <li>Use Business Analytics for booking estimates and client insights.</li>
           <li>Use your Stripe Express / Connect dashboard for payouts to your bank.</li>
         </ul>

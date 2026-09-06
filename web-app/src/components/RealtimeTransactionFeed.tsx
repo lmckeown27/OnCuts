@@ -62,7 +62,7 @@ const SERVICE_OPTIONS = [
 
 // Barber filter options
 const BARBER_OPTIONS = [
-  { value: 'all', label: 'All Barbers' },
+  { value: 'all', label: 'All Operators' },
   { value: 'Marcus T.', label: 'Marcus T.' },
   { value: 'Alex C.', label: 'Alex C.' },
   { value: 'Jordan W.', label: 'Jordan W.' },
@@ -131,7 +131,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
   };
 
   const getBarberFilterLabel = () => {
-    return BARBER_OPTIONS.find(o => o.value === barberFilter)?.label || 'All Barbers';
+    return BARBER_OPTIONS.find(o => o.value === barberFilter)?.label || 'All Operators';
   };
 
   // Pagination
@@ -396,7 +396,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                       </Link>
                     </div>
                     <div>
-                      <p className="text-gray-500">Barber</p>
+                      <p className="text-gray-500">Operator</p>
                       <Link
                         to={`/admin/user/${tx.barberId}`}
                         className="font-medium text-gray-900 hover:underline"

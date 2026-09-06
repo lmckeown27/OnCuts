@@ -133,7 +133,7 @@ export default function ScheduleServicePage() {
         || barber?.display_name 
         || (barber?.user?.first_name ? `${barber.user.first_name} ${barber.user.last_name || ''}`.trim() : null)
         || (barber?.first_name ? `${barber.first_name} ${barber.last_name || ''}`.trim() : null)
-        || 'Barber';
+        || 'Operator';
 
       // Navigate to payment page with booking details
       navigate(`${platformPrefix}/student/booking/payment`, {
@@ -162,7 +162,7 @@ export default function ScheduleServicePage() {
     return (
       <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Loading barber info...</p>
+          <p className="text-gray-600">Loading operator info...</p>
         </div>
       </div>
     );
@@ -172,7 +172,7 @@ export default function ScheduleServicePage() {
     return (
       <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Barber not found</p>
+          <p className="text-gray-600 mb-4">Operator not found</p>
           <Button onClick={() => navigate(`${platformPrefix}/consumer`)}>
             Back to Discovery
           </Button>
@@ -222,13 +222,13 @@ export default function ScheduleServicePage() {
                   {barber.profile_picture_url || barber.profile_photo_url ? (
                     <img
                       src={barber.profile_picture_url || barber.profile_photo_url}
-                      alt="Barber"
+                      alt="Operator"
                       className="w-full h-full object-cover"
                     />
                   ) : barber.portfolio && barber.portfolio.length > 0 ? (
                     <img
                       src={barber.portfolio[0].url}
-                      alt="Barber"
+                      alt="Operator"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -348,7 +348,7 @@ export default function ScheduleServicePage() {
                     )}
                     <p className="text-xs text-gray-500 mt-1">
                       {serviceType
-                        ? `This service takes about ${selectedServiceDuration} minutes. Times shown match the barber's open hours.`
+                        ? `This service takes about ${selectedServiceDuration} minutes. Times shown match the operator's open hours.`
                         : 'Select a service first, then choose an available time.'}
                     </p>
                   </div>
@@ -383,7 +383,7 @@ export default function ScheduleServicePage() {
                       onChange={(e) => setNotes(e.target.value)}
                       rows={4}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
-                      placeholder="Any special requests or details for the barber..."
+                      placeholder="Any special requests or details for the operator..."
                     />
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export default function ScheduleServicePage() {
                 </div>
 
                 <p className="text-xs text-gray-500 text-center">
-                  The barber will review your request and confirm availability
+                  The operator will review your request and confirm availability
                 </p>
               </form>
             </Card>

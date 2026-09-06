@@ -1,5 +1,5 @@
 /**
- * Popup listing barbers the consumer has peer-blocked; supports unblock.
+ * Popup listing operators the consumer has peer-blocked; supports unblock.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { X, Loader2, UserX } from 'lucide-react';
@@ -101,7 +101,7 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
         </div>
 
         <p className="text-sm text-gray-500 px-5 py-3 border-b border-gray-100 shrink-0">
-          Barbers you have blocked cannot message you or book with you until you unblock them.
+          Operators you have blocked cannot message you or book with you until you unblock them.
         </p>
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
@@ -112,7 +112,7 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
           ) : rows.length === 0 ? (
             <div className="text-center py-10 px-2">
               <UserX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No blocked barbers</p>
+              <p className="text-gray-600 font-medium">No blocked operators</p>
               <p className="text-gray-500 text-sm mt-2">
                 When you block someone from their profile or messages, they will appear here so you can unblock
                 them later.

@@ -2246,7 +2246,7 @@ export function AdminDashboard({
   const noCampusScopeContent = (
     <div className="flex flex-col items-center justify-center py-12 text-gray-500">
       <MapPin className="w-8 h-8 mb-2 text-gray-300" />
-      <p className="text-sm font-medium text-gray-700">No campuses with barbers yet</p>
+      <p className="text-sm font-medium text-gray-700">No campuses with operators yet</p>
       <p className="text-xs text-gray-500 mt-1">Bookings and locations will appear once barbers are active.</p>
     </div>
   );
@@ -2362,7 +2362,7 @@ export function AdminDashboard({
   const handleAllowBarberReapply = async (user: PlatformUser) => {
     if (
       !window.confirm(
-        `Allow ${user.first_name} ${user.last_name} to reapply as a provider? This clears the “Barber Access Removed” lock so they can go through the application flow again.`
+        `Allow ${user.first_name} ${user.last_name} to reapply as a provider? This clears the “Operator Access Removed” lock so they can go through the application flow again.`
       )
     ) {
       return;
@@ -3869,7 +3869,7 @@ export function AdminDashboard({
                                       ? 'bg-green-100 text-green-700' 
                                       : 'bg-amber-100 text-amber-700'
                                   }`}>
-                                    {['BARBER', 'ADMIN'].includes(msg.sender_role) ? 'Barber' : 'Customer'}
+                                    {['BARBER', 'ADMIN'].includes(msg.sender_role) ? 'Operator' : 'Customer'}
                                   </span>
                                   <span className="text-[10px] text-gray-400 ml-auto">
                                     {new Date(msg.created_at).toLocaleTimeString('en-US', { 
@@ -4923,7 +4923,7 @@ export function AdminDashboard({
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                       <Users className="w-10 h-10 text-gray-300 mb-2" />
-                      <p className="text-sm">No barbers match this filter</p>
+                      <p className="text-sm">No operators match this filter</p>
                     </div>
                   );
                 })()}
@@ -4977,7 +4977,7 @@ export function AdminDashboard({
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                 <Users className="w-10 h-10 text-gray-300 mb-2" />
-                <p className="text-sm">No barbers found</p>
+                <p className="text-sm">No operators found</p>
                 {selectedCampusId ? (
                   <p className="text-xs text-gray-400 mt-1 text-center max-w-xs">
                     No operators with a public location near this campus. Operators appear here when their service pin is within ~5 miles.
@@ -5292,7 +5292,7 @@ export function AdminDashboard({
                                       ? 'bg-green-100 text-green-700'
                                       : 'bg-amber-100 text-amber-700'
                                   }`}>
-                                    {msg.sender_id === booking.barber_user_id ? 'Barber' : 'Customer'}
+                                    {msg.sender_id === booking.barber_user_id ? 'Operator' : 'Customer'}
                                   </span>
                                   <span className="text-[10px] text-gray-400 ml-auto">
                                     {new Date(msg.created_at).toLocaleTimeString('en-US', {

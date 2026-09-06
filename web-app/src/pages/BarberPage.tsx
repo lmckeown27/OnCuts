@@ -392,7 +392,7 @@ export default function BarberPage() {
         userType: user.user_type,
         hasBarberProfile: user.has_barber_profile
       });
-      toast.error('You need a barber profile to access this page');
+      toast.error('You need an operator profile to access this page');
       navigate(`${platformPrefix}/consumer`);
     }
   }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);
@@ -492,7 +492,7 @@ export default function BarberPage() {
       try {
         const response = await api.get(`/barbers/user/${barberId}`);
         if (response) {
-          const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber';
+          const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Operator';
           const remaining = Number(
             response.commissionFreeBookingsRemaining ??
               response.commission_free_bookings_remaining ??
@@ -500,7 +500,7 @@ export default function BarberPage() {
           );
           setBarberProfile({
             id: response.id || '',
-            name: response.name || fullName || 'Barber',
+            name: response.name || fullName || 'Operator',
             specialties: response.specialties || [],
             campusId: response.campus_id || '',
             campusTimezone: response.campus_timezone || 'America/Los_Angeles',
@@ -609,7 +609,7 @@ export default function BarberPage() {
                   className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                   aria-label="Account menu"
                 >
-                  <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'Barber'} size="md" />
+                  <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'Operator'} size="md" />
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -1004,7 +1004,7 @@ export default function BarberPage() {
       <WalkInPaymentModal
         isOpen={showWalkInPayment}
         onClose={() => setShowWalkInPayment(false)}
-        barberName={barberProfile?.name || (user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber')}
+        barberName={barberProfile?.name || (user ? `${user.first_name} ${user.last_name}`.trim() : 'Operator')}
         barberSpecialties={barberProfile?.specialties || []}
       />
       */}

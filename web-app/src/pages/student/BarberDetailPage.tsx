@@ -60,8 +60,8 @@ export default function BarberDetailPage() {
     }
   };
 
-  if (isLoading) return <Loading fullScreen text="Loading barber..." />;
-  if (!barber) return <div className="text-center py-12">Barber not found</div>;
+  if (isLoading) return <Loading fullScreen text="Loading operator..." />;
+  if (!barber) return <div className="text-center py-12">Operator not found</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
