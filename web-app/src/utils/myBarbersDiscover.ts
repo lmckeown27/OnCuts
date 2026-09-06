@@ -344,13 +344,16 @@ export function metersPerPixelAt(lat: number, zoom: number): number {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
 }
 
-/** Geographic circle radius (meters) for a fixed on-screen pixel size. */
+/** Geographic circle radius (meters) for a fixed on-screen pixel size.
+ * Uses zoom−1 so blobs read one zoom-step larger than the raw Mercator pixel size.
+ */
 export function discoverCircleRadiusMeters(
   lat: number,
   zoom: number,
   pixelRadius: number = DISCOVER_MAP_CIRCLE_PIXEL_RADIUS
 ): number {
-  const mpp = metersPerPixelAt(lat, zoom);
+  const visualZoom = Math.max(0, zoom - 1);
+  const mpp = metersPerPixelAt(lat, visualZoom);
   // Floor so ultra-close zooms still show a readable blob
   return Math.max(35, pixelRadius * mpp);
 }
