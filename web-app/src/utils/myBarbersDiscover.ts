@@ -325,56 +325,138 @@ export type DiscoverArea = {
   barberIds: string[];
 };
 
-/** Map-only blob size — keeps areas general without huge service-radius circles. */
+/** Operator pin used for zoom-based Discover map clustering. */
+export type DiscoverPin = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  label: string;
+};
+
+/** Target on-screen radius (px) so circles stay visually consistent across zoom. */
+export const DISCOVER_MAP_CIRCLE_PIXEL_RADIUS = 44;
+
+/** @deprecated Prefer zoom-based clustering via clusterDiscoverPins. */
 export const DISCOVER_MAP_AREA_RADIUS_KM = 0.4;
 
-/** Cluster listed operators by public location label for map selection.
- * Operators with a pin but no label yet still appear (coord bucket) so signed-out
- * Discover is complete before reverse-geocode enrichment finishes.
- */
-export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
-  const groups = new Map<
-    string,
-    {
-      label: string;
-      lats: number[];
-      lngs: number[];
-      barberIds: string[];
-    }
-  >();
+/** Meters represented by one CSS pixel at lat/zoom (Web Mercator). */
+export function metersPerPixelAt(lat: number, zoom: number): number {
+  return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+}
 
+/** Geographic circle radius (meters) for a fixed on-screen pixel size. */
+export function discoverCircleRadiusMeters(
+  lat: number,
+  zoom: number,
+  pixelRadius: number = DISCOVER_MAP_CIRCLE_PIXEL_RADIUS
+): number {
+  const mpp = metersPerPixelAt(lat, zoom);
+  // Floor so ultra-close zooms still show a readable blob
+  return Math.max(35, pixelRadius * mpp);
+}
+
+function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const lat1 = toRad(aLat);
+  const lat2 = toRad(bLat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+export function buildDiscoverPins(barbers: Barber[]): DiscoverPin[] {
+  const pins: DiscoverPin[] = [];
   for (const barber of barbers) {
     const lat = Number(barber.service_latitude);
     const lng = Number(barber.service_longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    pins.push({
+      id: barber.id,
+      latitude: lat,
+      longitude: lng,
+      label: publicBroadLocationLabel(barber) || '',
+    });
+  }
+  return pins;
+}
 
-    const label = publicBroadLocationLabel(barber);
-    // ~1 km buckets keep unlabeled pins visible without inventing an "Other" place name
-    const key = label
-      ? label.toLowerCase()
-      : `pin:${lat.toFixed(2)},${lng.toFixed(2)}`;
-    const g = groups.get(key) ?? {
-      label: label || '',
-      lats: [],
-      lngs: [],
-      barberIds: [],
-    };
-    if (label && !g.label) g.label = label;
-    g.lats.push(lat);
-    g.lngs.push(lng);
-    g.barberIds.push(barber.id);
-    groups.set(key, g);
+/**
+ * Cluster operator pins for the current map zoom.
+ * Farther zoom → larger merge distance → fewer, combined circles.
+ * Close zoom → individuals separate. Circle geographic radius tracks pixel size.
+ */
+export function clusterDiscoverPins(
+  pins: DiscoverPin[],
+  zoom: number,
+  pixelRadius: number = DISCOVER_MAP_CIRCLE_PIXEL_RADIUS
+): DiscoverArea[] {
+  if (pins.length === 0) return [];
+
+  const avgLat = pins.reduce((s, p) => s + p.latitude, 0) / pins.length;
+  const circleMeters = discoverCircleRadiusMeters(avgLat, zoom, pixelRadius);
+  // Merge when centers fall within ~1.75 circle diameters (overlap → one blob)
+  const mergeMeters = circleMeters * 1.75;
+
+  type Acc = {
+    pins: DiscoverPin[];
+    lat: number;
+    lng: number;
+  };
+  const clusters: Acc[] = [];
+
+  for (const pin of pins) {
+    let bestIdx = -1;
+    let bestDist = Infinity;
+    for (let i = 0; i < clusters.length; i++) {
+      const c = clusters[i];
+      const d = haversineMeters(pin.latitude, pin.longitude, c.lat, c.lng);
+      if (d < mergeMeters && d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx >= 0) {
+      const c = clusters[bestIdx];
+      c.pins.push(pin);
+      c.lat = c.pins.reduce((s, p) => s + p.latitude, 0) / c.pins.length;
+      c.lng = c.pins.reduce((s, p) => s + p.longitude, 0) / c.pins.length;
+    } else {
+      clusters.push({ pins: [pin], lat: pin.latitude, lng: pin.longitude });
+    }
   }
 
-  return Array.from(groups.entries()).map(([key, g]) => {
-    const avg = (nums: number[]) => nums.reduce((s, n) => s + n, 0) / nums.length;
+  return clusters.map((c) => {
+    const barberIds = c.pins.map((p) => p.id).sort();
+    const labels = c.pins.map((p) => p.label).filter(Boolean);
+    const uniqueLabels = [...new Set(labels)];
+    let label = '';
+    if (uniqueLabels.length === 1) {
+      label = uniqueLabels[0];
+    } else if (c.pins.length === 1) {
+      label = c.pins[0].label;
+    } else if (uniqueLabels.length > 1) {
+      label = `${c.pins.length} operators`;
+    } else {
+      label = c.pins.length > 1 ? `${c.pins.length} operators` : '';
+    }
+
+    const radiusM = discoverCircleRadiusMeters(c.lat, zoom, pixelRadius);
     return {
-      key,
-      label: g.label,
-      latitude: avg(g.lats),
-      longitude: avg(g.lngs),
-      radiusKm: DISCOVER_MAP_AREA_RADIUS_KM,
-      barberIds: g.barberIds,
+      key: barberIds.join(','),
+      label,
+      latitude: c.lat,
+      longitude: c.lng,
+      radiusKm: radiusM / 1000,
+      barberIds,
     };
   });
+}
+
+/** Cluster listed operators by public location label (static; prefer clusterDiscoverPins). */
+export function buildDiscoverAreas(barbers: Barber[]): DiscoverArea[] {
+  return clusterDiscoverPins(buildDiscoverPins(barbers), 13);
 }

@@ -71,10 +71,11 @@ import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 import {
-  buildDiscoverAreas,
+  buildDiscoverPins,
   buildMyBarbersFromBookings,
   coarsenPublicLocationLabel,
   type MyBarberEntry,
+  type DiscoverArea,
   publicBroadLocationLabel,
   sortDiscoverBarbers,
 } from '../utils/myBarbersDiscover';
@@ -2177,10 +2178,12 @@ function DiscoveryView({
     };
   }, [barbers, myBarberEntries, resolvedPublicLabels]);
 
-  const discoverAreas = useMemo(
-    () => buildDiscoverAreas(filteredBarbersLabeled),
+  const discoverPins = useMemo(
+    () => buildDiscoverPins(filteredBarbersLabeled),
     [filteredBarbersLabeled]
   );
+
+  const [discoverAreas, setDiscoverAreas] = useState<DiscoverArea[]>([]);
 
   const discoverListBarbers = useMemo(() => {
     if (!selectedDiscoverAreaKey) return filteredBarbersLabeled;
@@ -2564,9 +2567,10 @@ function DiscoveryView({
       <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[min(68dvh,800px)]">
         <div className="lg:flex-1 min-w-0 relative lg:min-h-[min(68dvh,800px)]">
           <DiscoverMap
-            areas={discoverAreas}
+            pins={discoverPins}
             selectedAreaKey={selectedDiscoverAreaKey}
             onSelectArea={setSelectedDiscoverAreaKey}
+            onClustersChange={setDiscoverAreas}
             fallbackCenter={
               latitude != null && longitude != null
                 ? { lat: latitude, lng: longitude }
