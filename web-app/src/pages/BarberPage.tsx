@@ -3669,6 +3669,8 @@ const validateAvailability = (availability: WeeklyAvailability): ValidationError
 // Availability Modal — iOS Edit Schedule (weeklyEditorOnly) layout
 const BOOKING_SLOT_INTERVAL_PRESETS = [15, 30, 45] as const;
 type BookingSlotIntervalMinutes = (typeof BOOKING_SLOT_INTERVAL_PRESETS)[number];
+const MAX_ADVANCE_BOOKING_PRESETS = [7, 14, 30, 60, 90] as const;
+const DEFAULT_MAX_ADVANCE_BOOKING_DAYS = 30;
 
 function resolveBookingSlotInterval(raw: unknown): BookingSlotIntervalMinutes {
   const n = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
@@ -3679,6 +3681,13 @@ function resolveBookingSlotInterval(raw: unknown): BookingSlotIntervalMinutes {
     return n as BookingSlotIntervalMinutes;
   }
   return 15;
+}
+
+function resolveMaxAdvanceBookingDays(raw: unknown): number {
+  if (raw === null || raw === undefined || raw === '') return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  return Math.floor(n);
 }
 
 function AvailabilityModal({
@@ -3699,9 +3708,12 @@ function AvailabilityModal({
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showTimeLimits, setShowTimeLimits] = useState(false);
+  const [showMaxAdvance, setShowMaxAdvance] = useState(false);
   const [slotIntervalMinutes, setSlotIntervalMinutes] =
     useState<BookingSlotIntervalMinutes>(15);
   const [slotIntervalSaving, setSlotIntervalSaving] = useState(false);
+  const [maxAdvanceDays, setMaxAdvanceDays] = useState(DEFAULT_MAX_ADVANCE_BOOKING_DAYS);
+  const [maxAdvanceSaving, setMaxAdvanceSaving] = useState(false);
   const skipAutosaveRef = useRef(true);
   const scheduleHydratedRef = useRef(false);
   const loadGenerationRef = useRef(0);
@@ -3735,6 +3747,7 @@ function AvailabilityModal({
       setSaveToast(null);
       setSaveError(null);
       setShowTimeLimits(false);
+      setShowMaxAdvance(false);
       void loadSchedule();
     }
     return () => {
@@ -3791,6 +3804,11 @@ function AvailabilityModal({
           setSlotIntervalMinutes(
             resolveBookingSlotInterval(
               data.data.booking_slot_interval_minutes ?? data.data.bookingSlotIntervalMinutes
+            )
+          );
+          setMaxAdvanceDays(
+            resolveMaxAdvanceBookingDays(
+              data.data.max_advance_booking_days ?? data.data.maxAdvanceBookingDays
             )
           );
           const rawSchedule = data.data.weekly_schedule ?? data.data.weeklySchedule;
@@ -3981,6 +3999,47 @@ function AvailabilityModal({
     }
   };
 
+  const saveMaxAdvance = async (days: number) => {
+    if (!barberId || maxAdvanceSaving) return;
+    if (days === maxAdvanceDays) {
+      setShowMaxAdvance(false);
+      return;
+    }
+
+    setMaxAdvanceSaving(true);
+    setSaveError(null);
+    try {
+      const response = await fetch(`/api/v1/barbers/${barberId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({ max_advance_booking_days: days }),
+      });
+
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const saved = resolveMaxAdvanceBookingDays(
+          data?.data?.max_advance_booking_days ?? data?.data?.maxAdvanceBookingDays ?? days
+        );
+        setMaxAdvanceDays(saved);
+        showSavedToast(`Clients can book up to ${saved} days ahead.`);
+        setShowMaxAdvance(false);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setSaveError(
+          errorData?.error?.message || errorData?.message || 'Could not save max advance.'
+        );
+      }
+    } catch (error) {
+      console.error('Failed to save max advance booking days:', error);
+      setSaveError('Could not save max advance.');
+    } finally {
+      setMaxAdvanceSaving(false);
+    }
+  };
+
   return (
     <div 
       className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
@@ -4026,6 +4085,7 @@ function AvailabilityModal({
                 type="button"
                 onClick={() => {
                   setShowTimeLimits(false);
+                  setShowMaxAdvance(false);
                   onOpenBlockTime();
                 }}
                 className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
@@ -4035,12 +4095,27 @@ function AvailabilityModal({
             )}
             <button
               type="button"
-              onClick={() => setShowTimeLimits((prev) => !prev)}
+              onClick={() => {
+                setShowMaxAdvance(false);
+                setShowTimeLimits((prev) => !prev);
+              }}
               className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
                 showTimeLimits ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
               }`}
             >
               Time Limits
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTimeLimits(false);
+                setShowMaxAdvance((prev) => !prev);
+              }}
+              className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
+                showMaxAdvance ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
+              }`}
+            >
+              Max Advance
             </button>
           </div>
 
@@ -4075,6 +4150,41 @@ function AvailabilityModal({
               <p className="text-sm text-gray-700 text-center">
                 Current:{' '}
                 <span className="font-semibold">every {slotIntervalMinutes} minutes</span>
+              </p>
+            </section>
+          )}
+
+          {showMaxAdvance && (
+            <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Max Advance</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  How far ahead clients can book with you.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {MAX_ADVANCE_BOOKING_PRESETS.map((days) => {
+                  const selected = maxAdvanceDays === days;
+                  return (
+                    <button
+                      key={days}
+                      type="button"
+                      disabled={maxAdvanceSaving || !barberId}
+                      onClick={() => void saveMaxAdvance(days)}
+                      className={`px-3 py-2.5 text-sm font-semibold rounded-xl border transition-colors disabled:opacity-60 ${
+                        selected
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-700 border-stone-200 hover:border-gray-400'
+                      }`}
+                    >
+                      {days} days
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-gray-700 text-center">
+                Current:{' '}
+                <span className="font-semibold">{maxAdvanceDays} days</span>
               </p>
             </section>
           )}

@@ -144,6 +144,9 @@ export interface Barber {
   client_cancel_refund_hours?: number;
   booking_slot_interval_minutes?: number;
   bookingSlotIntervalMinutes?: number;
+  /** How many days ahead clients may book. Null or missing falls back to 30. */
+  max_advance_booking_days?: number | null;
+  maxAdvanceBookingDays?: number | null;
   profile_photo_url?: string;
   profile_picture_url?: string; // Alias from users table join
   portfolio?: PortfolioImage[];
