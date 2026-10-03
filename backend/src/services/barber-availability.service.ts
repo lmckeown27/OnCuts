@@ -32,6 +32,69 @@ export type BookingSlotIntervalMinutes = (typeof BOOKING_SLOT_INTERVAL_PRESETS)[
 export const DEFAULT_BOOKING_SLOT_INTERVAL_MINUTES: BookingSlotIntervalMinutes = 15;
 export const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
 
+/** Applied when max_advance_booking_days is null, missing, or not a positive integer. */
+export const DEFAULT_MAX_ADVANCE_BOOKING_DAYS = 30;
+
+export function resolveMaxAdvanceBookingDays(raw: unknown): number {
+  if (raw === null || raw === undefined || raw === '') return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  return Math.floor(n);
+}
+
+/** Latest instant a consumer may book: now + N days. */
+export function maxAdvanceBookingCutoff(now: Date, maxAdvanceDays: unknown): Date {
+  const days = resolveMaxAdvanceBookingDays(maxAdvanceDays);
+  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+export function maxAdvanceBookingErrorMessage(maxAdvanceDays: unknown): string {
+  const days = resolveMaxAdvanceBookingDays(maxAdvanceDays);
+  return `This barber only accepts bookings up to ${days} days in advance.`;
+}
+
+/** True when scheduledTime is strictly after now + max advance days. */
+export function scheduledTimeExceedsMaxAdvance(
+  scheduledTime: Date,
+  maxAdvanceDays: unknown,
+  now: Date = new Date()
+): boolean {
+  if (!(scheduledTime instanceof Date) || Number.isNaN(scheduledTime.getTime())) return true;
+  return scheduledTime.getTime() > maxAdvanceBookingCutoff(now, maxAdvanceDays).getTime();
+}
+
+/**
+ * True when the calendar day starts after the cutoff, so every slot that day is out of window.
+ */
+export function calendarDateExceedsMaxAdvance(
+  dateYmd: string,
+  timeZone: string,
+  maxAdvanceDays: unknown,
+  now: Date = new Date()
+): boolean {
+  const cutoff = DateTime.fromJSDate(maxAdvanceBookingCutoff(now, maxAdvanceDays));
+  const dayStart = DateTime.fromISO(dateYmd, { zone: timeZone }).startOf('day');
+  if (!dayStart.isValid) return false;
+  return dayStart.toMillis() > cutoff.toMillis();
+}
+
+/** Drop slots whose local start is after the max-advance cutoff. Whole days past the cutoff yield []. */
+export function filterSlotsWithinMaxAdvance<T extends { time: string }>(
+  dateYmd: string,
+  slots: T[],
+  timeZone: string,
+  maxAdvanceDays: unknown,
+  now: Date = new Date()
+): T[] {
+  if (calendarDateExceedsMaxAdvance(dateYmd, timeZone, maxAdvanceDays, now)) return [];
+  const cutoffMs = maxAdvanceBookingCutoff(now, maxAdvanceDays).getTime();
+  return slots.filter((slot) => {
+    const slotStart = DateTime.fromISO(`${dateYmd}T${slot.time}`, { zone: timeZone });
+    if (!slotStart.isValid) return false;
+    return slotStart.toMillis() <= cutoffMs;
+  });
+}
+
 export function resolveBookingSlotIntervalMinutes(raw: unknown): BookingSlotIntervalMinutes {
   const n = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10);
   if (
@@ -243,6 +306,7 @@ export async function assertBookingWithinBarberAvailability(
   const barberResult = await client.query(
     `SELECT b."weeklySchedule" as weekly_schedule,
             b.booking_slot_interval_minutes,
+            b.max_advance_booking_days,
             COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone
      FROM barbers b
      LEFT JOIN users u ON b."userId" = u.id
@@ -260,6 +324,12 @@ export async function assertBookingWithinBarberAvailability(
   const slotIncrementMinutes = resolveBookingSlotIntervalMinutes(
     barberResult.rows[0].booking_slot_interval_minutes
   );
+  const maxAdvanceDays = resolveMaxAdvanceBookingDays(
+    barberResult.rows[0].max_advance_booking_days
+  );
+  if (scheduledTimeExceedsMaxAdvance(requestedTimeUtc, maxAdvanceDays)) {
+    throw new ApiError(400, maxAdvanceBookingErrorMessage(maxAdvanceDays));
+  }
 
   const local = DateTime.fromJSDate(requestedTimeUtc, { zone: 'utc' }).setZone(campusTimezone);
   const date = local.toFormat('yyyy-MM-dd');

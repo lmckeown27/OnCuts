@@ -19,6 +19,9 @@ import {
   getDayNameFromDateString,
   getIntervalsForDay,
   resolveBookingSlotIntervalMinutes,
+  resolveMaxAdvanceBookingDays,
+  calendarDateExceedsMaxAdvance,
+  filterSlotsWithinMaxAdvance,
   weeklyScheduleHasOpenHours,
   type WeeklySchedule,
 } from '../services/barber-availability.service';
@@ -62,6 +65,9 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
   );
   const rawProviderType = barber.provider_type ?? barber.providerType;
   const providerType = providerTypeApiValue(rawProviderType);
+  const maxAdvanceDays = resolveMaxAdvanceBookingDays(
+    barber.max_advance_booking_days ?? barber.maxAdvanceBookingDays
+  );
   return {
     ...barber,
     is_hidden: isHidden,
@@ -72,6 +78,8 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
     weeklySchedule: weekly,
     booking_slot_interval_minutes: slotInterval,
     bookingSlotIntervalMinutes: slotInterval,
+    max_advance_booking_days: maxAdvanceDays,
+    maxAdvanceBookingDays: maxAdvanceDays,
     provider_type: providerType,
     providerType,
   };
@@ -470,6 +478,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b.is_hidden,
         b.client_cancel_refund_hours,
         b.booking_slot_interval_minutes,
+        b.max_advance_booking_days,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
         u.email,
@@ -602,6 +611,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           false as is_hidden,
           1 as client_cancel_refund_hours,
           15 as booking_slot_interval_minutes,
+          30 as max_advance_booking_days,
           NULL::timestamptz as reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -816,6 +826,8 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b.allow_hidden_direct_booking,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
+        b.booking_slot_interval_minutes,
+        b.max_advance_booking_days,
         b.service_latitude,
         b.service_longitude,
         b.service_radius_km${labelSelect}${sourceSelect},
@@ -1027,6 +1039,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       client_cancel_refund_hours: clientCancelRefundHoursBody,
       booking_slot_interval_minutes: bookingSlotIntervalMinutesBody,
       bookingSlotIntervalMinutes,
+      max_advance_booking_days: maxAdvanceBookingDaysBody,
+      maxAdvanceBookingDays,
     } = req.body;
     const userId = req.user!.userId;
     // Marketplace visibility (do not overload isActive — that flag is for demotion)
@@ -1075,6 +1089,31 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         );
       }
       booking_slot_interval_minutes = parsed;
+    }
+
+    const maxAdvanceRaw =
+      maxAdvanceBookingDaysBody !== undefined
+        ? maxAdvanceBookingDaysBody
+        : maxAdvanceBookingDays;
+    let max_advance_booking_days: number | null | undefined;
+    if (maxAdvanceRaw !== undefined) {
+      if (maxAdvanceRaw === null) {
+        max_advance_booking_days = null;
+      } else {
+        const parsed =
+          typeof maxAdvanceRaw === 'number'
+            ? maxAdvanceRaw
+            : typeof maxAdvanceRaw === 'string'
+              ? Number(maxAdvanceRaw.trim())
+              : Number.NaN;
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          throw new ApiError(
+            400,
+            'max_advance_booking_days must be a positive integer or null'
+          );
+        }
+        max_advance_booking_days = parsed;
+      }
     }
 
     // Verify ownership
@@ -1165,7 +1204,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         display_name !== undefined ||
         instagram_handle !== undefined ||
         client_cancel_refund_hours !== undefined ||
-        booking_slot_interval_minutes !== undefined;
+        booking_slot_interval_minutes !== undefined ||
+        max_advance_booking_days !== undefined;
       if (
         otherProfileFields &&
         !weeklyScheduleHasOpenHours(weekly_schedule)
@@ -1201,6 +1241,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (booking_slot_interval_minutes !== undefined) {
       barberUpdateFields.push(`booking_slot_interval_minutes = $${paramIndex}`);
       barberValues.push(booking_slot_interval_minutes);
+      paramIndex++;
+    }
+    if (max_advance_booking_days !== undefined) {
+      barberUpdateFields.push(`max_advance_booking_days = $${paramIndex}`);
+      barberValues.push(max_advance_booking_days);
       paramIndex++;
     }
 
@@ -1300,6 +1345,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b.is_hidden,
         b.client_cancel_refund_hours,
         b.booking_slot_interval_minutes,
+        b.max_advance_booking_days,
         u.first_name,
         u.last_name,
         u."displayName" as display_name,
@@ -1501,6 +1547,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     const barberResult = await pool.query(
       `SELECT b."weeklySchedule" as weekly_schedule,
               b.booking_slot_interval_minutes,
+              b.max_advance_booking_days,
               COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone,
               u."isBanned" as user_is_banned,
               u.id as barber_user_id
@@ -1529,9 +1576,35 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     const slotIncrementMinutes = resolveBookingSlotIntervalMinutes(
       barberResult.rows[0].booking_slot_interval_minutes
     );
+    const maxAdvanceDays = resolveMaxAdvanceBookingDays(
+      barberResult.rows[0].max_advance_booking_days
+    );
     
     // If a specific date is provided, return available slots for that date
     if (date && typeof date === 'string') {
+      const beyondWindow = calendarDateExceedsMaxAdvance(
+        date,
+        campusTimezone || 'America/Los_Angeles',
+        maxAdvanceDays
+      );
+      if (beyondWindow) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        return res.json({
+          success: true,
+          data: {
+            date,
+            dayOfWeek: getDayNameFromDateString(date),
+            available: false,
+            intervals: [],
+            slots: [],
+            appointmentDurationMinutes,
+            max_advance_booking_days: maxAdvanceDays,
+            maxAdvanceBookingDays: maxAdvanceDays,
+          },
+        });
+      }
       const dayName = getDayNameFromDateString(date);
       
       console.log(`[Availability] Date: ${date}, Parsed day: ${dayName}, weeklySchedule keys:`, Object.keys(weeklySchedule));
@@ -1651,12 +1724,17 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       const currentMinute = campusNow.getMinutes();
       const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + SAME_DAY_BOOKING_BUFFER_MINUTES) : 0;
 
-      const slots = generateBookableStartSlots(
-        intervals,
-        bookedSlots,
-        appointmentDurationMinutes,
-        slotIncrementMinutes,
-        currentTimeMinutes
+      const slots = filterSlotsWithinMaxAdvance(
+        date,
+        generateBookableStartSlots(
+          intervals,
+          bookedSlots,
+          appointmentDurationMinutes,
+          slotIncrementMinutes,
+          currentTimeMinutes
+        ),
+        campusTimezone || 'America/Los_Angeles',
+        maxAdvanceDays
       );
       
       console.log(`[Availability] Generated ${slots.length} bookable slots for ${appointmentDurationMinutes} min appointments (${slotIncrementMinutes} min interval)`);
@@ -1678,6 +1756,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
           appointmentDurationMinutes,
           bookingSlotIntervalMinutes: slotIncrementMinutes,
           booking_slot_interval_minutes: slotIncrementMinutes,
+          max_advance_booking_days: maxAdvanceDays,
+          maxAdvanceBookingDays: maxAdvanceDays,
         }
       });
     }
@@ -1700,6 +1780,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         weeklySchedule,
         bookingSlotIntervalMinutes: slotIncrementMinutes,
         booking_slot_interval_minutes: slotIncrementMinutes,
+        max_advance_booking_days: maxAdvanceDays,
+        maxAdvanceBookingDays: maxAdvanceDays,
         legacyTemplates: templatesResult.rows
       }
     });
