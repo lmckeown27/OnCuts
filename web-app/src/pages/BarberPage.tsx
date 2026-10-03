@@ -3716,6 +3716,7 @@ function AvailabilityModal({
   const [maxAdvanceEditing, setMaxAdvanceEditing] = useState(false);
   const [maxAdvanceSaving, setMaxAdvanceSaving] = useState(false);
   const maxAdvanceSavingRef = useRef(false);
+  const maxAdvanceInputRef = useRef(String(DEFAULT_MAX_ADVANCE_BOOKING_DAYS));
   const skipAutosaveRef = useRef(true);
   const scheduleHydratedRef = useRef(false);
   const loadGenerationRef = useRef(0);
@@ -3814,6 +3815,7 @@ function AvailabilityModal({
           );
           setMaxAdvanceDays(loadedMaxAdvance);
           setMaxAdvanceInput(String(loadedMaxAdvance));
+          maxAdvanceInputRef.current = String(loadedMaxAdvance);
           setMaxAdvanceEditing(false);
           const rawSchedule = data.data.weekly_schedule ?? data.data.weeklySchedule;
           if (rawSchedule) {
@@ -4006,17 +4008,17 @@ function AvailabilityModal({
   const saveMaxAdvance = async (days: number): Promise<boolean> => {
     if (!barberId || maxAdvanceSavingRef.current) return false;
     if (!Number.isInteger(days) || days <= 0) {
-      setMaxAdvanceInput(String(maxAdvanceDays));
+      const restored = String(maxAdvanceDays);
+      maxAdvanceInputRef.current = restored;
+      setMaxAdvanceInput(restored);
       setSaveError('Max advance must be a positive number of days.');
       return false;
     }
-    if (days === maxAdvanceDays) {
-      setMaxAdvanceInput(String(days));
-      return true;
-    }
 
     const previous = maxAdvanceDays;
+    const previousInput = maxAdvanceInputRef.current;
     setMaxAdvanceDays(days);
+    maxAdvanceInputRef.current = String(days);
     setMaxAdvanceInput(String(days));
     maxAdvanceSavingRef.current = true;
     setMaxAdvanceSaving(true);
@@ -4037,12 +4039,14 @@ function AvailabilityModal({
           data?.data?.max_advance_booking_days ?? data?.data?.maxAdvanceBookingDays ?? days
         );
         setMaxAdvanceDays(saved);
+        maxAdvanceInputRef.current = String(saved);
         setMaxAdvanceInput(String(saved));
         showSavedToast(`Clients can book up to ${saved} days ahead.`);
         return true;
       } else {
         setMaxAdvanceDays(previous);
-        setMaxAdvanceInput(String(previous));
+        maxAdvanceInputRef.current = previousInput;
+        setMaxAdvanceInput(previousInput);
         const errorData = await response.json().catch(() => ({}));
         setSaveError(
           errorData?.error?.message || errorData?.message || 'Could not save max advance.'
@@ -4052,7 +4056,8 @@ function AvailabilityModal({
     } catch (error) {
       console.error('Failed to save max advance booking days:', error);
       setMaxAdvanceDays(previous);
-      setMaxAdvanceInput(String(previous));
+      maxAdvanceInputRef.current = previousInput;
+      setMaxAdvanceInput(previousInput);
       setSaveError('Could not save max advance.');
       return false;
     } finally {
@@ -4062,25 +4067,24 @@ function AvailabilityModal({
   };
 
   const confirmMaxAdvance = async () => {
-    const parsed = parseInt(maxAdvanceInput, 10);
+    const parsed = parseInt(maxAdvanceInputRef.current, 10);
     if (!Number.isInteger(parsed) || parsed <= 0) {
-      setMaxAdvanceInput(String(maxAdvanceDays));
+      const restored = String(maxAdvanceDays);
+      maxAdvanceInputRef.current = restored;
+      setMaxAdvanceInput(restored);
       setSaveError('Max advance must be a positive number of days.');
       return;
     }
     const saved = await saveMaxAdvance(parsed);
-    if (saved) {
-      setMaxAdvanceEditing(false);
-      if (parsed === maxAdvanceDays) {
-        showSavedToast(`Clients can book up to ${parsed} days ahead.`);
-      }
-    }
+    if (saved) setMaxAdvanceEditing(false);
   };
 
   const stepMaxAdvance = (delta: number) => {
-    const parsed = parseInt(maxAdvanceInput, 10);
+    const parsed = parseInt(maxAdvanceInputRef.current, 10);
     const base = Number.isInteger(parsed) && parsed > 0 ? parsed : maxAdvanceDays;
-    setMaxAdvanceInput(String(Math.max(1, base + delta)));
+    const next = String(Math.max(1, base + delta));
+    maxAdvanceInputRef.current = next;
+    setMaxAdvanceInput(next);
     setSaveError(null);
   };
 
@@ -4249,7 +4253,10 @@ function AvailabilityModal({
                         aria-label="Days in advance"
                         disabled={maxAdvanceSaving || !barberId}
                         value={maxAdvanceInput}
-                        onChange={(event) => setMaxAdvanceInput(event.target.value)}
+                        onChange={(event) => {
+                          maxAdvanceInputRef.current = event.target.value;
+                          setMaxAdvanceInput(event.target.value);
+                        }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault();
@@ -4282,7 +4289,9 @@ function AvailabilityModal({
                       aria-label="Edit max advance"
                       disabled={!barberId}
                       onClick={() => {
-                        setMaxAdvanceInput(String(maxAdvanceDays));
+                        const current = String(maxAdvanceDays);
+                        maxAdvanceInputRef.current = current;
+                        setMaxAdvanceInput(current);
                         setSaveError(null);
                         setMaxAdvanceEditing(true);
                       }}

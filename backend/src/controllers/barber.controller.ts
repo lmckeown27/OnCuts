@@ -570,6 +570,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           b.is_hidden,
           b.client_cancel_refund_hours,
           b.booking_slot_interval_minutes,
+          b.max_advance_booking_days,
           b.reapply_allowed_at,
           b."createdAt" as created_at,
           b."weeklySchedule" as weekly_schedule,
@@ -1247,6 +1248,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       barberUpdateFields.push(`max_advance_booking_days = $${paramIndex}`);
       barberValues.push(max_advance_booking_days);
       paramIndex++;
+      logger.info('Updating max_advance_booking_days', {
+        barberId: id,
+        userId,
+        max_advance_booking_days,
+      });
     }
 
     let normalizedPricing: ReturnType<typeof normalizePricingEntries> | undefined;
