@@ -3713,6 +3713,7 @@ function AvailabilityModal({
   const [slotIntervalSaving, setSlotIntervalSaving] = useState(false);
   const [maxAdvanceDays, setMaxAdvanceDays] = useState(DEFAULT_MAX_ADVANCE_BOOKING_DAYS);
   const [maxAdvanceInput, setMaxAdvanceInput] = useState(String(DEFAULT_MAX_ADVANCE_BOOKING_DAYS));
+  const [maxAdvanceEditing, setMaxAdvanceEditing] = useState(false);
   const [maxAdvanceSaving, setMaxAdvanceSaving] = useState(false);
   const maxAdvanceSavingRef = useRef(false);
   const skipAutosaveRef = useRef(true);
@@ -3749,6 +3750,7 @@ function AvailabilityModal({
       setSaveError(null);
       setShowTimeLimits(false);
       setShowMaxAdvance(false);
+      setMaxAdvanceEditing(false);
       void loadSchedule();
     }
     return () => {
@@ -3812,6 +3814,7 @@ function AvailabilityModal({
           );
           setMaxAdvanceDays(loadedMaxAdvance);
           setMaxAdvanceInput(String(loadedMaxAdvance));
+          setMaxAdvanceEditing(false);
           const rawSchedule = data.data.weekly_schedule ?? data.data.weeklySchedule;
           if (rawSchedule) {
             setAvailability(migrateSchedule(rawSchedule));
@@ -4000,16 +4003,16 @@ function AvailabilityModal({
     }
   };
 
-  const saveMaxAdvance = async (days: number) => {
-    if (!barberId || maxAdvanceSavingRef.current) return;
+  const saveMaxAdvance = async (days: number): Promise<boolean> => {
+    if (!barberId || maxAdvanceSavingRef.current) return false;
     if (!Number.isInteger(days) || days <= 0) {
       setMaxAdvanceInput(String(maxAdvanceDays));
       setSaveError('Max advance must be a positive number of days.');
-      return;
+      return false;
     }
     if (days === maxAdvanceDays) {
       setMaxAdvanceInput(String(days));
-      return;
+      return true;
     }
 
     const previous = maxAdvanceDays;
@@ -4036,6 +4039,7 @@ function AvailabilityModal({
         setMaxAdvanceDays(saved);
         setMaxAdvanceInput(String(saved));
         showSavedToast(`Clients can book up to ${saved} days ahead.`);
+        return true;
       } else {
         setMaxAdvanceDays(previous);
         setMaxAdvanceInput(String(previous));
@@ -4043,32 +4047,41 @@ function AvailabilityModal({
         setSaveError(
           errorData?.error?.message || errorData?.message || 'Could not save max advance.'
         );
+        return false;
       }
     } catch (error) {
       console.error('Failed to save max advance booking days:', error);
       setMaxAdvanceDays(previous);
       setMaxAdvanceInput(String(previous));
       setSaveError('Could not save max advance.');
+      return false;
     } finally {
       maxAdvanceSavingRef.current = false;
       setMaxAdvanceSaving(false);
     }
   };
 
-  const commitMaxAdvanceInput = () => {
+  const confirmMaxAdvance = async () => {
     const parsed = parseInt(maxAdvanceInput, 10);
     if (!Number.isInteger(parsed) || parsed <= 0) {
       setMaxAdvanceInput(String(maxAdvanceDays));
       setSaveError('Max advance must be a positive number of days.');
       return;
     }
-    void saveMaxAdvance(parsed);
+    const saved = await saveMaxAdvance(parsed);
+    if (saved) {
+      setMaxAdvanceEditing(false);
+      if (parsed === maxAdvanceDays) {
+        showSavedToast(`Clients can book up to ${parsed} days ahead.`);
+      }
+    }
   };
 
   const stepMaxAdvance = (delta: number) => {
     const parsed = parseInt(maxAdvanceInput, 10);
     const base = Number.isInteger(parsed) && parsed > 0 ? parsed : maxAdvanceDays;
-    void saveMaxAdvance(Math.max(1, base + delta));
+    setMaxAdvanceInput(String(Math.max(1, base + delta)));
+    setSaveError(null);
   };
 
   const parsedMaxAdvanceInput = parseInt(maxAdvanceInput, 10);
@@ -4123,6 +4136,7 @@ function AvailabilityModal({
                 onClick={() => {
                   setShowTimeLimits(false);
                   setShowMaxAdvance(false);
+                  setMaxAdvanceEditing(false);
                   onOpenBlockTime();
                 }}
                 className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
@@ -4133,6 +4147,7 @@ function AvailabilityModal({
             <button
               type="button"
               onClick={() => {
+                setMaxAdvanceEditing(false);
                 setShowMaxAdvance(false);
                 setShowTimeLimits((prev) => !prev);
               }}
@@ -4146,6 +4161,7 @@ function AvailabilityModal({
               type="button"
               onClick={() => {
                 setShowTimeLimits(false);
+                setMaxAdvanceEditing(false);
                 setShowMaxAdvance((prev) => !prev);
               }}
               className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
@@ -4200,48 +4216,82 @@ function AvailabilityModal({
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2">
-                <div className="flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
-                  <button
-                    type="button"
-                    aria-label="One day more"
-                    disabled={maxAdvanceSaving || !barberId}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => stepMaxAdvance(1)}
-                    className="inline-flex h-6 w-8 items-center justify-center border-b border-stone-200 text-gray-800 hover:bg-stone-100 disabled:opacity-40"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="One day less"
-                    disabled={maxAdvanceSaving || !barberId || maxAdvanceShown <= 1}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => stepMaxAdvance(-1)}
-                    className="inline-flex h-6 w-8 items-center justify-center text-gray-800 hover:bg-stone-100 disabled:opacity-40"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    step={1}
-                    aria-label="Days in advance"
-                    disabled={maxAdvanceSaving || !barberId}
-                    value={maxAdvanceInput}
-                    onChange={(event) => setMaxAdvanceInput(event.target.value)}
-                    onBlur={commitMaxAdvanceInput}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.currentTarget.blur();
-                      }
-                    }}
-                    className="w-20 rounded-xl border border-stone-200 bg-white px-2 py-2.5 text-center text-lg font-semibold text-gray-900 tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus:outline-none focus:border-gray-900 disabled:opacity-60"
-                  />
-                  <span className="text-sm font-medium text-gray-700">days</span>
-                </label>
+                {maxAdvanceEditing ? (
+                  <>
+                    <div className="flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
+                      <button
+                        type="button"
+                        aria-label="One day more"
+                        disabled={maxAdvanceSaving || !barberId}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => stepMaxAdvance(1)}
+                        className="inline-flex h-6 w-8 items-center justify-center border-b border-stone-200 text-gray-800 hover:bg-stone-100 disabled:opacity-40"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="One day less"
+                        disabled={maxAdvanceSaving || !barberId || maxAdvanceShown <= 1}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => stepMaxAdvance(-1)}
+                        className="inline-flex h-6 w-8 items-center justify-center text-gray-800 hover:bg-stone-100 disabled:opacity-40"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        step={1}
+                        aria-label="Days in advance"
+                        disabled={maxAdvanceSaving || !barberId}
+                        value={maxAdvanceInput}
+                        onChange={(event) => setMaxAdvanceInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void confirmMaxAdvance();
+                          }
+                        }}
+                        className="w-20 rounded-xl border border-stone-200 bg-white px-2 py-2.5 text-center text-lg font-semibold text-gray-900 tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus:outline-none focus:border-gray-900 disabled:opacity-60"
+                      />
+                      <span className="text-sm font-medium text-gray-700">days</span>
+                    </label>
+                    <button
+                      type="button"
+                      aria-label="Confirm max advance"
+                      disabled={maxAdvanceSaving || !barberId}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => void confirmMaxAdvance()}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-semibold text-gray-900 tabular-nums">
+                      {maxAdvanceDays}{' '}
+                      <span className="text-sm font-medium text-gray-700">days</span>
+                    </p>
+                    <button
+                      type="button"
+                      aria-label="Edit max advance"
+                      disabled={!barberId}
+                      onClick={() => {
+                        setMaxAdvanceInput(String(maxAdvanceDays));
+                        setSaveError(null);
+                        setMaxAdvanceEditing(true);
+                      }}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-stone-200 bg-white text-gray-800 hover:border-gray-400 disabled:opacity-40"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </section>
           )}
