@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus, Minus } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -4199,17 +4199,29 @@ function AvailabilityModal({
                   How far ahead clients can book with you.
                 </p>
               </div>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  aria-label="One day less"
-                  disabled={maxAdvanceSaving || !barberId || maxAdvanceShown <= 1}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => stepMaxAdvance(-1)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-stone-200 bg-white text-gray-800 hover:border-gray-400 disabled:opacity-40"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
+              <div className="flex items-center justify-center gap-2">
+                <div className="flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
+                  <button
+                    type="button"
+                    aria-label="One day more"
+                    disabled={maxAdvanceSaving || !barberId}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => stepMaxAdvance(1)}
+                    className="inline-flex h-6 w-8 items-center justify-center border-b border-stone-200 text-gray-800 hover:bg-stone-100 disabled:opacity-40"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="One day less"
+                    disabled={maxAdvanceSaving || !barberId || maxAdvanceShown <= 1}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => stepMaxAdvance(-1)}
+                    className="inline-flex h-6 w-8 items-center justify-center text-gray-800 hover:bg-stone-100 disabled:opacity-40"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
                 <label className="flex items-center gap-2">
                   <input
                     type="number"
@@ -4230,16 +4242,6 @@ function AvailabilityModal({
                   />
                   <span className="text-sm font-medium text-gray-700">days</span>
                 </label>
-                <button
-                  type="button"
-                  aria-label="One day more"
-                  disabled={maxAdvanceSaving || !barberId}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => stepMaxAdvance(1)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-stone-200 bg-white text-gray-800 hover:border-gray-400 disabled:opacity-40"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
               </div>
             </section>
           )}
