@@ -4041,7 +4041,6 @@ function AvailabilityModal({
         setMaxAdvanceDays(saved);
         maxAdvanceInputRef.current = String(saved);
         setMaxAdvanceInput(String(saved));
-        showSavedToast(`Clients can book up to ${saved} days ahead.`);
         return true;
       } else {
         setMaxAdvanceDays(previous);
