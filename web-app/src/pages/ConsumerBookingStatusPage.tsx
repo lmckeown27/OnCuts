@@ -18,7 +18,7 @@ import Loading from '../components/Loading';
 import { TivelaPlatformsLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
-import DatePicker from '../components/DatePicker';
+import DatePicker, { resolveMaxAdvanceBookingDays } from '../components/DatePicker';
 import PullToRefresh from '../components/PullToRefresh';
 import barberService from '../services/barber.service';
 import { resolveBookingAppointmentDuration } from '../config/services';
@@ -1337,6 +1337,9 @@ export default function ConsumerBookingStatusPage() {
                   }}
                   minDate={new Date().toISOString().split('T')[0]}
                   weeklySchedule={editBarber?.weekly_schedule}
+                  maxAdvanceBookingDays={resolveMaxAdvanceBookingDays(
+                    editBarber?.max_advance_booking_days ?? editBarber?.maxAdvanceBookingDays
+                  )}
                 />
               )}
               

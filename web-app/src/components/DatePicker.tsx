@@ -10,6 +10,17 @@ interface DatePickerProps {
   label?: string;
   required?: boolean;
   weeklySchedule?: WeeklySchedule; // Barber's availability schedule
+  /** Effective booking window in days. Days that start after now + this many days are unavailable. */
+  maxAdvanceBookingDays?: number | null;
+}
+
+const DEFAULT_MAX_ADVANCE_BOOKING_DAYS = 30;
+
+export function resolveMaxAdvanceBookingDays(raw: unknown): number {
+  if (raw === null || raw === undefined || raw === '') return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_MAX_ADVANCE_BOOKING_DAYS;
+  return Math.floor(n);
 }
 
 // Helper to get today at midnight
@@ -30,6 +41,7 @@ export default function DatePicker({
   label = 'Select Date',
   required = false,
   weeklySchedule,
+  maxAdvanceBookingDays,
 }: DatePickerProps) {
   // State for today that updates at midnight
   const [today, setToday] = useState(getTodayAtMidnight);
@@ -119,6 +131,13 @@ export default function DatePicker({
     if (maxDate) {
       const max = new Date(maxDate + 'T00:00:00');
       if (date > max) return true;
+    }
+
+    if (maxAdvanceBookingDays !== undefined && maxAdvanceBookingDays !== null) {
+      const advanceDays = resolveMaxAdvanceBookingDays(maxAdvanceBookingDays);
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const cutoff = Date.now() + advanceDays * 24 * 60 * 60 * 1000;
+      if (dayStart.getTime() > cutoff) return true;
     }
     
     // Check if barber is available on this day of the week
@@ -242,8 +261,8 @@ export default function DatePicker({
                       }
                       ${!currentMonth && !disabled ? 'text-gray-400' : ''}
                       ${currentMonth && !disabled && !selected ? 'text-gray-900' : ''}
-                      ${selected 
-                        ? 'bg-gray-900 text-white hover:bg-brand-600' 
+                      ${selected && !disabled
+                        ? 'bg-gray-900 text-white hover:bg-brand-600'
                         : ''
                       }
                     `}

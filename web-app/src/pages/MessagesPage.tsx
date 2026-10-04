@@ -45,7 +45,7 @@ import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
-import DatePicker from '../components/DatePicker';
+import DatePicker, { resolveMaxAdvanceBookingDays } from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { TivelaPlatformsLogo } from '@assets';
@@ -182,6 +182,7 @@ export default function MessagesPage() {
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [editBarberId, setEditBarberId] = useState<string>('');
   const [editBarberWeeklySchedule, setEditBarberWeeklySchedule] = useState<any>(null);
+  const [editMaxAdvanceBookingDays, setEditMaxAdvanceBookingDays] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -476,6 +477,7 @@ export default function MessagesPage() {
     }
     
     setEditBarberId(barberId);
+    setEditMaxAdvanceBookingDays(null);
     console.log('[MessagesPage] Edit barber ID set to:', barberId);
     
     // Fetch barber's available locations and weekly schedule
@@ -502,7 +504,13 @@ export default function MessagesPage() {
         });
         if (availabilityResponse.ok) {
           const data = await availabilityResponse.json();
-          setEditBarberWeeklySchedule(data.weeklySchedule || null);
+          const payload = data.data ?? data;
+          setEditBarberWeeklySchedule(payload.weeklySchedule || payload.weekly_schedule || null);
+          setEditMaxAdvanceBookingDays(
+            resolveMaxAdvanceBookingDays(
+              payload.max_advance_booking_days ?? payload.maxAdvanceBookingDays
+            )
+          );
         }
       } catch (error) {
         console.error('Failed to fetch barber data:', error);
@@ -521,6 +529,7 @@ export default function MessagesPage() {
     setEditTime('');
     setEditLocation('');
     setEditBarberWeeklySchedule(null);
+    setEditMaxAdvanceBookingDays(null);
   };
 
   // Save booking edits
@@ -1825,6 +1834,7 @@ export default function MessagesPage() {
                           }}
                           minDate={new Date().toISOString().split('T')[0]}
                           weeklySchedule={editBarberWeeklySchedule}
+                          maxAdvanceBookingDays={editMaxAdvanceBookingDays ?? undefined}
                           required
                         />
                       </div>
@@ -2147,6 +2157,7 @@ export default function MessagesPage() {
                       }}
                       minDate={new Date().toISOString().split('T')[0]}
                       weeklySchedule={editBarberWeeklySchedule}
+                      maxAdvanceBookingDays={editMaxAdvanceBookingDays ?? undefined}
                       required
                     />
                   </div>

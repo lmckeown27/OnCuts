@@ -12,7 +12,7 @@ import {
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
-import DatePicker from './DatePicker';
+import DatePicker, { resolveMaxAdvanceBookingDays } from './DatePicker';
 import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { useAuthStore } from '../store/useAuthStore';
@@ -507,6 +507,9 @@ export default function BookingDetailsModal({
                   }}
                   minDate={new Date().toISOString().split('T')[0]}
                   weeklySchedule={editBarber?.weekly_schedule}
+                  maxAdvanceBookingDays={resolveMaxAdvanceBookingDays(
+                    editBarber?.max_advance_booking_days ?? editBarber?.maxAdvanceBookingDays
+                  )}
                 />
               )}
 

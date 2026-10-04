@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, MapPin, Scissors, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
-import DatePicker from '../components/DatePicker';
+import DatePicker, { resolveMaxAdvanceBookingDays } from '../components/DatePicker';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
@@ -31,20 +31,20 @@ export default function ScheduleServicePage() {
   // Fetch barber by ID if not passed in state (e.g., when navigating back)
   useEffect(() => {
     const fetchBarber = async () => {
-      if (!passedBarber && barberId) {
-        try {
-          const barberData = await barberService.getBarberById(barberId);
-          if (barberData) {
-            setBarber(barberData);
-          }
-        } catch (error) {
-          console.error('Failed to fetch barber:', error);
+      if (!barberId) return;
+      try {
+        const barberData = await barberService.getBarberById(barberId);
+        if (barberData) {
+          setBarber((prev) => (prev ? { ...prev, ...barberData } : barberData));
         }
+      } catch (error) {
+        console.error('Failed to fetch barber:', error);
+      } finally {
         setIsLoading(false);
       }
     };
     fetchBarber();
-  }, [barberId, passedBarber]);
+  }, [barberId]);
   const [serviceType, setServiceType] = useState<string>(
     preservedFormData?.serviceType || passedFilters?.serviceType || ''
   );
@@ -318,6 +318,9 @@ export default function ScheduleServicePage() {
                       minDate={today}
                       required
                       weeklySchedule={barber.weekly_schedule}
+                      maxAdvanceBookingDays={resolveMaxAdvanceBookingDays(
+                        barber.max_advance_booking_days ?? barber.maxAdvanceBookingDays
+                      )}
                     />
                     {errors.date && (
                       <p className="text-red-500 text-sm mt-1">{errors.date}</p>
