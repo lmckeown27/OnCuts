@@ -192,7 +192,7 @@ export default function PlaceSearchInput({
   const inlinePadding = loading ? 'pr-7 pl-2' : 'px-2';
 
   return (
-    <div ref={containerRef} className={`relative ${inline ? 'w-max min-w-[14rem] max-w-[70vw] sm:min-w-[22rem] sm:max-w-sm' : ''} ${className}`}>
+    <div ref={containerRef} className={`relative ${inline ? 'w-max min-w-[14rem] max-w-[70vw] sm:min-w-[22rem] sm:max-w-sm lg:min-w-[clamp(22rem,28vw,34rem)] lg:max-w-[clamp(24rem,32vw,38rem)]' : ''} ${className}`}>
       {showLabel && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}

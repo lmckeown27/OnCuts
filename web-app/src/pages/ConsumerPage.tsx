@@ -790,7 +790,7 @@ export default function ConsumerPage() {
       <IosAppDownloadBanner variant="consumer" />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <div className="w-full mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
             {/* Left section — logo home + Become an Operator / Operator View */}
             <div className="flex items-center gap-2 sm:gap-4">
@@ -988,7 +988,13 @@ export default function ConsumerPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div
+        className={`w-full mx-auto px-3 sm:px-4 py-3 sm:py-4 ${
+          homeSegment === 'discover'
+            ? 'lg:flex lg:flex-col lg:h-[calc(100dvh-4.75rem)] lg:min-h-0 lg:overflow-hidden'
+            : ''
+        }`}
+      >
         <DiscoveryView
           navigate={navigate}
           onBecomeBarberClick={handleBecomeBarberClick}
@@ -2564,8 +2570,8 @@ function DiscoveryView({
         <Loading />
       ) : (
         <>
-      <div className="mt-2 lg:mt-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-[min(68dvh,800px)]">
-        <div className="lg:flex-1 min-w-0 relative lg:min-h-[min(68dvh,800px)]">
+      <div className="mt-2 lg:mt-3 flex flex-col lg:flex-row gap-4 lg:gap-5 lg:flex-1 lg:min-h-0">
+        <div className="lg:flex-1 min-w-0 relative lg:min-h-0 lg:h-full flex flex-col">
           <DiscoverMap
             pins={discoverPins}
             selectedAreaKey={selectedDiscoverAreaKey}
@@ -2578,7 +2584,7 @@ function DiscoveryView({
             }
             searchRadiusMiles={displayDistanceMiles}
             constrainByDistance={constrainByDistance}
-            className="h-full min-h-[380px] sm:min-h-[480px] lg:min-h-[min(68dvh,800px)]"
+            className="h-full min-h-[380px] sm:min-h-[480px] lg:min-h-0 lg:flex-1"
           />
           {selectedDiscoverAreaKey && (
             <button
@@ -2590,20 +2596,20 @@ function DiscoveryView({
             </button>
           )}
         </div>
-        <div className="lg:w-[340px] xl:w-[380px] shrink-0">
+        <div className="lg:w-[clamp(21rem,30%,36rem)] shrink-0 lg:min-h-0 lg:flex lg:flex-col">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
               {selectedDiscoverAreaKey
                 ? (discoverAreas.find((a) => a.key === selectedDiscoverAreaKey)?.label || 'Area')
                 : 'Nearby'}
             </h2>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs lg:text-sm text-gray-500">
               {discoverListBarbers.length} operator{discoverListBarbers.length === 1 ? '' : 's'}
             </span>
           </div>
 
           {discoverListBarbers.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-3 lg:max-h-[min(68dvh,800px)] lg:overflow-y-auto lg:pr-1">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:content-start">
               {discoverListBarbers.map((barber) => {
                 const distanceLabel = constrainByDistance
                   ? formatBarberDistanceFromUser(

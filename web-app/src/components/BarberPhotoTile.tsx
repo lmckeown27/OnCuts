@@ -51,7 +51,7 @@ export default function BarberPhotoTile({
 
         <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2.5 sm:p-3">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm sm:text-base font-bold text-white leading-tight line-clamp-2">
+            <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white leading-tight line-clamp-2">
               {name}
             </h3>
             {isMain && (
@@ -64,14 +64,14 @@ export default function BarberPhotoTile({
 
         {price !== undefined && (
           <div className="absolute bottom-0 left-0 bg-gray-900/90 backdrop-blur-sm px-2.5 sm:px-3 py-1.5 rounded-tr-lg rounded-bl-lg">
-            <span className="font-bold text-sm text-white">${price}</span>
+            <span className="font-bold text-sm lg:text-base text-white">${price}</span>
           </div>
         )}
       </div>
 
       <div className="mt-2 px-0.5 space-y-0.5">
         {nextOpen ? (
-          <p className="text-xs sm:text-sm text-gray-600 truncate">{nextOpen}</p>
+          <p className="text-xs sm:text-sm lg:text-base text-gray-600 truncate">{nextOpen}</p>
         ) : (
           <p className="text-xs sm:text-sm text-gray-400 truncate">Hours not listed</p>
         )}

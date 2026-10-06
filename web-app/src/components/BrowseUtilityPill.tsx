@@ -169,7 +169,7 @@ export default function BrowseUtilityPill({
 
   return (
     <div className="relative z-[800] mb-4 sm:mb-5">
-      <div className="max-w-2xl mx-auto space-y-2">
+      <div className="w-full space-y-2">
         {mode === 'radius' ? (
           <div
             className="rounded-3xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3 space-y-2"
@@ -304,7 +304,7 @@ export default function BrowseUtilityPill({
           </div>
         ) : (
           <div
-            className={`rounded-full border bg-white/85 backdrop-blur-xl shadow-sm transition-all duration-300 ease-out h-14 flex items-center px-2 sm:px-3 ${
+            className={`rounded-full border bg-white/85 backdrop-blur-xl shadow-sm transition-all duration-300 ease-out h-14 lg:h-[clamp(3.5rem,4.2vw,4.75rem)] flex items-center px-2 sm:px-3 ${
               mode === 'search'
                 ? 'w-full border-olive-400/80 ring-2 ring-olive-400/40'
                 : 'w-fit max-w-full mx-auto border-gray-200/90'
