@@ -168,7 +168,7 @@ export default function BrowseUtilityPill({
   const sideSegmentsVisible = mode === 'collapsed';
 
   return (
-    <div className="mb-4 sm:mb-5">
+    <div className="relative z-[800] mb-4 sm:mb-5">
       <div className="max-w-2xl mx-auto space-y-2">
         {mode === 'radius' ? (
           <div
@@ -368,7 +368,7 @@ export default function BrowseUtilityPill({
                     />
                   )}
                   <label
-                    className="flex shrink-0 cursor-pointer items-center select-none"
+                    className="flex shrink-0 cursor-pointer items-center select-none pl-2"
                     title={
                       deviceTracking
                         ? 'Toggle off to turn off device tracking'

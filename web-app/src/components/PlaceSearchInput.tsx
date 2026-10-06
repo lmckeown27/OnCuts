@@ -198,7 +198,13 @@ export default function PlaceSearchInput({
           {label}
         </label>
       )}
-      <div className={inline ? 'inline-grid w-full items-center' : 'relative'}>
+      <div
+        className={
+          inline
+            ? 'inline-grid w-full items-center rounded-md bg-white ring-1 ring-gray-300 shadow-sm transition-shadow hover:ring-gray-400 focus-within:ring-2 focus-within:ring-gray-900'
+            : 'relative'
+        }
+      >
         {inline && (
           <span
             aria-hidden
@@ -252,7 +258,7 @@ export default function PlaceSearchInput({
       )}
 
       {open && results.length > 0 && (
-        <ul className={`absolute z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg ${inline ? 'left-0 w-64' : 'w-full'}`}>
+        <ul className={`absolute z-[900] mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg ${inline ? 'left-0 w-64' : 'w-full'}`}>
           {results.map((place, index) => (
             <li key={`${place.latitude}-${place.longitude}-${index}`}>
               <button
