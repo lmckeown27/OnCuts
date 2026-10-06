@@ -188,14 +188,25 @@ export default function PlaceSearchInput({
     }
   };
 
+  const inlineFieldText = query || placeholder || ' ';
+  const inlinePadding = loading ? 'pr-7 pl-2' : 'px-2';
+
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${inline ? 'w-max max-w-[50vw] sm:max-w-xs' : ''} ${className}`}>
       {showLabel && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
         </label>
       )}
-      <div className="relative">
+      <div className={inline ? 'inline-grid w-full items-center' : 'relative'}>
+        {inline && (
+          <span
+            aria-hidden
+            className={`invisible col-start-1 row-start-1 min-w-0 overflow-hidden whitespace-pre py-1.5 text-sm ${inlinePadding}`}
+          >
+            {inlineFieldText}
+          </span>
+        )}
         {showSearchIcon && (
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         )}
@@ -209,11 +220,10 @@ export default function PlaceSearchInput({
           }}
           placeholder={placeholder}
           disabled={disabled}
+          size={inline ? 1 : undefined}
           className={
             inline
-              ? `w-full min-w-0 bg-transparent border-0 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 ${
-                  loading ? 'pr-7 pl-2' : 'px-2'
-                }`
+              ? `col-start-1 row-start-1 w-full min-w-0 bg-transparent border-0 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 ${inlinePadding}`
               : `w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-400 ${
                   showSearchIcon ? 'pl-10' : 'pl-3'
                 } ${loading ? 'pr-10' : 'pr-3'}`
@@ -242,7 +252,7 @@ export default function PlaceSearchInput({
       )}
 
       {open && results.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+        <ul className={`absolute z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg ${inline ? 'left-0 w-64' : 'w-full'}`}>
           {results.map((place, index) => (
             <li key={`${place.latitude}-${place.longitude}-${index}`}>
               <button

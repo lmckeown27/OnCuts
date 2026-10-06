@@ -350,9 +350,9 @@ export default function BrowseUtilityPill({
               </div>
             ) : (
               <>
-                <div className="flex flex-1 min-w-0 items-center gap-1">
+                <div className="flex min-w-0 items-center gap-1">
                   {deviceTracking ? (
-                    <p className="min-w-0 flex-1 truncate px-2 text-sm font-semibold text-gray-900">
+                    <p className="w-fit max-w-[50vw] truncate px-2 text-sm font-semibold text-gray-900 sm:max-w-xs">
                       {locationLabel}
                     </p>
                   ) : (
@@ -365,7 +365,6 @@ export default function BrowseUtilityPill({
                       showSearchIcon={false}
                       inline
                       placeholder="Campus, city, or area"
-                      className="min-w-0 flex-1"
                     />
                   )}
                   <label
