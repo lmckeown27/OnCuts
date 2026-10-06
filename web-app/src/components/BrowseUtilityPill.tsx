@@ -169,64 +169,7 @@ export default function BrowseUtilityPill({
 
   return (
     <div className="mb-4 sm:mb-5">
-      <div className="mb-3 px-1 w-full max-w-md mx-auto">
-        {deviceTracking ? (
-          <p className="py-2.5 text-sm font-bold text-gray-900 text-center">
-            {locationLabel}
-          </p>
-        ) : (
-          <PlaceSearchInput
-            value={locationDraft}
-            onChange={onLocationDraftChange}
-            onSelectPlace={onSelectPlace}
-            disabled={deviceTrackingBusy}
-            showLabel={false}
-            showSearchIcon={false}
-            placeholder="Campus, city, or area"
-          />
-        )}
-        <div className="mt-1.5 flex items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">
-            {deviceTracking
-              ? 'Toggle off to turn off device tracking'
-              : 'Toggle on to turn on device tracking'}
-          </p>
-          <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
-            <span
-              className={`text-xs font-medium ${deviceTracking ? 'text-gray-400' : 'text-gray-900'}`}
-            >
-              Off
-            </span>
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={deviceTracking}
-              disabled={deviceTrackingBusy}
-              onChange={onDeviceTrackingChange}
-              aria-label="Device tracking"
-            />
-            <span
-              aria-hidden
-              className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                deviceTracking ? 'bg-gray-900' : 'bg-gray-300'
-              } ${deviceTrackingBusy ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
-                  deviceTracking ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-                }`}
-              />
-            </span>
-            <span
-              className={`text-xs font-medium ${deviceTracking ? 'text-gray-900' : 'text-gray-400'}`}
-            >
-              On
-            </span>
-          </label>
-        </div>
-      </div>
-
-      <div className="max-w-lg mx-auto space-y-2">
+      <div className="max-w-2xl mx-auto space-y-2">
         {mode === 'radius' ? (
           <div
             className="rounded-3xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3 space-y-2"
@@ -368,21 +311,17 @@ export default function BrowseUtilityPill({
             }`}
           >
             <div
-              className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-out ${
-                sideSegmentsVisible ? 'max-w-[40%] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ease-out ${
+                sideSegmentsVisible ? 'shrink-0 opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
               }`}
             >
               <button
                 type="button"
-                onClick={openRadius}
-                className="shrink-0 px-3 py-2 rounded-full text-xs font-bold tracking-wider text-gray-800 hover:bg-gray-100 transition-colors active:scale-95"
-                aria-label={
-                  constrainByDistance
-                    ? `Maximum search distance, ${Math.round(displayDistanceMiles)} miles, adjust`
-                    : 'Search all providers without distance limit, adjust'
-                }
+                onClick={openSearch}
+                className="shrink-0 flex items-center justify-center px-2.5 py-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors active:scale-95"
+                aria-label="Search operators"
               >
-                {radiusChipLabel}
+                <Search className="w-5 h-5" />
               </button>
               <PillDivider visible={sideSegmentsVisible} />
             </div>
@@ -411,30 +350,77 @@ export default function BrowseUtilityPill({
               </div>
             ) : (
               <>
+                <div className="flex flex-1 min-w-0 items-center gap-1">
+                  {deviceTracking ? (
+                    <p className="min-w-0 flex-1 truncate px-2 text-sm font-semibold text-gray-900">
+                      {locationLabel}
+                    </p>
+                  ) : (
+                    <PlaceSearchInput
+                      value={locationDraft}
+                      onChange={onLocationDraftChange}
+                      onSelectPlace={onSelectPlace}
+                      disabled={deviceTrackingBusy}
+                      showLabel={false}
+                      showSearchIcon={false}
+                      inline
+                      placeholder="Campus, city, or area"
+                      className="min-w-0 flex-1"
+                    />
+                  )}
+                  <label
+                    className="flex shrink-0 cursor-pointer items-center select-none"
+                    title={
+                      deviceTracking
+                        ? 'Toggle off to turn off device tracking'
+                        : 'Toggle on to turn on device tracking'
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={deviceTracking}
+                      disabled={deviceTrackingBusy}
+                      onChange={onDeviceTrackingChange}
+                      aria-label="Device tracking"
+                    />
+                    <span
+                      aria-hidden
+                      className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+                        deviceTracking ? 'bg-gray-900' : 'bg-gray-300'
+                      } ${deviceTrackingBusy ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`pointer-events-none mt-0.5 inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          deviceTracking ? 'ml-0.5 translate-x-4' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </span>
+                  </label>
+                </div>
+                <PillDivider visible={sideSegmentsVisible} />
                 <button
                   type="button"
-                  onClick={openSearch}
-                  className="flex-1 flex items-center justify-center py-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors active:scale-95"
-                  aria-label="Search operators"
+                  onClick={openRadius}
+                  className="shrink-0 px-2.5 py-2 rounded-full text-xs font-bold tracking-wider text-gray-800 hover:bg-gray-100 transition-colors active:scale-95"
+                  aria-label={
+                    constrainByDistance
+                      ? `Maximum search distance, ${Math.round(displayDistanceMiles)} miles, adjust`
+                      : 'Search all providers without distance limit, adjust'
+                  }
                 >
-                  <Search className="w-5 h-5" />
+                  {radiusChipLabel}
                 </button>
                 <PillDivider visible={sideSegmentsVisible} />
-                <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
-                    sideSegmentsVisible ? 'max-w-[45%] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
-                  }`}
+                <button
+                  type="button"
+                  onClick={openCategory}
+                  className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-full text-sm font-medium text-gray-800 hover:bg-gray-100 transition-colors active:scale-95"
+                  aria-label={`Provider type filter, ${selectedCategory.label}`}
                 >
-                  <button
-                    type="button"
-                    onClick={openCategory}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-800 hover:bg-gray-100 transition-colors active:scale-95"
-                    aria-label={`Provider type filter, ${selectedCategory.label}`}
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="truncate max-w-[5.5rem]">{selectedCategory.label}</span>
-                  </button>
-                </div>
+                  <Filter className="w-4 h-4" />
+                  <span className="truncate max-w-[4.5rem] sm:max-w-[5.5rem]">{selectedCategory.label}</span>
+                </button>
               </>
             )}
           </div>

@@ -15,6 +15,8 @@ interface PlaceSearchInputProps {
   showSearchIcon?: boolean;
   helperText?: string;
   className?: string;
+  /** Borderless field for embedding in a single-line toolbar. */
+  inline?: boolean;
 }
 
 const SEARCH_DEBOUNCE_MS = 800;
@@ -39,6 +41,7 @@ export default function PlaceSearchInput({
   showSearchIcon = true,
   helperText,
   className = '',
+  inline = false,
 }: PlaceSearchInputProps) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<GeocodePlace[]>([]);
@@ -206,9 +209,15 @@ export default function PlaceSearchInput({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-400 ${
-            showSearchIcon ? 'pl-10' : 'pl-3'
-          } ${loading ? 'pr-10' : 'pr-3'}`}
+          className={
+            inline
+              ? `w-full min-w-0 bg-transparent border-0 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 ${
+                  loading ? 'pr-7 pl-2' : 'px-2'
+                }`
+              : `w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-400 ${
+                  showSearchIcon ? 'pl-10' : 'pl-3'
+                } ${loading ? 'pr-10' : 'pr-3'}`
+          }
           autoComplete="off"
         />
         {loading && (
@@ -221,7 +230,15 @@ export default function PlaceSearchInput({
       )}
 
       {searchError && !loading && (
-        <p className="text-xs text-amber-700 mt-1.5">{searchError}</p>
+        <p
+          className={
+            inline
+              ? 'absolute z-30 left-0 top-full mt-1 max-w-xs rounded-md bg-white px-2 py-1 text-xs text-amber-700 shadow'
+              : 'text-xs text-amber-700 mt-1.5'
+          }
+        >
+          {searchError}
+        </p>
       )}
 
       {open && results.length > 0 && (
