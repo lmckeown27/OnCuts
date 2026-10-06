@@ -306,8 +306,8 @@ export default function BrowseUtilityPill({
           <div
             className={`rounded-full border bg-white/85 backdrop-blur-xl shadow-sm transition-all duration-300 ease-out h-14 flex items-center px-2 sm:px-3 ${
               mode === 'search'
-                ? 'border-olive-400/80 ring-2 ring-olive-400/40'
-                : 'border-gray-200/90'
+                ? 'w-full border-olive-400/80 ring-2 ring-olive-400/40'
+                : 'w-fit max-w-full mx-auto border-gray-200/90'
             }`}
           >
             <div
