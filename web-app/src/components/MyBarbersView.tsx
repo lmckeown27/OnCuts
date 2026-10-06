@@ -7,6 +7,13 @@ import {
   publicBroadLocationLabel,
 } from '../utils/myBarbersDiscover';
 
+/** Matches a Discover sidebar tile: half of clamp(21rem, 30% of the page, 36rem). */
+const discoverTileTrack =
+  'calc((clamp(21rem, 0.3 * (100vw - 2rem), 36rem) - 1rem) / 2)';
+
+const operatorPhotoGrid =
+  'grid grid-cols-2 gap-3 justify-start sm:gap-4 lg:grid-cols-[repeat(auto-fill,minmax(var(--operator-tile),var(--operator-tile)))]';
+
 interface MyBarbersViewProps {
   entries: MyBarberEntry[];
   loading: boolean;
@@ -73,7 +80,7 @@ export default function MyBarbersView({
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
               {location}
             </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,10.5rem))] sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,11.5rem))] gap-3 sm:gap-4 justify-start">
+            <div className={operatorPhotoGrid} style={{ ['--operator-tile' as string]: discoverTileTrack }}>
               {items.map((barber) => {
                 const entry = entries.find((e) => e.barber.id === barber.id);
                 return (
@@ -91,7 +98,7 @@ export default function MyBarbersView({
 
       {!loading && unlocated.length > 0 && (
         <section className="mb-8 sm:mb-10">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,10.5rem))] sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,11.5rem))] gap-3 sm:gap-4 justify-start">
+          <div className={operatorPhotoGrid} style={{ ['--operator-tile' as string]: discoverTileTrack }}>
             {unlocated.map((entry) => (
               <BarberPhotoTile
                 key={entry.barber.id}
