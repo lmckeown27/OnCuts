@@ -368,7 +368,7 @@ export default function BrowseUtilityPill({
                     />
                   )}
                   <label
-                    className="flex shrink-0 cursor-pointer items-center select-none pl-2"
+                    className="flex shrink-0 cursor-pointer items-center select-none pl-2 pr-2"
                     title={
                       deviceTracking
                         ? 'Toggle off to turn off device tracking'
