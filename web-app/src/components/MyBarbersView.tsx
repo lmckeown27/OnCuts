@@ -73,7 +73,7 @@ export default function MyBarbersView({
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
               {location}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,10.5rem))] sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,11.5rem))] gap-3 sm:gap-4 justify-start">
               {items.map((barber) => {
                 const entry = entries.find((e) => e.barber.id === barber.id);
                 return (
@@ -91,7 +91,7 @@ export default function MyBarbersView({
 
       {!loading && unlocated.length > 0 && (
         <section className="mb-8 sm:mb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,10.5rem))] sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,11.5rem))] gap-3 sm:gap-4 justify-start">
             {unlocated.map((entry) => (
               <BarberPhotoTile
                 key={entry.barber.id}
