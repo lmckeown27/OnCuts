@@ -16,6 +16,16 @@ import { AuthRequest } from '../middleware/auth';
 
 // Development mode check
 const isDevelopment = process.env.NODE_ENV === 'development';
+
+/** Marketplace-visible operators: active, not hidden, Stripe charges and payouts enabled. */
+const VISIBLE_STRIPE_CONNECTED_OPERATOR_SQL = `
+  b."isActive" = true
+  AND b.is_hidden = false
+  AND u.stripe_account_id IS NOT NULL
+  AND u.stripe_payouts_enabled = true
+  AND u.stripe_charges_enabled = true
+  AND (u."isBanned" IS NOT TRUE)
+`;
 import paymentServiceV2 from '../services/payment-v2.service';
 import reconciliationService from '../services/reconciliation.service';
 import withdrawalBatchService from '../services/withdrawal-batch.service';
@@ -1182,11 +1192,12 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
     const bookingsResult = await pool.query('SELECT COUNT(*) FROM bookings');
     const totalBookings = parseInt(bookingsResult.rows[0].count);
 
-    // Get total barbers count (only users who are still barbers, not demoted)
+    // Marketplace-visible operators only (active, listed, Stripe charges and payouts on)
     const barbersResult = await pool.query(`
       SELECT COUNT(*) FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+        AND ${VISIBLE_STRIPE_CONNECTED_OPERATOR_SQL}
     `);
     const totalBarbers = parseInt(barbersResult.rows[0].count);
 
@@ -1268,7 +1279,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     // Get barber counts - use simpler query
     const barbersResult = await pool.query(`
       SELECT 
-        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE ${VISIBLE_STRIPE_CONNECTED_OPERATOR_SQL}) as total,
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
@@ -1847,7 +1858,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     // Get total barber counts
     const barbersResult = await pool.query(`
       SELECT 
-        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE ${VISIBLE_STRIPE_CONNECTED_OPERATOR_SQL}) as total,
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
