@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
+import OperatorPortfolioModal from '../components/OperatorPortfolioModal';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -117,6 +118,8 @@ export default function BarberPage() {
   
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
+  const [isPortfolioVisible, setIsPortfolioVisible] = useState(false);
   
   const [showBarberChats, setShowBarberChats] = useState(false);
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
@@ -179,6 +182,7 @@ export default function BarberPage() {
     showBookingLink ||
     showServiceSpecialties ||
     showAdminDashboard ||
+    showPortfolio ||
     showBarberChats ||
     showBookings ||
     showLocations ||
@@ -341,6 +345,8 @@ export default function BarberPage() {
   
   const openAdminDashboard = () => openModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   const closeAdminDashboard = () => closeModal(setShowAdminDashboard, setIsAdminDashboardVisible);
+  const openPortfolio = () => openModal(setShowPortfolio, setIsPortfolioVisible);
+  const closePortfolio = () => closeModal(setShowPortfolio, setIsPortfolioVisible);
   
   const openBarberChats = () => openModal(setShowBarberChats, setIsBarberChatsVisible);
   const closeBarberChats = () => closeModal(setShowBarberChats, setIsBarberChatsVisible);
@@ -588,16 +594,14 @@ export default function BarberPage() {
               </button>
             </div>
 
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={openAdminDashboard}
-                className="absolute left-1/2 -translate-x-1/2 flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
-                aria-label="Admin"
-              >
-                <span className="text-xs font-semibold text-gray-700">Admin</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={openPortfolio}
+              className="absolute left-1/2 -translate-x-1/2 flex items-center px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+              aria-label="Portfolio"
+            >
+              <span className="text-xs font-semibold text-gray-700">Portfolio</span>
+            </button>
 
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <BarberBookingRequestsDropdown barberId={barberId} />
@@ -844,6 +848,14 @@ export default function BarberPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showPortfolio && (
+        <OperatorPortfolioModal
+          providerId={barberProfile?.id || ''}
+          visible={isPortfolioVisible}
+          onClose={closePortfolio}
+        />
       )}
 
       {/* Admin Dashboard — pushed shell (admins only) */}

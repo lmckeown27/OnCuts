@@ -28,3 +28,21 @@ export const upload = multer({
   },
 });
 
+const portfolioMediaFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowed = /^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/;
+  if (allowed.test(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+  cb(new ApiError(400, 'Upload a photo (JPEG, PNG, WebP, GIF) or a video (MP4, WebM, MOV)'));
+};
+
+/** Operator portfolio photos and short videos. Size is checked again per media type. */
+export const uploadPortfolioMedia = multer({
+  storage,
+  fileFilter: portfolioMediaFilter,
+  limits: {
+    fileSize: 80 * 1024 * 1024,
+  },
+});
+

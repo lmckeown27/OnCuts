@@ -19,7 +19,12 @@ import {
 } from '../controllers/barber.controller';
 import { authenticate, optionalAuthenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validator';
-import { upload } from '../middleware/upload';
+import { upload, uploadPortfolioMedia } from '../middleware/upload';
+import {
+  addOperatorPortfolioItem,
+  deleteOperatorPortfolioItem,
+  listOperatorPortfolio,
+} from '../controllers/operator-portfolio.controller';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
@@ -360,6 +365,46 @@ router.delete(
   requireRole('barber'),
   [param('barberId').isUUID(), param('imageId').isUUID(), validate],
   deletePortfolioImage
+);
+
+/**
+ * @route   GET /api/v1/barbers/:id/operator-portfolio
+ * @desc    List the signed-in operator's portfolio photos and videos
+ * @access  Private (Owner)
+ */
+router.get(
+  '/:id/operator-portfolio',
+  authenticate,
+  requireRole('barber'),
+  [param('id').isUUID(), validate],
+  listOperatorPortfolio
+);
+
+/**
+ * @route   POST /api/v1/barbers/:id/operator-portfolio
+ * @desc    Upload a portfolio photo or video
+ * @access  Private (Owner)
+ */
+router.post(
+  '/:id/operator-portfolio',
+  authenticate,
+  requireRole('barber'),
+  uploadPortfolioMedia.single('media'),
+  [param('id').isUUID(), body('caption').optional().isString(), validate],
+  addOperatorPortfolioItem
+);
+
+/**
+ * @route   DELETE /api/v1/barbers/:id/operator-portfolio/:itemId
+ * @desc    Remove a portfolio photo or video
+ * @access  Private (Owner)
+ */
+router.delete(
+  '/:id/operator-portfolio/:itemId',
+  authenticate,
+  requireRole('barber'),
+  [param('id').isUUID(), param('itemId').isUUID(), validate],
+  deleteOperatorPortfolioItem
 );
 
 /**
