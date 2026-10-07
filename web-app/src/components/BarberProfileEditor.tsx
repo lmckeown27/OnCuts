@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import OperatorPortfolioModal from './OperatorPortfolioModal';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -52,6 +53,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccountItem[]>([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  const [showPortfolio, setShowPortfolio] = useState(false);
 
   const loadBlockedAccounts = useCallback(async () => {
     setBlockedLoading(true);
@@ -297,6 +299,22 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
 
   return (
     <div className="space-y-6">
+      <button
+        type="button"
+        onClick={() => setShowPortfolio(true)}
+        disabled={!barber?.id}
+        className="w-full flex items-center justify-center px-3 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-sm font-semibold text-gray-800 transition-colors disabled:opacity-50"
+      >
+        Portfolio
+      </button>
+      {showPortfolio && barber?.id && (
+        <OperatorPortfolioModal
+          providerId={barber.id}
+          visible
+          onClose={() => setShowPortfolio(false)}
+        />
+      )}
+
       {/* Profile Photo - matches barber card dimensions */}
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>

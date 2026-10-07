@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ImagePlus, Trash2, Video, X } from 'lucide-react';
 import api from '../services/api.service';
 
@@ -93,9 +94,9 @@ export default function OperatorPortfolioModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[60] p-2 sm:p-4 transition-all duration-150 ease-out ${
         visible ? 'bg-black/50' : 'bg-black/0'
       }`}
       onClick={onClose}
@@ -205,6 +206,7 @@ export default function OperatorPortfolioModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
