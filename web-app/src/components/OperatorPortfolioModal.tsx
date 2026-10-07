@@ -714,7 +714,57 @@ export default function OperatorPortfolioModal({
                   ))}
                 </div>
               </div>
-              {filteredWork.length === 0 ? (
+              {workFilter === 'all' ? (
+                workChips.length === 0 ? (
+                  <p className="text-sm text-[#737373]">No work in this view yet.</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-2 min-[1024px]:grid-cols-4">
+                      {(showAllWork ? workChips : workChips.slice(0, 8)).map((specialtyId) => {
+                        const name = specialtyLabel(specialtyId, options);
+                        const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
+                        const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
+                        if (!tile) return null;
+                        return (
+                          <div key={specialtyId}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setWorkFilter(specialtyId);
+                                setShowAllWork(false);
+                                setPreviewItem(null);
+                              }}
+                              className="relative block w-full rounded-lg hover:ring-2 hover:ring-[#171717]"
+                              aria-label={`${name} section`}
+                            >
+                              <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                                {tile.media_type === 'video' ? (
+                                  <video src={tile.media_url} className="h-full w-full object-cover" muted />
+                                ) : (
+                                  <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
+                                )}
+                              </span>
+                              {tile.media_type === 'video' && (
+                                <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">▶</span>
+                              )}
+                            </button>
+                            <p className="mt-2 truncate text-center text-sm font-semibold text-[#171717]">{name}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {workChips.length > 8 && !showAllWork && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllWork(true)}
+                        className="mt-4 text-sm font-medium text-[#171717] hover:underline"
+                      >
+                        See all work
+                      </button>
+                    )}
+                  </>
+                )
+              ) : filteredWork.length === 0 ? (
                 <p className="text-sm text-[#737373]">No work in this view yet.</p>
               ) : (
                 <>
