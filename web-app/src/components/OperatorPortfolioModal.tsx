@@ -987,7 +987,13 @@ export default function OperatorPortfolioModal({
                             type="button"
                             data-slot-button
                             disabled={!providerId || saving}
-                            onClick={() => setSourceMenu({ key: `add-${specialtyId}`, specialtyId, asCover: false })}
+                            onClick={() =>
+                              setSourceMenu((current) =>
+                                current?.key === `add-${specialtyId}`
+                                  ? null
+                                  : { key: `add-${specialtyId}`, specialtyId, asCover: false }
+                              )
+                            }
                             className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white ${
                               sourceMenu?.key === `add-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'
                             }`}
