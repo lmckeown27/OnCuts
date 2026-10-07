@@ -80,6 +80,7 @@ export default function OperatorPortfolioModal({
   const [replaceId, setReplaceId] = useState<string | null>(null);
   const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
@@ -329,6 +330,10 @@ export default function OperatorPortfolioModal({
         closeTag(true);
         return;
       }
+      if (openSectionId) {
+        setOpenSectionId(null);
+        return;
+      }
       onClose();
     };
     document.addEventListener('keydown', onKey);
@@ -368,7 +373,19 @@ export default function OperatorPortfolioModal({
     const choose = (kind: SlotKind, via: 'camera' | 'file') => beginCapture(specialtyId, kind, asCover, replaceIdValue, via);
     return (
       <div data-source-menu className="absolute left-0 top-[58%] z-10 w-[230px] rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-        <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{asCover ? 'Set cover' : 'Add to this specialty'}</p>
+        <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{asCover ? specialtyLabel(specialtyId, options) : 'Add to this specialty'}</p>
+        {asCover && !openSectionId && (
+          <button
+            type="button"
+            className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
+            onClick={() => {
+              setSourceMenu(null);
+              setOpenSectionId(specialtyId);
+            }}
+          >
+            Open section
+          </button>
+        )}
         <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
           {asCover ? 'Use camera' : 'Photo from camera'}
         </button>
@@ -458,7 +475,11 @@ export default function OperatorPortfolioModal({
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div>
             <h2 className="text-2xl font-bold text-[#171717]">Portfolio</h2>
-            <p className="mt-1 text-sm text-[#525252]">Each specialty you offer has a cover photo. Add as many photos and videos as you want in that section.</p>
+            <p className="mt-1 text-sm text-[#525252]">
+              {openSectionId
+                ? `Add as many photos and videos as you want for ${specialtyLabel(openSectionId, options)}.`
+                : 'Each cover is a specialty. Open a cover to add photos and videos for that section.'}
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
@@ -489,28 +510,49 @@ export default function OperatorPortfolioModal({
             <p className="text-sm text-[#737373]">Add services on your profile before building a portfolio.</p>
           )}
 
-          <div className="space-y-8">
-            {sectionIds.map((specialtyId) => {
-              const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
-              const cover = sectionItems.find((item) => item.is_cover && item.media_type === 'image');
-              const gallery = sectionItems.filter((item) => item.id !== cover?.id);
-              return (
-                <section key={specialtyId} className="border-t border-[#e5e5e5] pt-6 first:border-0 first:pt-0">
-                  <h3 className="text-base font-semibold text-[#171717]">{specialtyLabel(specialtyId, options)}</h3>
-                  <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
+          {openSectionId ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setOpenSectionId(null)}
+                className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
+              >
+                ‹ All specialties
+              </button>
+              {(() => {
+                const specialtyId = openSectionId;
+                const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
+                const cover = sectionItems.find((item) => item.is_cover && item.media_type === 'image');
+                const gallery = sectionItems.filter((item) => item.id !== cover?.id);
+                return (
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="w-[150px] shrink-0">
                       <p className="mb-2 text-xs font-medium text-[#737373]">Cover</p>
-                      {cover ? (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            data-slot-button
-                            onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
-                            className="relative block w-full overflow-hidden rounded-xl border border-[#e5e5e5] aspect-[9/16]"
-                            aria-label={`${specialtyLabel(specialtyId, options)} cover — change`}
-                          >
+                      <div className="relative">
+                        <button
+                          type="button"
+                          data-slot-button
+                          disabled={!providerId || saving}
+                          onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                          className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
+                            cover
+                              ? 'border border-[#e5e5e5]'
+                              : `border border-dashed bg-white ${sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'}`
+                          }`}
+                          aria-label={cover ? `Change ${specialtyLabel(specialtyId, options)} cover` : `Set ${specialtyLabel(specialtyId, options)} cover`}
+                        >
+                          {cover ? (
                             <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
-                          </button>
+                          ) : (
+                            <span className="flex h-full flex-col items-center justify-center gap-2">
+                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                                <Plus className="h-5 w-5" />
+                              </span>
+                              <span className="text-xs font-medium text-[#525252]">Set cover</span>
+                            </span>
+                          )}
+                        </button>
+                        {cover && (
                           <button
                             type="button"
                             onClick={() => void removeItem(cover.id)}
@@ -519,30 +561,9 @@ export default function OperatorPortfolioModal({
                           >
                             <X className="h-4 w-4" />
                           </button>
-                          {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            data-slot-button
-                            disabled={!providerId || saving}
-                            onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
-                            className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white ${
-                              sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'
-                            }`}
-                            aria-label={`Set ${specialtyLabel(specialtyId, options)} cover`}
-                          >
-                            <span className="flex h-full flex-col items-center justify-center gap-2">
-                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
-                                <Plus className="h-5 w-5" />
-                              </span>
-                              <span className="text-xs font-medium text-[#525252]">Set cover</span>
-                            </span>
-                          </button>
-                          {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
-                        </div>
-                      )}
+                        )}
+                        {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
+                      </div>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="mb-2 text-xs font-medium text-[#737373]">Photos and videos</p>
@@ -571,10 +592,50 @@ export default function OperatorPortfolioModal({
                       </div>
                     </div>
                   </div>
-                </section>
-              );
-            })}
-          </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="flex gap-[14px] overflow-x-auto pb-2">
+              {sectionIds.map((specialtyId) => {
+                const cover = items.find(
+                  (item) => specialtyIds(item)[0] === specialtyId && item.is_cover && item.media_type === 'image'
+                );
+                const name = specialtyLabel(specialtyId, options);
+                return (
+                  <div key={specialtyId} className="w-[150px] shrink-0">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        data-slot-button
+                        disabled={!providerId || saving}
+                        onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                        className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
+                          cover
+                            ? 'border border-[#e5e5e5]'
+                            : `border border-dashed bg-white ${sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'}`
+                        }`}
+                        aria-label={`${name} section`}
+                      >
+                        {cover ? (
+                          <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="flex h-full flex-col items-center justify-center gap-2">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                              <Plus className="h-5 w-5" />
+                            </span>
+                            <span className="px-2 text-center text-xs font-medium text-[#525252]">Set cover</span>
+                          </span>
+                        )}
+                      </button>
+                      {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
+                    </div>
+                    <p className="mt-2 truncate text-sm font-semibold text-[#171717]">{name}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <input
