@@ -749,15 +749,28 @@ export default function OperatorPortfolioModal({
 
           {clientView ? (
             <div>
-              <div className="mb-4 flex min-w-0 items-center gap-3">
-                {operatorPhoto ? (
-                  <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#5a7268] text-xl font-semibold text-white">
-                    {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
-                  </span>
-                )}
-                <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {operatorPhoto ? (
+                    <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#5a7268] text-xl font-semibold text-white">
+                      {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
+                    </span>
+                  )}
+                  <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!providerId}
+                  onClick={() => {
+                    const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+                    navigate(`${platformPrefix}/consumer/book/${providerId}`);
+                  }}
+                  className="h-16 shrink-0 rounded-lg bg-[#5a7268] px-6 text-2xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                >
+                  Book
+                </button>
               </div>
               {workFilter !== 'all' && (
                 <button
@@ -777,18 +790,14 @@ export default function OperatorPortfolioModal({
                   <p className="text-sm text-[#737373]">No work in this view yet.</p>
                 ) : (
                   <>
-                    {(() => {
-                      const visibleSections = showAllWork ? workChips : workChips.slice(0, 8);
-                      const sectionRows = Math.max(1, Math.ceil(visibleSections.length / 3));
-                      return (
-                    <div className="grid grid-cols-4 gap-2">
-                      {visibleSections.map((specialtyId, index) => {
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {workChips.map((specialtyId) => {
                         const name = specialtyLabel(specialtyId, options);
                         const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
                         const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
                         if (!tile) return null;
                         return (
-                          <div key={specialtyId} style={{ gridColumn: (index % 3) + 1 }}>
+                          <div key={specialtyId} className="w-[160px] shrink-0">
                             <button
                               type="button"
                               onClick={() => {
@@ -819,34 +828,7 @@ export default function OperatorPortfolioModal({
                           </div>
                         );
                       })}
-                      <div
-                        className="col-start-4 row-start-1 flex w-full items-center justify-center"
-                        style={{ gridRow: `1 / span ${sectionRows}` }}
-                      >
-                        <button
-                          type="button"
-                          disabled={!providerId}
-                          onClick={() => {
-                            const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-                            navigate(`${platformPrefix}/consumer/book/${providerId}`);
-                          }}
-                          className="h-16 w-full rounded-lg bg-[#5a7268] px-6 text-2xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
-                        >
-                          Book
-                        </button>
-                      </div>
                     </div>
-                      );
-                    })()}
-                    {workChips.length > 8 && !showAllWork && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllWork(true)}
-                        className="mt-4 text-sm font-medium text-[#171717] hover:underline"
-                      >
-                        See all work
-                      </button>
-                    )}
                   </>
                 )
               ) : filteredWork.length === 0 ? (
