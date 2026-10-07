@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import path from 'path';
 import { AuthRequest } from '../middleware/auth';
+import { PoolClient } from 'pg';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { uploadToS3 } from '../services/s3.service';
@@ -61,6 +62,30 @@ function parseSpecialties(raw: unknown, required: boolean): string[] {
   return specialties.slice(0, 20);
 }
 
+function wantsCover(raw: unknown): boolean {
+  return raw === true || raw === 'true' || raw === '1';
+}
+
+const PORTFOLIO_ITEM_COLUMNS = `id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
+              specialties, booking_id, is_cover`;
+
+async function clearSiblingCovers(
+  client: PoolClient,
+  providerId: string,
+  specialtyId: string,
+  exceptId: string | null
+) {
+  await client.query(
+    `UPDATE operator_portfolio_items
+     SET is_cover = false
+     WHERE provider_id = $1
+       AND is_cover = true
+       AND specialties && ARRAY[$2]::text[]
+       AND ($3::uuid IS NULL OR id <> $3)`,
+    [providerId, specialtyId, exceptId]
+  );
+}
+
 function parseBookingId(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;
   const value = raw.trim();
@@ -83,8 +108,7 @@ export const listOperatorPortfolio = async (req: AuthRequest, res: Response, nex
     }
 
     const result = await pool.query(
-      `SELECT id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
-              specialties, booking_id
+      `SELECT ${PORTFOLIO_ITEM_COLUMNS}
        FROM operator_portfolio_items
        WHERE provider_id = $1
        ORDER BY sort_order ASC, created_at ASC`,
@@ -104,6 +128,7 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
     const caption = typeof req.body?.caption === 'string' ? req.body.caption.trim() : '';
     const bookingId = parseBookingId(req.body?.booking_id ?? req.body?.bookingId);
     const specialties = parseSpecialties(req.body?.specialties, Boolean(bookingId));
+    const isCover = wantsCover(req.body?.is_cover ?? req.body?.isCover);
 
     if (!req.file) {
       throw new ApiError(400, 'A photo or video file is required');
@@ -112,6 +137,9 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
     const kind = mediaKind(req.file);
     if (!kind) {
       throw new ApiError(400, 'Upload a photo (JPEG, PNG, WebP, GIF) or a video (MP4, WebM, MOV)');
+    }
+    if (isCover && kind !== 'image') {
+      throw new ApiError(400, 'A cover must be a photo');
     }
 
     const maxBytes = kind === 'image' ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES;
@@ -163,13 +191,16 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
       );
       const sortOrder = Number(maxOrder.rows[0]?.max_order ?? -1) + 1;
 
+      if (isCover && specialties[0]) {
+        await clearSiblingCovers(client, id, specialties[0], null);
+      }
+
       inserted = await client.query(
         `INSERT INTO operator_portfolio_items
-           (provider_id, media_type, media_url, caption, sort_order, specialties, booking_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
-                   specialties, booking_id`,
-        [id, kind, uploaded.url, caption || null, sortOrder, specialties, bookingId]
+           (provider_id, media_type, media_url, caption, sort_order, specialties, booking_id, is_cover)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING ${PORTFOLIO_ITEM_COLUMNS}`,
+        [id, kind, uploaded.url, caption || null, sortOrder, specialties, bookingId, isCover]
       );
       await client.query('COMMIT');
     } catch (error) {
@@ -191,22 +222,50 @@ export const updateOperatorPortfolioItem = async (req: AuthRequest, res: Respons
     const { id, itemId } = req.params;
     const userId = req.user!.userId;
     const specialties = parseSpecialties(req.body?.specialties, true);
-    const ownership = await pool.query(
-      'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
-      [id, userId]
-    );
-    if (ownership.rows.length === 0) {
-      throw new ApiError(403, 'Not authorized to manage this portfolio');
+    const coverWasSent = req.body?.is_cover !== undefined || req.body?.isCover !== undefined;
+    const client = await pool.connect();
+    let updated;
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [id]);
+      const ownership = await client.query(
+        `SELECT i.media_type, i.is_cover
+         FROM barbers b
+         JOIN operator_portfolio_items i ON i.provider_id = b.id
+         WHERE b.id = $1 AND b."userId" = $2 AND i.id = $3`,
+        [id, userId, itemId]
+      );
+      if (ownership.rows.length === 0) {
+        const provider = await client.query(
+          'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
+          [id, userId]
+        );
+        if (provider.rows.length === 0) {
+          throw new ApiError(403, 'Not authorized to manage this portfolio');
+        }
+        throw new ApiError(404, 'Portfolio item not found');
+      }
+      const isCover = coverWasSent ? wantsCover(req.body?.is_cover ?? req.body?.isCover) : Boolean(ownership.rows[0].is_cover);
+      if (isCover && ownership.rows[0].media_type !== 'image') {
+        throw new ApiError(400, 'A cover must be a photo');
+      }
+      if (isCover && specialties[0]) {
+        await clearSiblingCovers(client, id, specialties[0], itemId);
+      }
+      updated = await client.query(
+        `UPDATE operator_portfolio_items
+         SET specialties = $1, is_cover = $2
+         WHERE id = $3 AND provider_id = $4
+         RETURNING ${PORTFOLIO_ITEM_COLUMNS}`,
+        [specialties, isCover, itemId, id]
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    const updated = await pool.query(
-      `UPDATE operator_portfolio_items
-       SET specialties = $1
-       WHERE id = $2 AND provider_id = $3
-       RETURNING id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
-                 specialties, booking_id`,
-      [specialties, itemId, id]
-    );
     if (updated.rows.length === 0) {
       throw new ApiError(404, 'Portfolio item not found');
     }

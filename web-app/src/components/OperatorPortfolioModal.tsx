@@ -18,6 +18,7 @@ export interface OperatorPortfolioItem {
   created_at: string;
   specialties?: string[];
   booking_id?: string | null;
+  is_cover?: boolean;
 }
 
 interface OperatorPortfolioModalProps {
@@ -28,11 +29,11 @@ interface OperatorPortfolioModalProps {
 
 type SlotKind = 'image' | 'video';
 
-interface DraftCapture {
-  kind: SlotKind;
-  file: File;
-  previewUrl: string;
+interface UploadTarget {
+  specialtyId: string;
+  asCover: boolean;
   replaceId: string | null;
+  kind: SlotKind;
 }
 
 const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
@@ -66,10 +67,11 @@ export default function OperatorPortfolioModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [options, setOptions] = useState<ServiceType[]>([]);
-  const [sourceMenu, setSourceMenu] = useState<{ kind: SlotKind; key: string } | null>(null);
+  const [sourceMenu, setSourceMenu] = useState<{ key: string; specialtyId: string; asCover: boolean } | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
   const [cameraKind, setCameraKind] = useState<SlotKind | null>(null);
   const [cameraNote, setCameraNote] = useState<string | null>(null);
-  const [draft, setDraft] = useState<DraftCapture | null>(null);
+  const [draft, setDraft] = useState<{ kind: SlotKind; file: File; previewUrl: string; replaceId: string | null } | null>(null);
   const [editing, setEditing] = useState<OperatorPortfolioItem | null>(null);
   const [replaceId, setReplaceId] = useState<string | null>(null);
   const [tagSelection, setTagSelection] = useState<string[]>([]);
@@ -121,11 +123,9 @@ export default function OperatorPortfolioModal({
           if ((service.providerType || 'barber') !== kind) return false;
           return offered.has(service.name.toLowerCase()) || offered.has(service.id.toLowerCase());
         });
-        if (!cancelled) {
-          setOptions(matched.length > 0 ? matched : SERVICE_TYPES.filter((service) => (service.providerType || 'barber') === kind));
-        }
+        if (!cancelled) setOptions(matched);
       } catch {
-        if (!cancelled) setOptions(SERVICE_TYPES.filter((service) => (service.providerType || 'barber') === 'barber'));
+        if (!cancelled) setOptions([]);
       }
     };
     void load();
@@ -139,11 +139,6 @@ export default function OperatorPortfolioModal({
       if (draftRef.current) revoke(draftRef.current.previewUrl);
     };
   }, []);
-
-  const photos = items.filter((item) => item.media_type === 'image');
-  const videos = items.filter((item) => item.media_type === 'video');
-  const photoSlotCount = Math.max(4, photos.length + 1);
-  const videoSlotCount = Math.max(1, videos.length + 1);
 
   const closeTag = (dropDraft: boolean) => {
     if (dropDraft && draft) {
@@ -165,24 +160,104 @@ export default function OperatorPortfolioModal({
     setError(null);
   };
 
-  const stageFile = (kind: SlotKind, file: File) => {
+  const publishFile = async (kind: SlotKind, file: File, target: UploadTarget) => {
     const maxBytes = kind === 'image' ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES;
     if (file.size > maxBytes) {
       setCameraKind(null);
-      setSourceMenu(null);
       setError(kind === 'image' ? 'Photos must be 8 MB or smaller' : 'Videos must be 80 MB or smaller');
       return;
     }
-    if (draft) revoke(draft.previewUrl);
-    const previewUrl = URL.createObjectURL(file);
-    const nextReplaceId = replaceId;
-    setDraft({ kind, file, previewUrl, replaceId: nextReplaceId });
+    if (target.asCover && kind !== 'image') {
+      setCameraKind(null);
+      setError('A cover must be a photo');
+      return;
+    }
+    setSaving(true);
+    setError(null);
     setCameraKind(null);
     setSourceMenu(null);
-    setEditing(items.find((item) => item.id === nextReplaceId) || null);
-    setTagSelection(specialtyIds(items.find((item) => item.id === nextReplaceId)).slice(0, 1));
-    setTagOpen(true);
+    try {
+      const form = new FormData();
+      form.append('media', file);
+      form.append('specialties', JSON.stringify([target.specialtyId]));
+      if (target.asCover) form.append('is_cover', 'true');
+      const created = await api.upload<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio`, form);
+      if (target.replaceId) {
+        await api.delete(`/barbers/${providerId}/operator-portfolio/${target.replaceId}`);
+      }
+      setItems((current) => {
+        let next = current.filter((item) => item.id !== target.replaceId);
+        if (target.asCover) {
+          next = next.map((item) =>
+            specialtyIds(item)[0] === target.specialtyId && item.is_cover ? { ...item, is_cover: false } : item
+          );
+        }
+        if (created?.id) {
+          return [
+            ...next.filter((item) => item.id !== created.id),
+            { ...created, specialties: created.specialties?.length ? created.specialties : [target.specialtyId], is_cover: Boolean(created.is_cover) },
+          ];
+        }
+        return next;
+      });
+      if (!created?.id) await loadItems();
+    } catch (err) {
+      setError(uploadErrorMessage(err));
+    } finally {
+      setSaving(false);
+      setUploadTarget(null);
+    }
+  };
+
+  const stageFile = (kind: SlotKind, file: File) => {
+    if (!uploadTarget || !providerId) return;
+    void publishFile(kind, file, uploadTarget);
+  };
+
+  const beginCapture = (
+    specialtyId: string,
+    kind: SlotKind,
+    asCover: boolean,
+    replaceIdValue: string | null,
+    via: 'camera' | 'file'
+  ) => {
+    setUploadTarget({ specialtyId, asCover, replaceId: replaceIdValue, kind });
+    setReplaceId(replaceIdValue);
+    setSourceMenu(null);
+    setCameraNote(null);
+    if (via === 'camera') {
+      setCameraKind(kind);
+      return;
+    }
+    setCameraKind(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = kind === 'video' ? VIDEO_ACCEPT : PHOTO_ACCEPT;
+      fileInputRef.current.click();
+    }
+  };
+
+  const setAsCover = async (item: OperatorPortfolioItem) => {
+    const specialtyId = specialtyIds(item)[0];
+    if (!specialtyId || item.media_type !== 'image' || !providerId || saving) return;
+    setSaving(true);
     setError(null);
+    try {
+      const updated = await api.patch<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio/${item.id}`, {
+        specialties: [specialtyId],
+        is_cover: true,
+      });
+      setItems((current) =>
+        current.map((entry) => {
+          if (entry.id === item.id) return { ...entry, ...updated, is_cover: true, specialties: [specialtyId] };
+          if (specialtyIds(entry)[0] === specialtyId && entry.is_cover) return { ...entry, is_cover: false };
+          return entry;
+        })
+      );
+    } catch (err) {
+      setError(uploadErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveTags = async () => {
@@ -284,69 +359,42 @@ export default function OperatorPortfolioModal({
     }
   };
 
-  const renderEmptySlot = (kind: SlotKind, key: string, isNext: boolean, label: string) => (
-    <div key={key} className={`relative ${kind === 'video' ? 'w-[150px]' : ''}`}>
-      <button
-        type="button"
-        data-slot-button
-        disabled={!providerId || saving}
-        onClick={() => {
-          setReplaceId(null);
-          setSourceMenu({ kind, key });
-        }}
-        className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
-          sourceMenu?.key === key
-            ? 'border border-dashed border-[#737373] bg-[#f5f5f5]'
-            : isNext
-              ? 'border border-dashed border-[#737373] bg-white'
-              : 'border border-dashed border-[#d4d4d4] bg-white'
-        }`}
-        aria-label={label}
-      >
-        <span className="flex h-full flex-col items-center justify-center gap-2">
-          <span className={`flex h-9 w-9 items-center justify-center rounded-full ${isNext ? 'bg-[#171717] text-white' : 'bg-[#e5e5e5] text-[#737373]'}`}>
-            <Plus className="h-5 w-5" />
-          </span>
-          {isNext && <span className="text-xs font-medium text-[#525252]">{kind === 'video' ? 'Add video' : 'Add'}</span>}
-        </span>
-      </button>
-      {sourceMenu?.key === key && (
-        <div data-source-menu className="absolute left-1/2 top-[58%] z-10 w-[210px] -translate-x-1/2 rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-          <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{kind === 'video' ? 'Add video' : label}</p>
-          <button
-            type="button"
-            className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
-            onClick={() => {
-              setCameraNote(null);
-              setCameraKind(kind);
-              setSourceMenu(null);
-            }}
-          >
-            Use camera
-          </button>
-          <button
-            type="button"
-            className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Upload from computer
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const renderSourceMenu = (key: string, specialtyId: string, asCover: boolean, replaceIdValue: string | null) => {
+    if (sourceMenu?.key !== key) return null;
+    const choose = (kind: SlotKind, via: 'camera' | 'file') => beginCapture(specialtyId, kind, asCover, replaceIdValue, via);
+    return (
+      <div data-source-menu className="absolute left-0 top-[58%] z-10 w-[230px] rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+        <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{asCover ? 'Set cover' : 'Add to this specialty'}</p>
+        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
+          {asCover ? 'Use camera' : 'Photo from camera'}
+        </button>
+        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
+          {asCover ? 'Upload from computer' : 'Upload photo'}
+        </button>
+        {!asCover && (
+          <>
+            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'camera')}>
+              Video from camera
+            </button>
+            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'file')}>
+              Upload video
+            </button>
+          </>
+        )}
+      </div>
+    );
+  };
 
-  const renderFilled = (item: OperatorPortfolioItem, index: number) => {
-    const names = specialtyIds(item).map((id) => specialtyLabel(id, options)).join(' · ');
+  const renderMedia = (item: OperatorPortfolioItem, specialtyId: string) => {
     const kind = item.media_type;
     return (
-      <div key={item.id} className={`relative ${kind === 'video' ? 'w-[150px]' : ''}`}>
+      <div key={item.id} className="relative">
         <button
           type="button"
           data-slot-button
           onClick={() => openTagForItem(item)}
           className="relative block w-full overflow-hidden rounded-xl border border-[#e5e5e5] aspect-[9/16]"
-          aria-label={`${kind === 'video' ? 'Video' : `Photo ${index + 1}`}, ${names || 'untagged'} — edit`}
+          aria-label={`${kind === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(specialtyId, options)} — edit`}
         >
           {kind === 'video' ? (
             <video src={item.media_url} className="h-full w-full object-cover" muted />
@@ -358,43 +406,30 @@ export default function OperatorPortfolioModal({
           type="button"
           onClick={() => void removeItem(item.id)}
           className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#171717] shadow"
-          aria-label={kind === 'video' ? 'Remove video' : `Remove photo ${index + 1}`}
+          aria-label={kind === 'video' ? 'Remove video' : 'Remove photo'}
         >
           <X className="h-4 w-4" />
         </button>
-        {names && <p className="mt-2 truncate text-xs text-[#525252]">{names}</p>}
-        {sourceMenu?.key === `item-${item.id}` && (
-          <div data-source-menu className="absolute left-1/2 top-[58%] z-10 w-[210px] -translate-x-1/2 rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{kind === 'video' ? 'Add video' : `Add photo ${index + 1}`}</p>
-            <button
-              type="button"
-              className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
-              onClick={() => {
-                setCameraNote(null);
-                setCameraKind(kind);
-                setSourceMenu(null);
-              }}
-            >
-              Use camera
-            </button>
-            <button
-              type="button"
-              className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Upload from computer
-            </button>
-          </div>
+        {kind === 'image' && !item.is_cover && (
+          <button
+            type="button"
+            onClick={() => void setAsCover(item)}
+            className="mt-2 block text-left text-xs font-medium text-[#525252] hover:text-[#171717]"
+          >
+            Set as cover
+          </button>
         )}
+        {renderSourceMenu(`item-${item.id}`, specialtyId, false, item.id)}
       </div>
     );
   };
 
   const previewUrl = draft?.previewUrl || editing?.media_url || '';
   const previewKind: SlotKind = draft?.kind || editing?.media_type || 'image';
-  const taggedId = draft?.replaceId || editing?.id;
-  const taggedIndex = taggedId ? photos.findIndex((item) => item.id === taggedId) : -1;
-  const tagLabel = previewKind === 'video' ? 'Video' : `Photo ${(taggedIndex >= 0 ? taggedIndex : photos.length) + 1}`;
+  const tagLabel = previewKind === 'video' ? 'Video' : 'Photo';
+  const sectionIds = Array.from(
+    new Set([...options.map((option) => option.id), ...items.flatMap((item) => specialtyIds(item))])
+  );
 
   const dialog = (
     <div
@@ -419,7 +454,7 @@ export default function OperatorPortfolioModal({
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div>
             <h2 className="text-2xl font-bold text-[#171717]">Portfolio</h2>
-            <p className="mt-1 text-sm text-[#525252]">Click a slot to take or upload one. You'll tag the specialty after each upload.</p>
+            <p className="mt-1 text-sm text-[#525252]">Each specialty you offer has a cover photo. Add as many photos and videos as you want in that section.</p>
           </div>
           <button
             type="button"
@@ -437,33 +472,95 @@ export default function OperatorPortfolioModal({
           {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
           {loading && <p className="mb-3 text-sm text-[#737373]">Loading portfolio…</p>}
 
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-            <section className="min-w-0 flex-1">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#171717]">Photos</h3>
-                <span className="text-xs text-[#737373]">{photos.length}{photos.length < 4 ? ' of 4' : ''}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-[14px] sm:grid-cols-4">
-                {Array.from({ length: photoSlotCount }, (_, index) => {
-                  const item = photos[index];
-                  if (item) return renderFilled(item, index);
-                  return renderEmptySlot('image', `photo-empty-${index}`, index === photos.length, `Add photo ${index + 1}`);
-                })}
-              </div>
-            </section>
-            <section>
-              <div className="mb-3 flex w-[150px] items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#171717]">Video</h3>
-                <span className="text-xs text-[#737373]">{videos.length}{videos.length < 1 ? ' of 1' : ''}</span>
-              </div>
-              <div className="flex flex-col gap-[14px]">
-                {Array.from({ length: videoSlotCount }, (_, index) => {
-                  const item = videos[index];
-                  if (item) return renderFilled(item, index);
-                  return renderEmptySlot('video', `video-empty-${index}`, index === videos.length, 'Add video');
-                })}
-              </div>
-            </section>
+          {!loading && sectionIds.length === 0 && (
+            <p className="text-sm text-[#737373]">Add services on your profile before building a portfolio.</p>
+          )}
+
+          <div className="space-y-8">
+            {sectionIds.map((specialtyId) => {
+              const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
+              const cover = sectionItems.find((item) => item.is_cover && item.media_type === 'image');
+              const gallery = sectionItems.filter((item) => item.id !== cover?.id);
+              return (
+                <section key={specialtyId} className="border-t border-[#e5e5e5] pt-6 first:border-0 first:pt-0">
+                  <h3 className="text-base font-semibold text-[#171717]">{specialtyLabel(specialtyId, options)}</h3>
+                  <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div className="w-[150px] shrink-0">
+                      <p className="mb-2 text-xs font-medium text-[#737373]">Cover</p>
+                      {cover ? (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            data-slot-button
+                            onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                            className="relative block w-full overflow-hidden rounded-xl border border-[#e5e5e5] aspect-[9/16]"
+                            aria-label={`${specialtyLabel(specialtyId, options)} cover — change`}
+                          >
+                            <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeItem(cover.id)}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#171717] shadow"
+                            aria-label="Remove cover photo"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            data-slot-button
+                            disabled={!providerId || saving}
+                            onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                            className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white ${
+                              sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'
+                            }`}
+                            aria-label={`Set ${specialtyLabel(specialtyId, options)} cover`}
+                          >
+                            <span className="flex h-full flex-col items-center justify-center gap-2">
+                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                                <Plus className="h-5 w-5" />
+                              </span>
+                              <span className="text-xs font-medium text-[#525252]">Set cover</span>
+                            </span>
+                          </button>
+                          {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-2 text-xs font-medium text-[#737373]">Photos and videos</p>
+                      <div className="grid grid-cols-2 gap-[14px] sm:grid-cols-4">
+                        {gallery.map((item) => renderMedia(item, specialtyId))}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            data-slot-button
+                            disabled={!providerId || saving}
+                            onClick={() => setSourceMenu({ key: `add-${specialtyId}`, specialtyId, asCover: false })}
+                            className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white ${
+                              sourceMenu?.key === `add-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'
+                            }`}
+                            aria-label={`Add to ${specialtyLabel(specialtyId, options)}`}
+                          >
+                            <span className="flex h-full flex-col items-center justify-center gap-2">
+                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                                <Plus className="h-5 w-5" />
+                              </span>
+                              <span className="text-xs font-medium text-[#525252]">Add</span>
+                            </span>
+                          </button>
+                          {renderSourceMenu(`add-${specialtyId}`, specialtyId, false, null)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
 
@@ -471,12 +568,11 @@ export default function OperatorPortfolioModal({
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept={sourceMenu?.kind === 'video' || cameraKind === 'video' ? VIDEO_ACCEPT : PHOTO_ACCEPT}
+          accept={uploadTarget?.kind === 'video' ? VIDEO_ACCEPT : PHOTO_ACCEPT}
           onChange={(event) => {
             const file = event.target.files?.[0];
             event.target.value = '';
-            const kind = sourceMenu?.kind || (replaceId ? editing?.media_type : null);
-            if (file && kind) stageFile(kind, file);
+            if (file && uploadTarget) stageFile(uploadTarget.kind, file);
           }}
         />
       </div>
@@ -538,17 +634,15 @@ export default function OperatorPortfolioModal({
               className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
               disabled={saving}
               onClick={() => {
-                const kind = draft?.kind || editing?.media_type || 'image';
+                const specialtyId = specialtyIds(editing)[0] || tagSelection[0];
                 if (draft) {
                   revoke(draft.previewUrl);
                   setDraft(null);
                 }
                 setTagOpen(false);
-                const anchorId = editing?.id || draft?.replaceId;
-                setSourceMenu({
-                  kind,
-                  key: anchorId ? `item-${anchorId}` : kind === 'video' ? `video-empty-${videos.length}` : `photo-empty-${photos.length}`,
-                });
+                if (editing && specialtyId) {
+                  setSourceMenu({ key: `item-${editing.id}`, specialtyId, asCover: false });
+                }
               }}
             >
               Replace
