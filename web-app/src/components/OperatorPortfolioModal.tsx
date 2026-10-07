@@ -98,6 +98,10 @@ export default function OperatorPortfolioModal({
   const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [clientView, setClientView] = useState(false);
+  const [workFilter, setWorkFilter] = useState('all');
+  const [showAllWork, setShowAllWork] = useState(false);
+  const [previewItem, setPreviewItem] = useState<OperatorPortfolioItem | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -407,6 +411,14 @@ export default function OperatorPortfolioModal({
         closeTag(true);
         return;
       }
+      if (previewItem) {
+        setPreviewItem(null);
+        return;
+      }
+      if (clientView) {
+        setClientView(false);
+        return;
+      }
       if (openSectionId) {
         setOpenSectionId(null);
         return;
@@ -593,6 +605,16 @@ export default function OperatorPortfolioModal({
       .catch((err) => setError(uploadErrorMessage(err)));
   };
 
+  const clientWork = orderedSectionIds.flatMap((specialtyId) => {
+    const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
+    const cover = sectionCover(sectionItems, specialtyId);
+    const rest = sectionItems.filter((item) => item.id !== cover?.id);
+    return cover ? [cover, ...rest] : rest;
+  });
+  const workChips = orderedSectionIds.filter((specialtyId) => clientWork.some((item) => specialtyIds(item)[0] === specialtyId));
+  const filteredWork = workFilter === 'all' ? clientWork : clientWork.filter((item) => specialtyIds(item)[0] === workFilter);
+  const shownWork = showAllWork ? filteredWork : filteredWork.slice(0, 8);
+
   const dialog = (
     <div
       className={`fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 transition-colors duration-150 ${
@@ -613,13 +635,27 @@ export default function OperatorPortfolioModal({
           visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}
       >
-        <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
-          <div>
-            <h2 className="text-2xl font-bold text-[#171717]">
-              {openSectionId ? specialtyLabel(openSectionId, options) : 'Portfolio'}
-            </h2>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-6 pt-6 sm:px-8">
+          <div className="justify-self-start">
+            <button
+              type="button"
+              onClick={() => {
+                setClientView((open) => !open);
+                setOpenSectionId(null);
+                setSourceMenu(null);
+                setWorkFilter('all');
+                setShowAllWork(false);
+                setPreviewItem(null);
+              }}
+              className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+            >
+              {clientView ? 'Edit' : 'Client View'}
+            </button>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <h2 className="text-center text-2xl font-bold text-[#171717]">
+            {openSectionId && !clientView ? specialtyLabel(openSectionId, options) : 'Portfolio'}
+          </h2>
+          <div className="flex shrink-0 items-center justify-self-end gap-2">
             <button
               type="button"
               onClick={onOpenServices}
@@ -644,6 +680,105 @@ export default function OperatorPortfolioModal({
           {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
           {loading && <p className="mb-3 text-sm text-[#737373]">Loading portfolio…</p>}
 
+          {clientView ? (
+            <div>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-base font-semibold text-[#171717]">Work</h3>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWorkFilter('all');
+                      setShowAllWork(false);
+                    }}
+                    className={`inline-flex h-[30px] items-center rounded-full px-3 text-sm ${
+                      workFilter === 'all' ? 'bg-[#171717] text-white' : 'border border-[#e5e5e5] text-[#171717]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {workChips.map((specialtyId) => (
+                    <button
+                      key={specialtyId}
+                      type="button"
+                      onClick={() => {
+                        setWorkFilter(specialtyId);
+                        setShowAllWork(false);
+                      }}
+                      className={`inline-flex h-[30px] items-center rounded-full px-3 text-sm ${
+                        workFilter === specialtyId ? 'bg-[#171717] text-white' : 'border border-[#e5e5e5] text-[#171717]'
+                      }`}
+                    >
+                      {specialtyLabel(specialtyId, options)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {filteredWork.length === 0 ? (
+                <p className="text-sm text-[#737373]">No work in this view yet.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 min-[1024px]:grid-cols-4">
+                    {shownWork.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setPreviewItem(item)}
+                        className="relative block w-full rounded-lg hover:ring-2 hover:ring-[#171717]"
+                        aria-label={`${item.media_type === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(specialtyIds(item)[0] || '', options)}`}
+                      >
+                        <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                          {item.media_type === 'video' ? (
+                            <video src={item.media_url} className="h-full w-full object-cover" muted />
+                          ) : (
+                            <img src={item.media_url} alt="" className="h-full w-full object-cover" />
+                          )}
+                        </span>
+                        {item.media_type === 'video' && (
+                          <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">▶</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {filteredWork.length > 8 && !showAllWork && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllWork(true)}
+                      className="mt-4 text-sm font-medium text-[#171717] hover:underline"
+                    >
+                      See all work
+                    </button>
+                  )}
+                </>
+              )}
+              {previewItem && (
+                <div
+                  className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"
+                  onClick={() => setPreviewItem(null)}
+                >
+                  <div
+                    className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {previewItem.media_type === 'video' ? (
+                      <video src={previewItem.media_url} controls className="aspect-[9/16] w-full bg-black object-cover" />
+                    ) : (
+                      <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full object-cover" />
+                    )}
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <p className="text-sm font-semibold text-[#171717]">
+                        {specialtyLabel(specialtyIds(previewItem)[0] || '', options)}
+                      </p>
+                      <button type="button" onClick={() => setPreviewItem(null)} className="text-sm font-medium text-[#525252]">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
           {!loading && sectionIds.length === 0 && (
             <p className="text-sm text-[#737373]">Add services on your profile before building a portfolio.</p>
           )}
@@ -800,6 +935,8 @@ export default function OperatorPortfolioModal({
                 );
               })}
             </div>
+          )}
+            </>
           )}
         </div>
 
