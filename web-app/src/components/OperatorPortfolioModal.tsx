@@ -620,7 +620,13 @@ export default function OperatorPortfolioModal({
                           type="button"
                           data-slot-button
                           disabled={!providerId || saving}
-                          onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                          onClick={() =>
+                            setSourceMenu((current) =>
+                              current?.key === `cover-${specialtyId}`
+                                ? null
+                                : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
+                            )
+                          }
                           className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
                             cover
                               ? 'border border-[#e5e5e5]'
@@ -714,7 +720,11 @@ export default function OperatorPortfolioModal({
                             suppressClick.current = false;
                             return;
                           }
-                          setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true });
+                          setSourceMenu((current) =>
+                            current?.key === `cover-${specialtyId}`
+                              ? null
+                              : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
+                          );
                         }}
                         className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
                           cover
@@ -736,7 +746,7 @@ export default function OperatorPortfolioModal({
                       </button>
                       {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
                     </div>
-                    <p className="mt-2 truncate text-sm font-semibold text-[#171717]">{name}</p>
+                    <p className="mt-2 truncate text-center text-sm font-semibold text-[#171717]">{name}</p>
                   </div>
                 );
               })}
