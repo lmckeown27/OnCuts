@@ -77,6 +77,19 @@ function specialtyLabel(id: string, options: ServiceType[]): string {
   return options.find((option) => option.id === id)?.name || id;
 }
 
+function formatSpecialtyPrice(price: number): string {
+  return Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
+}
+
+function priceForSpecialty(id: string, options: ServiceType[], prices: Record<string, number>): string | null {
+  const option = options.find((entry) => entry.id === id);
+  const keys = [id, option?.name].filter((key): key is string => Boolean(key)).map((key) => key.toLowerCase());
+  for (const key of keys) {
+    if (prices[key] != null) return formatSpecialtyPrice(prices[key]);
+  }
+  return null;
+}
+
 export default function OperatorPortfolioModal({
   providerId,
   visible,
@@ -107,6 +120,7 @@ export default function OperatorPortfolioModal({
   const [previewItem, setPreviewItem] = useState<OperatorPortfolioItem | null>(null);
   const [operatorName, setOperatorName] = useState('');
   const [operatorPhoto, setOperatorPhoto] = useState<string | null>(null);
+  const [specialtyPrices, setSpecialtyPrices] = useState<Record<string, number>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -216,16 +230,29 @@ export default function OperatorPortfolioModal({
         });
         const name = barber.name || barber.display_name || [barber.first_name, barber.last_name].filter(Boolean).join(' ') || 'Operator';
         const photo = barber.profile_picture_url || barber.profile_photo_url || null;
+        const priceByKey: Record<string, number> = {};
+        for (const entry of barber.pricing || []) {
+          const amount = Number(entry.price);
+          if (!Number.isFinite(amount)) continue;
+          if (entry.name?.trim()) priceByKey[entry.name.trim().toLowerCase()] = amount;
+          if (entry.id?.trim()) priceByKey[entry.id.trim().toLowerCase()] = amount;
+        }
+        for (const service of matched) {
+          const price = priceByKey[service.name.toLowerCase()] ?? priceByKey[service.id.toLowerCase()];
+          if (price != null) priceByKey[service.id.toLowerCase()] = price;
+        }
         if (!cancelled) {
           setOptions(matched);
           setOperatorName(name);
           setOperatorPhoto(photo);
+          setSpecialtyPrices(priceByKey);
         }
       } catch {
         if (!cancelled) {
           setOptions([]);
           setOperatorName('');
           setOperatorPhoto(null);
+          setSpecialtyPrices({});
         }
       }
     };
@@ -668,7 +695,16 @@ export default function OperatorPortfolioModal({
             </button>
           </div>
           <h2 className="text-center text-2xl font-bold text-[#171717]">
-            {openSectionId && !clientView ? specialtyLabel(openSectionId, options) : 'Portfolio'}
+            {openSectionId && !clientView ? (
+              <>
+                {specialtyLabel(openSectionId, options)}
+                {priceForSpecialty(openSectionId, options, specialtyPrices) && (
+                  <span className="ml-2">{priceForSpecialty(openSectionId, options, specialtyPrices)}</span>
+                )}
+              </>
+            ) : (
+              'Portfolio'
+            )}
           </h2>
           <div className="flex shrink-0 items-center justify-self-end gap-2">
             <button
@@ -758,7 +794,12 @@ export default function OperatorPortfolioModal({
                                 <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">▶</span>
                               )}
                             </button>
-                            <p className="mt-2 truncate text-center text-sm font-semibold text-[#171717]">{name}</p>
+                            <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
+                              <span className="truncate">{name}</span>
+                              {priceForSpecialty(specialtyId, options, specialtyPrices) && (
+                                <span className="shrink-0">{priceForSpecialty(specialtyId, options, specialtyPrices)}</span>
+                              )}
+                            </p>
                           </div>
                         );
                       })}
@@ -1008,7 +1049,12 @@ export default function OperatorPortfolioModal({
                       </button>
                       {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
                     </div>
-                    <p className="mt-2 truncate text-center text-sm font-semibold text-[#171717]">{name}</p>
+                    <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
+                      <span className="truncate">{name}</span>
+                      {priceForSpecialty(specialtyId, options, specialtyPrices) && (
+                        <span className="shrink-0">{priceForSpecialty(specialtyId, options, specialtyPrices)}</span>
+                      )}
+                    </p>
                   </div>
                 );
               })}
