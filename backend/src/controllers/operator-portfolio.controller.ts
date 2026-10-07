@@ -181,6 +181,47 @@ export const listOperatorPortfolio = async (req: AuthRequest, res: Response, nex
   }
 };
 
+export const listPublicOperatorPortfolio = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const visible = await pool.query(
+      `SELECT id
+       FROM barbers
+       WHERE id = $1
+         AND "isActive" = true
+         AND COALESCE(is_hidden, false) = false`,
+      [id]
+    );
+    if (visible.rows.length === 0) {
+      throw new ApiError(404, 'Portfolio not found');
+    }
+
+    const result = await pool.query(
+      `SELECT ${PORTFOLIO_ITEM_COLUMNS}
+       FROM operator_portfolio_items
+       WHERE provider_id = $1
+       ORDER BY sort_order ASC, created_at ASC`,
+      [id]
+    );
+
+    let specialtyIds: string[] = [];
+    try {
+      const order = await pool.query(
+        'SELECT specialty_ids FROM operator_portfolio_section_orders WHERE provider_id = $1',
+        [id]
+      );
+      specialtyIds = Array.isArray(order.rows[0]?.specialty_ids) ? order.rows[0].specialty_ids : [];
+    } catch (error: unknown) {
+      const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: string }).code) : '';
+      if (code !== '42P01') throw error;
+    }
+
+    res.json({ success: true, data: { items: result.rows, specialtyIds } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 function parseSectionOrder(raw: unknown): string[] {
   if (!Array.isArray(raw)) {
     throw new ApiError(400, 'specialtyIds must be an array');

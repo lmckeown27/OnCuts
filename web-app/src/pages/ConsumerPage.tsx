@@ -41,7 +41,6 @@ import {
 } from '../store/deferredPaymentBookings';
 import {
   BROWSE_MAX_DISTANCE_MILES,
-  formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
   getBrowseConstrainByDistance,
   getBrowseDeviceTracking,
@@ -61,7 +60,7 @@ import {
   type BrowseProviderCategory,
 } from '../config/providerCategories';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
-import BarberPhotoTile from '../components/BarberPhotoTile';
+import DiscoverClientPortfolio from '../components/DiscoverClientPortfolio';
 import ConsumerHomeSegmentPill, {
   type ConsumerHomeSegment,
 } from '../components/ConsumerHomeSegmentPill';
@@ -2192,12 +2191,20 @@ function DiscoveryView({
   const [discoverAreas, setDiscoverAreas] = useState<DiscoverArea[]>([]);
 
   const discoverListBarbers = useMemo(() => {
-    if (!selectedDiscoverAreaKey) return filteredBarbersLabeled;
-    const area = discoverAreas.find((a) => a.key === selectedDiscoverAreaKey);
-    if (!area) return filteredBarbersLabeled;
-    const idSet = new Set(area.barberIds);
-    return filteredBarbersLabeled.filter((b) => idSet.has(b.id));
-  }, [filteredBarbersLabeled, selectedDiscoverAreaKey, discoverAreas]);
+    let source = filteredBarbersLabeled;
+    if (selectedDiscoverAreaKey) {
+      const area = discoverAreas.find((a) => a.key === selectedDiscoverAreaKey);
+      if (area) {
+        const idSet = new Set(area.barberIds);
+        source = filteredBarbersLabeled.filter((b) => idSet.has(b.id));
+      }
+    }
+    return [...source].sort((a, b) => {
+      const aMiles = getBarberDistanceMilesFromTown(a, latitude, longitude);
+      const bMiles = getBarberDistanceMilesFromTown(b, latitude, longitude);
+      return (aMiles ?? Number.POSITIVE_INFINITY) - (bMiles ?? Number.POSITIVE_INFINITY);
+    });
+  }, [filteredBarbersLabeled, selectedDiscoverAreaKey, discoverAreas, latitude, longitude]);
 
   const applyFilters = () => {
     let filtered = [...barbers];
@@ -2609,23 +2616,10 @@ function DiscoveryView({
           </div>
 
           {discoverListBarbers.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:content-start">
-              {discoverListBarbers.map((barber) => {
-                const distanceLabel = constrainByDistance
-                  ? formatBarberDistanceFromUser(
-                      getBarberDistanceMilesFromTown(barber, latitude, longitude)
-                    )
-                  : null;
-                return (
-                  <BarberPhotoTile
-                    key={barber.id}
-                    barber={barber}
-                    showDistance={Boolean(distanceLabel)}
-                    distanceLabel={distanceLabel}
-                    onClick={() => void handleBarberSelect(barber)}
-                  />
-                );
-              })}
+            <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+              {discoverListBarbers.map((barber) => (
+                <DiscoverClientPortfolio key={barber.id} barber={barber} />
+              ))}
             </div>
           ) : (
             <div className="rounded-xl border border-stone-200 bg-white px-4 py-6 text-center">

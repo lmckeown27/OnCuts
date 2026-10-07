@@ -1,0 +1,278 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import api from '../services/api.service';
+import { SERVICE_TYPES, type ServiceType } from '../config/services';
+import type { Barber } from '../types';
+import { barberDisplayName, barberPhotoUrl } from '../utils/myBarbersDiscover';
+
+interface PortfolioItem {
+  id: string;
+  media_type: 'image' | 'video';
+  media_url: string;
+  sort_order: number;
+  created_at: string;
+  specialties?: string[];
+  is_cover?: boolean;
+}
+
+function itemSpecialties(item: PortfolioItem): string[] {
+  return Array.isArray(item.specialties) ? item.specialties.filter((id) => typeof id === 'string' && id) : [];
+}
+
+function latestSectionPhoto(items: PortfolioItem[], specialtyId: string): PortfolioItem | undefined {
+  return items
+    .filter((item) => itemSpecialties(item)[0] === specialtyId && item.media_type === 'image')
+    .sort((a, b) => {
+      const time = Date.parse(b.created_at) - Date.parse(a.created_at);
+      if (time !== 0 && !Number.isNaN(time)) return time;
+      return b.sort_order - a.sort_order;
+    })[0];
+}
+
+function sectionCover(items: PortfolioItem[], specialtyId: string): PortfolioItem | undefined {
+  const marked = items.find(
+    (item) => itemSpecialties(item)[0] === specialtyId && item.is_cover && item.media_type === 'image'
+  );
+  return marked ?? latestSectionPhoto(items, specialtyId);
+}
+
+function specialtyLabel(id: string, options: ServiceType[]): string {
+  return options.find((option) => option.id === id)?.name || id;
+}
+
+function formatSpecialtyPrice(price: number): string {
+  return Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
+}
+
+function priceForSpecialty(id: string, options: ServiceType[], prices: Record<string, number>): string | null {
+  const option = options.find((entry) => entry.id === id);
+  const keys = [id, option?.name].filter((key): key is string => Boolean(key)).map((key) => key.toLowerCase());
+  for (const key of keys) {
+    if (prices[key] != null) return formatSpecialtyPrice(prices[key]);
+  }
+  return null;
+}
+
+function offeredServices(barber: Barber): ServiceType[] {
+  const kind = (barber.provider_type || 'barber').toLowerCase() === 'beauty' ? 'beauty' : 'barber';
+  const offered = new Set(
+    (barber.pricing || [])
+      .map((entry) => entry.name?.trim().toLowerCase())
+      .filter(Boolean) as string[]
+  );
+  (barber.specialties || []).forEach((name) => offered.add(name.trim().toLowerCase()));
+  return SERVICE_TYPES.filter((service) => {
+    if ((service.providerType || 'barber') !== kind) return false;
+    return offered.has(service.name.toLowerCase()) || offered.has(service.id.toLowerCase());
+  });
+}
+
+function specialtyPrices(barber: Barber, options: ServiceType[]): Record<string, number> {
+  const priceByKey: Record<string, number> = {};
+  for (const entry of barber.pricing || []) {
+    const amount = Number(entry.price);
+    if (!Number.isFinite(amount)) continue;
+    if (entry.name?.trim()) priceByKey[entry.name.trim().toLowerCase()] = amount;
+    if (entry.id?.trim()) priceByKey[entry.id.trim().toLowerCase()] = amount;
+  }
+  for (const service of options) {
+    const price = priceByKey[service.name.toLowerCase()] ?? priceByKey[service.id.toLowerCase()];
+    if (price != null) priceByKey[service.id.toLowerCase()] = price;
+  }
+  return priceByKey;
+}
+
+export default function DiscoverClientPortfolio({ barber }: { barber: Barber }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [items, setItems] = useState<PortfolioItem[]>([]);
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [showAllWork, setShowAllWork] = useState(false);
+  const [previewItem, setPreviewItem] = useState<PortfolioItem | null>(null);
+
+  const name = barberDisplayName(barber);
+  const photo = barberPhotoUrl(barber);
+  const options = useMemo(() => offeredServices(barber), [barber]);
+  const prices = useMemo(() => specialtyPrices(barber, options), [barber, options]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setOpenSectionId(null);
+    setPreviewItem(null);
+    api
+      .get<{ items?: PortfolioItem[]; specialtyIds?: string[] }>(`/barbers/${barber.id}/operator-portfolio/preview`)
+      .then((data) => {
+        if (cancelled) return;
+        setItems(Array.isArray(data?.items) ? data.items : []);
+        setSectionOrder(Array.isArray(data?.specialtyIds) ? data.specialtyIds : []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setItems([]);
+          setSectionOrder([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [barber.id]);
+
+  const orderedSectionIds = useMemo(() => {
+    const sectionIds = Array.from(
+      new Set([...options.map((option) => option.id), ...items.flatMap((item) => itemSpecialties(item))])
+    );
+    const known = new Set(sectionIds);
+    const kept = sectionOrder.filter((id) => known.has(id));
+    return [...kept, ...sectionIds.filter((id) => !kept.includes(id))];
+  }, [options, items, sectionOrder]);
+  const workChips = orderedSectionIds.filter((specialtyId) =>
+    items.some((item) => itemSpecialties(item)[0] === specialtyId)
+  );
+  const openItems = openSectionId ? items.filter((item) => itemSpecialties(item)[0] === openSectionId) : [];
+  const shownWork = showAllWork ? openItems : openItems.slice(0, 8);
+
+  return (
+    <div className="border-b border-[#e5e5e5] pb-6 last:border-b-0">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {photo ? (
+            <img src={photo} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+          ) : (
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#5a7268] text-xl font-semibold text-white">
+              {(name.trim().charAt(0) || 'O').toUpperCase()}
+            </span>
+          )}
+          <p className="truncate text-[22px] font-bold text-[#171717]">{name}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+            navigate(`${platformPrefix}/consumer/book/${barber.id}`);
+          }}
+          className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750]"
+        >
+          Book
+        </button>
+      </div>
+      {loading ? (
+        <p className="text-sm text-[#737373]">Loading portfolio…</p>
+      ) : openSectionId ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOpenSectionId(null);
+              setShowAllWork(false);
+              setPreviewItem(null);
+            }}
+            className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
+          >
+            ‹ All specialties
+          </button>
+          {shownWork.length === 0 ? (
+            <p className="text-sm text-[#737373]">No work in this view yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {shownWork.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setPreviewItem(item)}
+                  className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
+                  aria-label={`${item.media_type === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(itemSpecialties(item)[0] || '', options)}`}
+                >
+                  <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                    {item.media_type === 'video' ? (
+                      <video src={item.media_url} className="h-full w-full object-cover" muted />
+                    ) : (
+                      <img src={item.media_url} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {openItems.length > 8 && !showAllWork && (
+            <button
+              type="button"
+              onClick={() => setShowAllWork(true)}
+              className="mt-4 text-sm font-medium text-[#171717] hover:underline"
+            >
+              See all work
+            </button>
+          )}
+        </>
+      ) : workChips.length === 0 ? (
+        <p className="text-sm text-[#737373]">No work in this view yet.</p>
+      ) : (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {workChips.map((specialtyId) => {
+            const label = specialtyLabel(specialtyId, options);
+            const sectionItems = items.filter((item) => itemSpecialties(item)[0] === specialtyId);
+            const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
+            if (!tile) return null;
+            const price = priceForSpecialty(specialtyId, options, prices);
+            return (
+              <div key={specialtyId} className="w-[160px] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenSectionId(specialtyId);
+                    setShowAllWork(false);
+                    setPreviewItem(null);
+                  }}
+                  className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
+                  aria-label={`${label} section`}
+                >
+                  <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                    {tile.media_type === 'video' ? (
+                      <video src={tile.media_url} className="h-full w-full object-cover" muted />
+                    ) : (
+                      <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </span>
+                </button>
+                <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
+                  <span className="truncate">{label}</span>
+                  {price && <span className="shrink-0">{price}</span>}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {previewItem && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"
+          onClick={() => setPreviewItem(null)}
+        >
+          <div
+            className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {previewItem.media_type === 'video' ? (
+              <video src={previewItem.media_url} controls className="aspect-[9/16] w-full bg-black object-cover" />
+            ) : (
+              <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full object-cover" />
+            )}
+            <div className="flex items-center justify-between px-4 py-3">
+              <p className="text-sm font-semibold text-[#171717]">
+                {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
+              </p>
+              <button type="button" onClick={() => setPreviewItem(null)} className="text-sm font-medium text-[#525252]">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

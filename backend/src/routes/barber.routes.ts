@@ -24,6 +24,7 @@ import {
   addOperatorPortfolioItem,
   deleteOperatorPortfolioItem,
   listOperatorPortfolio,
+  listPublicOperatorPortfolio,
   saveOperatorPortfolioSectionOrder,
   getOperatorPortfolioSectionOrder,
   updateOperatorPortfolioItem,
@@ -368,6 +369,17 @@ router.delete(
   requireRole('barber'),
   [param('barberId').isUUID(), param('imageId').isUUID(), validate],
   deletePortfolioImage
+);
+
+/**
+ * @route   GET /api/v1/barbers/:id/operator-portfolio/preview
+ * @desc    Public client view of a listed operator's portfolio
+ * @access  Public
+ */
+router.get(
+  '/:id/operator-portfolio/preview',
+  [param('id').isUUID(), validate],
+  listPublicOperatorPortfolio
 );
 
 /**

@@ -508,9 +508,6 @@ export default function OperatorPortfolioModal({
     const choose = (kind: SlotKind, via: 'camera' | 'file') => beginCapture(specialtyId, kind, asCover, replaceIdValue, via);
     return (
       <div data-source-menu className="absolute left-0 top-[58%] z-10 w-[230px] rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-        {asCover && (
-          <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{specialtyLabel(specialtyId, options)}</p>
-        )}
         {asCover && !openSectionId && (
           <button
             type="button"
@@ -526,7 +523,7 @@ export default function OperatorPortfolioModal({
         {asCover ? (
           <>
             <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
-              Use camera
+              Upload from camera
             </button>
             <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
               Upload from computer
