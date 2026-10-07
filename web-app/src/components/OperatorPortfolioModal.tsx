@@ -55,6 +55,23 @@ function specialtyIds(item: OperatorPortfolioItem | null | undefined): string[] 
   return Array.isArray(item?.specialties) ? item.specialties.filter((id) => typeof id === 'string' && id) : [];
 }
 
+function latestSectionPhoto(items: OperatorPortfolioItem[], specialtyId: string): OperatorPortfolioItem | undefined {
+  return items
+    .filter((item) => specialtyIds(item)[0] === specialtyId && item.media_type === 'image')
+    .sort((a, b) => {
+      const time = Date.parse(b.created_at) - Date.parse(a.created_at);
+      if (time !== 0 && !Number.isNaN(time)) return time;
+      return b.sort_order - a.sort_order;
+    })[0];
+}
+
+function sectionCover(items: OperatorPortfolioItem[], specialtyId: string): OperatorPortfolioItem | undefined {
+  const marked = items.find(
+    (item) => specialtyIds(item)[0] === specialtyId && item.is_cover && item.media_type === 'image'
+  );
+  return marked ?? latestSectionPhoto(items, specialtyId);
+}
+
 function specialtyLabel(id: string, options: ServiceType[]): string {
   return options.find((option) => option.id === id)?.name || id;
 }
@@ -116,6 +133,43 @@ export default function OperatorPortfolioModal({
   useEffect(() => {
     if (visible && providerId) void loadItems();
   }, [visible, providerId, loadItems]);
+
+  useEffect(() => {
+    if (!visible || !providerId) return;
+    const missing = Array.from(new Set(items.map((item) => specialtyIds(item)[0]).filter((id): id is string => Boolean(id)))).filter(
+      (specialtyId) => {
+        const photos = items.filter((item) => specialtyIds(item)[0] === specialtyId && item.media_type === 'image');
+        return photos.length > 0 && !photos.some((item) => item.is_cover);
+      }
+    );
+    if (missing.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const specialtyId of missing) {
+        const latest = latestSectionPhoto(items, specialtyId);
+        if (!latest || cancelled) return;
+        try {
+          const updated = await api.patch<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio/${latest.id}`, {
+            specialties: [specialtyId],
+            is_cover: true,
+          });
+          if (cancelled) return;
+          setItems((current) =>
+            current.map((entry) => {
+              if (entry.id === latest.id) return { ...entry, ...updated, is_cover: true, specialties: [specialtyId] };
+              if (specialtyIds(entry)[0] === specialtyId && entry.is_cover) return { ...entry, is_cover: false };
+              return entry;
+            })
+          );
+        } catch (err) {
+          if (!cancelled) setError(uploadErrorMessage(err));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items, visible, providerId]);
 
   useEffect(() => {
     if (!visible || !providerId) return;
@@ -609,7 +663,7 @@ export default function OperatorPortfolioModal({
               {(() => {
                 const specialtyId = openSectionId;
                 const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
-                const cover = sectionItems.find((item) => item.is_cover && item.media_type === 'image');
+                const cover = sectionCover(sectionItems, specialtyId);
                 const gallery = sectionItems.filter((item) => item.id !== cover?.id);
                 return (
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -697,9 +751,7 @@ export default function OperatorPortfolioModal({
               onPointerCancel={onSectionPointerUp}
             >
               {orderedSectionIds.map((specialtyId) => {
-                const cover = items.find(
-                  (item) => specialtyIds(item)[0] === specialtyId && item.is_cover && item.media_type === 'image'
-                );
+                const cover = sectionCover(items, specialtyId);
                 const name = specialtyLabel(specialtyId, options);
                 return (
                   <div

@@ -69,6 +69,35 @@ function wantsCover(raw: unknown): boolean {
 const PORTFOLIO_ITEM_COLUMNS = `id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
               specialties, booking_id, is_cover`;
 
+async function promoteLatestPhotoCover(client: PoolClient, providerId: string, specialtyId: string) {
+  if (!specialtyId) return;
+  const existing = await client.query(
+    `SELECT id
+     FROM operator_portfolio_items
+     WHERE provider_id = $1
+       AND media_type = 'image'
+       AND is_cover = true
+       AND specialties[1] = $2
+     LIMIT 1`,
+    [providerId, specialtyId]
+  );
+  if (existing.rows.length > 0) return;
+  await client.query(
+    `UPDATE operator_portfolio_items
+     SET is_cover = true
+     WHERE id = (
+       SELECT id
+       FROM operator_portfolio_items
+       WHERE provider_id = $1
+         AND media_type = 'image'
+         AND specialties[1] = $2
+       ORDER BY created_at DESC, sort_order DESC
+       LIMIT 1
+     )`,
+    [providerId, specialtyId]
+  );
+}
+
 async function clearSiblingCovers(
   client: PoolClient,
   providerId: string,
@@ -106,6 +135,37 @@ export const listOperatorPortfolio = async (req: AuthRequest, res: Response, nex
     if (ownership.rows.length === 0) {
       throw new ApiError(403, 'Not authorized to manage this portfolio');
     }
+
+    await pool.query(
+      `UPDATE operator_portfolio_items AS item
+       SET is_cover = true
+       WHERE item.provider_id = $1
+         AND item.id IN (
+           SELECT ranked.id
+           FROM (
+             SELECT id,
+                    specialties[1] AS specialty_id,
+                    ROW_NUMBER() OVER (
+                      PARTITION BY specialties[1]
+                      ORDER BY created_at DESC, sort_order DESC
+                    ) AS rn
+             FROM operator_portfolio_items
+             WHERE provider_id = $1
+               AND media_type = 'image'
+               AND specialties[1] IS NOT NULL
+           ) AS ranked
+           WHERE ranked.rn = 1
+             AND NOT EXISTS (
+               SELECT 1
+               FROM operator_portfolio_items AS cover
+               WHERE cover.provider_id = $1
+                 AND cover.media_type = 'image'
+                 AND cover.is_cover = true
+                 AND cover.specialties[1] = ranked.specialty_id
+             )
+         )`,
+      [id]
+    );
 
     const result = await pool.query(
       `SELECT ${PORTFOLIO_ITEM_COLUMNS}
@@ -245,8 +305,21 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
       );
       const sortOrder = Number(maxOrder.rows[0]?.max_order ?? -1) + 1;
 
-      if (isCover && specialties[0]) {
+      let coverFlag = isCover;
+      if (coverFlag && specialties[0]) {
         await clearSiblingCovers(client, id, specialties[0], null);
+      } else if (!coverFlag && kind === 'image' && specialties[0]) {
+        const existingCover = await client.query(
+          `SELECT id
+           FROM operator_portfolio_items
+           WHERE provider_id = $1
+             AND media_type = 'image'
+             AND is_cover = true
+             AND specialties[1] = $2
+           LIMIT 1`,
+          [id, specialties[0]]
+        );
+        coverFlag = existingCover.rows.length === 0;
       }
 
       inserted = await client.query(
@@ -254,7 +327,7 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
            (provider_id, media_type, media_url, caption, sort_order, specialties, booking_id, is_cover)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING ${PORTFOLIO_ITEM_COLUMNS}`,
-        [id, kind, uploaded.url, caption || null, sortOrder, specialties, bookingId, isCover]
+        [id, kind, uploaded.url, caption || null, sortOrder, specialties, bookingId, coverFlag]
       );
       await client.query('COMMIT');
     } catch (error) {
@@ -283,7 +356,7 @@ export const updateOperatorPortfolioItem = async (req: AuthRequest, res: Respons
       await client.query('BEGIN');
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [id]);
       const ownership = await client.query(
-        `SELECT i.media_type, i.is_cover
+        `SELECT i.media_type, i.is_cover, i.specialties
          FROM barbers b
          JOIN operator_portfolio_items i ON i.provider_id = b.id
          WHERE b.id = $1 AND b."userId" = $2 AND i.id = $3`,
@@ -313,6 +386,17 @@ export const updateOperatorPortfolioItem = async (req: AuthRequest, res: Respons
          RETURNING ${PORTFOLIO_ITEM_COLUMNS}`,
         [specialties, isCover, itemId, id]
       );
+      const previousSpecialty = Array.isArray(ownership.rows[0].specialties) ? ownership.rows[0].specialties[0] : null;
+      if (specialties[0]) await promoteLatestPhotoCover(client, id, specialties[0]);
+      if (previousSpecialty && previousSpecialty !== specialties[0]) {
+        await promoteLatestPhotoCover(client, id, previousSpecialty);
+      }
+      updated = await client.query(
+        `SELECT ${PORTFOLIO_ITEM_COLUMNS}
+         FROM operator_portfolio_items
+         WHERE id = $1 AND provider_id = $2`,
+        [itemId, id]
+      );
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
@@ -334,20 +418,37 @@ export const deleteOperatorPortfolioItem = async (req: AuthRequest, res: Respons
   try {
     const { id, itemId } = req.params;
     const userId = req.user!.userId;
-    const ownership = await pool.query(
-      'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
-      [id, userId]
-    );
-    if (ownership.rows.length === 0) {
-      throw new ApiError(403, 'Not authorized to manage this portfolio');
-    }
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [id]);
+      const ownership = await client.query(
+        'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
+        [id, userId]
+      );
+      if (ownership.rows.length === 0) {
+        throw new ApiError(403, 'Not authorized to manage this portfolio');
+      }
 
-    const deleted = await pool.query(
-      'DELETE FROM operator_portfolio_items WHERE id = $1 AND provider_id = $2 RETURNING id',
-      [itemId, id]
-    );
-    if (deleted.rows.length === 0) {
-      throw new ApiError(404, 'Portfolio item not found');
+      const deleted = await client.query(
+        `DELETE FROM operator_portfolio_items
+         WHERE id = $1 AND provider_id = $2
+         RETURNING specialties, media_type`,
+        [itemId, id]
+      );
+      if (deleted.rows.length === 0) {
+        throw new ApiError(404, 'Portfolio item not found');
+      }
+      const specialtyId = Array.isArray(deleted.rows[0].specialties) ? deleted.rows[0].specialties[0] : null;
+      if (deleted.rows[0].media_type === 'image' && specialtyId) {
+        await promoteLatestPhotoCover(client, id, specialtyId);
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
 
     res.json({ success: true, data: { id: itemId } });
