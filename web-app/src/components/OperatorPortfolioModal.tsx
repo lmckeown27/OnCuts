@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Plus, X } from 'lucide-react';
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
@@ -83,6 +84,8 @@ export default function OperatorPortfolioModal({
   onOpenServices,
   servicesRevision = 0,
 }: OperatorPortfolioModalProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [items, setItems] = useState<OperatorPortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -102,6 +105,8 @@ export default function OperatorPortfolioModal({
   const [workFilter, setWorkFilter] = useState('all');
   const [showAllWork, setShowAllWork] = useState(false);
   const [previewItem, setPreviewItem] = useState<OperatorPortfolioItem | null>(null);
+  const [operatorName, setOperatorName] = useState('');
+  const [operatorPhoto, setOperatorPhoto] = useState<string | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -209,9 +214,19 @@ export default function OperatorPortfolioModal({
           if ((service.providerType || 'barber') !== kind) return false;
           return offered.has(service.name.toLowerCase()) || offered.has(service.id.toLowerCase());
         });
-        if (!cancelled) setOptions(matched);
+        const name = barber.name || barber.display_name || [barber.first_name, barber.last_name].filter(Boolean).join(' ') || 'Operator';
+        const photo = barber.profile_picture_url || barber.profile_photo_url || null;
+        if (!cancelled) {
+          setOptions(matched);
+          setOperatorName(name);
+          setOperatorPhoto(photo);
+        }
       } catch {
-        if (!cancelled) setOptions([]);
+        if (!cancelled) {
+          setOptions([]);
+          setOperatorName('');
+          setOperatorPhoto(null);
+        }
       }
     };
     void load();
@@ -682,38 +697,42 @@ export default function OperatorPortfolioModal({
 
           {clientView ? (
             <div>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-base font-semibold text-[#171717]">Work</h3>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWorkFilter('all');
-                      setShowAllWork(false);
-                    }}
-                    className={`inline-flex h-[30px] items-center rounded-full px-3 text-sm ${
-                      workFilter === 'all' ? 'bg-[#171717] text-white' : 'border border-[#e5e5e5] text-[#171717]'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {workChips.map((specialtyId) => (
-                    <button
-                      key={specialtyId}
-                      type="button"
-                      onClick={() => {
-                        setWorkFilter(specialtyId);
-                        setShowAllWork(false);
-                      }}
-                      className={`inline-flex h-[30px] items-center rounded-full px-3 text-sm ${
-                        workFilter === specialtyId ? 'bg-[#171717] text-white' : 'border border-[#e5e5e5] text-[#171717]'
-                      }`}
-                    >
-                      {specialtyLabel(specialtyId, options)}
-                    </button>
-                  ))}
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {operatorPhoto ? (
+                    <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#5a7268] text-xl font-semibold text-white">
+                      {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
+                    </span>
+                  )}
+                  <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
                 </div>
+                <button
+                  type="button"
+                  disabled={!providerId}
+                  onClick={() => {
+                    const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+                    navigate(`${platformPrefix}/consumer/book/${providerId}`);
+                  }}
+                  className="h-12 shrink-0 rounded-lg bg-[#5a7268] px-5 text-[15px] font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                >
+                  Book
+                </button>
               </div>
+              {workFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWorkFilter('all');
+                    setShowAllWork(false);
+                    setPreviewItem(null);
+                  }}
+                  className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
+                >
+                  ‹ All specialties
+                </button>
+              )}
               {workFilter === 'all' ? (
                 workChips.length === 0 ? (
                   <p className="text-sm text-[#737373]">No work in this view yet.</p>
