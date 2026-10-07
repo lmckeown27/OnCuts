@@ -2344,14 +2344,13 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 w-full max-w-lg">
-            <Button
+            <button
               type="button"
               onClick={() => onEditAvailability?.()}
-              size="lg"
-              className="flex-1 min-w-[100px]"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Edit Schedule
-            </Button>
+            </button>
             <button
               type="button"
               onClick={() => onOpenPayoutSettings?.()}
@@ -2359,14 +2358,13 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             >
               Payouts
             </button>
-            <Button
+            <button
               type="button"
               onClick={() => onOpenServicesOffered?.()}
-              size="lg"
-              className="flex-1 min-w-[100px]"
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Services Offered
-            </Button>
+            </button>
           </div>
 
           <p className="text-sm sm:text-base text-gray-700 font-medium text-center px-2">
