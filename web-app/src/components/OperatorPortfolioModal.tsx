@@ -12,6 +12,8 @@ export interface OperatorPortfolioItem {
   caption?: string | null;
   sort_order: number;
   created_at: string;
+  specialties?: string[];
+  booking_id?: string | null;
 }
 
 interface OperatorPortfolioModalProps {
