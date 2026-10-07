@@ -535,7 +535,7 @@ export default function OperatorPortfolioModal({
           <div className="mt-6 flex items-center justify-between">
             <button
               type="button"
-              className="text-sm font-semibold text-[#171717]"
+              className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
               disabled={saving}
               onClick={() => {
                 const kind = draft?.kind || editing?.media_type || 'image';
