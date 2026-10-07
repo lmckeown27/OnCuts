@@ -1010,7 +1010,7 @@ export default function OperatorPortfolioModal({
                     data-section-id={specialtyId}
                     className={`w-[150px] shrink-0 cursor-grab touch-none ${
                       draggingId === specialtyId ? 'cursor-grabbing opacity-70' : ''
-                    } ${sourceMenu?.key === `cover-${specialtyId}` ? 'relative z-20' : ''}`}
+                    }`}
                     onPointerDown={(event) => onSectionPointerDown(event, specialtyId)}
                   >
                     <div className="relative">
@@ -1023,16 +1023,11 @@ export default function OperatorPortfolioModal({
                             suppressClick.current = false;
                             return;
                           }
-                          setSourceMenu((current) =>
-                            current?.key === `cover-${specialtyId}`
-                              ? null
-                              : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
-                          );
+                          setSourceMenu(null);
+                          setOpenSectionId(specialtyId);
                         }}
                         className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
-                          cover
-                            ? 'border border-[#e5e5e5]'
-                            : `border border-dashed bg-white ${sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'}`
+                          cover ? 'border border-[#e5e5e5]' : 'border border-dashed bg-white border-[#737373]'
                         }`}
                         aria-label={`${name} section`}
                       >
@@ -1047,7 +1042,6 @@ export default function OperatorPortfolioModal({
                           </span>
                         )}
                       </button>
-                      {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
                     </div>
                     <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
                       <span className="truncate">{name}</span>
