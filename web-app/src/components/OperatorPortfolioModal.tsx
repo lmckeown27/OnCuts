@@ -504,7 +504,9 @@ export default function OperatorPortfolioModal({
     const choose = (kind: SlotKind, via: 'camera' | 'file') => beginCapture(specialtyId, kind, asCover, replaceIdValue, via);
     return (
       <div data-source-menu className="absolute left-0 top-[58%] z-10 w-[230px] rounded-xl bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-        <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{asCover ? specialtyLabel(specialtyId, options) : 'Add to this specialty'}</p>
+        {asCover && (
+          <p className="px-2 py-1.5 text-xs font-semibold text-[#737373]">{specialtyLabel(specialtyId, options)}</p>
+        )}
         {asCover && !openSectionId && (
           <button
             type="button"
@@ -520,18 +522,32 @@ export default function OperatorPortfolioModal({
         <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
           {asCover ? 'Use camera' : 'Photo from camera'}
         </button>
-        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
-          {asCover ? 'Upload from computer' : 'Upload photo'}
-        </button>
-        {!asCover && (
-          <>
-            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'camera')}>
-              Video from camera
+        {asCover ? (
+          <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
+            Upload from computer
+          </button>
+        ) : (
+          <div className="mt-1 flex flex-col gap-2">
+            <button
+              type="button"
+              className="h-11 rounded-lg bg-[#5a7268] px-3 text-sm font-semibold text-white hover:bg-[#445750]"
+              onClick={() => choose('image', 'file')}
+            >
+              Upload photo
             </button>
-            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'file')}>
+            <button
+              type="button"
+              className="h-11 rounded-lg bg-[#5a7268] px-3 text-sm font-semibold text-white hover:bg-[#445750]"
+              onClick={() => choose('video', 'file')}
+            >
               Upload video
             </button>
-          </>
+          </div>
+        )}
+        {!asCover && (
+          <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'camera')}>
+            Video from camera
+          </button>
         )}
       </div>
     );
@@ -712,7 +728,7 @@ export default function OperatorPortfolioModal({
               onClick={onOpenServices}
               className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
-              Services Offered
+              Services/Prices Offered
             </button>
             <button
               type="button"
