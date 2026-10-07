@@ -44,6 +44,8 @@ import {
   getBrowseMaxDistanceMiles,
   getBrowseConstrainByDistance,
   milesToKmForBrowse,
+  browseSearchMiles,
+  nearbyPlaceLabels,
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
 } from '../../utils/consumerBrowseDistancePreference';
@@ -150,8 +152,12 @@ export default function MobileConsumerPage() {
         response = await providerService.getProvidersByLocation(
           latitude,
           longitude,
-          { constrainListByDistance: true, ...listFilters },
-          milesToKmForBrowse(maxDistanceMiles)
+          {
+            constrainListByDistance: true,
+            nearbyLabels: nearbyPlaceLabels(selectedCollegeTown?.shortName, selectedCollegeTown?.city),
+            ...listFilters,
+          },
+          milesToKmForBrowse(browseSearchMiles(maxDistanceMiles, true))
         );
       } else {
         response = await providerService.getProviders(listFilters);

@@ -38,6 +38,7 @@ import {
   providerTypeApiValue,
   providerTypeSlugFromCategoryOrType,
 } from '../utils/service-provider.mapper';
+import { coarsenPublicLocationLabel } from '../services/geocode.service';
 import {
   inferServiceProviderType,
   serviceDurationColumnsExist,
@@ -87,7 +88,7 @@ function withHiddenFlags<T extends Record<string, unknown>>(barber: T) {
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType, category } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType, category, nearbyLabels } = req.query;
     const labelSelect = await barberServiceLocationLabelSelectSql();
     const sourceSelect = await barberServiceLocationSourceSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
@@ -278,10 +279,21 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     
     const shouldApplyDistanceFilter = hasUserLocation && constrainByDistance;
 
+    const nearbyLabelSet = new Set(
+      String(nearbyLabels || '')
+        .split(',')
+        .map((label) => coarsenPublicLocationLabel(label).trim().toLowerCase())
+        .filter(Boolean)
+    );
+
     if (shouldApplyDistanceFilter) {
       const nearbyRows = result.rows.filter(row => {
+        const publicLabel = coarsenPublicLocationLabel(String(row.service_location_label || ''))
+          .trim()
+          .toLowerCase();
+        const labelIsClose = Boolean(publicLabel) && nearbyLabelSet.has(publicLabel);
         if (row.distance_km === null || row.distance_km === undefined) {
-          return false;
+          return labelIsClose;
         }
         return row.distance_km <= maxDistanceKm;
       });

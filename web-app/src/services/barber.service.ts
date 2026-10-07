@@ -14,6 +14,7 @@ interface BarberFilters {
   lng?: number;
   maxDistance?: number;
   constrainListByDistance?: boolean;
+  nearbyLabels?: string;
   includeHidden?: boolean;
   providerType?: string;
   category?: string;

@@ -93,6 +93,7 @@ export default function PlaceSearchInput({
           latitude: c.latitude as number,
           longitude: c.longitude as number,
           placeType: 'campus',
+          city: c.city?.trim() || undefined,
         }));
 
       // Prefer OnCuts campuses at the top; dedupe by similar lat/lng

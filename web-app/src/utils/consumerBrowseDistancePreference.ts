@@ -5,8 +5,26 @@ const DEVICE_TRACKING_KEY = 'consumer.browse.deviceTracking';
 export const BROWSE_MIN_DISTANCE_MILES = 1;
 export const BROWSE_MAX_DISTANCE_MILES = 100;
 export const BROWSE_DEFAULT_DISTANCE_MILES = 25;
+/** Campus and its city stay in one search. Cal Poly includes San Luis Obispo. */
+export const BROWSE_CLOSE_LOCATION_MILES = 15;
 
 export const BROWSE_DISTANCE_CHANGED_EVENT = 'oncuts-browse-max-distance-changed';
+
+/** Search at least far enough to include nearby places when a location is set. */
+export function browseSearchMiles(maxDistanceMiles: number, locationIsSet: boolean): number {
+  if (!locationIsSet) return maxDistanceMiles;
+  return Math.max(maxDistanceMiles, BROWSE_CLOSE_LOCATION_MILES);
+}
+
+/** Comma-separated place names that should stay in a location search (campus and its city). */
+export function nearbyPlaceLabels(...labels: Array<string | null | undefined>): string {
+  const unique = new Set<string>();
+  for (const label of labels) {
+    const trimmed = label?.trim();
+    if (trimmed) unique.add(trimmed);
+  }
+  return [...unique].join(',');
+}
 
 function clampMiles(miles: number): number {
   return Math.min(BROWSE_MAX_DISTANCE_MILES, Math.max(BROWSE_MIN_DISTANCE_MILES, miles));

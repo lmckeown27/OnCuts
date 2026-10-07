@@ -27,6 +27,8 @@ export interface GeocodePlace {
   latitude: number;
   longitude: number;
   placeType?: string;
+  /** Surrounding city when the label is a campus or neighborhood. */
+  city?: string;
 }
 
 export class GeocodeUpstreamError extends Error {
@@ -148,6 +150,14 @@ async function nominatimGet<T>(path: string): Promise<T> {
   }
 }
 
+function placeCity(item: Record<string, unknown>): string | undefined {
+  const address = item.address as Record<string, string> | undefined;
+  if (!address) return undefined;
+  const city = address.city || address.town || address.village || address.municipality;
+  const trimmed = city?.trim();
+  return trimmed || undefined;
+}
+
 function mapSearchResults(data: unknown): GeocodePlace[] {
   if (!Array.isArray(data)) return [];
 
@@ -157,11 +167,13 @@ function mapSearchResults(data: unknown): GeocodePlace[] {
       const lat = parseFloat(String(row.lat));
       const lng = parseFloat(String(row.lon));
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      const city = placeCity(row);
       return {
         label: formatShortLabel(row),
         latitude: lat,
         longitude: lng,
         placeType: row.type ? String(row.type) : undefined,
+        city,
       };
     })
     .filter((item): item is GeocodePlace => item !== null);
@@ -219,6 +231,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     latitude: lat,
     longitude: lng,
     placeType: item.type ? String(item.type) : undefined,
+    city: placeCity(item),
   };
 
   reverseCache.set(cacheKey, place);
@@ -256,6 +269,7 @@ export async function reverseGeocodeCoarse(
     latitude: lat,
     longitude: lng,
     placeType: item.type ? String(item.type) : undefined,
+    city: placeCity(item),
   };
 
   reverseCache.set(cacheKey, place);

@@ -40,9 +40,12 @@ import {
   isPaymentTakeoverDeferred,
 } from '../store/deferredPaymentBookings';
 import {
+  BROWSE_CLOSE_LOCATION_MILES,
   BROWSE_MAX_DISTANCE_MILES,
+  browseSearchMiles,
   getBarberDistanceMilesFromTown,
   getBrowseConstrainByDistance,
+  nearbyPlaceLabels,
   getBrowseDeviceTracking,
   getBrowseMaxDistanceMiles,
   isTrackingOffQuery,
@@ -1723,6 +1726,7 @@ function DiscoveryView({
   });
   const [locationDraft, setLocationDraft] = useState('');
   const [deviceLocationLabel, setDeviceLocationLabel] = useState('');
+  const [deviceLocationCity, setDeviceLocationCity] = useState('');
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
@@ -1830,6 +1834,7 @@ function DiscoveryView({
         if (cancelled) return;
         const short = place.label.split(',')[0]?.trim() || place.label;
         setDeviceLocationLabel(short);
+        setDeviceLocationCity(place.city?.trim() || '');
       })
       .catch(() => {
         // Keep prior / fallback label
@@ -1861,6 +1866,8 @@ function DiscoveryView({
     deviceTracking,
     latitude,
     longitude,
+    deviceLocationLabel,
+    deviceLocationCity,
   ]);
 
   const loadMyBarbers = async () => {
@@ -2025,11 +2032,15 @@ function DiscoveryView({
 
       if (latitude != null && longitude != null) {
         if (constrainByDistance) {
+          const labels = nearbyPlaceLabels(
+            deviceTracking ? deviceLocationLabel : selectedCollegeTown?.shortName,
+            deviceTracking ? deviceLocationCity : selectedCollegeTown?.city
+          );
           response = await providerService.getProvidersByLocation(
             latitude,
             longitude,
-            { constrainListByDistance: true, ...listFilters },
-            milesToKmForBrowse(maxDistanceMiles)
+            { constrainListByDistance: true, nearbyLabels: labels, ...listFilters },
+            milesToKmForBrowse(browseSearchMiles(maxDistanceMiles, true))
           );
         } else {
           response = await providerService.getProviders(listFilters);
@@ -2196,6 +2207,16 @@ function DiscoveryView({
       const area = discoverAreas.find((a) => a.key === selectedDiscoverAreaKey);
       if (area) {
         const idSet = new Set(area.barberIds);
+        for (const candidate of discoverAreas) {
+          const miles = getBarberDistanceMilesFromTown(
+            { service_latitude: candidate.latitude, service_longitude: candidate.longitude },
+            area.latitude,
+            area.longitude
+          );
+          if (miles != null && miles <= BROWSE_CLOSE_LOCATION_MILES) {
+            candidate.barberIds.forEach((id) => idSet.add(id));
+          }
+        }
         source = filteredBarbersLabeled.filter((b) => idSet.has(b.id));
       }
     }
@@ -2589,7 +2610,10 @@ function DiscoveryView({
                 ? { lat: latitude, lng: longitude }
                 : null
             }
-            searchRadiusMiles={displayDistanceMiles}
+            searchRadiusMiles={browseSearchMiles(
+              displayDistanceMiles,
+              latitude != null && longitude != null && constrainByDistance
+            )}
             constrainByDistance={constrainByDistance}
             className="h-full min-h-[380px] sm:min-h-[480px] lg:min-h-0 lg:flex-1"
           />
@@ -2634,7 +2658,7 @@ function DiscoveryView({
               !barberSearchQuery.trim() ? (
                 <>
                   <p className="text-gray-700 text-sm font-medium mb-2">
-                    No operators within {Math.round(maxDistanceMiles)} mi of {locationLabel}
+                    No operators within {Math.round(browseSearchMiles(maxDistanceMiles, true))} mi of {locationLabel}
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
                     {barbersMeta?.total_before_distance_filter

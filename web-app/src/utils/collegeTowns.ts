@@ -281,9 +281,11 @@ export function collegeTownFromGeocodePlace(place: {
   latitude: number;
   longitude: number;
   placeType?: string;
+  city?: string;
 }): CollegeTown {
   const parts = place.label.split(',').map((p) => p.trim()).filter(Boolean);
-  const city = parts[0] || place.label;
+  const selectedName = parts[0] || place.label;
+  const city = place.city?.trim() || selectedName;
   const stateToken =
     parts.find((p) => /^[A-Za-z]{2}$/.test(p)) ||
     parts.find((p) => /^[A-Za-z]{2}\s+\d/.test(p))?.slice(0, 2) ||
@@ -292,7 +294,7 @@ export function collegeTownFromGeocodePlace(place: {
   return {
     id: `place-${place.latitude.toFixed(5)}-${place.longitude.toFixed(5)}`,
     name: place.label,
-    shortName: city,
+    shortName: selectedName,
     city,
     state,
     latitude: place.latitude,

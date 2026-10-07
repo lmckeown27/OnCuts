@@ -22,6 +22,7 @@ interface ProviderFilters {
   lng?: number;
   maxDistance?: number;
   constrainListByDistance?: boolean;
+  nearbyLabels?: string;
   includeHidden?: boolean;
 }
 

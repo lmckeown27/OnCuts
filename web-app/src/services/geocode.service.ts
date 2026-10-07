@@ -5,6 +5,8 @@ export interface GeocodePlace {
   latitude: number;
   longitude: number;
   placeType?: string;
+  /** Surrounding city when the label is a campus or neighborhood. */
+  city?: string;
 }
 
 class GeocodeService {
