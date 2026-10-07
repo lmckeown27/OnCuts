@@ -697,28 +697,15 @@ export default function OperatorPortfolioModal({
 
           {clientView ? (
             <div>
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  {operatorPhoto ? (
-                    <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#5a7268] text-xl font-semibold text-white">
-                      {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
-                    </span>
-                  )}
-                  <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={!providerId}
-                  onClick={() => {
-                    const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-                    navigate(`${platformPrefix}/consumer/book/${providerId}`);
-                  }}
-                  className="h-12 shrink-0 rounded-lg bg-[#5a7268] px-5 text-[15px] font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
-                >
-                  Book
-                </button>
+              <div className="mb-4 flex min-w-0 items-center gap-3">
+                {operatorPhoto ? (
+                  <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#5a7268] text-xl font-semibold text-white">
+                    {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
+                  </span>
+                )}
+                <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
               </div>
               {workFilter !== 'all' && (
                 <button
@@ -738,14 +725,14 @@ export default function OperatorPortfolioModal({
                   <p className="text-sm text-[#737373]">No work in this view yet.</p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-3 gap-2 min-[1024px]:grid-cols-4">
-                      {(showAllWork ? workChips : workChips.slice(0, 8)).map((specialtyId) => {
+                    <div className="grid grid-cols-4 gap-2">
+                      {(showAllWork ? workChips : workChips.slice(0, 8)).map((specialtyId, index) => {
                         const name = specialtyLabel(specialtyId, options);
                         const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
                         const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
                         if (!tile) return null;
                         return (
-                          <div key={specialtyId}>
+                          <div key={specialtyId} style={{ gridColumn: (index % 3) + 1 }}>
                             <button
                               type="button"
                               onClick={() => {
@@ -771,6 +758,19 @@ export default function OperatorPortfolioModal({
                           </div>
                         );
                       })}
+                      <div className="col-start-4 row-start-1 flex aspect-[9/16] w-full items-center justify-center">
+                        <button
+                          type="button"
+                          disabled={!providerId}
+                          onClick={() => {
+                            const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+                            navigate(`${platformPrefix}/consumer/book/${providerId}`);
+                          }}
+                          className="h-12 shrink-0 rounded-lg bg-[#5a7268] px-5 text-[15px] font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                        >
+                          Book
+                        </button>
+                      </div>
                     </div>
                     {workChips.length > 8 && !showAllWork && (
                       <button
