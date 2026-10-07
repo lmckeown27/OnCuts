@@ -562,17 +562,17 @@ export default function OperatorPortfolioModal({
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div>
             <h2 className="text-2xl font-bold text-[#171717]">Portfolio</h2>
-            <p className="mt-1 text-sm text-[#525252]">
-              {openSectionId
-                ? `Add as many photos and videos as you want for ${specialtyLabel(openSectionId, options)}.`
-                : 'Drag a cover to reorder. Open one to add photos and videos for that section.'}
-            </p>
+            {openSectionId && (
+              <p className="mt-1 text-sm text-[#525252]">
+                Add as many photos and videos as you want for {specialtyLabel(openSectionId, options)}.
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={onOpenServices}
-              className="min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+              className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
               Services Offered
             </button>
