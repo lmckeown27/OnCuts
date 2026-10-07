@@ -498,7 +498,6 @@ export default function OperatorPortfolioModal({
   const onSectionPointerDown = (event: ReactPointerEvent<HTMLDivElement>, id: string) => {
     if (event.button !== 0) return;
     dragRef.current = { id, startX: event.clientX, moved: false, lastTarget: orderedSectionIds.indexOf(id) };
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onSectionPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -508,6 +507,7 @@ export default function OperatorPortfolioModal({
     if (!drag.moved && Math.abs(event.clientX - drag.startX) < 8) return;
     if (!drag.moved) {
       drag.moved = true;
+      row.setPointerCapture(event.pointerId);
       setDraggingId(drag.id);
       setSourceMenu(null);
     }
@@ -699,7 +699,9 @@ export default function OperatorPortfolioModal({
                   <div
                     key={specialtyId}
                     data-section-id={specialtyId}
-                    className={`w-[150px] shrink-0 cursor-grab touch-none ${draggingId === specialtyId ? 'cursor-grabbing opacity-70' : ''}`}
+                    className={`w-[150px] shrink-0 cursor-grab touch-none ${
+                      draggingId === specialtyId ? 'cursor-grabbing opacity-70' : ''
+                    } ${sourceMenu?.key === `cover-${specialtyId}` ? 'relative z-20' : ''}`}
                     onPointerDown={(event) => onSectionPointerDown(event, specialtyId)}
                   >
                     <div className="relative">
