@@ -725,8 +725,12 @@ export default function OperatorPortfolioModal({
                   <p className="text-sm text-[#737373]">No work in this view yet.</p>
                 ) : (
                   <>
+                    {(() => {
+                      const visibleSections = showAllWork ? workChips : workChips.slice(0, 8);
+                      const sectionRows = Math.max(1, Math.ceil(visibleSections.length / 3));
+                      return (
                     <div className="grid grid-cols-4 gap-2">
-                      {(showAllWork ? workChips : workChips.slice(0, 8)).map((specialtyId, index) => {
+                      {visibleSections.map((specialtyId, index) => {
                         const name = specialtyLabel(specialtyId, options);
                         const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
                         const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
@@ -758,7 +762,10 @@ export default function OperatorPortfolioModal({
                           </div>
                         );
                       })}
-                      <div className="col-start-4 row-start-1 flex aspect-[9/16] w-full items-center justify-center">
+                      <div
+                        className="col-start-4 row-start-1 flex w-full items-center justify-center"
+                        style={{ gridRow: `1 / span ${sectionRows}` }}
+                      >
                         <button
                           type="button"
                           disabled={!providerId}
@@ -772,6 +779,8 @@ export default function OperatorPortfolioModal({
                         </button>
                       </div>
                     </div>
+                      );
+                    })()}
                     {workChips.length > 8 && !showAllWork && (
                       <button
                         type="button"
