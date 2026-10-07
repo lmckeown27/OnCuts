@@ -784,7 +784,7 @@ export default function OperatorPortfolioModal({
                     const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
                     navigate(`${platformPrefix}/consumer/book/${providerId}`);
                   }}
-                  className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-2xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                  className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
                 >
                   Book
                 </button>
@@ -822,7 +822,7 @@ export default function OperatorPortfolioModal({
                                 setShowAllWork(false);
                                 setPreviewItem(null);
                               }}
-                              className="relative block w-full rounded-lg hover:ring-2 hover:ring-[#171717]"
+                              className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                               aria-label={`${name} section`}
                             >
                               <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
@@ -858,7 +858,7 @@ export default function OperatorPortfolioModal({
                         key={item.id}
                         type="button"
                         onClick={() => setPreviewItem(item)}
-                        className="relative block w-full rounded-lg hover:ring-2 hover:ring-[#171717]"
+                        className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                         aria-label={`${item.media_type === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(specialtyIds(item)[0] || '', options)}`}
                       >
                         <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
@@ -1041,7 +1041,7 @@ export default function OperatorPortfolioModal({
                           setSourceMenu(null);
                           setOpenSectionId(specialtyId);
                         }}
-                        className={`relative block w-full rounded-xl aspect-[9/16] hover:ring-2 hover:ring-[#171717] ${
+                        className={`relative block w-full rounded-xl aspect-[9/16] hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2 ${
                           cover ? 'border border-[#e5e5e5]' : 'border border-dashed bg-white border-[#737373]'
                         }`}
                         aria-label={`${name} section`}
