@@ -699,9 +699,9 @@ export default function OperatorPortfolioModal({
             <div>
               <div className="mb-4 flex min-w-0 items-center gap-3">
                 {operatorPhoto ? (
-                  <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
+                  <img src={operatorPhoto} alt="" className="h-14 w-14 shrink-0 object-cover" />
                 ) : (
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#5a7268] text-xl font-semibold text-white">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#5a7268] text-xl font-semibold text-white">
                     {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
                   </span>
                 )}
@@ -766,7 +766,7 @@ export default function OperatorPortfolioModal({
                             const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
                             navigate(`${platformPrefix}/consumer/book/${providerId}`);
                           }}
-                          className="h-12 shrink-0 rounded-lg bg-[#5a7268] px-5 text-[15px] font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                          className="h-16 w-full rounded-lg bg-[#5a7268] px-6 text-lg font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
                         >
                           Book
                         </button>
