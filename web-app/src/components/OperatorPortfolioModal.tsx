@@ -159,7 +159,7 @@ export default function OperatorPortfolioModal({
   const openTagForItem = (item: OperatorPortfolioItem) => {
     setEditing(item);
     setReplaceId(item.id);
-    setTagSelection(specialtyIds(item));
+    setTagSelection(specialtyIds(item).slice(0, 1));
     setSourceMenu(null);
     setTagOpen(true);
     setError(null);
@@ -180,7 +180,7 @@ export default function OperatorPortfolioModal({
     setCameraKind(null);
     setSourceMenu(null);
     setEditing(items.find((item) => item.id === nextReplaceId) || null);
-    setTagSelection(specialtyIds(items.find((item) => item.id === nextReplaceId)));
+    setTagSelection(specialtyIds(items.find((item) => item.id === nextReplaceId)).slice(0, 1));
     setTagOpen(true);
     setError(null);
   };
@@ -509,22 +509,17 @@ export default function OperatorPortfolioModal({
         <div className="flex min-w-0 flex-1 flex-col p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#737373]">{tagLabel}</p>
           <h2 id="library-tag-title" className="mt-2 text-xl font-bold text-[#171717]">
-            What does this show?
+            Categorize this service
           </h2>
-          <p className="mt-1 text-sm text-[#525252]">Pick all that apply. Required.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {options.map((option) => {
-              const selected = tagSelection.includes(option.id);
+              const selected = tagSelection[0] === option.id;
               return (
                 <button
                   key={option.id}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() =>
-                    setTagSelection((current) =>
-                      current.includes(option.id) ? current.filter((id) => id !== option.id) : [...current, option.id]
-                    )
-                  }
+                  onClick={() => setTagSelection(selected ? [] : [option.id])}
                   className={`inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm ${
                     selected ? 'bg-[#171717] text-white' : 'border border-[#e5e5e5] text-[#171717]'
                   }`}
