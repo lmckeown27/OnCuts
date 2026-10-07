@@ -800,9 +800,7 @@ export default function OperatorPortfolioModal({
                 </button>
               )}
               {workFilter === 'all' ? (
-                workChips.length === 0 ? (
-                  <p className="text-sm text-[#737373]">No work in this view yet.</p>
-                ) : (
+                workChips.length > 0 ? (
                   <>
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {workChips.map((specialtyId) => {
@@ -844,10 +842,8 @@ export default function OperatorPortfolioModal({
                       })}
                     </div>
                   </>
-                )
-              ) : filteredWork.length === 0 ? (
-                <p className="text-sm text-[#737373]">No work in this view yet.</p>
-              ) : (
+                ) : null
+              ) : filteredWork.length > 0 ? (
                 <>
                   <div className="grid grid-cols-3 gap-2 min-[1024px]:grid-cols-4">
                     {shownWork.map((item) => (
@@ -881,7 +877,7 @@ export default function OperatorPortfolioModal({
                     </button>
                   )}
                 </>
-              )}
+              ) : null}
               {previewItem && (
                 <div
                   className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"

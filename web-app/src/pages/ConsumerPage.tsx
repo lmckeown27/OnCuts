@@ -2628,17 +2628,6 @@ function DiscoveryView({
           )}
         </div>
         <div className="lg:w-[clamp(21rem,30%,36rem)] shrink-0 lg:min-h-0 lg:flex lg:flex-col">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
-              {selectedDiscoverAreaKey
-                ? (discoverAreas.find((a) => a.key === selectedDiscoverAreaKey)?.label || 'Area')
-                : 'Nearby'}
-            </h2>
-            <span className="text-xs lg:text-sm text-gray-500">
-              {discoverListBarbers.length} operator{discoverListBarbers.length === 1 ? '' : 's'}
-            </span>
-          </div>
-
           {discoverListBarbers.length > 0 ? (
             <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
               {discoverListBarbers.map((barber) => (

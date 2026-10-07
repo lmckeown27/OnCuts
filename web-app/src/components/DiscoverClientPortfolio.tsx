@@ -194,9 +194,7 @@ export default function DiscoverClientPortfolio({
           >
             ‹ All specialties
           </button>
-          {shownWork.length === 0 ? (
-            <p className="text-sm text-[#737373]">No work in this view yet.</p>
-          ) : (
+          {shownWork.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {shownWork.map((item) => (
                 <button
@@ -227,9 +225,7 @@ export default function DiscoverClientPortfolio({
             </button>
           )}
         </>
-      ) : workChips.length === 0 ? (
-        <p className="text-sm text-[#737373]">No work in this view yet.</p>
-      ) : (
+      ) : workChips.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {workChips.map((specialtyId) => {
             const label = specialtyLabel(specialtyId, options);
@@ -265,7 +261,7 @@ export default function DiscoverClientPortfolio({
             );
           })}
         </div>
-      )}
+      ) : null}
       {previewItem && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"

@@ -398,6 +398,7 @@ export default function BrowseUtilityPill({
                   </label>
                 </div>
                 <PillDivider visible={sideSegmentsVisible} />
+                {/*
                 <button
                   type="button"
                   onClick={openRadius}
@@ -411,6 +412,7 @@ export default function BrowseUtilityPill({
                   {radiusChipLabel}
                 </button>
                 <PillDivider visible={sideSegmentsVisible} />
+                */}
                 <button
                   type="button"
                   onClick={openCategory}
