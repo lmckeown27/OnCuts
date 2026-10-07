@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface WebcamCaptureProps {
-  kind: 'image' | 'video';
+  kind: 'image' | 'video' | 'both';
   onCapture: (file: File) => void;
   onClose: () => void;
   onUnavailable: () => void;
@@ -28,7 +28,7 @@ export default function WebcamCapture({ kind, onCapture, onClose, onUnavailable 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
-          audio: kind === 'video',
+          audio: kind !== 'image',
         });
         if (cancelled) {
           stopStream(stream);
@@ -128,16 +128,17 @@ export default function WebcamCapture({ kind, onCapture, onClose, onUnavailable 
           <button type="button" onClick={onClose} className="h-11 px-4 text-sm font-semibold text-[#171717]">
             Cancel
           </button>
-          {kind === 'image' ? (
+          {kind !== 'video' && (
             <button
               type="button"
               onClick={capturePhoto}
-              disabled={!ready}
+              disabled={!ready || recording}
               className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
             >
               Capture
             </button>
-          ) : recording ? (
+          )}
+          {kind !== 'image' && (recording ? (
             <button type="button" onClick={stopRecording} className="h-11 rounded-lg bg-[#171717] px-4 text-sm font-semibold text-white">
               Stop {clock}
             </button>
@@ -150,7 +151,7 @@ export default function WebcamCapture({ kind, onCapture, onClose, onUnavailable 
             >
               Record
             </button>
-          )}
+          ))}
         </div>
       </div>
     </div>

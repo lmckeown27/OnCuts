@@ -39,6 +39,10 @@ interface UploadTarget {
   kind: SlotKind;
 }
 
+function fileSlotKind(file: File): SlotKind {
+  if (file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name)) return 'video';
+  return 'image';
+}
 const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
 const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime';
 const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
@@ -106,7 +110,7 @@ export default function OperatorPortfolioModal({
   const [options, setOptions] = useState<ServiceType[]>([]);
   const [sourceMenu, setSourceMenu] = useState<{ key: string; specialtyId: string; asCover: boolean } | null>(null);
   const [uploadTarget, setUploadTarget] = useState<UploadTarget | null>(null);
-  const [cameraKind, setCameraKind] = useState<SlotKind | null>(null);
+  const [cameraKind, setCameraKind] = useState<SlotKind | 'both' | null>(null);
   const [cameraNote, setCameraNote] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ kind: SlotKind; file: File; previewUrl: string; replaceId: string | null } | null>(null);
   const [editing, setEditing] = useState<OperatorPortfolioItem | null>(null);
@@ -519,35 +523,48 @@ export default function OperatorPortfolioModal({
             Open section
           </button>
         )}
-        <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
-          {asCover ? 'Use camera' : 'Photo from camera'}
-        </button>
         {asCover ? (
-          <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
-            Upload from computer
-          </button>
+          <>
+            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'camera')}>
+              Use camera
+            </button>
+            <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('image', 'file')}>
+              Upload from computer
+            </button>
+          </>
         ) : (
-          <div className="mt-1 flex flex-col gap-2">
+          <>
             <button
               type="button"
-              className="h-11 rounded-lg bg-[#5a7268] px-3 text-sm font-semibold text-white hover:bg-[#445750]"
-              onClick={() => choose('image', 'file')}
+              className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
+              onClick={() => {
+                setUploadTarget({ specialtyId, asCover, replaceId: replaceIdValue, kind: 'image' });
+                setReplaceId(replaceIdValue);
+                setSourceMenu(null);
+                setCameraNote(null);
+                setCameraKind('both');
+              }}
             >
-              Upload photo
+              Upload from camera
             </button>
             <button
               type="button"
-              className="h-11 rounded-lg bg-[#5a7268] px-3 text-sm font-semibold text-white hover:bg-[#445750]"
-              onClick={() => choose('video', 'file')}
+              className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]"
+              onClick={() => {
+                setUploadTarget({ specialtyId, asCover, replaceId: replaceIdValue, kind: 'image' });
+                setReplaceId(replaceIdValue);
+                setSourceMenu(null);
+                setCameraNote(null);
+                setCameraKind(null);
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = `${PHOTO_ACCEPT},${VIDEO_ACCEPT}`;
+                  fileInputRef.current.click();
+                }
+              }}
             >
-              Upload video
+              Upload from computer
             </button>
-          </div>
-        )}
-        {!asCover && (
-          <button type="button" className="block w-full rounded-lg px-2 py-2 text-left text-sm text-[#171717] hover:bg-[#f5f5f5]" onClick={() => choose('video', 'camera')}>
-            Video from camera
-          </button>
+          </>
         )}
       </div>
     );
@@ -767,7 +784,7 @@ export default function OperatorPortfolioModal({
                     const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
                     navigate(`${platformPrefix}/consumer/book/${providerId}`);
                   }}
-                  className="h-16 shrink-0 rounded-lg bg-[#5a7268] px-6 text-2xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                  className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-2xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
                 >
                   Book
                 </button>
@@ -1024,15 +1041,15 @@ export default function OperatorPortfolioModal({
                           setSourceMenu(null);
                           setOpenSectionId(specialtyId);
                         }}
-                        className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
+                        className={`relative block w-full rounded-xl aspect-[9/16] hover:ring-2 hover:ring-[#171717] ${
                           cover ? 'border border-[#e5e5e5]' : 'border border-dashed bg-white border-[#737373]'
                         }`}
                         aria-label={`${name} section`}
                       >
                         {cover ? (
-                          <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
+                          <img src={cover.media_url} alt="" className="h-full w-full rounded-xl object-cover" />
                         ) : (
-                          <span className="flex h-full flex-col items-center justify-center gap-2">
+                          <span className="flex h-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl">
                             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
                               <Plus className="h-5 w-5" />
                             </span>
@@ -1064,7 +1081,7 @@ export default function OperatorPortfolioModal({
           onChange={(event) => {
             const file = event.target.files?.[0];
             event.target.value = '';
-            if (file && uploadTarget) stageFile(uploadTarget.kind, file);
+            if (file && uploadTarget) stageFile(fileSlotKind(file), file);
           }}
         />
       </div>
@@ -1160,7 +1177,7 @@ export default function OperatorPortfolioModal({
       {cameraKind && (
         <WebcamCapture
           kind={cameraKind}
-          onCapture={(file) => stageFile(cameraKind, file)}
+          onCapture={(file) => stageFile(fileSlotKind(file), file)}
           onClose={() => setCameraKind(null)}
           onUnavailable={() => {
             setCameraKind(null);
