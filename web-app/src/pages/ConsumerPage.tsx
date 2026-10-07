@@ -2618,7 +2618,12 @@ function DiscoveryView({
           {discoverListBarbers.length > 0 ? (
             <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
               {discoverListBarbers.map((barber) => (
-                <DiscoverClientPortfolio key={barber.id} barber={barber} />
+                <DiscoverClientPortfolio
+                  key={barber.id}
+                  barber={barber}
+                  latitude={latitude}
+                  longitude={longitude}
+                />
               ))}
             </div>
           ) : (

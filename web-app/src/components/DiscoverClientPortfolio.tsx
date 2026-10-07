@@ -4,6 +4,10 @@ import api from '../services/api.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
 import type { Barber } from '../types';
 import { barberDisplayName, barberPhotoUrl } from '../utils/myBarbersDiscover';
+import {
+  formatBarberDistanceFromUser,
+  getBarberDistanceMilesFromTown,
+} from '../utils/consumerBrowseDistancePreference';
 
 interface PortfolioItem {
   id: string;
@@ -82,7 +86,15 @@ function specialtyPrices(barber: Barber, options: ServiceType[]): Record<string,
   return priceByKey;
 }
 
-export default function DiscoverClientPortfolio({ barber }: { barber: Barber }) {
+export default function DiscoverClientPortfolio({
+  barber,
+  latitude,
+  longitude,
+}: {
+  barber: Barber;
+  latitude: number | null;
+  longitude: number | null;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -94,6 +106,9 @@ export default function DiscoverClientPortfolio({ barber }: { barber: Barber }) 
 
   const name = barberDisplayName(barber);
   const photo = barberPhotoUrl(barber);
+  const distanceLabel = formatBarberDistanceFromUser(
+    getBarberDistanceMilesFromTown(barber, latitude, longitude)
+  );
   const options = useMemo(() => offeredServices(barber), [barber]);
   const prices = useMemo(() => specialtyPrices(barber, options), [barber, options]);
 
@@ -148,7 +163,10 @@ export default function DiscoverClientPortfolio({ barber }: { barber: Barber }) 
               {(name.trim().charAt(0) || 'O').toUpperCase()}
             </span>
           )}
-          <p className="truncate text-[22px] font-bold text-[#171717]">{name}</p>
+          <div className="min-w-0">
+            <p className="truncate text-[22px] font-bold text-[#171717]">{name}</p>
+            {distanceLabel && <p className="truncate text-sm text-[#525252]">{distanceLabel}</p>}
+          </div>
         </div>
         <button
           type="button"
