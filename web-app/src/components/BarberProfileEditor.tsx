@@ -34,9 +34,11 @@ interface BarberProfileEditorProps {
   barberId?: string;
   userId?: string; // Alternative: fetch barber by user ID
   onClose?: () => void;
+  onOpenServices?: () => void;
+  servicesRevision?: number;
 }
 
-export default function BarberProfileEditor({ barberId, userId, onClose }: BarberProfileEditorProps) {
+export default function BarberProfileEditor({ barberId, userId, onClose, onOpenServices, servicesRevision = 0 }: BarberProfileEditorProps) {
   const { user, setUser } = useAuthStore();
   const [barber, setBarber] = useState<Barber | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -312,6 +314,8 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           providerId={barber.id}
           visible
           onClose={() => setShowPortfolio(false)}
+          onOpenServices={onOpenServices}
+          servicesRevision={servicesRevision}
         />
       )}
 

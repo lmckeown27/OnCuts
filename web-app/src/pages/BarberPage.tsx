@@ -342,8 +342,12 @@ export default function BarberPage() {
   const openBookingLink = () => openModal(setShowBookingLink, setIsBookingLinkVisible);
   const closeBookingLink = () => closeModal(setShowBookingLink, setIsBookingLinkVisible);
   
+  const [servicesRevision, setServicesRevision] = useState(0);
   const openServiceSpecialties = () => openModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
-  const closeServiceSpecialties = () => closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
+  const closeServiceSpecialties = () => {
+    closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
+    setServicesRevision((revision) => revision + 1);
+  };
   
   const openAdminDashboard = () => openModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   const closeAdminDashboard = () => closeModal(setShowAdminDashboard, setIsAdminDashboardVisible);
@@ -782,7 +786,12 @@ export default function BarberPage() {
               </button>
             </div>
             <div className="p-6">
-              <BarberProfileEditor userId={barberId} onClose={closeProfileEditor} />
+              <BarberProfileEditor
+                userId={barberId}
+                onClose={closeProfileEditor}
+                onOpenServices={openServiceSpecialties}
+                servicesRevision={servicesRevision}
+              />
             </div>
           </div>
         </div>
@@ -825,7 +834,7 @@ export default function BarberPage() {
       {/* Service Specialties Modal */}
       {showServiceSpecialties && (
         <div 
-          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[80] p-2 sm:p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeServiceSpecialties}
         >
           <div 
@@ -858,6 +867,8 @@ export default function BarberPage() {
           providerId={barberProfile?.id || ''}
           visible={isPortfolioVisible}
           onClose={closePortfolio}
+          onOpenServices={openServiceSpecialties}
+          servicesRevision={servicesRevision}
         />
       )}
 

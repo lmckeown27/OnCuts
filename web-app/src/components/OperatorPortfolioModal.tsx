@@ -25,6 +25,8 @@ interface OperatorPortfolioModalProps {
   providerId: string;
   visible: boolean;
   onClose: () => void;
+  onOpenServices?: () => void;
+  servicesRevision?: number;
 }
 
 type SlotKind = 'image' | 'video';
@@ -61,6 +63,8 @@ export default function OperatorPortfolioModal({
   providerId,
   visible,
   onClose,
+  onOpenServices,
+  servicesRevision = 0,
 }: OperatorPortfolioModalProps) {
   const [items, setItems] = useState<OperatorPortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,7 +136,7 @@ export default function OperatorPortfolioModal({
     return () => {
       cancelled = true;
     };
-  }, [visible, providerId]);
+  }, [visible, providerId, servicesRevision]);
 
   useEffect(() => {
     return () => {
@@ -456,14 +460,23 @@ export default function OperatorPortfolioModal({
             <h2 className="text-2xl font-bold text-[#171717]">Portfolio</h2>
             <p className="mt-1 text-sm text-[#525252]">Each specialty you offer has a cover photo. Add as many photos and videos as you want in that section.</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#171717] hover:bg-black/5"
-            aria-label="Close portfolio"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenServices}
+              className="min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+            >
+              Services Offered
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#171717] hover:bg-black/5"
+              aria-label="Close portfolio"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="px-6 py-6 sm:px-8">

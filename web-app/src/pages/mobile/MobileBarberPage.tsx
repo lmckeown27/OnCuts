@@ -460,6 +460,7 @@ export default function MobileBarberPage() {
             <BarberProfileEditor 
               userId={user?.id}
               onClose={() => setShowFullEditor(false)}
+              onOpenServices={() => navigate(`${platformPrefix}/barber/services`)}
             />
           </div>
         )}
