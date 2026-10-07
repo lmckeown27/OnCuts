@@ -615,12 +615,9 @@ export default function OperatorPortfolioModal({
       >
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
           <div>
-            <h2 className="text-2xl font-bold text-[#171717]">Portfolio</h2>
-            {openSectionId && (
-              <p className="mt-1 text-sm text-[#525252]">
-                Add as many photos and videos as you want for {specialtyLabel(openSectionId, options)}.
-              </p>
-            )}
+            <h2 className="text-2xl font-bold text-[#171717]">
+              {openSectionId ? specialtyLabel(openSectionId, options) : 'Portfolio'}
+            </h2>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
