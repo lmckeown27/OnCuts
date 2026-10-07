@@ -24,6 +24,7 @@ import {
   addOperatorPortfolioItem,
   deleteOperatorPortfolioItem,
   listOperatorPortfolio,
+  updateOperatorPortfolioItem,
 } from '../controllers/operator-portfolio.controller';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
@@ -392,6 +393,19 @@ router.post(
   uploadPortfolioMedia.single('media'),
   [param('id').isUUID(), body('caption').optional().isString(), validate],
   addOperatorPortfolioItem
+);
+
+/**
+ * @route   PATCH /api/v1/barbers/:id/operator-portfolio/:itemId
+ * @desc    Update the specialties on a portfolio photo or video
+ * @access  Private (Owner)
+ */
+router.patch(
+  '/:id/operator-portfolio/:itemId',
+  authenticate,
+  requireRole('barber'),
+  [param('id').isUUID(), param('itemId').isUUID(), validate],
+  updateOperatorPortfolioItem
 );
 
 /**

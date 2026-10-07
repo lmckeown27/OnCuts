@@ -7,7 +7,8 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Scissors, Inbox, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Star, RotateCcw, EyeOff, Plus } from 'lucide-react';
 import OperatorPortfolioModal from '../components/OperatorPortfolioModal';
-import PostServicePortfolioFlow from '../components/PostServicePortfolioFlow';
+// Post-service portfolio upload is paused until the regular portfolio upload is solid.
+// import PostServicePortfolioFlow from '../components/PostServicePortfolioFlow';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -435,7 +436,7 @@ export default function BarberPage() {
   // State for booking details modal
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
-  const [portfolioBookingId, setPortfolioBookingId] = useState<string | null>(null);
+  // const [portfolioBookingId, setPortfolioBookingId] = useState<string | null>(null);
   
   // State for barber profile data (for walk-in services and time blocking)
   const [barberProfile, setBarberProfile] = useState<{
@@ -575,12 +576,7 @@ export default function BarberPage() {
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
       <IosAppDownloadBanner variant="operator" />
       {/* Header — Chats (left) · Portfolio (center) · Bookings · Account (right) */}
-      <div
-        data-operator-header
-        className={`bg-white shadow-sm border-b border-gray-200 ${
-          portfolioBookingId ? 'sticky top-0 z-[70]' : ''
-        }`}
-      >
+      <div data-operator-header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2 relative">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -865,6 +861,7 @@ export default function BarberPage() {
         />
       )}
 
+      {/* Post-service portfolio upload — commented out while the regular portfolio upload is in progress.
       {portfolioBookingId && barberProfile?.id && (
         <PostServicePortfolioFlow
           bookingId={portfolioBookingId}
@@ -872,6 +869,7 @@ export default function BarberPage() {
           onClose={() => setPortfolioBookingId(null)}
         />
       )}
+      */}
 
       {/* Admin Dashboard — pushed shell (admins only) */}
       {isAdmin && showAdminDashboard && (
@@ -990,10 +988,6 @@ export default function BarberPage() {
           isVisible={isBookingsVisible} 
           onClose={closeBookings}
           barberId={barberId}
-          onMarkedComplete={(completedBookingId) => {
-            closeBookings();
-            setPortfolioBookingId(completedBookingId);
-          }}
         />
       )}
 
@@ -3255,7 +3249,7 @@ function BookingsModal({ isVisible, onClose, barberId, onMarkedComplete }: { isV
       await api.put(`/bookings-simple/${bookingId}/complete`);
       toast.success('Service marked complete! Payment request sent to customer.');
       fetchBookings();
-      onMarkedComplete?.(bookingId);
+      // onMarkedComplete?.(bookingId);
     } catch (error: any) {
       console.error('Failed to mark booking complete:', error);
       toast.error(error.message || 'Failed to mark as complete');

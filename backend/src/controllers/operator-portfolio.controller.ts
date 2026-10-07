@@ -186,6 +186,37 @@ export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, 
   }
 };
 
+export const updateOperatorPortfolioItem = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id, itemId } = req.params;
+    const userId = req.user!.userId;
+    const specialties = parseSpecialties(req.body?.specialties, true);
+    const ownership = await pool.query(
+      'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
+      [id, userId]
+    );
+    if (ownership.rows.length === 0) {
+      throw new ApiError(403, 'Not authorized to manage this portfolio');
+    }
+
+    const updated = await pool.query(
+      `UPDATE operator_portfolio_items
+       SET specialties = $1
+       WHERE id = $2 AND provider_id = $3
+       RETURNING id, provider_id, media_type, media_url, thumbnail_url, caption, sort_order, created_at,
+                 specialties, booking_id`,
+      [specialties, itemId, id]
+    );
+    if (updated.rows.length === 0) {
+      throw new ApiError(404, 'Portfolio item not found');
+    }
+
+    res.json({ success: true, data: updated.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deleteOperatorPortfolioItem = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id, itemId } = req.params;
