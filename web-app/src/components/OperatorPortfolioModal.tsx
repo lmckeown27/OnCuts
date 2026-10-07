@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Plus, X } from 'lucide-react';
 import api from '../services/api.service';
@@ -81,9 +81,15 @@ export default function OperatorPortfolioModal({
   const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
+  const sectionRowRef = useRef<HTMLDivElement>(null);
+  const orderRef = useRef<string[]>([]);
+  const dragRef = useRef<{ id: string; startX: number; moved: boolean; lastTarget: number } | null>(null);
+  const suppressClick = useRef(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -110,6 +116,23 @@ export default function OperatorPortfolioModal({
   useEffect(() => {
     if (visible && providerId) void loadItems();
   }, [visible, providerId, loadItems]);
+
+  useEffect(() => {
+    if (!visible || !providerId) return;
+    let cancelled = false;
+    const loadOrder = async () => {
+      try {
+        const data = await api.get<{ specialtyIds?: string[] }>(`/barbers/${providerId}/operator-portfolio/section-order`);
+        if (!cancelled && Array.isArray(data?.specialtyIds)) setSectionOrder(data.specialtyIds);
+      } catch {
+        if (!cancelled) setSectionOrder([]);
+      }
+    };
+    void loadOrder();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, providerId, servicesRevision]);
 
   useEffect(() => {
     if (!visible || !providerId) return;
@@ -451,6 +474,70 @@ export default function OperatorPortfolioModal({
   const sectionIds = Array.from(
     new Set([...options.map((option) => option.id), ...items.flatMap((item) => specialtyIds(item))])
   );
+  const orderedSectionIds = useMemo(() => {
+    const known = new Set(sectionIds);
+    const kept = sectionOrder.filter((id) => known.has(id));
+    return [...kept, ...sectionIds.filter((id) => !kept.includes(id))];
+  }, [sectionIds, sectionOrder]);
+  orderRef.current = orderedSectionIds;
+
+  const reorderSections = (id: string, target: number) => {
+    setSectionOrder(() => {
+      const current = orderRef.current;
+      const from = current.indexOf(id);
+      if (from < 0) return current;
+      const next = current.slice();
+      next.splice(from, 1);
+      const insertAt = Math.max(0, Math.min(next.length, target > from ? target - 1 : target));
+      next.splice(insertAt, 0, id);
+      orderRef.current = next;
+      return next;
+    });
+  };
+
+  const onSectionPointerDown = (event: ReactPointerEvent<HTMLDivElement>, id: string) => {
+    if (event.button !== 0) return;
+    dragRef.current = { id, startX: event.clientX, moved: false, lastTarget: orderedSectionIds.indexOf(id) };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onSectionPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const row = sectionRowRef.current;
+    if (!drag || !row) return;
+    if (!drag.moved && Math.abs(event.clientX - drag.startX) < 8) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      setDraggingId(drag.id);
+      setSourceMenu(null);
+    }
+    const bounds = row.getBoundingClientRect();
+    if (event.clientX > bounds.right - 36) row.scrollLeft += 14;
+    if (event.clientX < bounds.left + 36) row.scrollLeft -= 14;
+    const cards = Array.from(row.querySelectorAll<HTMLElement>('[data-section-id]'));
+    let target = cards.length;
+    for (let index = 0; index < cards.length; index += 1) {
+      const rect = cards[index].getBoundingClientRect();
+      if (event.clientX < rect.left + rect.width / 2) {
+        target = index;
+        break;
+      }
+    }
+    if (target === drag.lastTarget) return;
+    drag.lastTarget = target;
+    reorderSections(drag.id, target);
+  };
+
+  const onSectionPointerUp = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setDraggingId(null);
+    if (!drag?.moved || !providerId) return;
+    suppressClick.current = true;
+    void api
+      .put(`/barbers/${providerId}/operator-portfolio/section-order`, { specialtyIds: orderRef.current })
+      .catch((err) => setError(uploadErrorMessage(err)));
+  };
 
   const dialog = (
     <div
@@ -478,7 +565,7 @@ export default function OperatorPortfolioModal({
             <p className="mt-1 text-sm text-[#525252]">
               {openSectionId
                 ? `Add as many photos and videos as you want for ${specialtyLabel(openSectionId, options)}.`
-                : 'Each cover is a specialty. Open a cover to add photos and videos for that section.'}
+                : 'Drag a cover to reorder. Open one to add photos and videos for that section.'}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -596,20 +683,37 @@ export default function OperatorPortfolioModal({
               })()}
             </div>
           ) : (
-            <div className="flex gap-[14px] overflow-x-auto pb-2">
-              {sectionIds.map((specialtyId) => {
+            <div
+              ref={sectionRowRef}
+              className="flex gap-[14px] overflow-x-auto pb-2"
+              onPointerMove={onSectionPointerMove}
+              onPointerUp={onSectionPointerUp}
+              onPointerCancel={onSectionPointerUp}
+            >
+              {orderedSectionIds.map((specialtyId) => {
                 const cover = items.find(
                   (item) => specialtyIds(item)[0] === specialtyId && item.is_cover && item.media_type === 'image'
                 );
                 const name = specialtyLabel(specialtyId, options);
                 return (
-                  <div key={specialtyId} className="w-[150px] shrink-0">
+                  <div
+                    key={specialtyId}
+                    data-section-id={specialtyId}
+                    className={`w-[150px] shrink-0 cursor-grab touch-none ${draggingId === specialtyId ? 'cursor-grabbing opacity-70' : ''}`}
+                    onPointerDown={(event) => onSectionPointerDown(event, specialtyId)}
+                  >
                     <div className="relative">
                       <button
                         type="button"
                         data-slot-button
                         disabled={!providerId || saving}
-                        onClick={() => setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true })}
+                        onClick={() => {
+                          if (suppressClick.current) {
+                            suppressClick.current = false;
+                            return;
+                          }
+                          setSourceMenu({ key: `cover-${specialtyId}`, specialtyId, asCover: true });
+                        }}
                         className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
                           cover
                             ? 'border border-[#e5e5e5]'

@@ -121,6 +121,60 @@ export const listOperatorPortfolio = async (req: AuthRequest, res: Response, nex
   }
 };
 
+function parseSectionOrder(raw: unknown): string[] {
+  if (!Array.isArray(raw)) {
+    throw new ApiError(400, 'specialtyIds must be an array');
+  }
+  const ids = raw
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0 && entry.length <= 80);
+  return ids.slice(0, 40);
+}
+
+async function assertPortfolioOwner(providerId: string, userId: string) {
+  const ownership = await pool.query(
+    'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
+    [providerId, userId]
+  );
+  if (ownership.rows.length === 0) {
+    throw new ApiError(403, 'Not authorized to manage this portfolio');
+  }
+}
+
+export const getOperatorPortfolioSectionOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await assertPortfolioOwner(id, req.user!.userId);
+    const result = await pool.query(
+      'SELECT specialty_ids FROM operator_portfolio_section_orders WHERE provider_id = $1',
+      [id]
+    );
+    const specialtyIds = Array.isArray(result.rows[0]?.specialty_ids) ? result.rows[0].specialty_ids : [];
+    res.json({ success: true, data: { specialtyIds } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const saveOperatorPortfolioSectionOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await assertPortfolioOwner(id, req.user!.userId);
+    const specialtyIds = parseSectionOrder(req.body?.specialtyIds ?? req.body?.specialty_ids);
+    const result = await pool.query(
+      `INSERT INTO operator_portfolio_section_orders (provider_id, specialty_ids)
+       VALUES ($1, $2)
+       ON CONFLICT (provider_id) DO UPDATE SET specialty_ids = EXCLUDED.specialty_ids
+       RETURNING specialty_ids`,
+      [id, specialtyIds]
+    );
+    res.json({ success: true, data: { specialtyIds: result.rows[0]?.specialty_ids || specialtyIds } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const addOperatorPortfolioItem = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;

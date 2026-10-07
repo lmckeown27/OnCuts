@@ -24,6 +24,8 @@ import {
   addOperatorPortfolioItem,
   deleteOperatorPortfolioItem,
   listOperatorPortfolio,
+  saveOperatorPortfolioSectionOrder,
+  getOperatorPortfolioSectionOrder,
   updateOperatorPortfolioItem,
 } from '../controllers/operator-portfolio.controller';
 import { pool } from '../database/connection';
@@ -379,6 +381,22 @@ router.get(
   requireRole('barber'),
   [param('id').isUUID(), validate],
   listOperatorPortfolio
+);
+
+router.get(
+  '/:id/operator-portfolio/section-order',
+  authenticate,
+  requireRole('barber'),
+  [param('id').isUUID(), validate],
+  getOperatorPortfolioSectionOrder
+);
+
+router.put(
+  '/:id/operator-portfolio/section-order',
+  authenticate,
+  requireRole('barber'),
+  [param('id').isUUID(), validate],
+  saveOperatorPortfolioSectionOrder
 );
 
 /**
