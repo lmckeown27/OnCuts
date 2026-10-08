@@ -119,6 +119,7 @@ export default function OperatorPortfolioModal({
   const [replaceId, setReplaceId] = useState<string | null>(null);
   const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
+  const [tagVisible, setTagVisible] = useState(false);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [clientView, setClientView] = useState(false);
   const [workFilter, setWorkFilter] = useState('all');
@@ -137,6 +138,7 @@ export default function OperatorPortfolioModal({
   const orderRef = useRef<string[]>([]);
   const dragRef = useRef<{ id: string; startX: number; moved: boolean; lastTarget: number } | null>(null);
   const suppressClick = useRef(false);
+  const tagCloseTimer = useRef<number | null>(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -289,28 +291,42 @@ export default function OperatorPortfolioModal({
 
   useEffect(() => {
     return () => {
+      if (tagCloseTimer.current) window.clearTimeout(tagCloseTimer.current);
       if (draftRef.current) revoke(draftRef.current.previewUrl);
     };
   }, []);
 
   const closeTag = (dropDraft: boolean) => {
-    if (dropDraft && draft) {
-      revoke(draft.previewUrl);
-      setDraft(null);
-    }
-    setTagOpen(false);
-    setEditing(null);
-    setReplaceId(null);
-    setTagSelection([]);
+    setTagVisible(false);
+    if (tagCloseTimer.current) return;
+    tagCloseTimer.current = window.setTimeout(() => {
+      tagCloseTimer.current = null;
+      if (dropDraft && draftRef.current) {
+        revoke(draftRef.current.previewUrl);
+        setDraft(null);
+      }
+      setTagOpen(false);
+      setEditing(null);
+      setReplaceId(null);
+      setTagSelection([]);
+    }, 150);
   };
 
   const openTagForItem = (item: OperatorPortfolioItem) => {
+    if (tagCloseTimer.current) {
+      window.clearTimeout(tagCloseTimer.current);
+      tagCloseTimer.current = null;
+    }
     setEditing(item);
     setReplaceId(item.id);
     setTagSelection(specialtyIds(item).slice(0, 1));
     setSourceMenu(null);
     setTagOpen(true);
+    setTagVisible(false);
     setError(null);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setTagVisible(true));
+    });
   };
 
   const publishFile = async (kind: SlotKind, file: File, target: UploadTarget) => {
@@ -1174,7 +1190,9 @@ export default function OperatorPortfolioModal({
 
   const tagModal = tagOpen && previewUrl && (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"
+      className={`fixed inset-0 z-[90] flex items-center justify-center p-4 transition-colors duration-150 ${
+        tagVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
+      }`}
       onClick={() => {
         if (!saving) closeTag(true);
       }}
@@ -1186,7 +1204,9 @@ export default function OperatorPortfolioModal({
         aria-labelledby="library-tag-title"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => trapTab(event, tagRef.current)}
-        className="flex w-full max-w-[680px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+        className={`flex w-full max-w-[680px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
+          tagVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        }`}
       >
         <div className="hidden w-[280px] shrink-0 bg-[#f5f5f5] p-6 sm:block">
           {previewKind === 'video' ? (
@@ -1248,7 +1268,6 @@ export default function OperatorPortfolioModal({
                   revoke(draft.previewUrl);
                   setDraft(null);
                 }
-                setTagOpen(false);
                 if (editing && specialtyId) {
                   setSourceMenu({
                     key: replacingCover ? `cover-${specialtyId}` : `item-${editing.id}`,
@@ -1256,6 +1275,7 @@ export default function OperatorPortfolioModal({
                     asCover: replacingCover,
                   });
                 }
+                closeTag(false);
               }}
             >
               Replace
