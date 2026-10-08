@@ -153,6 +153,9 @@ export default function BrowseUtilityPill({
       onMaxDistanceCommitted(Math.round(displayDistanceMiles));
     }
     onSearchQueryChange('');
+    if (pillRef.current) {
+      setLockedPillWidth(pillRef.current.getBoundingClientRect().width);
+    }
     setMode('category');
   };
 
@@ -171,13 +174,14 @@ export default function BrowseUtilityPill({
     : 'ALL';
 
   const sideSegmentsVisible = mode === 'collapsed';
+  const lockOpenedWidth = mode === 'search' || mode === 'category';
 
   return (
     <div className="relative z-[800] mb-4 sm:mb-5">
       <div
-        className={`relative ${mode === 'search' ? 'mx-auto max-w-full space-y-2' : 'w-full space-y-2'}`}
+        className={`relative ${lockOpenedWidth ? 'mx-auto max-w-full space-y-2' : 'w-full space-y-2'}`}
         style={
-          mode === 'search' && lockedPillWidth != null
+          lockOpenedWidth && lockedPillWidth != null
             ? { width: lockedPillWidth }
             : undefined
         }
