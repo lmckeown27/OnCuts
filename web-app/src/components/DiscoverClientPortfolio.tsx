@@ -109,15 +109,18 @@ export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | nu
   if (hours.length === 0) return null;
   return (
     <div className="pt-1">
-      <p className="text-sm font-semibold text-[#171717]">Weekly availability</p>
-      <ul className="mt-2 space-y-1.5">
-        {hours.map(({ day, times }) => (
-          <li key={day} className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="font-semibold text-[#171717]">{day}</span>
-            <span className="text-right text-[#525252]">{times}</span>
-          </li>
+      <p className="text-center text-sm font-semibold text-[#171717]">Availability for the Week</p>
+      <div className="mt-2 overflow-hidden rounded-lg border border-[#e5e5e5]">
+        {hours.map(({ day, times }, index) => (
+          <div
+            key={day}
+            className={`grid grid-cols-[4.5rem_minmax(0,1fr)] text-sm ${index < hours.length - 1 ? 'border-b border-[#e5e5e5]' : ''}`}
+          >
+            <span className="px-3 py-2 font-semibold text-[#171717]">{day}</span>
+            <span className="border-l border-[#e5e5e5] px-3 py-2 text-right text-[#525252]">{times}</span>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
