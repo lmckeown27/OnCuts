@@ -283,39 +283,38 @@ export default function BrowseUtilityPill({
             role="region"
             aria-label="Provider type filter"
           >
-            <div className="relative flex items-center justify-center min-h-8 mb-2 px-10">
-              <p className="text-sm font-semibold text-gray-900 text-center">Provider type</p>
+            <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {BROWSE_PROVIDER_CATEGORIES.map((option) => {
+                  const isSelected = browseCategory === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => {
+                        onBrowseCategoryChange(option.id);
+                        closeAllModes();
+                      }}
+                      aria-pressed={isSelected}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
+                        isSelected
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
               <button
                 type="button"
                 onClick={closeAllModes}
-                className="absolute right-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
+                className="shrink-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
                 aria-label="Done filtering by provider type"
               >
                 <Check className="w-4 h-4" />
               </button>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {BROWSE_PROVIDER_CATEGORIES.map((option) => {
-                const isSelected = browseCategory === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => {
-                      onBrowseCategoryChange(option.id);
-                      closeAllModes();
-                    }}
-                    aria-pressed={isSelected}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
-                      isSelected
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
             </div>
           </div>
         ) : (
