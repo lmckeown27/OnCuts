@@ -1484,6 +1484,7 @@ export default function PostServicePaymentPage() {
           <PostServicePortfolioFlow
             bookingId={booking.id}
             providerId={booking.barber.recordId}
+            serviceName={booking.serviceName || booking.serviceType}
             onClose={() => setPortfolioFlow('closed')}
           />
         )}
