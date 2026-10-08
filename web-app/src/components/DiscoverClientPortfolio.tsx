@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
-import type { Barber } from '../types';
+import type { Barber, WeeklySchedule } from '../types';
 import { barberDisplayName, barberPhotoUrl } from '../utils/myBarbersDiscover';
 import {
   formatBarberDistanceFromUser,
@@ -55,6 +55,71 @@ function priceForSpecialty(id: string, options: ServiceType[], prices: Record<st
     if (prices[key] != null) return formatSpecialtyPrice(prices[key]);
   }
   return null;
+}
+
+function formatClock(time24: string): string {
+  if (!time24 || !time24.includes(':')) return 'N/A';
+  const [hourStr, minuteStr] = time24.split(':');
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return 'N/A';
+  const ampm = hour >= 12 ? 'pm' : 'am';
+  hour = hour % 12 || 12;
+  return minute === 0 ? `${hour}${ampm}` : `${hour}:${minuteStr}${ampm}`;
+}
+
+export function formatWeeklyAvailability(schedule: WeeklySchedule | null | undefined): { day: string; times: string }[] {
+  if (!schedule) return [];
+  const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  const dayAbbrev: Record<string, string> = {
+    monday: 'Mon',
+    tuesday: 'Tue',
+    wednesday: 'Wed',
+    thursday: 'Thu',
+    friday: 'Fri',
+    saturday: 'Sat',
+    sunday: 'Sun',
+  };
+  return dayOrder
+    .filter((day) => {
+      const daySchedule = schedule[day];
+      if (!daySchedule?.enabled) return false;
+      if (daySchedule.intervals !== undefined) {
+        return Array.isArray(daySchedule.intervals) && daySchedule.intervals.some((interval) => interval?.start && interval?.end);
+      }
+      return Boolean(daySchedule.start && daySchedule.end);
+    })
+    .map((day) => {
+      const daySchedule = schedule[day];
+      const intervals = Array.isArray(daySchedule.intervals)
+        ? daySchedule.intervals.filter((interval) => interval?.start && interval?.end)
+        : [];
+      const times =
+        intervals.length > 0
+          ? intervals.map((interval) => `${formatClock(interval.start)}–${formatClock(interval.end)}`).join(', ')
+          : daySchedule.start && daySchedule.end
+            ? `${formatClock(daySchedule.start)}–${formatClock(daySchedule.end)}`
+            : 'Available';
+      return { day: dayAbbrev[day], times };
+    });
+}
+
+export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | null | undefined }) {
+  const hours = formatWeeklyAvailability(schedule);
+  if (hours.length === 0) return null;
+  return (
+    <div className="pt-1">
+      <p className="text-sm font-semibold text-[#171717]">Weekly availability</p>
+      <ul className="mt-2 space-y-1.5">
+        {hours.map(({ day, times }) => (
+          <li key={day} className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="font-semibold text-[#171717]">{day}</span>
+            <span className="text-right text-[#525252]">{times}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function offeredServices(barber: Barber): ServiceType[] {
@@ -226,42 +291,47 @@ export default function DiscoverClientPortfolio({
           )}
         </>
       ) : workChips.length > 0 ? (
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {workChips.map((specialtyId) => {
-            const label = specialtyLabel(specialtyId, options);
-            const sectionItems = items.filter((item) => itemSpecialties(item)[0] === specialtyId);
-            const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
-            if (!tile) return null;
-            const price = priceForSpecialty(specialtyId, options, prices);
-            return (
-              <div key={specialtyId} className="w-[160px] shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpenSectionId(specialtyId);
-                    setShowAllWork(false);
-                    setPreviewItem(null);
-                  }}
-                  className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
-                  aria-label={`${label} section`}
-                >
-                  <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
-                    {tile.media_type === 'video' ? (
-                      <video src={tile.media_url} className="h-full w-full object-cover" muted />
-                    ) : (
-                      <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
-                    )}
-                  </span>
-                </button>
-                <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
-                  <span className="truncate">{label}</span>
-                  {price && <span className="shrink-0">{price}</span>}
-                </p>
-              </div>
-            );
-          })}
+        <div className="grid items-start gap-6 sm:grid-cols-[minmax(0,496px)_minmax(11rem,1fr)]">
+          <div className="grid grid-cols-3 gap-2">
+            {workChips.map((specialtyId) => {
+              const label = specialtyLabel(specialtyId, options);
+              const sectionItems = items.filter((item) => itemSpecialties(item)[0] === specialtyId);
+              const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
+              if (!tile) return null;
+              const price = priceForSpecialty(specialtyId, options, prices);
+              return (
+                <div key={specialtyId} className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSectionId(specialtyId);
+                      setShowAllWork(false);
+                      setPreviewItem(null);
+                    }}
+                    className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
+                    aria-label={`${label} section`}
+                  >
+                    <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                      {tile.media_type === 'video' ? (
+                        <video src={tile.media_url} className="h-full w-full object-cover" muted />
+                      ) : (
+                        <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </span>
+                  </button>
+                  <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
+                    <span className="truncate">{label}</span>
+                    {price && <span className="shrink-0">{price}</span>}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <WeeklyAvailability schedule={barber.weekly_schedule} />
         </div>
-      ) : null}
+      ) : (
+        <WeeklyAvailability schedule={barber.weekly_schedule} />
+      )}
       {previewItem && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"

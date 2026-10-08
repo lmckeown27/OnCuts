@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Plus, X } from 'lucide-react';
+import { WeeklyAvailability } from './DiscoverClientPortfolio';
+import type { WeeklySchedule } from '../types';
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
@@ -124,6 +126,7 @@ export default function OperatorPortfolioModal({
   const [previewItem, setPreviewItem] = useState<OperatorPortfolioItem | null>(null);
   const [operatorName, setOperatorName] = useState('');
   const [operatorPhoto, setOperatorPhoto] = useState<string | null>(null);
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null);
   const [specialtyPrices, setSpecialtyPrices] = useState<Record<string, number>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -250,6 +253,7 @@ export default function OperatorPortfolioModal({
           setOperatorName(name);
           setOperatorPhoto(photo);
           setSpecialtyPrices(priceByKey);
+          setWeeklySchedule(barber.weekly_schedule ?? null);
         }
       } catch {
         if (!cancelled) {
@@ -257,6 +261,7 @@ export default function OperatorPortfolioModal({
           setOperatorName('');
           setOperatorPhoto(null);
           setSpecialtyPrices({});
+          setWeeklySchedule(null);
         }
       }
     };
@@ -801,15 +806,15 @@ export default function OperatorPortfolioModal({
               )}
               {workFilter === 'all' ? (
                 workChips.length > 0 ? (
-                  <>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
+                  <div className="grid items-start gap-6 sm:grid-cols-[minmax(0,496px)_minmax(11rem,1fr)]">
+                    <div className="grid grid-cols-3 gap-2">
                       {workChips.map((specialtyId) => {
                         const name = specialtyLabel(specialtyId, options);
                         const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
                         const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
                         if (!tile) return null;
                         return (
-                          <div key={specialtyId} className="w-[160px] shrink-0">
+                          <div key={specialtyId} className="min-w-0">
                             <button
                               type="button"
                               onClick={() => {
@@ -841,8 +846,11 @@ export default function OperatorPortfolioModal({
                         );
                       })}
                     </div>
-                  </>
-                ) : null
+                    <WeeklyAvailability schedule={weeklySchedule} />
+                  </div>
+                ) : (
+                  <WeeklyAvailability schedule={weeklySchedule} />
+                )
               ) : filteredWork.length > 0 ? (
                 <>
                   <div className="grid grid-cols-3 gap-2 min-[1024px]:grid-cols-4">
