@@ -540,23 +540,17 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                     role="button"
                     tabIndex={0}
                     onClick={() => {
-                      if (!service.isOffered && !saving) {
-                        void toggleService(service.serviceId);
-                      }
+                      if (!saving) void toggleService(service.serviceId);
                     }}
                     onKeyDown={(e) => {
-                      if (
-                        (e.key === 'Enter' || e.key === ' ') &&
-                        !service.isOffered &&
-                        !saving
-                      ) {
+                      if ((e.key === 'Enter' || e.key === ' ') && !saving) {
                         e.preventDefault();
                         void toggleService(service.serviceId);
                       }
                     }}
-                    className={`rounded-[14px] border-2 px-3 py-3 transition-opacity ${
+                    className={`rounded-[14px] border-2 px-3 py-3 transition-opacity cursor-pointer ${
                       saving ? 'opacity-70' : ''
-                    } ${!service.isOffered ? 'cursor-pointer' : ''}`}
+                    }`}
                     style={{
                       backgroundColor: oliveMuted,
                       borderColor: `${olive}b8`,
