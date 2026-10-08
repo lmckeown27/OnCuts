@@ -928,25 +928,25 @@ export default function OperatorPortfolioModal({
                 </button>
               </div>
               {workFilter !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWorkFilter('all');
-                    setShowAllWork(false);
-                    closePreview();
-                  }}
-                  className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
-                >
-                  ‹ All specialties
-                </button>
-              )}
-              {workFilter !== 'all' && (
-                <h3 className="mb-4 text-center text-2xl font-bold text-[#171717]">
-                  {specialtyLabel(workFilter, options)}
-                  {priceForSpecialty(workFilter, options, specialtyPrices) && (
-                    <span className="ml-2">{priceForSpecialty(workFilter, options, specialtyPrices)}</span>
-                  )}
-                </h3>
+                <div className="relative mb-4 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWorkFilter('all');
+                      setShowAllWork(false);
+                      closePreview();
+                    }}
+                    className="absolute left-0 text-sm font-medium text-[#525252] hover:text-[#171717]"
+                  >
+                    ‹ All specialties
+                  </button>
+                  <h3 className="px-36 text-center text-2xl font-bold text-[#171717]">
+                    {specialtyLabel(workFilter, options)}
+                    {priceForSpecialty(workFilter, options, specialtyPrices) && (
+                      <span className="ml-2">{priceForSpecialty(workFilter, options, specialtyPrices)}</span>
+                    )}
+                  </h3>
+                </div>
               )}
               {workFilter === 'all' ? (
                 workChips.length > 0 ? (

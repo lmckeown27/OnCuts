@@ -282,23 +282,25 @@ export default function DiscoverClientPortfolio({
         <p className="text-sm text-[#737373]">Loading portfolio…</p>
       ) : openSectionId ? (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              setOpenSectionId(null);
-              setShowAllWork(false);
-              closePreview();
-            }}
-            className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
-          >
-            ‹ All specialties
-          </button>
-          <h3 className="mb-4 text-center text-2xl font-bold text-[#171717]">
-            {specialtyLabel(openSectionId, options)}
-            {priceForSpecialty(openSectionId, options, prices) && (
-              <span className="ml-2">{priceForSpecialty(openSectionId, options, prices)}</span>
-            )}
-          </h3>
+          <div className="relative mb-4 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                setOpenSectionId(null);
+                setShowAllWork(false);
+                closePreview();
+              }}
+              className="absolute left-0 text-sm font-medium text-[#525252] hover:text-[#171717]"
+            >
+              ‹ All specialties
+            </button>
+            <h3 className="px-36 text-center text-2xl font-bold text-[#171717]">
+              {specialtyLabel(openSectionId, options)}
+              {priceForSpecialty(openSectionId, options, prices) && (
+                <span className="ml-2">{priceForSpecialty(openSectionId, options, prices)}</span>
+              )}
+            </h3>
+          </div>
           {shownWork.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {shownWork.map((item) => (
