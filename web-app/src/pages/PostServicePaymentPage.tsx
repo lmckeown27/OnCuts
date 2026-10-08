@@ -26,6 +26,7 @@ import {
   deferPaymentTakeover,
 } from '../store/deferredPaymentBookings';
 import SatisfactionRating from '../components/SatisfactionRating';
+import PostServicePortfolioFlow from '../components/PostServicePortfolioFlow';
 import { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 import { useFrontendConfig, type PaymentTimingMode } from '../hooks/useFrontendConfig';
@@ -89,6 +90,7 @@ interface BookingDetails {
   notes?: string;
   barber: {
     id: string;
+    recordId?: string;
     firstName: string;
     lastName: string;
     profileImageUrl?: string;
@@ -1001,6 +1003,7 @@ export default function PostServicePaymentPage() {
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
   const [isUndoing, setIsUndoing] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [portfolioFlow, setPortfolioFlow] = useState<'pending' | 'open' | 'closed'>('pending');
 
   // Redirect to login if not authenticated (security: require identity verification)
   useEffect(() => {
@@ -1061,6 +1064,25 @@ export default function PostServicePaymentPage() {
       clearDeferredPaymentTakeover(bookingId);
     }
   }, [bookingId]);
+
+  useEffect(() => {
+    const providerId = booking?.barber?.recordId;
+    if (!isBarber || !booking?.tipDecidedAt || !providerId) return;
+    let cancelled = false;
+    api
+      .get<Array<{ booking_id?: string | null }>>(`/barbers/${providerId}/operator-portfolio`)
+      .then((items) => {
+        if (cancelled) return;
+        const alreadyAdded = Array.isArray(items) && items.some((item) => item.booking_id === booking.id);
+        setPortfolioFlow((current) => (current === 'closed' ? current : alreadyAdded ? 'closed' : 'open'));
+      })
+      .catch(() => {
+        if (!cancelled) setPortfolioFlow((current) => (current === 'closed' ? current : 'open'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isBarber, booking?.id, booking?.tipDecidedAt, booking?.barber?.recordId]);
 
   const handlePayLater = () => {
     if (!bookingId) return;
@@ -1458,6 +1480,13 @@ export default function PostServicePaymentPage() {
             )}
           </div>
         </div>
+        {tipDone && portfolioFlow === 'open' && booking.barber.recordId && (
+          <PostServicePortfolioFlow
+            bookingId={booking.id}
+            providerId={booking.barber.recordId}
+            onClose={() => setPortfolioFlow('closed')}
+          />
+        )}
       </div>
     );
   }
