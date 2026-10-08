@@ -669,7 +669,6 @@ export default function OperatorPortfolioModal({
 
   const previewUrl = draft?.previewUrl || editing?.media_url || '';
   const previewKind: SlotKind = draft?.kind || editing?.media_type || 'image';
-  const tagLabel = previewKind === 'video' ? 'Video' : 'Photo';
   const sectionIds = Array.from(
     new Set([...options.map((option) => option.id), ...items.flatMap((item) => specialtyIds(item))])
   );
@@ -1200,8 +1199,7 @@ export default function OperatorPortfolioModal({
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#737373]">{tagLabel}</p>
-          <h2 id="library-tag-title" className="mt-2 text-xl font-bold text-[#171717]">
+          <h2 id="library-tag-title" className="text-xl font-bold text-[#171717]">
             Categorize this service
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
