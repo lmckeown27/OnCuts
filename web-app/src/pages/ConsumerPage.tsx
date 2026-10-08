@@ -1052,25 +1052,22 @@ export default function ConsumerPage() {
       {/* Admin Dashboard — consumer-admins (no barber profile required) */}
       {isAdmin && showAdminDashboard && (
         <div
-          className={`fixed inset-0 z-50 min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
+          className={`fixed inset-0 z-[1100] min-h-[100dvh] flex items-center justify-center p-4 transition-colors duration-200 ${
             isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeAdminDashboard}
         >
           <div
-            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[98dvh] sm:max-h-[96vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+            className={`bg-stone-50 w-full max-w-lg rounded-2xl shadow-2xl max-h-[68dvh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
               isAdminDashboardVisible
                 ? 'opacity-100 translate-y-0'
-                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+                : 'opacity-0 translate-y-4 scale-95'
             }`}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Admin"
           >
-            <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
-              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
-            </div>
             <div className="relative px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
               <button
