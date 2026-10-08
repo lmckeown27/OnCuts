@@ -126,6 +126,7 @@ export default function OperatorPortfolioModal({
   const [workFilter, setWorkFilter] = useState('all');
   const [showAllWork, setShowAllWork] = useState(false);
   const [previewItem, setPreviewItem] = useState<OperatorPortfolioItem | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const [operatorName, setOperatorName] = useState('');
   const [operatorPhoto, setOperatorPhoto] = useState<string | null>(null);
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null);
@@ -140,6 +141,7 @@ export default function OperatorPortfolioModal({
   const dragRef = useRef<{ id: string; startX: number; moved: boolean; lastTarget: number } | null>(null);
   const suppressClick = useRef(false);
   const tagCloseTimer = useRef<number | null>(null);
+  const previewCloseTimer = useRef<number | null>(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -293,6 +295,7 @@ export default function OperatorPortfolioModal({
   useEffect(() => {
     return () => {
       if (tagCloseTimer.current) window.clearTimeout(tagCloseTimer.current);
+      if (previewCloseTimer.current) window.clearTimeout(previewCloseTimer.current);
       if (draftRef.current) revoke(draftRef.current.previewUrl);
     };
   }, []);
@@ -334,6 +337,27 @@ export default function OperatorPortfolioModal({
     setSourceMenu(null);
     setError(null);
     revealTag();
+  };
+
+  const openPreview = (item: OperatorPortfolioItem) => {
+    if (previewCloseTimer.current) {
+      window.clearTimeout(previewCloseTimer.current);
+      previewCloseTimer.current = null;
+    }
+    setPreviewItem(item);
+    setPreviewVisible(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPreviewVisible(true));
+    });
+  };
+
+  const closePreview = () => {
+    setPreviewVisible(false);
+    if (previewCloseTimer.current) return;
+    previewCloseTimer.current = window.setTimeout(() => {
+      previewCloseTimer.current = null;
+      setPreviewItem(null);
+    }, 150);
   };
 
   const openAddDialog = (specialtyId: string) => {
@@ -576,7 +600,7 @@ export default function OperatorPortfolioModal({
         return;
       }
       if (previewItem) {
-        setPreviewItem(null);
+        closePreview();
         return;
       }
       if (clientView) {
@@ -830,7 +854,7 @@ export default function OperatorPortfolioModal({
                 setSourceMenu(null);
                 setWorkFilter('all');
                 setShowAllWork(false);
-                setPreviewItem(null);
+                closePreview();
               }}
               className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
@@ -905,7 +929,7 @@ export default function OperatorPortfolioModal({
                   onClick={() => {
                     setWorkFilter('all');
                     setShowAllWork(false);
-                    setPreviewItem(null);
+                    closePreview();
                   }}
                   className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
                 >
@@ -928,7 +952,7 @@ export default function OperatorPortfolioModal({
                               onClick={() => {
                                 setWorkFilter(specialtyId);
                                 setShowAllWork(false);
-                                setPreviewItem(null);
+                                closePreview();
                               }}
                               className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                               aria-label={`${name} section`}
@@ -966,7 +990,7 @@ export default function OperatorPortfolioModal({
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setPreviewItem(item)}
+                        onClick={() => openPreview(item)}
                         className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                         aria-label={`${item.media_type === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(specialtyIds(item)[0] || '', options)}`}
                       >
@@ -996,23 +1020,27 @@ export default function OperatorPortfolioModal({
               ) : null}
               {previewItem && (
                 <div
-                  className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"
-                  onClick={() => setPreviewItem(null)}
+                  className={`fixed inset-0 z-[80] flex items-center justify-center p-4 transition-colors duration-150 ${
+                    previewVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
+                  }`}
+                  onClick={() => closePreview()}
                 >
                   <div
-                    className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+                    className={`w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
+                      previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                    }`}
                     onClick={(event) => event.stopPropagation()}
                   >
                     {previewItem.media_type === 'video' ? (
-                      <video src={previewItem.media_url} controls className="aspect-[9/16] w-full bg-black object-cover" />
+                      <video src={previewItem.media_url} controls className="aspect-[9/16] w-full rounded-t-2xl bg-black object-cover" />
                     ) : (
-                      <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full object-cover" />
+                      <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full rounded-t-2xl object-cover" />
                     )}
-                    <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center justify-between rounded-b-2xl px-4 py-3">
                       <p className="text-sm font-semibold text-[#171717]">
                         {specialtyLabel(specialtyIds(previewItem)[0] || '', options)}
                       </p>
-                      <button type="button" onClick={() => setPreviewItem(null)} className="text-sm font-medium text-[#525252]">
+                      <button type="button" onClick={() => closePreview()} className="text-sm font-medium text-[#525252]">
                         Close
                       </button>
                     </div>

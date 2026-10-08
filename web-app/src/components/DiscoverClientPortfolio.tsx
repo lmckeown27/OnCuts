@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
@@ -168,6 +168,8 @@ export default function DiscoverClientPortfolio({
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [showAllWork, setShowAllWork] = useState(false);
   const [previewItem, setPreviewItem] = useState<PortfolioItem | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const previewCloseTimer = useRef<number | null>(null);
 
   const name = barberDisplayName(barber);
   const photo = barberPhotoUrl(barber);
@@ -181,6 +183,7 @@ export default function DiscoverClientPortfolio({
     let cancelled = false;
     setLoading(true);
     setOpenSectionId(null);
+    setPreviewVisible(false);
     setPreviewItem(null);
     api
       .get<{ items?: PortfolioItem[]; specialtyIds?: string[] }>(`/barbers/${barber.id}/operator-portfolio/preview`)
@@ -216,6 +219,33 @@ export default function DiscoverClientPortfolio({
   );
   const openItems = openSectionId ? items.filter((item) => itemSpecialties(item)[0] === openSectionId) : [];
   const shownWork = showAllWork ? openItems : openItems.slice(0, 8);
+
+  const openPreview = (item: PortfolioItem) => {
+    if (previewCloseTimer.current) {
+      window.clearTimeout(previewCloseTimer.current);
+      previewCloseTimer.current = null;
+    }
+    setPreviewItem(item);
+    setPreviewVisible(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPreviewVisible(true));
+    });
+  };
+
+  const closePreview = () => {
+    setPreviewVisible(false);
+    if (previewCloseTimer.current) return;
+    previewCloseTimer.current = window.setTimeout(() => {
+      previewCloseTimer.current = null;
+      setPreviewItem(null);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewCloseTimer.current) window.clearTimeout(previewCloseTimer.current);
+    };
+  }, []);
 
   return (
     <div className="border-b border-[#e5e5e5] pb-6 last:border-b-0">
@@ -253,7 +283,7 @@ export default function DiscoverClientPortfolio({
             onClick={() => {
               setOpenSectionId(null);
               setShowAllWork(false);
-              setPreviewItem(null);
+              closePreview();
             }}
             className="mb-4 text-sm font-medium text-[#525252] hover:text-[#171717]"
           >
@@ -265,7 +295,7 @@ export default function DiscoverClientPortfolio({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setPreviewItem(item)}
+                  onClick={() => openPreview(item)}
                   className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                   aria-label={`${item.media_type === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(itemSpecialties(item)[0] || '', options)}`}
                 >
@@ -306,7 +336,7 @@ export default function DiscoverClientPortfolio({
                     onClick={() => {
                       setOpenSectionId(specialtyId);
                       setShowAllWork(false);
-                      setPreviewItem(null);
+                      closePreview();
                     }}
                     className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                     aria-label={`${label} section`}
@@ -334,23 +364,27 @@ export default function DiscoverClientPortfolio({
       )}
       {previewItem && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4"
-          onClick={() => setPreviewItem(null)}
+          className={`fixed inset-0 z-[80] flex items-center justify-center p-4 transition-colors duration-150 ${
+            previewVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
+          }`}
+          onClick={() => closePreview()}
         >
           <div
-            className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+            className={`w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
+              previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
             {previewItem.media_type === 'video' ? (
-              <video src={previewItem.media_url} controls className="aspect-[9/16] w-full bg-black object-cover" />
+              <video src={previewItem.media_url} controls className="aspect-[9/16] w-full rounded-t-2xl bg-black object-cover" />
             ) : (
-              <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full object-cover" />
+              <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full rounded-t-2xl object-cover" />
             )}
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between rounded-b-2xl px-4 py-3">
               <p className="text-sm font-semibold text-[#171717]">
                 {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
               </p>
-              <button type="button" onClick={() => setPreviewItem(null)} className="text-sm font-medium text-[#525252]">
+              <button type="button" onClick={() => closePreview()} className="text-sm font-medium text-[#525252]">
                 Close
               </button>
             </div>
