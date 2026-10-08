@@ -1041,11 +1041,14 @@ export default function OperatorPortfolioModal({
                       ) : (
                         <img src={previewItem.media_url} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
                       )}
-                      <div className="flex shrink-0 items-center justify-between rounded-b-2xl px-4 py-3">
-                        <p className="text-sm font-semibold text-[#171717]">
+                      <div className="relative flex shrink-0 items-center justify-center rounded-b-2xl px-4 py-3">
+                        <p className="text-center text-sm font-semibold text-[#171717]">
                           {specialtyLabel(specialtyIds(previewItem)[0] || '', options)}
+                          {priceForSpecialty(specialtyIds(previewItem)[0] || '', options, specialtyPrices) && (
+                            <span className="ml-1.5">{priceForSpecialty(specialtyIds(previewItem)[0] || '', options, specialtyPrices)}</span>
+                          )}
                         </p>
-                        <button type="button" onClick={() => closePreview()} className="text-sm font-medium text-[#525252]">
+                        <button type="button" onClick={() => closePreview()} className="absolute right-4 text-sm font-medium text-[#525252]">
                           Close
                         </button>
                       </div>
