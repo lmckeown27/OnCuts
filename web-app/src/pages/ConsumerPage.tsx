@@ -62,6 +62,7 @@ import {
   browseCategoryApiParam,
   type BrowseProviderCategory,
 } from '../config/providerCategories';
+import { SERVICE_TYPES } from '../config/services';
 import BrowseUtilityPill from '../components/BrowseUtilityPill';
 import DiscoverClientPortfolio from '../components/DiscoverClientPortfolio';
 import ConsumerHomeSegmentPill, {
@@ -1625,6 +1626,21 @@ export default function ConsumerPage() {
   );
 }
 
+function operatorBrowseKind(barber: Barber): 'Barber' | 'Beauty' {
+  const raw = String(barber.provider_type || '').trim().toLowerCase();
+  if (raw === 'beauty') return 'Beauty';
+  if (raw === 'barber') return 'Barber';
+  const offered = new Set(
+    (barber.specialties || []).map((name) => String(name).trim().toLowerCase()).filter(Boolean)
+  );
+  const performsBeauty = SERVICE_TYPES.some(
+    (service) =>
+      service.providerType === 'beauty' &&
+      (offered.has(service.name.toLowerCase()) || offered.has(service.id.toLowerCase()))
+  );
+  return performsBeauty ? 'Beauty' : 'Barber';
+}
+
 function getBarberNameSearchText(barber: Barber): string {
   return [
     barber.name,
@@ -2129,7 +2145,7 @@ function DiscoveryView({
           barber.display_name ||
           `${barber.first_name || ''} ${barber.last_name || ''}`.trim() ||
           'Provider',
-        subtitle: barber.specialties?.[0],
+        subtitle: operatorBrowseKind(barber),
       }));
   }, [barbers, barberSearchQuery]);
 

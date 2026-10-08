@@ -79,6 +79,8 @@ export default function BrowseUtilityPill({
   const [isEditingMiles, setIsEditingMiles] = useState(false);
   const milesInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  const [lockedPillWidth, setLockedPillWidth] = useState<number | null>(null);
   const selectedCategory =
     BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseCategory) ??
     BROWSE_PROVIDER_CATEGORIES[0];
@@ -132,6 +134,9 @@ export default function BrowseUtilityPill({
     if (mode === 'radius') {
       onMaxDistanceCommitted(Math.round(displayDistanceMiles));
     }
+    if (pillRef.current) {
+      setLockedPillWidth(pillRef.current.getBoundingClientRect().width);
+    }
     setMode('search');
   };
 
@@ -169,7 +174,14 @@ export default function BrowseUtilityPill({
 
   return (
     <div className="relative z-[800] mb-4 sm:mb-5">
-      <div className="w-full space-y-2">
+      <div
+        className={mode === 'search' ? 'mx-auto max-w-full space-y-2' : 'w-full space-y-2'}
+        style={
+          mode === 'search' && lockedPillWidth != null
+            ? { width: lockedPillWidth }
+            : undefined
+        }
+      >
         {mode === 'radius' ? (
           <div
             className="rounded-3xl border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3 space-y-2"
@@ -304,6 +316,7 @@ export default function BrowseUtilityPill({
           </div>
         ) : (
           <div
+            ref={pillRef}
             className={`rounded-full border bg-white/85 backdrop-blur-xl shadow-sm transition-all duration-300 ease-out h-14 lg:h-[clamp(3.5rem,4.2vw,4.75rem)] flex items-center px-2 sm:px-3 ${
               mode === 'search'
                 ? 'w-full border-olive-400/80 ring-2 ring-olive-400/40'
@@ -429,7 +442,7 @@ export default function BrowseUtilityPill({
 
         {showSuggestions && (
           <div className="rounded-2xl border border-gray-200/90 bg-white/90 backdrop-blur-xl shadow-sm p-3 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Providers</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Operators</p>
             <ul className="space-y-1">
               {searchSuggestions.slice(0, 6).map((suggestion) => (
                 <li key={suggestion.id}>
