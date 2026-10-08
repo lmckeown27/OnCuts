@@ -175,7 +175,7 @@ export default function BrowseUtilityPill({
   return (
     <div className="relative z-[800] mb-4 sm:mb-5">
       <div
-        className={mode === 'search' ? 'mx-auto max-w-full space-y-2' : 'w-full space-y-2'}
+        className={`relative ${mode === 'search' ? 'mx-auto max-w-full space-y-2' : 'w-full space-y-2'}`}
         style={
           mode === 'search' && lockedPillWidth != null
             ? { width: lockedPillWidth }
@@ -441,7 +441,7 @@ export default function BrowseUtilityPill({
         )}
 
         {showSuggestions && (
-          <div className="rounded-2xl border border-gray-200/90 bg-white/90 backdrop-blur-xl shadow-sm p-3 space-y-2">
+          <div className="absolute left-0 right-0 top-full z-20 rounded-2xl border border-gray-200/90 bg-white/90 backdrop-blur-xl shadow-sm p-3 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Operators</p>
             <ul className="space-y-1">
               {searchSuggestions.slice(0, 6).map((suggestion) => (
