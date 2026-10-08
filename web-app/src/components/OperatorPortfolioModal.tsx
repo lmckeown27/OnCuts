@@ -1196,6 +1196,16 @@ export default function OperatorPortfolioModal({
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-6">
+          {editing && previewKind === 'image' && !editing.is_cover && (
+            <button
+              type="button"
+              disabled={saving || !tagSelection[0]}
+              onClick={() => void setAsCover(editing, tagSelection[0])}
+              className="mb-4 h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Set as cover
+            </button>
+          )}
           <h2 id="library-tag-title" className="text-xl font-bold text-[#171717]">
             Categorize this service
           </h2>
@@ -1220,17 +1230,7 @@ export default function OperatorPortfolioModal({
           </div>
           {options.length === 0 && <p className="mt-3 text-sm text-[#737373]">Add services to your profile before tagging work.</p>}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-          {editing && previewKind === 'image' && !editing.is_cover && (
-            <button
-              type="button"
-              disabled={saving || !tagSelection[0]}
-              onClick={() => void setAsCover(editing, tagSelection[0])}
-              className="mt-6 block w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
-            >
-              Set as cover
-            </button>
-          )}
-          <div className={`${editing && previewKind === 'image' && !editing.is_cover ? 'mt-3' : 'mt-6'} flex items-center justify-between`}>
+          <div className="mt-6 flex items-center justify-between">
             <button
               type="button"
               className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
