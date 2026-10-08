@@ -120,6 +120,7 @@ export default function OperatorPortfolioModal({
   const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [tagVisible, setTagVisible] = useState(false);
+  const [addingSpecialtyId, setAddingSpecialtyId] = useState<string | null>(null);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [clientView, setClientView] = useState(false);
   const [workFilter, setWorkFilter] = useState('all');
@@ -309,24 +310,44 @@ export default function OperatorPortfolioModal({
       setEditing(null);
       setReplaceId(null);
       setTagSelection([]);
+      setAddingSpecialtyId(null);
     }, 150);
   };
 
-  const openTagForItem = (item: OperatorPortfolioItem) => {
+  const revealTag = () => {
     if (tagCloseTimer.current) {
       window.clearTimeout(tagCloseTimer.current);
       tagCloseTimer.current = null;
     }
-    setEditing(item);
-    setReplaceId(item.id);
-    setTagSelection(specialtyIds(item).slice(0, 1));
-    setSourceMenu(null);
     setTagOpen(true);
     setTagVisible(false);
-    setError(null);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setTagVisible(true));
     });
+  };
+
+  const openTagForItem = (item: OperatorPortfolioItem) => {
+    setEditing(item);
+    setReplaceId(item.id);
+    setTagSelection(specialtyIds(item).slice(0, 1));
+    setAddingSpecialtyId(null);
+    setSourceMenu(null);
+    setError(null);
+    revealTag();
+  };
+
+  const openAddDialog = (specialtyId: string) => {
+    if (draftRef.current) {
+      revoke(draftRef.current.previewUrl);
+      setDraft(null);
+    }
+    setEditing(null);
+    setReplaceId(null);
+    setTagSelection([specialtyId]);
+    setAddingSpecialtyId(specialtyId);
+    setSourceMenu(null);
+    setError(null);
+    revealTag();
   };
 
   const publishFile = async (kind: SlotKind, file: File, target: UploadTarget) => {
@@ -370,6 +391,7 @@ export default function OperatorPortfolioModal({
         return next;
       });
       if (!created?.id) await loadItems();
+      if (addingSpecialtyId) closeTag(false);
     } catch (err) {
       setError(uploadErrorMessage(err));
     } finally {
@@ -401,6 +423,23 @@ export default function OperatorPortfolioModal({
     setCameraKind(null);
     if (fileInputRef.current) {
       fileInputRef.current.accept = kind === 'video' ? VIDEO_ACCEPT : PHOTO_ACCEPT;
+      fileInputRef.current.click();
+    }
+  };
+
+  const startAddUpload = (via: 'camera' | 'file') => {
+    const specialtyId = tagSelection[0] || addingSpecialtyId;
+    if (!specialtyId || !providerId || saving) return;
+    setUploadTarget({ specialtyId, asCover: false, replaceId: null, kind: 'image' });
+    setReplaceId(null);
+    setCameraNote(null);
+    if (via === 'camera') {
+      setCameraKind('both');
+      return;
+    }
+    setCameraKind(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = `${PHOTO_ACCEPT},${VIDEO_ACCEPT}`;
       fileInputRef.current.click();
     }
   };
@@ -1061,16 +1100,8 @@ export default function OperatorPortfolioModal({
                             type="button"
                             data-slot-button
                             disabled={!providerId || saving}
-                            onClick={() =>
-                              setSourceMenu((current) =>
-                                current?.key === `add-${specialtyId}`
-                                  ? null
-                                  : { key: `add-${specialtyId}`, specialtyId, asCover: false }
-                              )
-                            }
-                            className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white ${
-                              sourceMenu?.key === `add-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'
-                            }`}
+                            onClick={() => openAddDialog(specialtyId)}
+                            className="relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white border-[#737373]"
                             aria-label={`Add to ${specialtyLabel(specialtyId, options)}`}
                           >
                             <span className="flex h-full flex-col items-center justify-center gap-2">
@@ -1080,7 +1111,6 @@ export default function OperatorPortfolioModal({
                               <span className="text-xs font-medium text-[#525252]">Add</span>
                             </span>
                           </button>
-                          {renderSourceMenu(`add-${specialtyId}`, specialtyId, false, null)}
                         </div>
                       </div>
                     </div>
@@ -1188,7 +1218,7 @@ export default function OperatorPortfolioModal({
     </div>
   );
 
-  const tagModal = tagOpen && previewUrl && (
+  const tagModal = tagOpen && (previewUrl || addingSpecialtyId) && (
     <div
       className={`fixed inset-0 z-[90] flex items-center justify-center p-4 transition-colors duration-150 ${
         tagVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
@@ -1209,10 +1239,19 @@ export default function OperatorPortfolioModal({
         }`}
       >
         <div className="hidden w-[280px] shrink-0 bg-[#f5f5f5] p-6 sm:block">
-          {previewKind === 'video' ? (
-            <video src={previewUrl} controls className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+          {previewUrl ? (
+            previewKind === 'video' ? (
+              <video src={previewUrl} controls className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+            ) : (
+              <img src={previewUrl} alt="" className="aspect-[9/16] w-full rounded-xl object-cover" />
+            )
           ) : (
-            <img src={previewUrl} alt="" className="aspect-[9/16] w-full rounded-xl object-cover" />
+            <div className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#737373] bg-white">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                <Plus className="h-5 w-5" />
+              </span>
+              <span className="text-xs font-medium text-[#525252]">Add</span>
+            </div>
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-6">
@@ -1250,6 +1289,26 @@ export default function OperatorPortfolioModal({
           </div>
           {options.length === 0 && <p className="mt-3 text-sm text-[#737373]">Add services to your profile before tagging work.</p>}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {addingSpecialtyId && !previewUrl ? (
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={saving || !tagSelection[0]}
+                onClick={() => startAddUpload('file')}
+                className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Upload from files
+              </button>
+              <button
+                type="button"
+                disabled={saving || !tagSelection[0]}
+                onClick={() => startAddUpload('camera')}
+                className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Upload from camera
+              </button>
+            </div>
+          ) : (
           <div className="mt-6 flex items-center justify-between">
             <button
               type="button"
@@ -1289,6 +1348,7 @@ export default function OperatorPortfolioModal({
               {saving ? 'Saving…' : 'Done'}
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>
