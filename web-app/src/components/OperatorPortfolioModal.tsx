@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, Minus, Plus, X } from 'lucide-react';
 import { WeeklyAvailability } from './DiscoverClientPortfolio';
 import type { WeeklySchedule } from '../types';
 import api from '../services/api.service';
@@ -443,6 +443,46 @@ export default function OperatorPortfolioModal({
         setItems((current) => current.map((item) => (item.id === editing.id ? { ...item, ...updated, specialties: tagSelection } : item)));
       }
       closeTag(false);
+    } catch (err) {
+      setError(uploadErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeSpecialty = async (specialtyId: string) => {
+    if (!providerId || saving) return;
+    const option = options.find((entry) => entry.id === specialtyId);
+    const nameKey = (option?.name || '').trim().toLowerCase();
+    const idKey = specialtyId.trim().toLowerCase();
+    const matchesSpecialty = (value: string | null | undefined) => {
+      const key = (value || '').trim().toLowerCase();
+      return Boolean(key) && (key === nameKey || key === idKey);
+    };
+    setSaving(true);
+    setError(null);
+    try {
+      const barber = await barberService.getBarberById(providerId);
+      const specialties = (barber.specialties || []).filter((entry) => !matchesSpecialty(entry));
+      const pricing = (barber.pricing || [])
+        .filter((entry) => !matchesSpecialty(entry.name) && !matchesSpecialty(entry.id))
+        .map((entry) => ({
+          name: entry.name,
+          price: Number(entry.price),
+          duration_minutes: entry.duration_minutes,
+        }));
+      await barberService.updateBarberProfile(providerId, { specialties, pricing });
+      const doomed = items.filter((item) => matchesSpecialty(specialtyIds(item)[0]));
+      await Promise.all(
+        doomed.map((item) => api.delete(`/barbers/${providerId}/operator-portfolio/${item.id}`).catch(() => undefined))
+      );
+      const nextOrder = orderRef.current.filter((id) => id !== specialtyId);
+      orderRef.current = nextOrder;
+      setSectionOrder(nextOrder);
+      await api.put(`/barbers/${providerId}/operator-portfolio/section-order`, { specialtyIds: nextOrder }).catch(() => undefined);
+      setItems((current) => current.filter((item) => !matchesSpecialty(specialtyIds(item)[0])));
+      setOptions((current) => current.filter((entry) => entry.id !== specialtyId));
+      if (openSectionId === specialtyId) setOpenSectionId(null);
     } catch (err) {
       setError(uploadErrorMessage(err));
     } finally {
@@ -1084,6 +1124,26 @@ export default function OperatorPortfolioModal({
                             <span className="px-2 text-center text-xs font-medium text-[#525252]">Set cover</span>
                           </span>
                         )}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${name}`}
+                        disabled={!providerId || saving}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={() => void removeSpecialty(specialtyId)}
+                        className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[#171717] shadow disabled:opacity-50"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Add a service"
+                        disabled={saving || !onOpenServices}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={() => onOpenServices?.()}
+                        className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[#171717] shadow disabled:opacity-50"
+                      >
+                        <Plus className="h-4 w-4" />
                       </button>
                     </div>
                     <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
