@@ -2615,7 +2615,7 @@ function DiscoveryView({
       ) : (
         <>
       <div className="mt-2 lg:mt-3 flex flex-col lg:flex-row gap-4 lg:gap-5 lg:flex-1 lg:min-h-0">
-        <div className="lg:flex-1 min-w-0 relative lg:min-h-0 lg:h-full flex flex-col">
+        <div className="lg:flex-1 lg:basis-0 min-w-0 relative lg:min-h-0 lg:h-full flex flex-col">
           <DiscoverMap
             pins={discoverPins}
             selectedAreaKey={selectedDiscoverAreaKey}
@@ -2643,7 +2643,7 @@ function DiscoveryView({
             </button>
           )}
         </div>
-        <div className="lg:w-[clamp(21rem,30%,36rem)] shrink-0 lg:min-h-0 lg:flex lg:flex-col">
+        <div className="lg:flex-1 lg:basis-0 lg:min-w-0 lg:min-h-0 lg:flex lg:flex-col">
           {discoverListBarbers.length > 0 ? (
             <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
               {discoverListBarbers.map((barber) => (
