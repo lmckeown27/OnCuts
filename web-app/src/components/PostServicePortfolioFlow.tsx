@@ -408,7 +408,7 @@ export default function PostServicePortfolioFlow({
             </div>
           </div>
           <h2 id="portfolio-prompt-title" className="text-xl font-bold text-[#171717]">
-            Add this cut to your portfolio?
+            Add this service to your portfolio?
           </h2>
           <p className="mt-2 text-sm text-[#525252]">Up to 4 photos and 1 video.</p>
           <div className="mt-6 flex flex-col gap-3">

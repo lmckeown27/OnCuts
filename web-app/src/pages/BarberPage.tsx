@@ -43,6 +43,7 @@ import { resolveBookingAppointmentDuration } from '../config/services';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
 import { colors } from '../utils/colors';
+import { pickProfilePhotoUrl, useResolvedProfilePhoto } from '../utils/profilePhoto';
 import barberService, { TimeBlock } from '../services/barber.service';
 import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
@@ -1547,6 +1548,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   
   // Inline booking details state (shown within DayModal instead of separate popup)
   const [selectedBookingInline, setSelectedBookingInline] = useState<ConfirmedBooking | null>(null);
+  const inlineConsumerPhoto = useResolvedProfilePhoto(
+    selectedBookingInline?.consumer,
+    selectedBookingInline?.consumerId
+  );
   const [isEditingBooking, setIsEditingBooking] = useState(false);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
   const [isRemovingBooking, setIsRemovingBooking] = useState(false);
@@ -2592,9 +2597,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       {/* Customer Info */}
                       <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                          {(selectedBookingInline.consumer.profilePictureUrl || selectedBookingInline.consumer.avatar) ? (
+                          {inlineConsumerPhoto ? (
                             <img 
-                              src={selectedBookingInline.consumer.profilePictureUrl || selectedBookingInline.consumer.avatar} 
+                              src={inlineConsumerPhoto} 
                               alt="Customer" 
                               className="w-14 h-14 rounded-full object-cover"
                             />
@@ -3369,6 +3374,7 @@ function BookingsModal({ isVisible, onClose, barberId, onMarkedComplete }: { isV
             <div className="space-y-3">
               {filteredBookings.map((booking) => {
                 const { date, time } = formatDateTime(booking.scheduledTime);
+                const consumerPhoto = pickProfilePhotoUrl(booking.consumer, booking.consumerAvatar);
                 // Mark complete only after service is paid (pay-on-accept)
                 const showMarkComplete = payOnAccept
                   ? booking.status === 'PAID'
@@ -3394,9 +3400,9 @@ function BookingsModal({ isVisible, onClose, barberId, onMarkedComplete }: { isV
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                          {(booking.consumer?.avatar || booking.consumer?.profileImageUrl) ? (
+                          {consumerPhoto ? (
                             <img 
-                              src={booking.consumer.avatar || booking.consumer.profileImageUrl} 
+                              src={consumerPhoto} 
                               alt="" 
                               className="w-full h-full object-cover"
                             />

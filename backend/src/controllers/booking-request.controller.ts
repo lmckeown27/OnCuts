@@ -156,7 +156,13 @@ export async function acceptBookingRequest(req: Request, res: Response) {
             consumer.first_name as consumer_first_name,
             consumer.last_name as consumer_last_name,
             consumer.email as consumer_email,
-            consumer."avatarUrl" as consumer_profile_url,
+            COALESCE(
+              NULLIF(BTRIM(to_jsonb(consumer)->>'avatarUrl'), ''),
+              NULLIF(BTRIM(to_jsonb(consumer)->>'avatar_url'), ''),
+              NULLIF(BTRIM(to_jsonb(consumer)->>'profile_picture_url'), ''),
+              NULLIF(BTRIM(to_jsonb(consumer)->>'profilePictureUrl'), ''),
+              NULLIF(BTRIM(to_jsonb(c)->>'consumer_profile_picture'), '')
+            ) as consumer_profile_url,
             barber."userId" as barber_user_id
           FROM bookings b
           LEFT JOIN conversations c ON c.booking_id = b.id

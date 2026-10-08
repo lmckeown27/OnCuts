@@ -114,6 +114,22 @@ const BOOKING_SLOT_CONFLICT_MESSAGE =
 const BOOKING_EFFECTIVE_SCHEDULED_TIME = `COALESCE(b."requestedAt", c.scheduled_time)`;
 const BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV = `COALESCE(b."requestedAt", conv.scheduled_time)`;
 
+/**
+ * Profile photos are stored as Prisma `avatarUrl` or a legacy column
+ * (`avatar_url`, `profile_picture_url`). to_jsonb reads whichever exists.
+ * Optional conversation snapshot is used only when the user row has no photo.
+ */
+function userPhotoSql(userAlias: string, conversationAlias?: string, conversationColumn?: string): string {
+  const fromUser = `COALESCE(
+    NULLIF(BTRIM(to_jsonb(${userAlias})->>'avatarUrl'), ''),
+    NULLIF(BTRIM(to_jsonb(${userAlias})->>'avatar_url'), ''),
+    NULLIF(BTRIM(to_jsonb(${userAlias})->>'profile_picture_url'), ''),
+    NULLIF(BTRIM(to_jsonb(${userAlias})->>'profilePictureUrl'), '')
+  )`;
+  if (!conversationAlias || !conversationColumn) return fromUser;
+  return `COALESCE(${fromUser}, NULLIF(BTRIM(to_jsonb(${conversationAlias})->>'${conversationColumn}'), ''))`;
+}
+
 function normalizeApiTimestamp(value: unknown): string | null {
   if (value == null) return null;
   const date = value instanceof Date ? value : new Date(String(value));
@@ -802,10 +818,10 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         b."reviewedAt",
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
-        consumer."avatarUrl" as consumer_avatar,
+        ${userPhotoSql('consumer', 'c', 'consumer_profile_picture')} as consumer_avatar,
         barber_user.first_name as barber_first_name,
         barber_user.last_name as barber_last_name,
-        barber_user."avatarUrl" as barber_avatar,
+        ${userPhotoSql('barber_user', 'c', 'barber_profile_picture')} as barber_avatar,
         barber.id as barber_record_id,
         c.id as conversation_id,
         c.location as conv_location,
@@ -949,12 +965,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
         barber_user.id as barber_user_id,
         barber_user.first_name as barber_first_name,
         barber_user.last_name as barber_last_name,
-        barber_user."avatarUrl" as barber_profile_url,
+        ${userPhotoSql('barber_user', 'conv', 'barber_profile_picture')} as barber_profile_url,
         barber_user.role as barber_user_role,
         consumer.id as consumer_user_id,
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
-        consumer."avatarUrl" as consumer_profile_url,
+        ${userPhotoSql('consumer', 'conv', 'consumer_profile_picture')} as consumer_profile_url,
         consumer.role as consumer_user_role,
         rr.id as rr_id,
         rr.requested_time as rr_requested_time,
@@ -1028,13 +1044,17 @@ router.get('/:id', authenticate, async (req, res, next) => {
         recordId: row.barber_record_id,
         firstName: row.barber_first_name,
         lastName: row.barber_last_name,
-        profileImageUrl: row.barber_profile_url,
+        avatar: row.barber_profile_url || null,
+        profileImageUrl: row.barber_profile_url || null,
+        profilePictureUrl: row.barber_profile_url || null,
       },
       consumer: {
         id: row.consumer_user_id,
         firstName: row.consumer_first_name,
         lastName: row.consumer_last_name,
-        profileImageUrl: row.consumer_profile_url,
+        avatar: row.consumer_profile_url || null,
+        profileImageUrl: row.consumer_profile_url || null,
+        profilePictureUrl: row.consumer_profile_url || null,
       },
       conversationId: row.conversation_id || null,
       pendingRescheduleRequest: formatPendingRescheduleRequest(row),
@@ -1619,10 +1639,10 @@ router.get('/', authenticate, async (req, res, next) => {
         b."reviewedAt",
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
-        consumer."avatarUrl" as consumer_avatar,
+        ${userPhotoSql('consumer', 'c', 'consumer_profile_picture')} as consumer_avatar,
         barber_user.first_name as barber_first_name,
         barber_user.last_name as barber_last_name,
-        barber_user."avatarUrl" as barber_avatar,
+        ${userPhotoSql('barber_user', 'c', 'barber_profile_picture')} as barber_avatar,
         -- Pull additional data from linked conversation
         c.location as conv_location,
         c.location_details as conv_location_details,
@@ -1716,15 +1736,21 @@ router.get('/', authenticate, async (req, res, next) => {
           // Full barber name for display
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
           barberAvatar: row.barber_avatar || null,
+          consumerAvatar: row.consumer_avatar || null,
           consumer: {
+            id: row.consumerId,
             firstName: row.consumer_first_name,
             lastName: row.consumer_last_name,
-            avatar: row.consumer_avatar,
+            avatar: row.consumer_avatar || null,
+            profileImageUrl: row.consumer_avatar || null,
+            profilePictureUrl: row.consumer_avatar || null,
           },
           barber: {
             firstName: row.barber_first_name,
             lastName: row.barber_last_name,
-            avatar: row.barber_avatar,
+            avatar: row.barber_avatar || null,
+            profileImageUrl: row.barber_avatar || null,
+            profilePictureUrl: row.barber_avatar || null,
           },
           pendingRescheduleRequest: formatPendingRescheduleRequest(row),
         };

@@ -17,6 +17,7 @@ import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import { useResolvedProfilePhoto } from '../utils/profilePhoto';
 import type { Barber } from '../types';
 
 interface BookingDetailsModalProps {
@@ -37,6 +38,11 @@ export default function BookingDetailsModal({
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { paymentTimingMode } = useFrontendConfig();
+  const consumerPhoto = useResolvedProfilePhoto(
+    booking?.consumer,
+    booking?.consumer?.id || booking?.consumerId,
+    booking?.consumerAvatar
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -580,9 +586,9 @@ export default function BookingDetailsModal({
               {/* Customer Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                 <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                  {(booking.consumer?.avatar || booking.consumer?.profileImageUrl) ? (
+                  {consumerPhoto ? (
                     <img 
-                      src={booking.consumer.avatar || booking.consumer.profileImageUrl} 
+                      src={consumerPhoto} 
                       alt="Customer" 
                       className="w-14 h-14 rounded-full object-cover"
                     />

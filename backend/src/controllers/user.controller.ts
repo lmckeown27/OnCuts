@@ -80,10 +80,16 @@ export const getUserProfile = async (req: Request, res: Response) => {
 
     // Query real PostgreSQL database
     const result = await pool.query(
-      `SELECT id, email, first_name, last_name, role, "campusId", 
-              "avatarUrl" as profile_picture_url, bio, email_verified, "createdAt",
-              has_platform_password
-       FROM users WHERE id = $1`,
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.role, u."campusId",
+              COALESCE(
+                NULLIF(BTRIM(to_jsonb(u)->>'avatarUrl'), ''),
+                NULLIF(BTRIM(to_jsonb(u)->>'avatar_url'), ''),
+                NULLIF(BTRIM(to_jsonb(u)->>'profile_picture_url'), ''),
+                NULLIF(BTRIM(to_jsonb(u)->>'profilePictureUrl'), '')
+              ) as profile_picture_url,
+              u.bio, u.email_verified, u."createdAt",
+              u.has_platform_password
+       FROM users u WHERE u.id = $1`,
       [id]
     );
 

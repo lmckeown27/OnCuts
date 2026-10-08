@@ -30,6 +30,7 @@ import PostServicePortfolioFlow from '../components/PostServicePortfolioFlow';
 import { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 import { useFrontendConfig, type PaymentTimingMode } from '../hooks/useFrontendConfig';
+import { useResolvedProfilePhoto } from '../utils/profilePhoto';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -1004,6 +1005,7 @@ export default function PostServicePaymentPage() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [portfolioFlow, setPortfolioFlow] = useState<'pending' | 'open' | 'closed'>('pending');
+  const barberPhoto = useResolvedProfilePhoto(booking?.barber, booking?.barber?.id);
 
   // Redirect to login if not authenticated (security: require identity verification)
   useEffect(() => {
@@ -1562,9 +1564,9 @@ export default function PostServicePaymentPage() {
             <div className="p-6 border-b">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                  {booking.barber.profileImageUrl ? (
+                  {barberPhoto ? (
                     <img 
-                      src={booking.barber.profileImageUrl} 
+                      src={barberPhoto} 
                       alt={booking.barber.firstName}
                       className="w-full h-full object-cover"
                     />
