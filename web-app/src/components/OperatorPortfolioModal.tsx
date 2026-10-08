@@ -717,7 +717,7 @@ export default function OperatorPortfolioModal({
           type="button"
           data-slot-button
           onClick={() => openTagForItem(item)}
-          className="relative block w-full overflow-hidden rounded-xl border border-[#e5e5e5] aspect-[9/16]"
+          className="relative block w-full overflow-hidden rounded-xl border border-[#e5e5e5] aspect-[9/16] hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
           aria-label={`${kind === 'video' ? 'Video' : 'Photo'}, ${specialtyLabel(specialtyId, options)} — edit`}
         >
           {kind === 'video' ? (
@@ -1088,7 +1088,7 @@ export default function OperatorPortfolioModal({
                                 : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
                             );
                           }}
-                          className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
+                          className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2 ${
                             cover
                               ? 'border border-[#e5e5e5]'
                               : `border border-dashed bg-white ${sourceMenu?.key === `cover-${specialtyId}` ? 'border-[#737373] bg-[#f5f5f5]' : 'border-[#737373]'}`
@@ -1129,7 +1129,7 @@ export default function OperatorPortfolioModal({
                             data-slot-button
                             disabled={!providerId || saving}
                             onClick={() => openAddDialog(specialtyId)}
-                            className="relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white border-[#737373]"
+                            className="relative block w-full overflow-hidden rounded-xl aspect-[9/16] border border-dashed bg-white border-[#737373] hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
                             aria-label={`Add to ${specialtyLabel(specialtyId, options)}`}
                           >
                             <span className="flex h-full flex-col items-center justify-center gap-2">
