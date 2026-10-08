@@ -388,45 +388,43 @@ export default function PostServicePortfolioFlow({
   const activeKind: SlotKind = activeSlot === VIDEO_SLOT ? 'video' : 'image';
 
   const prompt = (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(23,23,23,0.45)] p-4" onClick={closeFlow}>
-      <div
-        ref={promptRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="portfolio-prompt-title"
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => trapTab(event, promptRef.current)}
-        className="w-full max-w-[440px] rounded-2xl bg-white px-8 pt-8 pb-6 shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
-      >
-        <div className="mb-5 flex justify-center gap-2" aria-hidden>
-          {[0, 1].map((tile) => (
-            <div
-              key={tile}
-              className="aspect-[9/16] w-12 rounded-md border border-[#e5e5e5]"
-              style={{
-                backgroundImage: 'repeating-linear-gradient(135deg, #f5f5f5, #f5f5f5 4px, #e5e5e5 4px, #e5e5e5 5px)',
-              }}
-            />
-          ))}
-          <div className="flex aspect-[9/16] w-12 items-center justify-center rounded-md border border-dashed border-[#d4d4d4] text-[#737373]">
-            <Plus className="h-4 w-4" />
+    <div className="fixed inset-0 z-[90] overflow-y-auto bg-gray-50">
+      <div className="mx-auto flex min-h-full max-w-lg items-center px-4 py-8">
+        <div ref={promptRef} className="w-full rounded-2xl bg-white p-8 text-center shadow-lg">
+          <div className="mb-5 flex justify-center gap-2" aria-hidden>
+            {[0, 1].map((tile) => (
+              <div
+                key={tile}
+                className="aspect-[9/16] w-12 rounded-md border border-[#e5e5e5]"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(135deg, #f5f5f5, #f5f5f5 4px, #e5e5e5 4px, #e5e5e5 5px)',
+                }}
+              />
+            ))}
+            <div className="flex aspect-[9/16] w-12 items-center justify-center rounded-md border border-dashed border-[#d4d4d4] text-[#737373]">
+              <Plus className="h-4 w-4" />
+            </div>
           </div>
-        </div>
-        <h2 id="portfolio-prompt-title" className="text-xl font-bold text-[#171717]">
-          Add this cut to your portfolio?
-        </h2>
-        <p className="mt-2 text-sm text-[#525252]">Up to 4 photos and 1 video. Clients browsing by specialty see it.</p>
-        <div className="mt-6 flex justify-end gap-2">
-          <button type="button" onClick={closeFlow} className="h-11 rounded-lg px-4 text-sm font-semibold text-[#171717] hover:bg-black/5">
-            Not now
-          </button>
-          <button
-            type="button"
-            onClick={() => setStep('upload')}
-            className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white hover:bg-[#4e655c]"
-          >
-            Yes, add work
-          </button>
+          <h2 id="portfolio-prompt-title" className="text-xl font-bold text-[#171717]">
+            Add this cut to your portfolio?
+          </h2>
+          <p className="mt-2 text-sm text-[#525252]">Up to 4 photos and 1 video. Clients browsing by specialty see it.</p>
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setStep('upload')}
+              className="w-full rounded-xl bg-[#5a7268] py-3 text-sm font-semibold text-white hover:bg-[#4e655c]"
+            >
+              Yes, add work
+            </button>
+            <button
+              type="button"
+              onClick={closeFlow}
+              className="w-full rounded-xl py-3 text-sm font-semibold text-[#171717] hover:bg-black/5"
+            >
+              Not now
+            </button>
+          </div>
         </div>
       </div>
     </div>
