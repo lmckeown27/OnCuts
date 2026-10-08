@@ -73,7 +73,7 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[1000] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="blocked-providers-title"

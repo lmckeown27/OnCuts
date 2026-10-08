@@ -792,7 +792,7 @@ export default function ConsumerPage() {
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>
       <IosAppDownloadBanner variant="consumer" />
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="relative z-[900] bg-white shadow-sm border-b border-gray-200">
         <div className="w-full mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
             {/* Left section — logo home + Become an Operator / Operator View */}
@@ -1013,7 +1013,7 @@ export default function ConsumerPage() {
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1000] p-2 sm:p-4 transition-all duration-150 ease-out ${
             isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeProfileEditor}
