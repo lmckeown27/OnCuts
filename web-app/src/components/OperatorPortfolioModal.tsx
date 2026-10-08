@@ -389,8 +389,8 @@ export default function OperatorPortfolioModal({
     }
   };
 
-  const setAsCover = async (item: OperatorPortfolioItem) => {
-    const specialtyId = specialtyIds(item)[0];
+  const setAsCover = async (item: OperatorPortfolioItem, specialtyOverride?: string) => {
+    const specialtyId = specialtyOverride || specialtyIds(item)[0];
     if (!specialtyId || item.media_type !== 'image' || !providerId || saving) return;
     setSaving(true);
     setError(null);
@@ -399,13 +399,15 @@ export default function OperatorPortfolioModal({
         specialties: [specialtyId],
         is_cover: true,
       });
+      const nextItem = { ...item, ...updated, is_cover: true, specialties: [specialtyId] };
       setItems((current) =>
         current.map((entry) => {
-          if (entry.id === item.id) return { ...entry, ...updated, is_cover: true, specialties: [specialtyId] };
+          if (entry.id === item.id) return nextItem;
           if (specialtyIds(entry)[0] === specialtyId && entry.is_cover) return { ...entry, is_cover: false };
           return entry;
         })
       );
+      setEditing((current) => (current?.id === item.id ? nextItem : current));
     } catch (err) {
       setError(uploadErrorMessage(err));
     } finally {
@@ -653,15 +655,6 @@ export default function OperatorPortfolioModal({
         >
           <X className="h-4 w-4" />
         </button>
-        {kind === 'image' && !item.is_cover && (
-          <button
-            type="button"
-            onClick={() => void setAsCover(item)}
-            className="mt-2 block w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700"
-          >
-            Set as cover
-          </button>
-        )}
         {renderSourceMenu(`item-${item.id}`, specialtyId, false, item.id)}
       </div>
     );
@@ -1001,13 +994,17 @@ export default function OperatorPortfolioModal({
                           type="button"
                           data-slot-button
                           disabled={!providerId || saving}
-                          onClick={() =>
+                          onClick={() => {
+                            if (cover) {
+                              openTagForItem(cover);
+                              return;
+                            }
                             setSourceMenu((current) =>
                               current?.key === `cover-${specialtyId}`
                                 ? null
                                 : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
-                            )
-                          }
+                            );
+                          }}
                           className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] ${
                             cover
                               ? 'border border-[#e5e5e5]'
@@ -1036,7 +1033,7 @@ export default function OperatorPortfolioModal({
                             <X className="h-4 w-4" />
                           </button>
                         )}
-                        {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, null)}
+                        {renderSourceMenu(`cover-${specialtyId}`, specialtyId, true, cover?.id ?? null)}
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
@@ -1223,20 +1220,41 @@ export default function OperatorPortfolioModal({
           </div>
           {options.length === 0 && <p className="mt-3 text-sm text-[#737373]">Add services to your profile before tagging work.</p>}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-          <div className="mt-6 flex items-center justify-between">
+          {editing && previewKind === 'image' && !editing.is_cover && (
+            <button
+              type="button"
+              disabled={saving || !tagSelection[0]}
+              onClick={() => void setAsCover(editing, tagSelection[0])}
+              className="mt-6 block w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+            >
+              Set as cover
+            </button>
+          )}
+          <div className={`${editing && previewKind === 'image' && !editing.is_cover ? 'mt-3' : 'mt-6'} flex items-center justify-between`}>
             <button
               type="button"
               className="h-11 rounded-lg bg-[#5a7268] px-4 text-sm font-semibold text-white disabled:opacity-50"
               disabled={saving}
               onClick={() => {
-                const specialtyId = specialtyIds(editing)[0] || tagSelection[0];
+                const specialtyId = openSectionId || specialtyIds(editing)[0] || tagSelection[0];
+                const displayedCover = openSectionId
+                  ? sectionCover(
+                      items.filter((item) => specialtyIds(item)[0] === openSectionId),
+                      openSectionId
+                    )
+                  : undefined;
+                const replacingCover = Boolean(editing && displayedCover && editing.id === displayedCover.id);
                 if (draft) {
                   revoke(draft.previewUrl);
                   setDraft(null);
                 }
                 setTagOpen(false);
                 if (editing && specialtyId) {
-                  setSourceMenu({ key: `item-${editing.id}`, specialtyId, asCover: false });
+                  setSourceMenu({
+                    key: replacingCover ? `cover-${specialtyId}` : `item-${editing.id}`,
+                    specialtyId,
+                    asCover: replacingCover,
+                  });
                 }
               }}
             >
