@@ -657,7 +657,7 @@ export default function OperatorPortfolioModal({
           <button
             type="button"
             onClick={() => void setAsCover(item)}
-            className="mt-2 block text-left text-xs font-medium text-[#525252] hover:text-[#171717]"
+            className="mt-2 block w-full text-center text-xs font-medium text-brand-600 hover:text-brand-700"
           >
             Set as cover
           </button>
