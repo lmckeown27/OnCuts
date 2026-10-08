@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
@@ -365,35 +366,37 @@ export default function DiscoverClientPortfolio({
       ) : (
         <WeeklyAvailability schedule={barber.weekly_schedule} />
       )}
-      {previewItem && (
-        <div
-          className={`fixed inset-0 z-[80] flex items-center justify-center p-4 transition-colors duration-150 ${
-            previewVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
-          }`}
-          onClick={() => closePreview()}
-        >
+      {previewItem &&
+        createPortal(
           <div
-            className={`w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
-              previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            className={`fixed inset-0 z-[1200] flex items-center justify-center p-4 transition-colors duration-150 ${
+              previewVisible ? 'bg-[rgba(23,23,23,0.45)]' : 'bg-transparent'
             }`}
-            onClick={(event) => event.stopPropagation()}
+            onClick={() => closePreview()}
           >
-            {previewItem.media_type === 'video' ? (
-              <video src={previewItem.media_url} controls className="aspect-[9/16] w-full rounded-t-2xl bg-black object-cover" />
-            ) : (
-              <img src={previewItem.media_url} alt="" className="aspect-[9/16] w-full rounded-t-2xl object-cover" />
-            )}
-            <div className="flex items-center justify-between rounded-b-2xl px-4 py-3">
-              <p className="text-sm font-semibold text-[#171717]">
-                {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
-              </p>
-              <button type="button" onClick={() => closePreview()} className="text-sm font-medium text-[#525252]">
-                Close
-              </button>
+            <div
+              className={`flex max-h-[85dvh] w-full max-w-[300px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
+                previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              }`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {previewItem.media_type === 'video' ? (
+                <video src={previewItem.media_url} controls className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl bg-black object-cover" />
+              ) : (
+                <img src={previewItem.media_url} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
+              )}
+              <div className="flex shrink-0 items-center justify-between rounded-b-2xl px-4 py-3">
+                <p className="text-sm font-semibold text-[#171717]">
+                  {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
+                </p>
+                <button type="button" onClick={() => closePreview()} className="text-sm font-medium text-[#525252]">
+                  Close
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
