@@ -121,6 +121,7 @@ export default function OperatorPortfolioModal({
   const [tagOpen, setTagOpen] = useState(false);
   const [tagVisible, setTagVisible] = useState(false);
   const [addingSpecialtyId, setAddingSpecialtyId] = useState<string | null>(null);
+  const [addingAsCover, setAddingAsCover] = useState(false);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [clientView, setClientView] = useState(false);
   const [workFilter, setWorkFilter] = useState('all');
@@ -314,6 +315,7 @@ export default function OperatorPortfolioModal({
       setReplaceId(null);
       setTagSelection([]);
       setAddingSpecialtyId(null);
+      setAddingAsCover(false);
     }, 150);
   };
 
@@ -334,6 +336,7 @@ export default function OperatorPortfolioModal({
     setReplaceId(item.id);
     setTagSelection(specialtyIds(item).slice(0, 1));
     setAddingSpecialtyId(null);
+    setAddingAsCover(false);
     setSourceMenu(null);
     setError(null);
     revealTag();
@@ -360,7 +363,7 @@ export default function OperatorPortfolioModal({
     }, 150);
   };
 
-  const openAddDialog = (specialtyId: string) => {
+  const openAddDialog = (specialtyId: string, asCover = false) => {
     if (draftRef.current) {
       revoke(draftRef.current.previewUrl);
       setDraft(null);
@@ -369,6 +372,7 @@ export default function OperatorPortfolioModal({
     setReplaceId(null);
     setTagSelection([specialtyId]);
     setAddingSpecialtyId(specialtyId);
+    setAddingAsCover(asCover);
     setSourceMenu(null);
     setError(null);
     revealTag();
@@ -454,16 +458,16 @@ export default function OperatorPortfolioModal({
   const startAddUpload = (via: 'camera' | 'file') => {
     const specialtyId = tagSelection[0] || addingSpecialtyId;
     if (!specialtyId || !providerId || saving) return;
-    setUploadTarget({ specialtyId, asCover: false, replaceId: null, kind: 'image' });
+    setUploadTarget({ specialtyId, asCover: addingAsCover, replaceId: null, kind: 'image' });
     setReplaceId(null);
     setCameraNote(null);
     if (via === 'camera') {
-      setCameraKind('both');
+      setCameraKind(addingAsCover ? 'image' : 'both');
       return;
     }
     setCameraKind(null);
     if (fileInputRef.current) {
-      fileInputRef.current.accept = `${PHOTO_ACCEPT},${VIDEO_ACCEPT}`;
+      fileInputRef.current.accept = addingAsCover ? PHOTO_ACCEPT : `${PHOTO_ACCEPT},${VIDEO_ACCEPT}`;
       fileInputRef.current.click();
     }
   };
@@ -1082,11 +1086,7 @@ export default function OperatorPortfolioModal({
                               openTagForItem(cover);
                               return;
                             }
-                            setSourceMenu((current) =>
-                              current?.key === `cover-${specialtyId}`
-                                ? null
-                                : { key: `cover-${specialtyId}`, specialtyId, asCover: true }
-                            );
+                            openAddDialog(specialtyId, true);
                           }}
                           className={`relative block w-full overflow-hidden rounded-xl aspect-[9/16] hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2 ${
                             cover
@@ -1278,7 +1278,7 @@ export default function OperatorPortfolioModal({
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
                 <Plus className="h-5 w-5" />
               </span>
-              <span className="text-xs font-medium text-[#525252]">Add</span>
+              <span className="text-xs font-medium text-[#525252]">{addingAsCover ? 'Set cover' : 'Add'}</span>
             </div>
           )}
         </div>
