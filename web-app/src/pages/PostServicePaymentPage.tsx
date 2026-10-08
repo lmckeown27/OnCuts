@@ -1335,12 +1335,16 @@ export default function PostServicePaymentPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-            <button 
-              onClick={() => navigate('/web/barber')}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
+            {portfolioFlow === 'open' ? (
+              <div className="w-9" />
+            ) : (
+              <button 
+                onClick={() => navigate('/web/barber')}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
             <img src={TivelaPlatformsLogo} alt="OnCuts" className="h-8" />
             <div className="w-9" /> {/* Spacer */}
           </div>

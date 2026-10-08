@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
@@ -435,7 +435,8 @@ export default function PostServicePortfolioFlow({
   const uploadPage = (
     <div className="fixed inset-x-0 bottom-0 z-[60] overflow-y-auto bg-[#fafafa]" style={{ top: headerOffset }}>
       <div className="mx-auto flex min-h-full max-w-[880px] flex-col px-4 py-6">
-        <button type="button" onClick={() => setStep('prompt')} className="mb-4 self-start text-sm font-medium text-[#525252] hover:text-[#171717]">
+        <button type="button" onClick={() => setStep('prompt')} className="mb-4 inline-flex items-center gap-1.5 self-start text-sm font-medium text-[#525252] hover:text-[#171717]">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to &quot;Add Work?&quot; page
         </button>
         <h1 className="text-2xl font-bold text-[#171717]">Add this service to your portfolio</h1>
