@@ -940,6 +940,14 @@ export default function OperatorPortfolioModal({
                   ‹ All specialties
                 </button>
               )}
+              {workFilter !== 'all' && (
+                <h3 className="mb-4 text-center text-2xl font-bold text-[#171717]">
+                  {specialtyLabel(workFilter, options)}
+                  {priceForSpecialty(workFilter, options, specialtyPrices) && (
+                    <span className="ml-2">{priceForSpecialty(workFilter, options, specialtyPrices)}</span>
+                  )}
+                </h3>
+              )}
               {workFilter === 'all' ? (
                 workChips.length > 0 ? (
                   <div className="grid items-start gap-6 sm:grid-cols-[minmax(0,496px)_minmax(11rem,1fr)]">

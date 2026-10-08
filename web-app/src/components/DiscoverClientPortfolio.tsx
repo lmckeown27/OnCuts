@@ -293,6 +293,12 @@ export default function DiscoverClientPortfolio({
           >
             ‹ All specialties
           </button>
+          <h3 className="mb-4 text-center text-2xl font-bold text-[#171717]">
+            {specialtyLabel(openSectionId, options)}
+            {priceForSpecialty(openSectionId, options, prices) && (
+              <span className="ml-2">{priceForSpecialty(openSectionId, options, prices)}</span>
+            )}
+          </h3>
           {shownWork.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {shownWork.map((item) => (
