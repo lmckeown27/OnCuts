@@ -222,6 +222,106 @@ export const listPublicOperatorPortfolio = async (req: AuthRequest, res: Respons
   }
 };
 
+const PORTFOLIO_SECTION_IDS_BY_NAME: Record<string, string[]> = {
+  'buzz cut': ['buzz-cut'],
+  'line up': ['lineup', 'line-up'],
+  'beard trim': ['beard-trim'],
+  haircut: ['haircut'],
+  taper: ['taper'],
+  'hot shave': ['hot-shave'],
+  'kids cut': ['kids-cut'],
+  fade: ['fade'],
+  mullet: ['mullet'],
+  'design/art': ['design', 'design-art', 'designart'],
+  'afro textures': ['afro', 'afro-textures'],
+  'color treatment': ['color', 'color-treatment'],
+  perm: ['perm'],
+  braids: ['braids'],
+  makeup: ['makeup'],
+  nails: ['nails'],
+  lashes: ['lashes'],
+  tanning: ['tanning'],
+};
+
+function portfolioSpecialtySlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
+
+function portfolioKeysForSpecialtyName(name: string, catalogSlugs: string[]): string[] {
+  const lower = name.trim().toLowerCase();
+  const keys = new Set<string>([lower, portfolioSpecialtySlug(name), ...(PORTFOLIO_SECTION_IDS_BY_NAME[lower] || [])]);
+  catalogSlugs.forEach((slug) => {
+    if (slug.trim()) keys.add(slug.trim().toLowerCase());
+  });
+  keys.delete('');
+  return [...keys];
+}
+
+/** Drop portfolio photos and the saved section when an operator stops offering a service. */
+export async function removePortfolioSectionsForDroppedSpecialties(
+  providerId: string,
+  previousNames: string[],
+  nextNames: string[]
+): Promise<void> {
+  const stillOffered = new Set(nextNames.map((name) => name.trim().toLowerCase()).filter(Boolean));
+  const removed = previousNames.map((name) => name.trim()).filter((name) => name && !stillOffered.has(name.toLowerCase()));
+  if (removed.length === 0) return;
+
+  let catalog: { slug: string; name: string }[] = [];
+  try {
+    const services = await pool.query('SELECT slug, name FROM services');
+    catalog = services.rows.map((row) => ({
+      slug: String(row.slug || ''),
+      name: String(row.name || ''),
+    }));
+  } catch (error) {
+    logger.warn('Could not read the service catalog while removing a portfolio section', error);
+  }
+
+  const keys = new Set<string>();
+  for (const name of removed) {
+    const slugs = catalog
+      .filter((service) => service.name.trim().toLowerCase() === name.toLowerCase())
+      .map((service) => service.slug);
+    portfolioKeysForSpecialtyName(name, slugs).forEach((key) => keys.add(key));
+  }
+  const specialtyKeys = [...keys];
+  if (specialtyKeys.length === 0) return;
+
+  await pool.query(
+    `DELETE FROM operator_portfolio_items
+     WHERE provider_id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM unnest(COALESCE(specialties, ARRAY[]::text[])) AS specialty
+         WHERE LOWER(specialty) = ANY($2::text[])
+       )`,
+    [providerId, specialtyKeys]
+  );
+
+  try {
+    await pool.query(
+      `UPDATE operator_portfolio_section_orders
+       SET specialty_ids = ARRAY(
+         SELECT entry.specialty_id
+         FROM unnest(specialty_ids) WITH ORDINALITY AS entry(specialty_id, ord)
+         WHERE NOT (LOWER(entry.specialty_id) = ANY($2::text[]))
+         ORDER BY entry.ord
+       )
+       WHERE provider_id = $1`,
+      [providerId, specialtyKeys]
+    );
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: string }).code) : '';
+    if (code !== '42P01') throw error;
+  }
+}
+
 function parseSectionOrder(raw: unknown): string[] {
   if (!Array.isArray(raw)) {
     throw new ApiError(400, 'specialtyIds must be an array');

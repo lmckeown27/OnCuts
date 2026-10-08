@@ -165,6 +165,22 @@ export default function OperatorPortfolioModal({
   }, [visible, providerId, loadItems]);
 
   useEffect(() => {
+    if (!visible || !providerId || servicesRevision === 0) return;
+    let cancelled = false;
+    api
+      .get<OperatorPortfolioItem[]>(`/barbers/${providerId}/operator-portfolio`)
+      .then((data) => {
+        if (!cancelled) setItems(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(uploadErrorMessage(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [servicesRevision, visible, providerId]);
+
+  useEffect(() => {
     if (!visible || !providerId) return;
     const missing = Array.from(new Set(items.map((item) => specialtyIds(item)[0]).filter((id): id is string => Boolean(id)))).filter(
       (specialtyId) => {
@@ -617,6 +633,11 @@ export default function OperatorPortfolioModal({
   const sectionIds = Array.from(
     new Set([...options.map((option) => option.id), ...items.flatMap((item) => specialtyIds(item))])
   );
+
+  useEffect(() => {
+    if (openSectionId && !sectionIds.includes(openSectionId)) setOpenSectionId(null);
+    if (workFilter !== 'all' && !sectionIds.includes(workFilter)) setWorkFilter('all');
+  }, [openSectionId, workFilter, sectionIds]);
   const orderedSectionIds = useMemo(() => {
     const known = new Set(sectionIds);
     const kept = sectionOrder.filter((id) => known.has(id));

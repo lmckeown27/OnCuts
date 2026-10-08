@@ -3,6 +3,7 @@ import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { uploadToS3 } from '../services/s3.service';
+import { removePortfolioSectionsForDroppedSpecialties } from './operator-portfolio.controller';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
@@ -1281,6 +1282,13 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
 
     // Update barbers table if there are fields to update
     if (barberUpdateFields.length > 0) {
+      let previousSpecialtyNames: string[] = [];
+      if (Array.isArray(specialtiesInput)) {
+        const existingSpecialties = await pool.query('SELECT specialties FROM barbers WHERE id = $1', [id]);
+        const stored = existingSpecialties.rows[0]?.specialties;
+        previousSpecialtyNames = Array.isArray(stored) ? stored.map((name: unknown) => String(name)) : [];
+      }
+
       barberUpdateFields.push(`"updatedAt" = NOW()`);
       barberValues.push(id);
 
@@ -1290,6 +1298,14 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
          WHERE id = $${paramIndex}`,
         barberValues
       );
+
+      if (Array.isArray(specialtiesInput)) {
+        await removePortfolioSectionsForDroppedSpecialties(
+          id,
+          previousSpecialtyNames,
+          specialtiesInput.map((name: unknown) => String(name))
+        );
+      }
 
       if (normalizedPricing) {
         for (const entry of normalizedPricing) {
