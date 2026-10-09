@@ -56,6 +56,30 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
   const [showPortfolio, setShowPortfolio] = useState(false);
+  const [isPortfolioVisible, setIsPortfolioVisible] = useState(false);
+  const portfolioCloseTimer = useRef<number | null>(null);
+
+  const openPortfolio = () => {
+    if (portfolioCloseTimer.current != null) {
+      window.clearTimeout(portfolioCloseTimer.current);
+      portfolioCloseTimer.current = null;
+    }
+    setShowPortfolio(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsPortfolioVisible(true);
+      });
+    });
+  };
+
+  const closePortfolio = () => {
+    setIsPortfolioVisible(false);
+    if (portfolioCloseTimer.current != null) window.clearTimeout(portfolioCloseTimer.current);
+    portfolioCloseTimer.current = window.setTimeout(() => {
+      portfolioCloseTimer.current = null;
+      setShowPortfolio(false);
+    }, 150);
+  };
 
   const loadBlockedAccounts = useCallback(async () => {
     setBlockedLoading(true);
@@ -301,19 +325,22 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={() => setShowPortfolio(true)}
-        disabled={!barber?.id}
-        className="w-full flex items-center justify-center px-3 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-sm font-semibold text-gray-800 transition-colors disabled:opacity-50"
-      >
-        Portfolio
-      </button>
+      <div className="flex justify-center">
+        <button
+          type="button"
+          onClick={openPortfolio}
+          disabled={!barber?.id}
+          className="flex items-center px-4 py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white transition-colors disabled:opacity-50"
+          aria-label="Portfolio"
+        >
+          <span className="text-sm font-semibold">Portfolio</span>
+        </button>
+      </div>
       {showPortfolio && barber?.id && (
         <OperatorPortfolioModal
           providerId={barber.id}
-          visible
-          onClose={() => setShowPortfolio(false)}
+          visible={isPortfolioVisible}
+          onClose={closePortfolio}
           onOpenServices={onOpenServices}
           servicesRevision={servicesRevision}
         />
