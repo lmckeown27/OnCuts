@@ -159,10 +159,14 @@ export default function DiscoverClientPortfolio({
   barber,
   latitude,
   longitude,
+  onBook,
+  className = 'border-b border-[#e5e5e5] pb-6 last:border-b-0',
 }: {
   barber: Barber;
   latitude: number | null;
   longitude: number | null;
+  onBook?: () => void;
+  className?: string;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -252,7 +256,7 @@ export default function DiscoverClientPortfolio({
   }, []);
 
   return (
-    <div className="border-b border-[#e5e5e5] pb-6 last:border-b-0">
+    <div className={className}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {photo ? (
@@ -270,6 +274,10 @@ export default function DiscoverClientPortfolio({
         <button
           type="button"
           onClick={() => {
+            if (onBook) {
+              onBook();
+              return;
+            }
             const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
             navigate(`${platformPrefix}/consumer/book/${barber.id}`);
           }}

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX, Search } from 'lucide-react';
+import { User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -32,7 +32,6 @@ import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
 import BlockedProvidersModal from '../components/BlockedProvidersModal';
 import ConsumerBookingsModal from '../components/ConsumerBookingsModal';
-import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
 import {
   clearDeferredPaymentTakeover,
@@ -83,82 +82,8 @@ import {
   sortDiscoverBarbers,
 } from '../utils/myBarbersDiscover';
 
-// Helper to format service names from SNAKE_CASE to Title Case
-const formatServiceName = (name: string): string => {
-  return name
-    .toLowerCase()
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
 const FILTER_STORAGE_KEY = 'oncuts_filter_criteria';
 const LEGACY_FILTER_STORAGE_KEY = 'avilaplatforms_filter_criteria';
-
-// Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
-function formatTime(time24: string | undefined | null): string {
-  if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) {
-    return 'N/A';
-  }
-  const [hourStr, minuteStr] = time24.split(':');
-  let hour = parseInt(hourStr, 10);
-  const minute = parseInt(minuteStr, 10);
-  if (isNaN(hour) || isNaN(minute)) return 'N/A';
-  const ampm = hour >= 12 ? 'pm' : 'am';
-  hour = hour % 12 || 12;
-  return minute === 0 ? `${hour}${ampm}` : `${hour}:${minuteStr}${ampm}`;
-}
-
-// Format schedule for display - returns array of { day, times } objects
-// Supports both new multi-interval format and legacy single interval format
-function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; times: string }[] {
-  if (!schedule) return [];
-  
-  const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
-  const dayAbbrev: Record<string, string> = {
-    monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
-    friday: 'Fri', saturday: 'Sat', sunday: 'Sun'
-  };
-  
-  return dayOrder
-    .filter(day => {
-      const daySchedule = schedule[day];
-      if (!daySchedule?.enabled) return false;
-      
-      // Check for new multi-interval format
-      if (daySchedule.intervals !== undefined) {
-        return Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0;
-      }
-      
-      // Legacy format
-      return daySchedule.start && daySchedule.end;
-    })
-    .map(day => {
-      const daySchedule = schedule[day];
-      let times: string;
-      
-      // Check for new multi-interval format
-      if (daySchedule.intervals && Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0) {
-        // Filter out invalid intervals and show all valid ones (e.g., "9am-12pm, 2pm-6pm")
-        const validIntervals = daySchedule.intervals.filter(
-          interval => interval && interval.start && interval.end
-        );
-        times = validIntervals.length > 0
-          ? validIntervals.map(interval => `${formatTime(interval.start)}-${formatTime(interval.end)}`).join(', ')
-          : 'Available';
-      } else if (daySchedule.start && daySchedule.end) {
-        // Legacy format
-        times = `${formatTime(daySchedule.start)}-${formatTime(daySchedule.end)}`;
-      } else {
-        times = 'Available';
-      }
-      
-      return {
-        day: dayAbbrev[day],
-        times
-      };
-    });
-}
-
 
 export default function ConsumerPage() {
   const navigate = useNavigate();
@@ -1704,7 +1629,6 @@ function DiscoveryView({
   const location = useLocation();
   const {
     consumerHomeMode,
-    consumerHomeReviewsEnabled,
     consumerUserCount,
     isLoading: isFrontendConfigLoading,
   } = useFrontendConfig();
@@ -1723,9 +1647,6 @@ function DiscoveryView({
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
   const [loginRedirectBarber, setLoginRedirectBarber] = useState<Barber | null>(null);
-  const [loadingBarberDetails, setLoadingBarberDetails] = useState(false);
-  const [reviewsExpanded, setReviewsExpanded] = useState(false);
-  const reviewsSectionRef = useRef<HTMLDivElement>(null);
   const [maxDistanceMiles, setMaxDistanceMilesState] = useState(getBrowseMaxDistanceMiles);
   const [constrainByDistance, setConstrainByDistanceState] = useState(getBrowseConstrainByDistance);
   const [deviceTracking, setDeviceTrackingState] = useState(() => {
@@ -2007,7 +1928,8 @@ function DiscoveryView({
     }
     // Navigate to booking
     const formData = location.state?.preservedFormData;
-    navigate(`/web/consumer/book/${barber.id}`, {
+    const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+    navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
       state: {
         barber,
         filters: filterCriteria,
@@ -2018,21 +1940,13 @@ function DiscoveryView({
 
   // Handle barber selection - fetch full details including reviews
   const handleBarberSelect = async (barber: Barber) => {
-    // Show card immediately with list data
     setSelectedBarber(barber);
-    setLoadingBarberDetails(true);
-    setReviewsExpanded(false); // Reset reviews dropdown when selecting new barber
-    
+
     try {
-      // Fetch detailed barber info (includes reviews)
       const detailedBarber = await barberService.getBarberById(barber.id);
-      // Merge detailed data with list data (preserving any fields that might only be in list)
       setSelectedBarber({ ...barber, ...detailedBarber });
     } catch (error) {
       console.error('Failed to fetch barber details:', error);
-      // Keep showing list data if fetch fails
-    } finally {
-      setLoadingBarberDetails(false);
     }
   };
 
@@ -2722,259 +2636,37 @@ function DiscoveryView({
       )}
 
 
-      {/* Barber Profile Modal */}
-      {selectedBarber && (() => {
-        // Determine if barber has rich content that needs wider card
-        const scheduleData = selectedBarber.weekly_schedule ? formatSchedule(selectedBarber.weekly_schedule) : [];
-        const hasAvailability = scheduleData.length > 0;
-        const hasManySpecialties = Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 3;
-        const hasBio = !!selectedBarber.bio;
-        
-        // Check if availability has long time strings (with minutes like "11:30am")
-        const hasLongTimeStrings = scheduleData.some(({ times }) => 
-          times.includes(':') && times.length > 12
-        );
-        
-        // Determine card width tier
-        const needsExtraWideCard = hasAvailability && (hasLongTimeStrings || scheduleData.length >= 5);
-        const hasRichContent = hasAvailability || hasManySpecialties || hasBio;
-        
-        return (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-[1000] p-6 animate-fade-in"
+      {selectedBarber && (
+        <div
+          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-[1000] p-4 sm:p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
         >
-          <div 
-            className={`bg-white rounded-2xl shadow-2xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up ${
-              needsExtraWideCard
-                ? 'max-w-sm sm:max-w-3xl lg:max-w-4xl'
-                : hasRichContent 
-                  ? 'max-w-sm sm:max-w-2xl lg:max-w-3xl' 
-                  : 'max-w-sm sm:max-w-md lg:max-w-lg'
-            }`}
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between rounded-t-2xl z-10">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Operator'}
-              </h2>
-              <div className="flex items-center gap-3">
-                {selectedBarber.instagram_handle && (
-                  <a
-                    href={`https://instagram.com/${selectedBarber.instagram_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm hover:shadow-md"
-                  >
-                    <Instagram className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span className="text-xs sm:text-sm font-medium">@{selectedBarber.instagram_handle}</span>
-                  </a>
-                )}
-                <button
-                  onClick={() => setSelectedBarber(null)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <span className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</span>
-                </button>
-              </div>
-            </div>
-            <div className="p-6 sm:p-8">
-              {/* Barber Profile Content */}
-              <div className="space-y-6 sm:space-y-8">
-                {/* Profile Header - Image left, info right */}
-                <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
-                  {/* Barber Profile Picture */}
-                  <div className="relative w-48 sm:w-64 lg:w-72 aspect-square overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
-                    {selectedBarber.profile_picture_url ? (
-                      <img
-                        src={selectedBarber.profile_picture_url}
-                        alt={`${selectedBarber.user?.first_name || 'Operator'}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <UsersIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Specialties & Availability - Right side */}
-                  <div className="flex-1 flex flex-col justify-center text-center sm:text-left">
-                    {/* Services with Prices */}
-                    {(Array.isArray(selectedBarber.pricing) && selectedBarber.pricing.length > 0) && (
-                      <div className="mb-4 sm:mb-6">
-                        <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                          <span>Services</span>
-                        </div>
-                        <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
-                          {selectedBarber.pricing.map((service, idx) => (
-                            <span
-                              key={idx}
-                              className="px-3 py-1.5 bg-primary-100 text-primary-600 text-sm rounded-full font-medium flex items-center gap-1.5"
-                            >
-                              <span>{service.name}</span>
-                              <span className="text-primary-500">•</span>
-                              <span className="font-bold">${service.price}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Availability */}
-                                    {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
-                                      <div>
-                                        <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                                          <span>Availability</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                                          {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
-                                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-center">
-                                              <div className="font-semibold text-gray-800 text-sm">{day}</div>
-                                              <div className="flex flex-col gap-0.5">
-                                                {times.split(', ').map((timeSlot, idx) => (
-                                                  <div key={idx} className="text-xs text-gray-600 whitespace-nowrap">{timeSlot}</div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                {/* Bio Section - Full width below */}
-                                {selectedBarber.bio && (
-                                  <div className="pt-4 sm:pt-6 border-t border-gray-100">
-                                    <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                                      <span>About</span>
-                                    </div>
-                                    <p className="text-gray-600 sm:text-lg leading-relaxed">{selectedBarber.bio}</p>
-                                  </div>
-                                )}
-
-                                {/* Reviews Section - Collapsible */}
-                                {consumerHomeReviewsEnabled && ((selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails) ? (
-                                  <div ref={reviewsSectionRef} className="pt-4 sm:pt-6 border-t border-gray-100">
-                                    <button
-                                      onClick={() => {
-                                        const willExpand = !reviewsExpanded;
-                                        setReviewsExpanded(willExpand);
-                                        if (willExpand) {
-                                          // Scroll to reviews section after a short delay for the animation
-                                          setTimeout(() => {
-                                            reviewsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                          }, 100);
-                                        }
-                                      }}
-                                      className="w-full relative flex items-center justify-center sm:justify-between text-gray-700 font-medium sm:text-lg hover:text-gray-900 transition-colors"
-                                    >
-                                      <div className="flex flex-col items-center sm:items-start gap-1">
-                                        <span>Reviews</span>
-                                        {(selectedBarber.review_count ?? 0) > 0 && (
-                                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full">
-                                            <div className="flex items-center gap-0.5">
-                                              {[1, 2, 3, 4, 5].map((star) => {
-                                                const rating = selectedBarber.average_rating ?? 0;
-                                                const filled = star <= Math.floor(rating);
-                                                const partial = star === Math.ceil(rating) && rating % 1 !== 0;
-                                                return (
-                                                  <Star 
-                                                    key={star} 
-                                                    className={`w-3 h-3 ${
-                                                      filled 
-                                                        ? 'text-amber-500 fill-amber-500' 
-                                                        : partial 
-                                                          ? 'text-amber-500 fill-amber-200' 
-                                                          : 'text-amber-200 fill-amber-200'
-                                                    }`} 
-                                                  />
-                                                );
-                                              })}
-              </div>
-                                            <span className="text-xs font-semibold text-amber-700">
-                                              {(selectedBarber.average_rating ?? 0).toFixed(1)} ({selectedBarber.review_count})
-                                            </span>
-                                          </div>
-                                        )}
-                                        {loadingBarberDetails && (
-                                          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                                        )}
-                                      </div>
-                                      <ChevronDown className={`absolute right-0 sm:relative w-5 h-5 text-gray-400 transition-transform duration-200 ${reviewsExpanded ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    
-                                    {/* Collapsible Reviews Content */}
-                                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${reviewsExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
-                                      {loadingBarberDetails && !selectedBarber.reviews ? (
-                                        <div className="space-y-4">
-                                          {[1, 2].map((i) => (
-                                            <div key={i} className="bg-gray-50 rounded-xl p-4 animate-pulse">
-                                              <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                                                <div className="flex-1">
-                                                  <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-                                                  <div className="h-3 bg-gray-200 rounded w-full mb-1" />
-                                                  <div className="h-3 bg-gray-200 rounded w-3/4" />
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-3">
-                                          {selectedBarber.reviews?.map((review) => (
-                                            <div key={review.id} className="bg-gray-50 rounded-xl p-4">
-                                              <div className="flex items-center justify-between gap-2 mb-1">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                  <span className="font-medium text-gray-900 truncate">
-                                                    {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
-                                                  </span>
-                                                  {review.service_name && (
-                                                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                                                      {formatServiceName(review.service_name)}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                                  {[...Array(5)].map((_, i) => (
-                                                    <Star 
-                                                      key={i} 
-                                                      className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} 
-                                                    />
-                                                  ))}
-                                                </div>
-                                              </div>
-                                              {review.review_text && (
-                                                <p className="text-gray-600 text-sm leading-relaxed">{review.review_text}</p>
-                                              )}
-                                              <p className="text-gray-400 text-xs mt-2">
-                                                {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                              </p>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : null}
-              </div>
-            </div>
-            
-            {/* Footer with Schedule Button */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 sm:px-8 sm:py-5 rounded-b-2xl">
-              <Button
-                onClick={() => handleScheduleClick(selectedBarber)}
-                className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold"
+            <div className="sticky top-0 z-10 flex justify-end bg-white px-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setSelectedBarber(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
               >
-                Schedule Service
-              </Button>
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="px-4 pb-5 sm:px-6">
+              <DiscoverClientPortfolio
+                barber={selectedBarber}
+                latitude={latitude}
+                longitude={longitude}
+                className=""
+                onBook={() => handleScheduleClick(selectedBarber)}
+              />
             </div>
           </div>
         </div>
-        );
-      })()}
+      )}
 
       {/* Login Prompt for unauthenticated users */}
       <LoginPrompt
