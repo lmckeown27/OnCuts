@@ -777,7 +777,6 @@ export default function BarberPage() {
             <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Account</h2>
-                <p className="text-white/80 text-sm">Photo, about, Instagram, specialties, visibility</p>
               </div>
               <button
                 onClick={closeProfileEditor}
@@ -846,7 +845,6 @@ export default function BarberPage() {
             <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-10 shrink-0 gap-2">
               <div className="min-w-0">
                 <h2 className="text-2xl font-bold">Services Offered</h2>
-                <p className="text-white/80 text-sm">Catalog, pricing, and what clients can book</p>
               </div>
               <button
                 type="button"
@@ -3746,7 +3744,13 @@ function AvailabilityModal({
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showTimeLimits, setShowTimeLimits] = useState(false);
+  const [timeLimitsVisible, setTimeLimitsVisible] = useState(false);
   const [showMaxAdvance, setShowMaxAdvance] = useState(false);
+  const [maxAdvanceVisible, setMaxAdvanceVisible] = useState(false);
+  const timeLimitsCloseTimer = useRef<number | null>(null);
+  const maxAdvanceCloseTimer = useRef<number | null>(null);
+  const timeLimitsOpenFrame = useRef<number | null>(null);
+  const maxAdvanceOpenFrame = useRef<number | null>(null);
   const [slotIntervalMinutes, setSlotIntervalMinutes] =
     useState<BookingSlotIntervalMinutes>(15);
   const [slotIntervalSaving, setSlotIntervalSaving] = useState(false);
@@ -3761,6 +3765,77 @@ function AvailabilityModal({
   const loadGenerationRef = useRef(0);
   const toastTimerRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+
+  const cancelFrame = (frame: { current: number | null }) => {
+    if (frame.current != null) {
+      window.cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
+  };
+
+  const clearCloseTimer = (timer: { current: number | null }) => {
+    if (timer.current != null) {
+      window.clearTimeout(timer.current);
+      timer.current = null;
+    }
+  };
+
+  const revealPanel = (
+    frame: { current: number | null },
+    setVisible: (open: boolean) => void
+  ) => {
+    cancelFrame(frame);
+    frame.current = window.requestAnimationFrame(() => {
+      frame.current = window.requestAnimationFrame(() => {
+        frame.current = null;
+        setVisible(true);
+      });
+    });
+  };
+
+  const closeTimeLimits = () => {
+    cancelFrame(timeLimitsOpenFrame);
+    setTimeLimitsVisible(false);
+    clearCloseTimer(timeLimitsCloseTimer);
+    timeLimitsCloseTimer.current = window.setTimeout(() => {
+      timeLimitsCloseTimer.current = null;
+      setShowTimeLimits(false);
+    }, 150);
+  };
+
+  const closeMaxAdvance = () => {
+    cancelFrame(maxAdvanceOpenFrame);
+    setMaxAdvanceVisible(false);
+    setMaxAdvanceEditing(false);
+    clearCloseTimer(maxAdvanceCloseTimer);
+    maxAdvanceCloseTimer.current = window.setTimeout(() => {
+      maxAdvanceCloseTimer.current = null;
+      setShowMaxAdvance(false);
+    }, 150);
+  };
+
+  const openTimeLimits = () => {
+    clearCloseTimer(timeLimitsCloseTimer);
+    closeMaxAdvance();
+    setShowTimeLimits(true);
+    revealPanel(timeLimitsOpenFrame, setTimeLimitsVisible);
+  };
+
+  const openMaxAdvance = () => {
+    clearCloseTimer(maxAdvanceCloseTimer);
+    closeTimeLimits();
+    setShowMaxAdvance(true);
+    revealPanel(maxAdvanceOpenFrame, setMaxAdvanceVisible);
+  };
+
+  useEffect(() => {
+    return () => {
+      cancelFrame(timeLimitsOpenFrame);
+      cancelFrame(maxAdvanceOpenFrame);
+      clearCloseTimer(timeLimitsCloseTimer);
+      clearCloseTimer(maxAdvanceCloseTimer);
+    };
+  }, []);
 
   const validationErrors = useMemo(() => validateAvailability(availability), [availability]);
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
@@ -4146,7 +4221,6 @@ function AvailabilityModal({
         <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Edit Schedule</h2>
-            <p className="text-white/80 text-sm">Weekly hours and blocked time</p>
           </div>
           <button
             type="button"
@@ -4176,9 +4250,8 @@ function AvailabilityModal({
               <button
                 type="button"
                 onClick={() => {
-                  setShowTimeLimits(false);
-                  setShowMaxAdvance(false);
-                  setMaxAdvanceEditing(false);
+                  closeTimeLimits();
+                  closeMaxAdvance();
                   onOpenBlockTime();
                 }}
                 className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
@@ -4189,12 +4262,11 @@ function AvailabilityModal({
             <button
               type="button"
               onClick={() => {
-                setMaxAdvanceEditing(false);
-                setShowMaxAdvance(false);
-                setShowTimeLimits((prev) => !prev);
+                if (timeLimitsVisible) closeTimeLimits();
+                else openTimeLimits();
               }}
               className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
-                showTimeLimits ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
+                timeLimitsVisible ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
               }`}
             >
               Time Limits
@@ -4202,12 +4274,11 @@ function AvailabilityModal({
             <button
               type="button"
               onClick={() => {
-                setShowTimeLimits(false);
-                setMaxAdvanceEditing(false);
-                setShowMaxAdvance((prev) => !prev);
+                if (maxAdvanceVisible) closeMaxAdvance();
+                else openMaxAdvance();
               }}
               className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm ${
-                showMaxAdvance ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
+                maxAdvanceVisible ? 'bg-brand-600 hover:bg-brand-700' : 'bg-brand-500 hover:bg-brand-600'
               }`}
             >
               Max Advance
@@ -4215,7 +4286,13 @@ function AvailabilityModal({
           </div>
 
           {showTimeLimits && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
+            <section
+              className={`rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3 transition-all duration-150 ease-out ${
+                timeLimitsVisible
+                  ? 'opacity-100 scale-100 translate-y-0'
+                  : 'opacity-0 scale-95 translate-y-4'
+              }`}
+            >
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Time Limits</h3>
                 <p className="text-sm text-gray-500 mt-0.5">
@@ -4250,7 +4327,13 @@ function AvailabilityModal({
           )}
 
           {showMaxAdvance && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3">
+            <section
+              className={`rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-3 transition-all duration-150 ease-out ${
+                maxAdvanceVisible
+                  ? 'opacity-100 scale-100 translate-y-0'
+                  : 'opacity-0 scale-95 translate-y-4'
+              }`}
+            >
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Max Advance</h3>
                 <p className="text-sm text-gray-500 mt-0.5">

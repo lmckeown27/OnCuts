@@ -516,11 +516,6 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         </div>
       )}
 
-      <p className="text-sm text-gray-600 leading-relaxed">
-        Choose the services you offer, then set a price and duration within each service&apos;s
-        allowed range.
-      </p>
-
       <div className="space-y-6">
         {groupedSections.map((section, sectionIndex) => (
           <section key={section.id}>

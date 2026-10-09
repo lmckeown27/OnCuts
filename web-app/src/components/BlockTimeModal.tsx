@@ -323,8 +323,8 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
           <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
         </div>
 
-        <div className="px-5 pt-2 pb-3 flex items-center justify-between border-b border-stone-200/80 shrink-0 gap-2">
-          <div className="flex items-center gap-1 min-w-0">
+        <div className="px-5 pt-2 pb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-stone-200/80 shrink-0 gap-2">
+          <div className="justify-self-start">
             {onBack && (
               <button
                 type="button"
@@ -335,12 +335,12 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                 <ChevronLeft className="w-5 h-5 text-gray-700" />
               </button>
             )}
-            <h2 className="text-lg font-semibold text-gray-900 truncate">Block Time</h2>
           </div>
+          <h2 className="text-center text-lg font-semibold text-gray-900 truncate">Block Time</h2>
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 hover:bg-stone-200/60 rounded-full transition-colors shrink-0"
+            className="justify-self-end p-2 hover:bg-stone-200/60 rounded-full transition-colors shrink-0"
             aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-600" />
