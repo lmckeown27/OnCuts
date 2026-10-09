@@ -439,7 +439,7 @@ export default function ScheduleServicePage() {
       </div>
       {portfolioOpen && barber && createPortal(
         <div
-          className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300 ease-in-out ${
+          className={`fixed inset-0 z-[1000] flex items-center justify-center p-6 transition-opacity duration-300 ease-in-out ${
             portfolioVisible ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0'
           }`}
           onClick={closePortfolio}
@@ -456,7 +456,7 @@ export default function ScheduleServicePage() {
             <button
               type="button"
               onClick={closePortfolio}
-              className="absolute right-4 top-0 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md hover:bg-gray-100"
+              className="absolute right-0 top-0 z-10 flex h-9 w-9 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md hover:bg-gray-100"
               aria-label="Close portfolio"
             >
               <X className="h-5 w-5" />
