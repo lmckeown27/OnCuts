@@ -739,6 +739,10 @@ export default function MobileConsumerPage() {
       <ConsumerBookingsModal
         isOpen={showBookingsModal}
         onClose={() => setShowBookingsModal(false)}
+        onFindOperator={() => {
+          setActiveTab('home');
+          setShowBookingsModal(false);
+        }}
       />
     </div>
   );

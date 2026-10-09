@@ -45,6 +45,7 @@ interface ConsumerBookingsModalProps {
   isOpen: boolean;
   isVisible?: boolean;
   onClose: () => void;
+  onFindOperator?: () => void;
 }
 
 function ymd(d: Date): string {
@@ -108,6 +109,7 @@ export default function ConsumerBookingsModal({
   isOpen,
   isVisible = true,
   onClose,
+  onFindOperator,
 }: ConsumerBookingsModalProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -260,6 +262,10 @@ export default function ConsumerBookingsModal({
               <Button
                 className="mt-6"
                 onClick={() => {
+                  if (onFindOperator) {
+                    onFindOperator();
+                    return;
+                  }
                   onClose();
                 }}
               >

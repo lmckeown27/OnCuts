@@ -1091,6 +1091,10 @@ export default function ConsumerPage() {
         isOpen={showBookingsModal}
         isVisible={isBookingsModalVisible}
         onClose={closeBookingsModal}
+        onFindOperator={() => {
+          setHomeSegment('discover');
+          closeBookingsModal();
+        }}
       />
 
       {/* Notifications Modal */}
