@@ -1627,6 +1627,8 @@ function DiscoveryView({
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [operatorSheetVisible, setOperatorSheetVisible] = useState(false);
+  const operatorSheetCloseTimer = useRef<number | null>(null);
   const [selectedCollegeTown, setSelectedCollegeTown] = useState<CollegeTown | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
@@ -1871,6 +1873,38 @@ function DiscoveryView({
     setSelectedDiscoverAreaKey(null);
   }, [barbers, barberSearchQuery, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
 
+  // Open the operator sheet after it mounts so the same 300ms slide can reverse on close.
+  useEffect(() => {
+    if (!selectedBarber?.id) {
+      setOperatorSheetVisible(false);
+      return;
+    }
+    if (operatorSheetCloseTimer.current) {
+      window.clearTimeout(operatorSheetCloseTimer.current);
+      operatorSheetCloseTimer.current = null;
+    }
+    setOperatorSheetVisible(false);
+    let frame2 = 0;
+    const frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => setOperatorSheetVisible(true));
+    });
+    return () => {
+      cancelAnimationFrame(frame1);
+      if (frame2) cancelAnimationFrame(frame2);
+    };
+  }, [selectedBarber?.id]);
+
+  const closeOperatorSheet = () => {
+    setOperatorSheetVisible(false);
+    if (operatorSheetCloseTimer.current) {
+      window.clearTimeout(operatorSheetCloseTimer.current);
+    }
+    operatorSheetCloseTimer.current = window.setTimeout(() => {
+      operatorSheetCloseTimer.current = null;
+      setSelectedBarber(null);
+    }, 300);
+  };
+
   // Lock body scroll when barber modal is open (fixes mobile viewport issues)
   useEffect(() => {
     if (selectedBarber) {
@@ -1931,7 +1965,18 @@ function DiscoveryView({
 
   // Handle barber selection - fetch full details including reviews
   const handleBarberSelect = async (barber: Barber) => {
+    if (operatorSheetCloseTimer.current) {
+      window.clearTimeout(operatorSheetCloseTimer.current);
+      operatorSheetCloseTimer.current = null;
+    }
+    const reopeningSame = selectedBarber?.id === barber.id;
     setSelectedBarber(barber);
+    if (reopeningSame) {
+      setOperatorSheetVisible(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setOperatorSheetVisible(true));
+      });
+    }
 
     try {
       const detailedBarber = await barberService.getBarberById(barber.id);
@@ -2630,17 +2675,21 @@ function DiscoveryView({
 
       {selectedBarber && (
         <div
-          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-[1000] p-4 sm:p-6 animate-fade-in"
-          onClick={() => setSelectedBarber(null)}
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1000] p-4 sm:p-6 transition-opacity duration-300 ease-in-out ${
+            operatorSheetVisible ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0'
+          }`}
+          onClick={closeOperatorSheet}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
+            className={`bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-300 ease-in-out ${
+              operatorSheetVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex justify-end bg-white px-3 pt-3">
               <button
                 type="button"
-                onClick={() => setSelectedBarber(null)}
+                onClick={closeOperatorSheet}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Close"
               >
