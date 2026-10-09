@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Upload, Save, Mail, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, X } from 'lucide-react';
+import { Upload, Save, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, X } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -450,12 +450,9 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
           {/* Email (Read-only) */}
           <Card>
             <h3 className="text-lg font-semibold mb-4">Email Address</h3>
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{user?.email}</p>
-                <p className="text-sm text-gray-500">Verified {user?.is_verified ? '✓' : '✗'}</p>
-              </div>
+            <div>
+              <p className="font-medium text-gray-900">{user?.email}</p>
+              <p className="text-sm text-gray-500">Verified {user?.is_verified ? '✓' : '✗'}</p>
             </div>
           </Card>
 

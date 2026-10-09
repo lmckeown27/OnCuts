@@ -110,8 +110,7 @@ export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | nu
   if (hours.length === 0) return null;
   return (
     <div className="pt-1">
-      <p className="text-center text-sm font-semibold text-[#171717]">Availability for the Week</p>
-      <div className="mt-2 overflow-hidden rounded-lg border border-[#e5e5e5]">
+      <div className="overflow-hidden rounded-lg border border-[#e5e5e5]">
         {hours.map(({ day, times }, index) => (
           <div
             key={day}
