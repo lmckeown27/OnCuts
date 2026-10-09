@@ -281,7 +281,6 @@ export default function SignupPage() {
           <h1 className="text-3xl font-bold text-white mb-2">
             Create Account
           </h1>
-          <p className="text-gray-300">Join OnCuts today</p>
         </div>
 
         {/* Form Card */}
@@ -625,7 +624,7 @@ export default function SignupPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to OnCuts
+            ← Back to Landing Page
           </Link>
         </div>
       </div>
