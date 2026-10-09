@@ -449,27 +449,27 @@ export default function ScheduleServicePage() {
             aria-modal="true"
             aria-label="Portfolio"
             onClick={(event) => event.stopPropagation()}
-            className={`w-full max-w-3xl max-h-[85dvh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl transition-all duration-300 ease-in-out ${
+            className={`relative w-full max-w-3xl transition-all duration-300 ease-in-out ${
               portfolioVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
             }`}
           >
-            <div className="mb-2 flex justify-end">
-              <button
-                type="button"
-                onClick={closePortfolio}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
-                aria-label="Close portfolio"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <button
+              type="button"
+              onClick={closePortfolio}
+              className="absolute right-4 top-0 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md hover:bg-gray-100"
+              aria-label="Close portfolio"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="max-h-[85dvh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+              <DiscoverClientPortfolio
+                barber={barber}
+                latitude={null}
+                longitude={null}
+                onBook={closePortfolio}
+                className=""
+              />
             </div>
-            <DiscoverClientPortfolio
-              barber={barber}
-              latitude={null}
-              longitude={null}
-              onBook={closePortfolio}
-              className=""
-            />
           </div>
         </div>,
         document.body
