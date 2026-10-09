@@ -602,7 +602,7 @@ export default function SignupPage() {
               Need help?{' '}
               <a 
                 href="mailto:oncutshelp@gmail.com"
-                className="text-primary-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1"
+                className="text-emerald-600 hover:text-emerald-700 hover:underline transition-colors inline-flex items-center gap-1"
               >
                 <Mail size={14} />
                 Contact Support

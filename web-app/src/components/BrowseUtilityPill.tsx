@@ -298,7 +298,7 @@ export default function BrowseUtilityPill({
                       aria-pressed={isSelected}
                       className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
                         isSelected
-                          ? 'bg-gray-900 text-white'
+                          ? 'bg-brand-600 text-white hover:bg-brand-700'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
