@@ -349,7 +349,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       {/* Profile Photo - matches barber card dimensions */}
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
-        <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your operator card</p>
         {isMobileDevice() ? (
           /* Mobile: Use camera/gallery picker with square shape for barbers */
           <MobilePhotoUpload
@@ -401,8 +400,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
       {/* Display Name */}
       <Card>
-        <h3 className="text-lg font-semibold mb-2">Display Name</h3>
-        <p className="text-sm text-gray-600 mb-4">This is the name shown on your operator card</p>
+        <h3 className="text-lg font-semibold mb-4">Display Name</h3>
         <input
           type="text"
           value={displayName}
@@ -429,8 +427,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
       {/* Instagram Handle (Optional) */}
       <Card>
-        <h3 className="text-lg font-semibold mb-2">Instagram (Portfolio)</h3>
-        <p className="text-sm text-gray-600 mb-4">Link your Instagram to showcase your work</p>
+        <h3 className="text-lg font-semibold mb-4">Instagram (Portfolio)</h3>
         <div className="flex items-center gap-2">
           <span className="text-gray-600">@</span>
           <input
@@ -442,7 +439,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
             maxLength={30}
           />
         </div>
-        <p className="text-xs text-gray-500 mt-2">Your Instagram serves as your portfolio - students can view your work there</p>
       </Card>
 
       {barber?.id && <BarberBookingLinkCard barberRecordId={barber.id} />}
@@ -451,17 +447,14 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       <Card>
         <h3 className="text-lg font-semibold mb-2">Profile Visibility</h3>
         <div className="space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={isHidden}
               onChange={(e) => setIsHidden(e.target.checked)}
-              className="mt-1 w-5 h-5 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
+              className="w-5 h-5 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
             />
-            <div>
-              <span className="font-medium text-gray-900">Hide my profile from consumers</span>
-              <p className="text-sm text-gray-500">Your operator card will not appear in search results</p>
-            </div>
+            <span className="font-medium text-gray-900">Hide my profile from consumers</span>
           </label>
           
           {isHidden && (
@@ -478,10 +471,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
       {/* Blocked accounts */}
       <Card>
-        <h3 className="text-lg font-semibold mb-2">Blocked accounts</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          People you have blocked cannot message you or appear in each other&apos;s browse until you unblock them.
-        </p>
+        <h3 className="text-lg font-semibold mb-4">Blocked accounts</h3>
         {blockedLoading ? (
           <div className="flex items-center justify-center py-6 text-gray-500">
             <Loader2 className="w-5 h-5 animate-spin" />
