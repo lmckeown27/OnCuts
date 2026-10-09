@@ -1697,7 +1697,11 @@ export default function ConsumerBookingStatusPage() {
               </div>
             </div>
             <div className="p-6">
-              <ConsumerProfileEditor ref={profileEditorRef} userId={user?.id || ''} />
+              <ConsumerProfileEditor
+                ref={profileEditorRef}
+                userId={user?.id || ''}
+                onProfileSaved={closeProfileEditor}
+              />
             </div>
           </div>
         </div>

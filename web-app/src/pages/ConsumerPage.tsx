@@ -948,7 +948,11 @@ export default function ConsumerPage() {
               </div>
             </div>
             <div className="p-6">
-              <ConsumerProfileEditor ref={profileEditorRef} userId={consumerId} />
+              <ConsumerProfileEditor
+                ref={profileEditorRef}
+                userId={consumerId}
+                onProfileSaved={closeProfileEditor}
+              />
             </div>
           </div>
         </div>

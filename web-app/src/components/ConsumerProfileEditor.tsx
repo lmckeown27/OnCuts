@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, X } from 'lucide-react';
+import { Upload, Save, Mail, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, X } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -31,13 +31,14 @@ const isMobileDevice = () => {
 
 interface ConsumerProfileEditorProps {
   userId: string;
+  onProfileSaved?: () => void;
 }
 
 export interface ConsumerProfileEditorRef {
   showDeleteModal: () => void;
 }
 
-const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfileEditorProps>(({ userId }, ref) => {
+const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfileEditorProps>(({ userId, onProfileSaved }, ref) => {
   const { user: authUser, setUser: setAuthUser } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,9 +125,10 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
       };
 
       await userService.updateUserProfile(userId, updateData);
-      
+
       toast.success('Profile updated successfully!');
       await loadUserProfile();
+      onProfileSaved?.();
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       toast.error('Failed to update profile');
@@ -335,38 +337,35 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
     <div className="space-y-6">
       {/* Section Tabs */}
       <div className="border-b border-gray-200">
-        <div className="flex gap-4">
+        <div className="flex justify-center gap-4">
           <button
             onClick={() => setActiveSection('profile')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
               activeSection === 'profile'
                 ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
             <span className="whitespace-nowrap">Profile Info</span>
           </button>
           <button
             onClick={() => setActiveSection('notifications')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
               activeSection === 'notifications'
                 ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Bell className="w-4 h-4" />
             <span className="whitespace-nowrap">Notifications</span>
           </button>
           <button
             onClick={() => setActiveSection('security')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
               activeSection === 'security'
                 ? 'border-gray-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Lock className="w-4 h-4" />
             <span className="whitespace-nowrap">Security</span>
           </button>
         </div>
