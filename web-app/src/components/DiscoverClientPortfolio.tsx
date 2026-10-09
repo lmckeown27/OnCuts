@@ -114,9 +114,9 @@ export function OperatorInstagramLink({ handle }: { handle?: string | null }) {
       href={`https://instagram.com/${cleaned}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-0.5 inline-flex max-w-full items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+      className="mt-1 inline-flex w-full max-w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-purple-600 hover:to-pink-600 hover:shadow-md"
     >
-      <Instagram className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <Instagram className="h-4 w-4 shrink-0" aria-hidden />
       <span className="truncate">@{cleaned}</span>
     </a>
   );
