@@ -193,7 +193,7 @@ export default function ConsumerBookingsModal({
 
   return (
     <div
-      className={`fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 min-h-[100dvh] bg-black/50 z-[1000] flex items-center justify-center p-4 transition-all duration-150 ease-out ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={onClose}
