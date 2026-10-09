@@ -2675,35 +2675,35 @@ function DiscoveryView({
 
       {selectedBarber && (
         <div
-          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1000] p-4 sm:p-6 transition-opacity duration-300 ease-in-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1000] p-6 transition-opacity duration-300 ease-in-out ${
             operatorSheetVisible ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0'
           }`}
           onClick={closeOperatorSheet}
         >
           <div
-            className={`bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-300 ease-in-out ${
+            className={`relative w-full max-w-3xl transition-all duration-300 ease-in-out ${
               operatorSheetVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 flex justify-end bg-white px-3 pt-3">
-              <button
-                type="button"
-                onClick={closeOperatorSheet}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="px-4 pb-5 sm:px-6">
-              <DiscoverClientPortfolio
-                barber={selectedBarber}
-                latitude={latitude}
-                longitude={longitude}
-                className=""
-                onBook={() => handleScheduleClick(selectedBarber)}
-              />
+            <button
+              type="button"
+              onClick={closeOperatorSheet}
+              className="absolute right-0 top-0 z-10 flex h-9 w-9 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-md hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="bg-white rounded-2xl shadow-2xl max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto">
+              <div className="px-4 pb-5 pt-6 sm:px-6">
+                <DiscoverClientPortfolio
+                  barber={selectedBarber}
+                  latitude={latitude}
+                  longitude={longitude}
+                  className=""
+                  onBook={() => handleScheduleClick(selectedBarber)}
+                />
+              </div>
             </div>
           </div>
         </div>
