@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, Minus, Plus, X } from 'lucide-react';
-import { WeeklyAvailability } from './DiscoverClientPortfolio';
+import { OperatorInstagramLink, WeeklyAvailability } from './DiscoverClientPortfolio';
 import type { WeeklySchedule } from '../types';
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
@@ -130,6 +130,7 @@ export default function OperatorPortfolioModal({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [operatorName, setOperatorName] = useState('');
   const [operatorPhoto, setOperatorPhoto] = useState<string | null>(null);
+  const [instagramHandle, setInstagramHandle] = useState<string | null>(null);
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null);
   const [specialtyPrices, setSpecialtyPrices] = useState<Record<string, number>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
@@ -274,6 +275,7 @@ export default function OperatorPortfolioModal({
           setOptions(matched);
           setOperatorName(name);
           setOperatorPhoto(photo);
+          setInstagramHandle(barber.instagram_handle || null);
           setSpecialtyPrices(priceByKey);
           setWeeklySchedule(barber.weekly_schedule ?? null);
         }
@@ -282,6 +284,7 @@ export default function OperatorPortfolioModal({
           setOptions([]);
           setOperatorName('');
           setOperatorPhoto(null);
+          setInstagramHandle(null);
           setSpecialtyPrices({});
           setWeeklySchedule(null);
         }
@@ -913,7 +916,10 @@ export default function OperatorPortfolioModal({
                       {(operatorName.trim().charAt(0) || 'O').toUpperCase()}
                     </span>
                   )}
-                  <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[22px] font-bold text-[#171717]">{operatorName || 'Operator'}</p>
+                    <OperatorInstagramLink handle={instagramHandle} />
+                  </div>
                 </div>
                 <button
                   type="button"

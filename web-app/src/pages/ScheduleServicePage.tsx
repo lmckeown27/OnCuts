@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, Scissors, Instagram } from 'lucide-react';
+import { ArrowLeft, Scissors, X } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import DiscoverClientPortfolio from '../components/DiscoverClientPortfolio';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import DatePicker, { resolveMaxAdvanceBookingDays } from '../components/DatePicker';
 import toast from 'react-hot-toast';
@@ -27,6 +29,36 @@ export default function ScheduleServicePage() {
 
   const [barber, setBarber] = useState<Barber | null>(passedBarber || null);
   const [isLoading, setIsLoading] = useState(!passedBarber);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [portfolioVisible, setPortfolioVisible] = useState(false);
+  const portfolioCloseTimer = useRef<number | null>(null);
+
+  const openPortfolio = () => {
+    if (portfolioCloseTimer.current) {
+      window.clearTimeout(portfolioCloseTimer.current);
+      portfolioCloseTimer.current = null;
+    }
+    setPortfolioOpen(true);
+    setPortfolioVisible(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPortfolioVisible(true));
+    });
+  };
+
+  const closePortfolio = () => {
+    setPortfolioVisible(false);
+    if (portfolioCloseTimer.current) window.clearTimeout(portfolioCloseTimer.current);
+    portfolioCloseTimer.current = window.setTimeout(() => {
+      portfolioCloseTimer.current = null;
+      setPortfolioOpen(false);
+    }, 300);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (portfolioCloseTimer.current) window.clearTimeout(portfolioCloseTimer.current);
+    };
+  }, []);
 
   // Fetch barber by ID if not passed in state (e.g., when navigating back)
   useEffect(() => {
@@ -243,17 +275,13 @@ export default function ScheduleServicePage() {
                 </h2>
 
 
-                {barber.instagram_handle && (
-                  <a
-                    href={`https://instagram.com/${barber.instagram_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm hover:shadow-md w-full"
-                  >
-                    <Instagram className="w-4 h-4" />
-                    <span className="text-sm font-medium">@{barber.instagram_handle}</span>
-                  </a>
-                )}
+                <button
+                  type="button"
+                  onClick={openPortfolio}
+                  className="flex w-full items-center justify-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-all shadow-sm hover:shadow-md"
+                >
+                  <span className="text-sm font-medium">Portfolio</span>
+                </button>
               </div>
             </Card>
           </div>
@@ -268,10 +296,7 @@ export default function ScheduleServicePage() {
                   {/* Service Type */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Scissors className="w-4 h-4" />
-                        Service Type *
-                      </div>
+                      Service Type *
                     </label>
                     <select
                       value={serviceType}
@@ -330,10 +355,7 @@ export default function ScheduleServicePage() {
                   {/* Time - Shows available slots based on barber's schedule and existing bookings */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Time *
-                      </div>
+                      Time *
                     </label>
                     <AvailableTimePickerDropdown
                       barberId={barber.id}
@@ -359,10 +381,7 @@ export default function ScheduleServicePage() {
                   {/* Location */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Location (Optional)
-                      </div>
+                      Location (Optional)
                     </label>
                     <input
                       type="text"
@@ -418,6 +437,43 @@ export default function ScheduleServicePage() {
           </div>
         </div>
       </div>
+      {portfolioOpen && barber && createPortal(
+        <div
+          className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300 ease-in-out ${
+            portfolioVisible ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0'
+          }`}
+          onClick={closePortfolio}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Portfolio"
+            onClick={(event) => event.stopPropagation()}
+            className={`w-full max-w-3xl max-h-[85dvh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl transition-all duration-300 ease-in-out ${
+              portfolioVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
+            }`}
+          >
+            <div className="mb-2 flex justify-end">
+              <button
+                type="button"
+                onClick={closePortfolio}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+                aria-label="Close portfolio"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <DiscoverClientPortfolio
+              barber={barber}
+              latitude={null}
+              longitude={null}
+              onBook={closePortfolio}
+              className=""
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

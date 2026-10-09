@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Instagram } from 'lucide-react';
 import api from '../services/api.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
 import type { Barber, WeeklySchedule } from '../types';
@@ -103,6 +104,22 @@ export function formatWeeklyAvailability(schedule: WeeklySchedule | null | undef
             : 'Available';
       return { day: dayAbbrev[day], times };
     });
+}
+
+export function OperatorInstagramLink({ handle }: { handle?: string | null }) {
+  const cleaned = handle?.trim().replace(/^@/, '');
+  if (!cleaned) return null;
+  return (
+    <a
+      href={`https://instagram.com/${cleaned}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-0.5 inline-flex max-w-full items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+    >
+      <Instagram className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className="truncate">@{cleaned}</span>
+    </a>
+  );
 }
 
 export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | null | undefined }) {
@@ -268,6 +285,7 @@ export default function DiscoverClientPortfolio({
           <div className="min-w-0">
             <p className="truncate text-[22px] font-bold text-[#171717]">{name}</p>
             {distanceLabel && <p className="truncate text-sm text-[#525252]">{distanceLabel}</p>}
+            <OperatorInstagramLink handle={barber.instagram_handle} />
           </div>
         </div>
         <button
