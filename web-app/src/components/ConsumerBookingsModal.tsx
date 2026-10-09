@@ -233,7 +233,7 @@ export default function ConsumerBookingsModal({
               onClick={() => setTab(key)}
               className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
                 tab === key
-                  ? 'bg-gray-900 text-white shadow-sm'
+                  ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -251,18 +251,19 @@ export default function ConsumerBookingsModal({
             <div className="text-center py-12 px-4">
               <Calendar className="w-14 h-14 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-600 font-medium">No bookings here</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {tab === 'upcoming' && 'You have no upcoming appointments.'}
-                {tab === 'today' && 'Nothing scheduled for today.'}
-                {tab === 'past' && 'Past appointments will show up here.'}
-              </p>
+              {tab !== 'today' && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {tab === 'upcoming' && 'You have no upcoming appointments.'}
+                  {tab === 'past' && 'Past appointments will show up here.'}
+                </p>
+              )}
               <Button
                 className="mt-6"
                 onClick={() => {
                   onClose();
                 }}
               >
-                Find a barber
+                Find an Operator
               </Button>
             </div>
           ) : (
