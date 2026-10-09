@@ -2741,7 +2741,7 @@ function DiscoveryView({
         
         return (
         <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
+          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-[1000] p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
         >
           <div 

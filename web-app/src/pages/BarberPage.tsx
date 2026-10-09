@@ -4308,10 +4308,10 @@ function AvailabilityModal({
                       type="button"
                       disabled={slotIntervalSaving || !barberId}
                       onClick={() => void saveSlotInterval(minutes)}
-                      className={`px-3 py-2.5 text-sm font-semibold rounded-xl border transition-colors disabled:opacity-60 ${
+                      className={`px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-60 text-white ${
                         selected
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'bg-white text-gray-700 border-stone-200 hover:border-gray-400'
+                          ? 'bg-brand-600 hover:bg-brand-700'
+                          : 'bg-brand-500 hover:bg-brand-600'
                       }`}
                     >
                       Every {minutes} min
