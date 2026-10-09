@@ -1069,13 +1069,13 @@ export default function OperatorPortfolioModal({
                     onClick={() => closePreview()}
                   >
                     <div
-                      className={`flex max-h-[85dvh] w-full max-w-[300px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
-                        previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                      }`}
+                      className={`flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.25)] transition-all duration-150 ${
+                        photoPreview ? 'max-w-[min(28rem,calc(85dvh-3.25rem))]' : 'max-w-[300px]'
+                      } ${previewVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
                       onClick={(event) => event.stopPropagation()}
                     >
                       {photoPreview ? (
-                        <img src={operatorPhoto || ''} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
+                        <img src={operatorPhoto || ''} alt="" className="aspect-square w-full rounded-t-2xl object-cover" />
                       ) : previewItem?.media_type === 'video' ? (
                         <video src={previewItem.media_url} controls className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl bg-black object-cover" />
                       ) : (
