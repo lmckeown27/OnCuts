@@ -1,5 +1,5 @@
 /**
- * Shared consumer/barber booking cancellation (status CANCELLED, remove thread, notify, email, socket).
+ * Shared consumer/barber booking cancellation (status CANCELLED, deactivate thread, notify, email, socket).
  * Used by DELETE /bookings-simple/:id and DELETE /messages/conversations/:id when a booking is linked.
  */
 
@@ -172,8 +172,28 @@ export async function fetchBookingForParticipantCancellation(
   return (bookingCheck.rows[0] as BookingCancellationRow) || null;
 }
 
+/** A cancelled or rejected booking must not leave its thread active in Messages. */
+export async function deactivateConversationsForCancelledBooking(
+  bookingId: string,
+  bookingStatus: 'cancelled' | 'rejected' = 'cancelled'
+): Promise<void> {
+  const result = await pool.query(
+    `UPDATE conversations
+     SET is_active = false,
+         booking_status = $2,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE booking_id = $1`,
+    [bookingId, bookingStatus]
+  );
+  if (result.rowCount) {
+    logger.info(
+      `Marked ${result.rowCount} conversation(s) inactive for ${bookingStatus} booking ${bookingId}`
+    );
+  }
+}
+
 /**
- * Cancel booking, delete linked conversation + messages, notify, email, websocket.
+ * Cancel booking, mark the linked conversation inactive, notify, email, websocket.
  * Caller must ensure status is neither COMPLETED/PAID nor already CANCELLED.
  */
 export async function executeParticipantBookingCancellation(
@@ -192,15 +212,7 @@ export async function executeParticipantBookingCancellation(
   );
 
   await cancelPendingRescheduleRequestsForBooking(id, userId);
-
-  const convResult = await pool.query(`SELECT id FROM conversations WHERE booking_id = $1`, [id]);
-
-  if (convResult.rows.length > 0) {
-    const conversationId = convResult.rows[0].id;
-    await pool.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
-    await pool.query(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
-    logger.info(`Deleted conversation ${conversationId} and its messages for cancelled booking ${id}`);
-  }
+  await deactivateConversationsForCancelledBooking(id, 'cancelled');
 
   const barberName = `${booking.barber_first_name || ''} ${booking.barber_last_name || ''}`.trim() || 'Your barber';
   const consumerName = `${booking.consumer_first_name || ''} ${booking.consumer_last_name || ''}`.trim() || 'Customer';

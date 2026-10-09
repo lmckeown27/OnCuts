@@ -34,6 +34,7 @@ import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
 import {
   cancelPendingRescheduleRequestsForBooking,
+  deactivateConversationsForCancelledBooking,
   executeParticipantBookingCancellation,
   resolveClientCancelRefundHours,
   shouldRefundOnCancellation,
@@ -1100,21 +1101,13 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
     }
 
-    // If status is CANCELLED or REJECTED, drop pending schedule-change requests and delete the thread
+    // If status is CANCELLED or REJECTED, drop pending schedule-change requests and deactivate the thread
     if (status === 'CANCELLED' || status === 'REJECTED') {
       await cancelPendingRescheduleRequestsForBooking(id, userId);
-
-      const convResult = await pool.query(
-        `SELECT id FROM conversations WHERE booking_id = $1`,
-        [id]
+      await deactivateConversationsForCancelledBooking(
+        id,
+        status === 'REJECTED' ? 'rejected' : 'cancelled'
       );
-      
-      if (convResult.rows.length > 0) {
-        const conversationId = convResult.rows[0].id;
-        await pool.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
-        await pool.query(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
-        logger.info(`Deleted conversation ${conversationId} and messages for ${status} booking ${id}`);
-      }
     }
 
     // Push + in-app notification to the other participant (iOS lock screen / notification center)
@@ -3851,9 +3844,10 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
     if (booking.status === 'CANCELLED' || booking.status === 'REFUNDED') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Booking is already cancelled' 
+      await deactivateConversationsForCancelledBooking(id, 'cancelled');
+      return res.json({
+        success: true,
+        message: 'Booking is already cancelled',
       });
     }
 
