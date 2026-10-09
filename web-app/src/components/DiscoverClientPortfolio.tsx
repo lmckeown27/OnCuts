@@ -192,6 +192,7 @@ export default function DiscoverClientPortfolio({
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [showAllWork, setShowAllWork] = useState(false);
   const [previewItem, setPreviewItem] = useState<PortfolioItem | null>(null);
+  const [photoPreview, setPhotoPreview] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const previewCloseTimer = useRef<number | null>(null);
 
@@ -209,6 +210,7 @@ export default function DiscoverClientPortfolio({
     setOpenSectionId(null);
     setPreviewVisible(false);
     setPreviewItem(null);
+    setPhotoPreview(false);
     api
       .get<{ items?: PortfolioItem[]; specialtyIds?: string[] }>(`/barbers/${barber.id}/operator-portfolio/preview`)
       .then((data) => {
@@ -249,7 +251,22 @@ export default function DiscoverClientPortfolio({
       window.clearTimeout(previewCloseTimer.current);
       previewCloseTimer.current = null;
     }
+    setPhotoPreview(false);
     setPreviewItem(item);
+    setPreviewVisible(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPreviewVisible(true));
+    });
+  };
+
+  const openPhotoPreview = () => {
+    if (!photo) return;
+    if (previewCloseTimer.current) {
+      window.clearTimeout(previewCloseTimer.current);
+      previewCloseTimer.current = null;
+    }
+    setPreviewItem(null);
+    setPhotoPreview(true);
     setPreviewVisible(false);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setPreviewVisible(true));
@@ -262,6 +279,7 @@ export default function DiscoverClientPortfolio({
     previewCloseTimer.current = window.setTimeout(() => {
       previewCloseTimer.current = null;
       setPreviewItem(null);
+      setPhotoPreview(false);
     }, 150);
   };
 
@@ -276,9 +294,16 @@ export default function DiscoverClientPortfolio({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {photo ? (
-            <img src={photo} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+            <button
+              type="button"
+              onClick={openPhotoPreview}
+              className="shrink-0 rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
+              aria-label={`${name} profile photo`}
+            >
+              <img src={photo} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            </button>
           ) : (
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#5a7268] text-xl font-semibold text-white">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[#5a7268] text-xl font-semibold text-white">
               {(name.trim().charAt(0) || 'O').toUpperCase()}
             </span>
           )}
@@ -399,7 +424,7 @@ export default function DiscoverClientPortfolio({
       ) : (
         <WeeklyAvailability schedule={barber.weekly_schedule} />
       )}
-      {previewItem &&
+      {(previewItem || photoPreview) &&
         createPortal(
           <div
             className={`fixed inset-0 z-[1200] flex items-center justify-center p-4 transition-colors duration-150 ${
@@ -413,16 +438,24 @@ export default function DiscoverClientPortfolio({
               }`}
               onClick={(event) => event.stopPropagation()}
             >
-              {previewItem.media_type === 'video' ? (
+              {photoPreview ? (
+                <img src={photo || ''} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
+              ) : previewItem?.media_type === 'video' ? (
                 <video src={previewItem.media_url} controls className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl bg-black object-cover" />
               ) : (
-                <img src={previewItem.media_url} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
+                <img src={previewItem?.media_url} alt="" className="aspect-[9/16] min-h-0 w-full max-h-[calc(85dvh-3.25rem)] rounded-t-2xl object-cover" />
               )}
               <div className="relative flex shrink-0 items-center justify-center rounded-b-2xl px-4 py-3">
                 <p className="text-center text-sm font-semibold text-[#171717]">
-                  {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
-                  {priceForSpecialty(itemSpecialties(previewItem)[0] || '', options, prices) && (
-                    <span className="ml-1.5">{priceForSpecialty(itemSpecialties(previewItem)[0] || '', options, prices)}</span>
+                  {photoPreview || !previewItem ? (
+                    name
+                  ) : (
+                    <>
+                      {specialtyLabel(itemSpecialties(previewItem)[0] || '', options)}
+                      {priceForSpecialty(itemSpecialties(previewItem)[0] || '', options, prices) && (
+                        <span className="ml-1.5">{priceForSpecialty(itemSpecialties(previewItem)[0] || '', options, prices)}</span>
+                      )}
+                    </>
                   )}
                 </p>
                 <button type="button" onClick={() => closePreview()} className="absolute right-4 text-sm font-medium text-[#525252]">
