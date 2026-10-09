@@ -296,7 +296,7 @@ export default function ScheduleServicePage() {
                   {/* Service Type */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Service Type *
+                      Service Type <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={serviceType}
@@ -331,8 +331,11 @@ export default function ScheduleServicePage() {
 
                   {/* Date */}
                   <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Date <span className="text-red-500">*</span>
+                    </label>
                     <DatePicker
-                      label="Date"
+                      label=""
                       value={date}
                       onChange={(newDate) => {
                         setDate(newDate);
@@ -355,7 +358,7 @@ export default function ScheduleServicePage() {
                   {/* Time - Shows available slots based on barber's schedule and existing bookings */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time *
+                      Time <span className="text-red-500">*</span>
                     </label>
                     <AvailableTimePickerDropdown
                       barberId={barber.id}
