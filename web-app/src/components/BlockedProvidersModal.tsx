@@ -1,7 +1,7 @@
 /**
  * Popup listing operators the consumer has peer-blocked; supports unblock.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Loader2, UserX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import messageService, { type BlockedServiceProviderItem } from '../services/message.service';
@@ -24,6 +24,10 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
   const [rows, setRows] = useState<BlockedServiceProviderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const openFrame = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -50,6 +54,41 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
     load();
   }, [open, user, load]);
 
+  useEffect(() => {
+    if (closeTimer.current != null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    if (openFrame.current != null) {
+      window.cancelAnimationFrame(openFrame.current);
+      openFrame.current = null;
+    }
+
+    if (open) {
+      setMounted(true);
+      openFrame.current = window.requestAnimationFrame(() => {
+        openFrame.current = window.requestAnimationFrame(() => {
+          openFrame.current = null;
+          setVisible(true);
+        });
+      });
+      return;
+    }
+
+    setVisible(false);
+    closeTimer.current = window.setTimeout(() => {
+      closeTimer.current = null;
+      setMounted(false);
+    }, 150);
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimer.current != null) window.clearTimeout(closeTimer.current);
+      if (openFrame.current != null) window.cancelAnimationFrame(openFrame.current);
+    };
+  }, []);
+
   const onUnblock = async (blockedUserId: string) => {
     setUnblockingId(blockedUserId);
     try {
@@ -69,27 +108,28 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
     }
   };
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[1000] flex items-center justify-center p-4"
+      className={`fixed inset-0 min-h-[100dvh] z-[1000] flex items-center justify-center p-4 transition-all duration-150 ease-out ${
+        visible ? 'bg-black/50' : 'bg-black/0'
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="blocked-providers-title"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85dvh] sm:max-h-[85vh] overflow-hidden flex flex-col"
+        className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[80vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
+          visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-5 py-4 flex items-center justify-between shrink-0">
-          <div>
-            <h2 id="blocked-providers-title" className="text-lg font-bold text-white">
-              Blocked providers
-            </h2>
-            <p className="text-white/80 text-sm mt-0.5">Manage who you have blocked</p>
-          </div>
+          <h2 id="blocked-providers-title" className="text-lg font-bold text-white">
+            Blocked providers
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -100,10 +140,6 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
           </button>
         </div>
 
-        <p className="text-sm text-gray-500 px-5 py-3 border-b border-gray-100 shrink-0">
-          Operators you have blocked cannot message you or book with you until you unblock them.
-        </p>
-
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {loading ? (
             <div className="flex justify-center py-12">
@@ -113,10 +149,6 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
             <div className="text-center py-10 px-2">
               <UserX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-600 font-medium">No blocked operators</p>
-              <p className="text-gray-500 text-sm mt-2">
-                When you block someone from their profile or messages, they will appear here so you can unblock
-                them later.
-              </p>
             </div>
           ) : (
             <ul className="space-y-3">
