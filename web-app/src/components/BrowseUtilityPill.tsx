@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import BrowseRadiusSlider from './BrowseRadiusSlider';
 import PlaceSearchInput from './PlaceSearchInput';
 import type { GeocodePlace } from '../services/geocode.service';
-import type { BrowseProviderCategory } from '../config/providerCategories';
+import {
+  BROWSE_PROVIDER_CATEGORIES,
+  type BrowseProviderCategory,
+} from '../config/providerCategories';
 import {
   BROWSE_MAX_DISTANCE_MILES,
   BROWSE_MIN_DISTANCE_MILES,
@@ -59,6 +62,8 @@ export default function BrowseUtilityPill({
   onSearchQueryChange,
   searchSuggestions = [],
   onSearchSuggestionSelect,
+  browseCategory,
+  onBrowseCategoryChange,
   constrainByDistance,
   onConstrainByDistanceChange,
   maxDistanceMiles,
@@ -76,6 +81,9 @@ export default function BrowseUtilityPill({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const [lockedPillWidth, setLockedPillWidth] = useState<number | null>(null);
+  const selectedCategory =
+    BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseCategory) ??
+    BROWSE_PROVIDER_CATEGORIES[0];
 
   const searchTrimmed = searchQuery.trim();
   const showSuggestions =
@@ -140,6 +148,17 @@ export default function BrowseUtilityPill({
     setMode('radius');
   };
 
+  const openCategory = () => {
+    if (mode === 'radius') {
+      onMaxDistanceCommitted(Math.round(displayDistanceMiles));
+    }
+    onSearchQueryChange('');
+    if (pillRef.current) {
+      setLockedPillWidth(pillRef.current.getBoundingClientRect().width);
+    }
+    setMode('category');
+  };
+
   const closeSearch = () => {
     onSearchQueryChange('');
     closeAllModes();
@@ -155,7 +174,7 @@ export default function BrowseUtilityPill({
     : 'ALL';
 
   const sideSegmentsVisible = mode === 'collapsed';
-  const lockOpenedWidth = mode === 'search';
+  const lockOpenedWidth = mode === 'search' || mode === 'category';
 
   return (
     <div className="relative z-[800] mb-4 sm:mb-5">
@@ -258,6 +277,46 @@ export default function BrowseUtilityPill({
               </p>
             )}
           </div>
+        ) : mode === 'category' ? (
+          <div
+            className="rounded-full border border-gray-200/90 bg-white/85 backdrop-blur-xl shadow-sm px-4 py-3"
+            role="region"
+            aria-label="Provider type filter"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {BROWSE_PROVIDER_CATEGORIES.map((option) => {
+                  const isSelected = browseCategory === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => {
+                        onBrowseCategoryChange(option.id);
+                        closeAllModes();
+                      }}
+                      aria-pressed={isSelected}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
+                        isSelected
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={closeAllModes}
+                className="shrink-0 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors active:scale-95"
+                aria-label="Done filtering by provider type"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         ) : (
           <div
             ref={pillRef}
@@ -354,8 +413,8 @@ export default function BrowseUtilityPill({
                     </span>
                   </label>
                 </div>
-                {/*
                 <PillDivider visible={sideSegmentsVisible} />
+                {/*
                 <button
                   type="button"
                   onClick={openRadius}
@@ -370,6 +429,14 @@ export default function BrowseUtilityPill({
                 </button>
                 <PillDivider visible={sideSegmentsVisible} />
                 */}
+                <button
+                  type="button"
+                  onClick={openCategory}
+                  className="shrink-0 px-2.5 py-2 rounded-full text-sm font-medium text-gray-800 hover:bg-gray-100 transition-colors active:scale-95"
+                  aria-label={`Provider type filter, ${selectedCategory.label}`}
+                >
+                  <span className="truncate max-w-[4.5rem] sm:max-w-[5.5rem]">{selectedCategory.label}</span>
+                </button>
               </>
             )}
           </div>

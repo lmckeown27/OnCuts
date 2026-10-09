@@ -53,7 +53,10 @@ import {
   setBrowseDeviceTracking,
   setBrowseMaxDistanceMiles,
 } from '../utils/consumerBrowseDistancePreference';
-import { setBrowseProviderCategory } from '../utils/consumerBrowseCategoryPreference';
+import {
+  getBrowseProviderCategory,
+  setBrowseProviderCategory,
+} from '../utils/consumerBrowseCategoryPreference';
 import {
   browseCategoryApiParam,
   type BrowseProviderCategory,
@@ -1652,7 +1655,9 @@ function DiscoveryView({
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
-  const [browseProviderCategory, setBrowseProviderCategoryState] = useState<BrowseProviderCategory>('all');
+  const [browseProviderCategory, setBrowseProviderCategoryState] = useState<BrowseProviderCategory>(
+    getBrowseProviderCategory,
+  );
   const [townHydrated, setTownHydrated] = useState(false);
   const [myBarberEntries, setMyBarberEntries] = useState<MyBarberEntry[]>([]);
   const [myBarbersLoading, setMyBarbersLoading] = useState(false);
