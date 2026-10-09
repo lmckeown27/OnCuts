@@ -5,6 +5,7 @@ import AppStatus from './components/AppStatus';
 import PlatformGuard from './components/PlatformGuard';
 import Loading from './components/Loading';
 import { useAuthStore } from './store/useAuthStore';
+import { rememberSignedInRoleHome } from './utils/signedInRoleHome';
 import QueryProvider from './providers/QueryProvider';
 // Error Boundary to catch render errors and display helpful message
 interface ErrorBoundaryState {
@@ -137,6 +138,10 @@ function AppContent() {
   const isAppRoute = location.pathname.startsWith('/app');
   const isWebRoute = location.pathname.startsWith('/web');
   const { loadUser, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    rememberSignedInRoleHome(location.pathname);
+  }, [location.pathname]);
 
   // Load user data from API on mount to ensure fresh role data
   useEffect(() => {

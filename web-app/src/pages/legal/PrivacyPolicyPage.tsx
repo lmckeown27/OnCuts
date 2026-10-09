@@ -2,9 +2,12 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import webpageLogo from '../../assets/logos/Webpage_Logo copy.png';
+import { useAuthStore } from '../../store/useAuthStore';
+import { signedInRoleHome } from '../../utils/signedInRoleHome';
 
 export default function PrivacyPolicyPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const lastUpdated = 'August 10, 2026';
 
   useEffect(() => {
@@ -12,7 +15,7 @@ export default function PrivacyPolicyPage() {
   }, []);
 
   const handleBack = () => {
-    navigate('/');
+    navigate(signedInRoleHome(user, isAuthenticated));
   };
 
   return (
