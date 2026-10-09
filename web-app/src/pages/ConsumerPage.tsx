@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX, Search } from 'lucide-react';
+import { User as UserIcon, Calendar, LogOut, ChevronDown, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -823,7 +823,6 @@ export default function ConsumerPage() {
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
-                          <Settings className="w-4 h-4 text-gray-500" />
                           Edit Profile
                         </button>
                         <button
@@ -833,7 +832,6 @@ export default function ConsumerPage() {
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
-                          <UserX className="w-4 h-4 text-gray-500" />
                           Blocked providers
                         </button>
                         {isAdmin && (
@@ -857,7 +855,6 @@ export default function ConsumerPage() {
                           onClick={() => setShowProfileDropdown(false)}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
-                          <FileText className="w-4 h-4 text-gray-500" />
                           Privacy Policy
                         </Link>
                         <Link
@@ -865,7 +862,6 @@ export default function ConsumerPage() {
                           onClick={() => setShowProfileDropdown(false)}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
-                          <FileText className="w-4 h-4 text-gray-500" />
                           Terms of Service
                         </Link>
                         <div className="border-t border-gray-200 my-1"></div>
@@ -961,22 +957,25 @@ export default function ConsumerPage() {
       {/* Admin Dashboard — consumer-admins (no barber profile required) */}
       {isAdmin && showAdminDashboard && (
         <div
-          className={`fixed inset-0 z-[1100] min-h-[100dvh] flex items-center justify-center p-4 transition-colors duration-200 ${
+          className={`fixed inset-0 z-[1100] min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
             isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeAdminDashboard}
         >
           <div
-            className={`bg-stone-50 w-full max-w-lg rounded-2xl shadow-2xl max-h-[68dvh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+            className={`bg-stone-50 w-full sm:max-w-2xl sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[98dvh] sm:max-h-[96vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
               isAdminDashboardVisible
                 ? 'opacity-100 translate-y-0'
-                : 'opacity-0 translate-y-4 scale-95'
+                : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
             }`}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Admin"
           >
+            <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+            </div>
             <div className="relative px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
               <button
