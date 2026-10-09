@@ -291,13 +291,13 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
-              {/* First name (optional) */}
+              {/* First name */}
               <div className="relative">
                 <label 
                   htmlFor="firstName" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  First name (optional)
+                  First name
                 </label>
                 <input
                   type="text"
@@ -315,13 +315,13 @@ export default function SignupPage() {
                 )}
               </div>
 
-              {/* Last name (optional) */}
+              {/* Last name */}
               <div className="relative">
                 <label 
                   htmlFor="lastName" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  Last name (optional)
+                  Last name
                 </label>
                 <input
                   type="text"

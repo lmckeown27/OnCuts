@@ -2056,14 +2056,14 @@ function DiscoveryView({
     [filteredBarbers, resolvedPublicLabels]
   );
 
-  const myBarberEntriesLabeled = useMemo(
-    () =>
-      myBarberEntries.map((entry) => ({
-        ...entry,
-        barber: withResolvedPublicLabel(entry.barber),
-      })),
-    [myBarberEntries, resolvedPublicLabels]
-  );
+  const myBarberEntriesLabeled = useMemo(() => {
+    const labeled = myBarberEntries.map((entry) => ({
+      ...entry,
+      barber: withResolvedPublicLabel(entry.barber),
+    }));
+    if (browseProviderCategory === 'all') return labeled;
+    return labeled.filter((entry) => operatorBrowseKind(entry.barber) === browseProviderCategory);
+  }, [myBarberEntries, resolvedPublicLabels, browseProviderCategory]);
 
   // Resolve missing public broad labels from operator pins (campus/city — never "Other")
   useEffect(() => {
@@ -2509,6 +2509,7 @@ function DiscoveryView({
           onSelectBarber={(barber) => void handleBarberSelect(barber)}
           onGoDiscover={() => onHomeSegmentChange('discover')}
           isAuthenticated={isAuthenticated}
+          filterActive={browseProviderCategory !== 'all'}
         />
       ) : (
         <>

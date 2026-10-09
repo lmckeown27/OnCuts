@@ -20,6 +20,7 @@ interface MyBarbersViewProps {
   onSelectBarber: (barber: Barber) => void;
   onGoDiscover: () => void;
   isAuthenticated: boolean;
+  filterActive?: boolean;
 }
 
 export default function MyBarbersView({
@@ -28,6 +29,7 @@ export default function MyBarbersView({
   onSelectBarber,
   onGoDiscover,
   isAuthenticated,
+  filterActive = false,
 }: MyBarbersViewProps) {
   const groups = groupBarbersByLocationLabel(entries);
   const groupedIds = new Set(groups.flatMap((g) => g.items.map((b) => b.id)));
@@ -57,7 +59,13 @@ export default function MyBarbersView({
         </div>
       )}
 
-      {!loading && isAuthenticated && entries.length === 0 && (
+      {!loading && isAuthenticated && entries.length === 0 && filterActive && (
+        <div className="py-12 text-center">
+          <p className="text-sm text-gray-600">No operators match this filter.</p>
+        </div>
+      )}
+
+      {!loading && isAuthenticated && entries.length === 0 && !filterActive && (
         <div className="rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-white px-6 py-12 text-center">
           <MapPin className="w-10 h-10 text-gray-400 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">No operators yet</h3>

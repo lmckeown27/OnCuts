@@ -1017,7 +1017,7 @@ export default function AuthPage() {
                         htmlFor="firstName"
                         className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                       >
-                        First name (optional)
+                        First name
                       </label>
                       <input
                         type="text"
@@ -1036,7 +1036,7 @@ export default function AuthPage() {
                         htmlFor="lastName"
                         className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                       >
-                        Last name (optional)
+                        Last name
                       </label>
                       <input
                         type="text"
@@ -1348,7 +1348,7 @@ export default function AuthPage() {
                             htmlFor="signup-phone-firstName"
                             className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                           >
-                            First name (optional)
+                            First name
                           </label>
                           <input
                             type="text"
@@ -1367,7 +1367,7 @@ export default function AuthPage() {
                             htmlFor="signup-phone-lastName"
                             className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                           >
-                            Last name (optional)
+                            Last name
                           </label>
                           <input
                             type="text"
