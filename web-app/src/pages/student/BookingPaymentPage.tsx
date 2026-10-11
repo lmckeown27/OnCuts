@@ -11,11 +11,7 @@ import {
   CheckCircle, 
   ArrowLeft, 
   AlertCircle, 
-  Calendar,
-  Clock,
-  MapPin,
   User,
-  Scissors,
   MessageCircle,
   Loader2
 } from 'lucide-react';
@@ -348,39 +344,24 @@ export default function BookingPaymentPage() {
           </div>
 
           {/* Service Details */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-start gap-3">
-              <Scissors className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">Service</p>
-                <p className="font-medium text-gray-900">{bookingDetails.serviceName}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">Date</p>
-                <p className="font-medium text-gray-900">{formattedDate}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">Time</p>
-                <p className="font-medium text-gray-900">{formattedTime}</p>
-              </div>
-            </div>
-
+          <div className="space-y-2 mb-6 text-sm">
+            <p>
+              <span className="text-gray-500">Service: </span>
+              <span className="font-medium text-gray-900">{bookingDetails.serviceName}</span>
+            </p>
+            <p>
+              <span className="text-gray-500">Date: </span>
+              <span className="font-medium text-gray-900">{formattedDate}</span>
+            </p>
+            <p>
+              <span className="text-gray-500">Time: </span>
+              <span className="font-medium text-gray-900">{formattedTime}</span>
+            </p>
             {bookingDetails.location && (
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium text-gray-900">{bookingDetails.location}</p>
-                </div>
-              </div>
+              <p>
+                <span className="text-gray-500">Location: </span>
+                <span className="font-medium text-gray-900">{bookingDetails.location}</span>
+              </p>
             )}
 
             {bookingDetails.notes && (
