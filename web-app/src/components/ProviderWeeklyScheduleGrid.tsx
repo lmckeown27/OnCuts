@@ -423,7 +423,7 @@ export default function ProviderWeeklyScheduleGrid({
               <div
                 key={day.dateStr}
                 className={`text-center py-2 rounded-t-lg ${
-                  day.isToday ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+                  day.isToday ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-700'
                 }`}
               >
                 <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">{day.shortName}</div>
