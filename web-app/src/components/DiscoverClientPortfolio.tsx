@@ -70,7 +70,7 @@ function formatClock(time24: string): string {
   return minute === 0 ? `${hour}${ampm}` : `${hour}:${minuteStr}${ampm}`;
 }
 
-export function formatWeeklyAvailability(schedule: WeeklySchedule | null | undefined): { day: string; times: string }[] {
+export function formatWeeklyAvailability(schedule: WeeklySchedule | null | undefined): { day: string; times: string[] }[] {
   if (!schedule) return [];
   const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
   const dayAbbrev: Record<string, string> = {
@@ -98,10 +98,10 @@ export function formatWeeklyAvailability(schedule: WeeklySchedule | null | undef
         : [];
       const times =
         intervals.length > 0
-          ? intervals.map((interval) => `${formatClock(interval.start)}–${formatClock(interval.end)}`).join(', ')
+          ? intervals.map((interval) => `${formatClock(interval.start)}–${formatClock(interval.end)}`)
           : daySchedule.start && daySchedule.end
-            ? `${formatClock(daySchedule.start)}–${formatClock(daySchedule.end)}`
-            : 'Available';
+            ? [`${formatClock(daySchedule.start)}–${formatClock(daySchedule.end)}`]
+            : ['Available'];
       return { day: dayAbbrev[day], times };
     });
 }
@@ -134,8 +134,12 @@ export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | nu
             <span key={`${day}-day`} className={`whitespace-nowrap px-3 py-2 font-semibold text-[#171717] ${rowBorder}`}>
               {day}
             </span>,
-            <span key={`${day}-time`} className={`whitespace-nowrap border-l border-[#e5e5e5] px-3 py-2 text-[#525252] ${rowBorder}`}>
-              {times}
+            <span key={`${day}-time`} className={`flex flex-col border-l border-[#e5e5e5] px-3 py-2 text-[#525252] ${rowBorder}`}>
+              {times.map((range, rangeIndex) => (
+                <span key={`${day}-${rangeIndex}`} className="whitespace-nowrap">
+                  {range}
+                </span>
+              ))}
             </span>,
           ];
         })}
