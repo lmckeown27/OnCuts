@@ -29,6 +29,7 @@ export default function BarberBookingLinkCard({
 
   return (
     <Card>
+      <h3 className="text-lg font-semibold mb-4">Booking Link</h3>
       <div className="flex items-stretch gap-2">
         <input
           type="text"

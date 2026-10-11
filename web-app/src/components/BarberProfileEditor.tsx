@@ -330,10 +330,10 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
           type="button"
           onClick={openPortfolio}
           disabled={!barber?.id}
-          className="flex items-center px-4 py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white transition-colors disabled:opacity-50"
+          className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50"
           aria-label="Portfolio"
         >
-          <span className="text-sm font-semibold">Portfolio</span>
+          <span>Portfolio</span>
         </button>
       </div>
       {showPortfolio && barber?.id && (
@@ -446,27 +446,29 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       {/* Profile Visibility */}
       <Card>
         <h3 className="text-lg font-semibold mb-2">Profile Visibility</h3>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isHidden}
-              onChange={(e) => setIsHidden(e.target.checked)}
-              className="w-5 h-5 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <span className={`text-sm font-medium ${isHidden ? 'text-gray-900' : 'text-gray-400'}`}>Hidden</span>
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={!isHidden}
+            onChange={(e) => setIsHidden(!e.target.checked)}
+            aria-label="Profile visibility"
+          />
+          <span
+            aria-hidden
+            className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+              isHidden ? 'bg-gray-300' : 'bg-brand-600'
+            }`}
+          >
+            <span
+              className={`pointer-events-none mt-0.5 inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                isHidden ? 'translate-x-0.5' : 'ml-0.5 translate-x-4'
+              }`}
             />
-            <span className="font-medium text-gray-900">Hide my profile from consumers</span>
-          </label>
-          
-          {isHidden && (
-            <div className="p-3 bg-primary-50 border border-gray-200 rounded-lg">
-              <p className="text-sm font-medium text-primary-800">Warning: Profile Hidden</p>
-              <p className="text-sm text-primary-700 mt-1">
-                It will be virtually impossible for consumers to book a service with you while your profile is hidden. 
-                Only enable this if you need a temporary break from taking bookings.
-              </p>
-            </div>
-          )}
-        </div>
+          </span>
+          <span className={`text-sm font-medium ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>Visible</span>
+        </label>
       </Card>
 
       {/* Blocked accounts */}
