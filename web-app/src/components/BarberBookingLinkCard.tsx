@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, Link2 } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import toast from 'react-hot-toast';
@@ -29,10 +29,6 @@ export default function BarberBookingLinkCard({
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Link2 className="w-5 h-5 text-gray-700" />
-        Booking link
-      </h3>
       <div className="flex items-stretch gap-2">
         <input
           type="text"

@@ -605,10 +605,10 @@ export default function BarberPage() {
             <button
               type="button"
               onClick={openPortfolio}
-              className="absolute left-1/2 -translate-x-1/2 flex items-center px-4 py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white transition-colors"
+              className="absolute left-1/2 -translate-x-1/2 min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
               aria-label="Portfolio"
             >
-              <span className="text-sm font-semibold">Portfolio</span>
+              <span>Portfolio</span>
             </button>
 
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
