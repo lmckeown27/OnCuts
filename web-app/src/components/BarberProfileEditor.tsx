@@ -427,7 +427,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
       {/* Instagram Handle (Optional) */}
       <Card>
-        <h3 className="text-lg font-semibold mb-4">Instagram (Portfolio)</h3>
+        <h3 className="text-lg font-semibold mb-4">Instagram</h3>
         <div className="flex items-center gap-2">
           <span className="text-gray-600">@</span>
           <input

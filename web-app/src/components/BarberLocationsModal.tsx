@@ -193,25 +193,22 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
           ) : (
             <>
               <div>
-                {webOnly ? (
-                  <PlaceSearchInput
-                    value={placeLabel}
-                    onChange={setPlaceLabel}
-                    onSelectPlace={applyPlace}
-                    disabled={saving || webOnlySaving}
-                    showLabel={false}
-                  />
-                ) : (
-                  <p className="py-2.5 text-sm font-bold text-gray-900 text-center">
-                    {placeLabel.trim() || 'Location from device'}
-                  </p>
-                )}
-                <div className="mt-1.5 flex items-center justify-between gap-3">
-                  <p className="text-xs text-gray-500">
-                    {webOnly
-                      ? 'Toggle on to turn on device tracking'
-                      : 'Toggle off to turn off device tracking'}
-                  </p>
+                <div className="flex items-center justify-center gap-3">
+                  <div className={webOnly ? 'min-w-0 flex-1' : 'min-w-0'}>
+                    {webOnly ? (
+                      <PlaceSearchInput
+                        value={placeLabel}
+                        onChange={setPlaceLabel}
+                        onSelectPlace={applyPlace}
+                        disabled={saving || webOnlySaving}
+                        showLabel={false}
+                      />
+                    ) : (
+                      <p className="py-2.5 text-sm font-bold text-gray-900">
+                        {placeLabel.trim() || 'Location from device'}
+                      </p>
+                    )}
+                  </div>
                   <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
                     <span className={`text-xs font-medium ${!webOnly ? 'text-gray-400' : 'text-gray-900'}`}>
                       Off
