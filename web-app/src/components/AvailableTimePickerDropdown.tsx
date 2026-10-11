@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Clock, Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import api from '../services/api.service';
 
 interface TimeInterval {
@@ -139,10 +139,8 @@ export default function AvailableTimePickerDropdown({
       )}
 
       <div className="relative">
-        {isLoading ? (
+        {isLoading && (
           <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
-        ) : (
-          <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         )}
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
@@ -151,8 +149,9 @@ export default function AvailableTimePickerDropdown({
           disabled={isDisabled}
           onChange={(e) => onChange(e.target.value)}
           className={`
-            w-full appearance-none rounded-lg border py-2 pl-9 pr-9 text-sm
+            w-full appearance-none rounded-lg border py-2 pr-9 text-sm
             transition-all duration-150
+            ${isLoading ? 'pl-9' : 'pl-3'}
             ${isDisabled
               ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
               : error
@@ -187,12 +186,6 @@ export default function AvailableTimePickerDropdown({
 
       {error && (
         <p className="mt-1 text-xs text-red-600">{error}</p>
-      )}
-
-      {value && !error && (
-        <p className="mt-1 text-xs text-gray-500">
-          {formatTimeDisplay(value)} · {appointmentDurationMinutes}-minute appointment
-        </p>
       )}
     </div>
   );

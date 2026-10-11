@@ -2,7 +2,7 @@
  * Booking Confirmation Page
  *
  * Consumer reviews service details and submits a booking request.
- * Service payment is collected in-app after the barber accepts; tip after complete.
+ * Service payment is collected in-app after the operator accepts, or after the service is completed, depending on payment timing.
  */
 
 import { useState } from 'react';
@@ -165,6 +165,8 @@ export default function BookingPaymentPage() {
 
   const serviceCents = Math.round(bookingDetails.servicePrice * 100);
   const { serviceFeeCents, chargeAmountCents } = quoteClientServiceFee(serviceCents, frontendConfig);
+  const payAfterService = frontendConfig.paymentTimingMode === 'after_complete';
+  const operatorFirstName = bookingDetails.barberName?.split(' ')[0] || 'your operator';
   const chargeDollars = chargeAmountCents / 100;
   const serviceFeeDollars = serviceFeeCents / 100;
 
@@ -178,7 +180,7 @@ export default function BookingPaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
           <p className="text-gray-600 mb-6">
-            Your appointment with {bookingDetails.barberName} has been confirmed. You'll pay ${chargeDollars.toFixed(2)} in-app after they accept.
+            Your appointment with {bookingDetails.barberName} has been confirmed. You'll pay ${chargeDollars.toFixed(2)} in-app {payAfterService ? 'after the service is completed' : 'after they accept'}.
           </p>
 
           <div className="text-left bg-gray-50 p-4 rounded-lg mb-6">
@@ -415,7 +417,9 @@ export default function BookingPaymentPage() {
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 text-right">
-              Paid in-app after the operator accepts
+              {payAfterService
+                ? 'Paid in-app after the service is completed'
+                : 'Paid in-app after the operator accepts'}
             </p>
           </div>
         </Card>
@@ -454,10 +458,14 @@ export default function BookingPaymentPage() {
         {/* Info Text */}
         <div className="text-xs text-gray-500 text-center mt-4 space-y-1">
           <p>
-            No payment is required until {bookingDetails.barberName?.split(' ')[0] || 'your operator'} accepts your request.
+            {payAfterService
+              ? `No payment is required until ${operatorFirstName} completes the service.`
+              : `No payment is required until ${operatorFirstName} accepts your request.`}
           </p>
           <p>
-            By confirming, you agree to pay ${chargeDollars.toFixed(2)} after acceptance to lock in your appointment.
+            {payAfterService
+              ? `By confirming, you agree to pay $${chargeDollars.toFixed(2)} after the service is completed.`
+              : `By confirming, you agree to pay $${chargeDollars.toFixed(2)} after acceptance to lock in your appointment.`}
           </p>
         </div>
       </div>
