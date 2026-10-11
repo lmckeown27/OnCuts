@@ -126,7 +126,7 @@ export default function BlockedProvidersModal({ open, onClose }: Props) {
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-5 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-brand-600 px-5 py-4 flex items-center justify-between shrink-0">
           <h2 id="blocked-providers-title" className="text-lg font-bold text-white">
             Blocked providers
           </h2>

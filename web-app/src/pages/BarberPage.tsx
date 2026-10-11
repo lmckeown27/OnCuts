@@ -774,7 +774,7 @@ export default function BarberPage() {
               ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-brand-600 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Account</h2>
               </div>
@@ -807,7 +807,7 @@ export default function BarberPage() {
               ${isBookingLinkVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-brand-600 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold">Booking link</h2>
                 <p className="text-white/80 text-sm">Share so clients can book you directly</p>
@@ -842,7 +842,7 @@ export default function BarberPage() {
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-10 shrink-0 gap-2">
+            <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-10 shrink-0 gap-2">
               <div className="min-w-0">
                 <h2 className="text-2xl font-bold">Services Offered</h2>
               </div>
@@ -1057,7 +1057,7 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex-shrink-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
+            <div className="flex-shrink-0 bg-brand-600 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">
@@ -1519,7 +1519,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               <span
                 aria-hidden
                 className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                  !serviceLocationWebOnly ? 'bg-gray-900' : 'bg-gray-300'
+                  !serviceLocationWebOnly ? 'bg-brand-600' : 'bg-gray-300'
                 } ${webOnlySaving || locationSaving ? 'opacity-50' : ''}`}
               >
                 <span
@@ -2408,7 +2408,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header - changes based on whether viewing booking details */}
-            <div className="bg-gray-900 text-white p-6">
+            <div className="bg-brand-600 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">
@@ -3318,7 +3318,7 @@ function BookingsModal({ isVisible, onClose, barberId, onMarkedComplete }: { isV
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-brand-600 text-white px-6 py-4 flex items-center justify-between z-10">
                         <div>
             <h2 className="text-2xl font-bold">Bookings</h2>
             <p className="text-white/80 text-sm">{bookings.filter(b => b.status === 'ACCEPTED').length} active, {bookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length} completed</p>
@@ -4218,7 +4218,7 @@ function AvailabilityModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+        <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Edit Schedule</h2>
           </div>

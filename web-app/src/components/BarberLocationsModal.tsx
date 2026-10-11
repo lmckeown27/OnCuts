@@ -174,7 +174,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-brand-600 text-white px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-2xl font-bold">Service Location</h2>
             <p className="text-white/80 text-sm">Where customers can find you for booking</p>
@@ -227,7 +227,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                     <span
                       aria-hidden
                       className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                        !webOnly ? 'bg-gray-900' : 'bg-gray-300'
+                        !webOnly ? 'bg-brand-600' : 'bg-gray-300'
                       } ${webOnlySaving || saving ? 'opacity-50' : ''}`}
                     >
                       <span

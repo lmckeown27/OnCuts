@@ -402,7 +402,7 @@ export default function BrowseUtilityPill({
                     <span
                       aria-hidden
                       className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
-                        deviceTracking ? 'bg-gray-900' : 'bg-gray-300'
+                        deviceTracking ? 'bg-brand-600' : 'bg-gray-300'
                       } ${deviceTrackingBusy ? 'opacity-50' : ''}`}
                     >
                       <span

@@ -474,7 +474,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white p-4 sm:p-6">
+            <div className="bg-brand-600 text-white p-4 sm:p-6">
               {/* Desktop: Show title row */}
               <div className="hidden sm:flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Customer Details</h2>

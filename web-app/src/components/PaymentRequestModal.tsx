@@ -146,7 +146,7 @@ export default function PaymentRequestModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-brand-600 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">
               {step === 'payment' && 'Complete Payment'}

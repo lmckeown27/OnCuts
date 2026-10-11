@@ -621,7 +621,7 @@ export default function PayoutSettingsScreen({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+        <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold">Payout Settings</h2>
             <p className="text-white/80 text-sm">Stripe Connect and Express dashboard</p>

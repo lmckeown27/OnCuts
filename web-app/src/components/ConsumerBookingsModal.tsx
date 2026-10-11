@@ -206,7 +206,7 @@ export default function ConsumerBookingsModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-brand-600 px-6 py-4 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-bold text-white">My bookings</h2>
             <p className="text-white/80 text-sm">Upcoming, today, and past</p>
