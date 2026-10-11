@@ -127,16 +127,18 @@ export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | nu
   if (hours.length === 0) return null;
   return (
     <div className="w-fit max-w-full justify-self-start pt-1">
-      <div className="w-fit overflow-hidden rounded-lg border border-[#e5e5e5]">
-        {hours.map(({ day, times }, index) => (
-          <div
-            key={day}
-            className={`grid w-fit grid-cols-[auto_auto] text-sm ${index < hours.length - 1 ? 'border-b border-[#e5e5e5]' : ''}`}
-          >
-            <span className="whitespace-nowrap px-3 py-2 font-semibold text-[#171717]">{day}</span>
-            <span className="whitespace-nowrap border-l border-[#e5e5e5] px-3 py-2 text-[#525252]">{times}</span>
-          </div>
-        ))}
+      <div className="grid w-max max-w-full grid-cols-[auto_auto] overflow-hidden rounded-lg border border-[#e5e5e5] text-sm">
+        {hours.flatMap(({ day, times }, index) => {
+          const rowBorder = index < hours.length - 1 ? 'border-b border-[#e5e5e5]' : '';
+          return [
+            <span key={`${day}-day`} className={`whitespace-nowrap px-3 py-2 font-semibold text-[#171717] ${rowBorder}`}>
+              {day}
+            </span>,
+            <span key={`${day}-time`} className={`whitespace-nowrap border-l border-[#e5e5e5] px-3 py-2 text-[#525252] ${rowBorder}`}>
+              {times}
+            </span>,
+          ];
+        })}
       </div>
     </div>
   );
