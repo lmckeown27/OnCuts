@@ -419,8 +419,7 @@ export default function BookingPaymentPage() {
             decoding="async"
           />
           <span className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold leading-tight">Get the OnCuts app</p>
-            <p className="truncate text-xs text-white/70">Open in the OnCuts app</p>
+            <p className="truncate text-sm font-semibold leading-tight">Open in the OnCuts app</p>
           </span>
           <span className="shrink-0 rounded-full bg-[#007AFF] px-4 py-1.5 text-xs font-semibold text-white">
             Open
