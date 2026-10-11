@@ -1501,10 +1501,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </p>
               )}
             </div>
-            <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
-              <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-400' : 'text-gray-900'}`}>
-                Off
-              </span>
+            <label className="flex items-center shrink-0 cursor-pointer select-none">
               <input
                 type="checkbox"
                 className="sr-only"
@@ -1524,9 +1521,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     !serviceLocationWebOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
                   }`}
                 />
-              </span>
-              <span className={`text-xs font-medium ${!serviceLocationWebOnly ? 'text-gray-900' : 'text-gray-400'}`}>
-                On
               </span>
             </label>
           </div>
@@ -1649,16 +1643,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       const bookingDate = new Date(b.scheduledTime);
       return bookingDate >= startOfWeek && bookingDate < endOfWeek;
     }).length;
-    const endDisplay = new Date(startOfWeek);
-    endDisplay.setDate(startOfWeek.getDate() + 6);
-    const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' });
-    const endMonth = endDisplay.toLocaleDateString('en-US', { month: 'short' });
-    const dateLabel =
-      startMonth === endMonth
-        ? `${startMonth} ${startOfWeek.getDate()}–${endDisplay.getDate()}`
-        : `${startMonth} ${startOfWeek.getDate()} – ${endMonth} ${endDisplay.getDate()}`;
 
-    return `${count} appointment${count !== 1 ? 's' : ''} · ${dateLabel}`;
+    return `${count} appointment${count !== 1 ? 's' : ''}`;
   };
 
   // Viewport detection for responsive layout

@@ -126,15 +126,15 @@ export function WeeklyAvailability({ schedule }: { schedule: WeeklySchedule | nu
   const hours = formatWeeklyAvailability(schedule);
   if (hours.length === 0) return null;
   return (
-    <div className="pt-1">
-      <div className="overflow-hidden rounded-lg border border-[#e5e5e5]">
+    <div className="w-fit max-w-full justify-self-start pt-1">
+      <div className="w-fit overflow-hidden rounded-lg border border-[#e5e5e5]">
         {hours.map(({ day, times }, index) => (
           <div
             key={day}
-            className={`grid grid-cols-[4.5rem_minmax(0,1fr)] text-sm ${index < hours.length - 1 ? 'border-b border-[#e5e5e5]' : ''}`}
+            className={`grid w-fit grid-cols-[auto_auto] text-sm ${index < hours.length - 1 ? 'border-b border-[#e5e5e5]' : ''}`}
           >
-            <span className="px-3 py-2 font-semibold text-[#171717]">{day}</span>
-            <span className="border-l border-[#e5e5e5] px-3 py-2 text-right text-[#525252]">{times}</span>
+            <span className="whitespace-nowrap px-3 py-2 font-semibold text-[#171717]">{day}</span>
+            <span className="whitespace-nowrap border-l border-[#e5e5e5] px-3 py-2 text-[#525252]">{times}</span>
           </div>
         ))}
       </div>

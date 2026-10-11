@@ -209,10 +209,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                       </p>
                     )}
                   </div>
-                  <label className="flex items-center gap-2 shrink-0 cursor-pointer select-none">
-                    <span className={`text-xs font-medium ${!webOnly ? 'text-gray-400' : 'text-gray-900'}`}>
-                      Off
-                    </span>
+                  <label className="flex items-center shrink-0 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       className="sr-only"
@@ -232,9 +229,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                           !webOnly ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
                         }`}
                       />
-                    </span>
-                    <span className={`text-xs font-medium ${!webOnly ? 'text-gray-900' : 'text-gray-400'}`}>
-                      On
                     </span>
                   </label>
                 </div>
