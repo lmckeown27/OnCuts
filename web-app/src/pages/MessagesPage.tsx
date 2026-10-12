@@ -2034,7 +2034,7 @@ export default function MessagesPage() {
                         <>
                           <button
                             onClick={startEditingBooking}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors text-sm font-medium"
                           >
                             <Pencil className="w-4 h-4" />
                             {isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING'
@@ -2335,7 +2335,7 @@ export default function MessagesPage() {
                     <>
                       <button
                         onClick={startEditingBooking}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors font-medium"
                       >
                         <Pencil className="w-4 h-4" />
                         {isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING'
