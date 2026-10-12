@@ -1380,15 +1380,6 @@ export default function MessagesPage() {
             </button>
           </div>
 
-          {/* Pending Status Banner - Show when barber hasn't accepted yet */}
-          {selectedConversation.booking?.status === 'pending' && !isBarberView && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700">
-                <span className="font-medium">Request Pending</span> - Your messages will be delivered once the operator accepts your booking request.
-              </p>
-            </div>
-          )}
-
           {/* Compact Booking Context Bar - Mobile: Interactive button | Desktop: Static display */}
           {selectedConversation.booking && (
             <>

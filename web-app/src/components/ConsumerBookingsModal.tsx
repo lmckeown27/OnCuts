@@ -131,10 +131,13 @@ export default function ConsumerBookingsModal({
         _t: Date.now(),
       });
       const list = response.bookings || (response as any).data?.bookings || [];
-      setBookings(Array.isArray(list) ? list : []);
+      const rows = Array.isArray(list) ? list : [];
+      setBookings(rows);
+      setTab(rows.some((booking) => consumerBookingTab(booking) === 'today') ? 'today' : 'upcoming');
     } catch (e) {
       console.error(e);
       setBookings([]);
+      setTab('upcoming');
     } finally {
       setLoading(false);
     }
