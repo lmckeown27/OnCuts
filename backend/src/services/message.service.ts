@@ -114,6 +114,13 @@ const INBOX_CONVERSATION_JOINS = `
   LEFT JOIN bookings b ON c.booking_id = b.id
   LEFT JOIN barbers booking_barber ON booking_barber.id = b."barberId"`;
 
+/** ISO-8601 so clients can parse pending appointment times. Naive timestamps from conversations.scheduled_time are not valid in every browser. */
+function toIsoTimestamp(value: unknown): string | null {
+  if (value == null || value === '') return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 /** Null/unrecognized provider_type → "Unclear operator type". */
 export function resolveMessagingProviderType(raw: unknown): string {
   if (raw == null) return UNCLEAR_OPERATOR_TYPE;
@@ -152,7 +159,9 @@ export function formatInboxConversation(conv: Record<string, unknown>) {
             : conv.booking_price_cents
               ? Number(conv.booking_price_cents) / 100
               : null,
-          scheduledTime: conv.booking_scheduled_time || conv.conv_scheduled_time,
+          scheduledTime:
+            toIsoTimestamp(conv.booking_scheduled_time) ||
+            toIsoTimestamp(conv.conv_scheduled_time),
           location: conv.conv_location || 'TBD',
           notes: conv.conv_notes || null,
           status: String(conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
@@ -428,7 +437,9 @@ class MessageService {
                 : bookingRow.booking_price_cents
                   ? Number(bookingRow.booking_price_cents) / 100
                   : null,
-              scheduledTime: bookingRow.booking_scheduled_time || bookingRow.conv_scheduled_time,
+              scheduledTime:
+                toIsoTimestamp(bookingRow.booking_scheduled_time) ||
+                toIsoTimestamp(bookingRow.conv_scheduled_time),
               location: bookingRow.conv_location || 'TBD',
               notes: bookingRow.conv_notes || null,
               status: String(

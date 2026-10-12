@@ -145,6 +145,17 @@ function resolveChatMediaUrl(raw: string | undefined | null): string {
   return trimmed;
 }
 
+/** Postgres timestamps like "2026-10-14 11:45:00" are Invalid Date in some browsers. */
+function bookingWhen(value: string | null | undefined): Date | null {
+  if (value == null || String(value).trim() === '') return null;
+  const raw = String(value).trim();
+  const direct = new Date(raw);
+  if (!Number.isNaN(direct.getTime())) return direct;
+  const withT = raw.includes('T') ? raw : raw.replace(' ', 'T');
+  const retry = new Date(withT);
+  return Number.isNaN(retry.getTime()) ? null : retry;
+}
+
 export default function MessagesPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -400,9 +411,11 @@ export default function MessagesPage() {
     const sourceTime = isBarberView
       ? booking.scheduledTime
       : (booking.pendingRescheduleRequest?.requestedTime ?? booking.scheduledTime);
-    const scheduledDate = new Date(sourceTime);
-    setEditDate(scheduledDate.toISOString().split('T')[0]);
-    setEditTime(scheduledDate.toTimeString().slice(0, 5));
+    const scheduledDate = bookingWhen(sourceTime);
+    if (scheduledDate) {
+      setEditDate(scheduledDate.toISOString().split('T')[0]);
+      setEditTime(scheduledDate.toTimeString().slice(0, 5));
+    }
     setEditLocation(
       isBarberView
         ? (booking.location ?? '')
@@ -540,9 +553,7 @@ export default function MessagesPage() {
     try {
       const scheduledTimePayload = `${editDate}T${editTime}:00`;
       
-      const originalDate = selectedConversation.booking.scheduledTime 
-        ? new Date(selectedConversation.booking.scheduledTime) 
-        : null;
+      const originalDate = bookingWhen(selectedConversation.booking.scheduledTime);
       const newDate = new Date(`${editDate}T${editTime}`);
       const originalLocation = selectedConversation.booking.location || '';
       
@@ -781,7 +792,23 @@ export default function MessagesPage() {
     const conv = conversations.find(
       (c) => String(c.id) === String(conversationId)
     );
-    if (conv) setSelectedConversation(conv);
+    if (conv) {
+      setSelectedConversation((prev) => {
+        if (!prev || String(prev.id) !== String(conv.id) || !prev.booking || !conv.booking) return conv;
+        if (!bookingWhen(conv.booking.scheduledTime) && bookingWhen(prev.booking.scheduledTime)) {
+          return {
+            ...conv,
+            booking: {
+              ...conv.booking,
+              scheduledTime: prev.booking.scheduledTime,
+              pendingRescheduleRequest:
+                prev.booking.pendingRescheduleRequest ?? conv.booking.pendingRescheduleRequest,
+            },
+          };
+        }
+        return conv;
+      });
+    }
   }, [conversationId, conversations]);
 
   // Load pending reschedule request for the selected booking
@@ -796,12 +823,29 @@ export default function MessagesPage() {
         const booking = response?.booking ?? response?.data?.booking;
         if (cancelled || !booking) return;
 
+        const fromBooking = booking.scheduledTime;
+        const fromBookingValid = Boolean(bookingWhen(fromBooking));
+        const nextTime = fromBookingValid ? fromBooking : undefined;
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (conv.booking?.id !== bookingId) return conv;
+            return {
+              ...conv,
+              booking: {
+                ...conv.booking,
+                scheduledTime: nextTime || conv.booking.scheduledTime,
+                pendingRescheduleRequest: booking.pendingRescheduleRequest ?? null,
+              },
+            };
+          })
+        );
         setSelectedConversation(prev => {
           if (!prev?.booking || prev.booking.id !== bookingId) return prev;
           return {
             ...prev,
             booking: {
               ...prev.booking,
+              scheduledTime: nextTime || prev.booking.scheduledTime,
               pendingRescheduleRequest: booking.pendingRescheduleRequest ?? null,
             },
           };
@@ -1329,7 +1373,7 @@ export default function MessagesPage() {
               </h2>
               {selectedConversation.booking && (
                 <p className="text-xs text-gray-500 truncate md:hidden">
-                  {selectedConversation.booking.serviceName} • {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}
+                  {selectedConversation.booking.serviceName} • {bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleDateString()}
                 </p>
               )}
             </div>
@@ -1343,11 +1387,11 @@ export default function MessagesPage() {
                 </div>
                 <div className="flex items-center gap-1 text-primary-700">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
+                  <span>{bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center gap-1 text-primary-700">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                  <span>{bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
@@ -1398,12 +1442,12 @@ export default function MessagesPage() {
                     {/* Date */}
                     <div className="flex flex-col items-center text-primary-700">
                       <Calendar className="w-4 h-4 mb-0.5" />
-                      <span className="text-xs">{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
+                      <span className="text-xs">{bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleDateString()}</span>
                     </div>
                     {/* Time */}
                     <div className="flex flex-col items-center text-primary-700">
                       <Clock className="w-4 h-4 mb-0.5" />
-                      <span className="text-xs">{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                      <span className="text-xs">{bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1825,7 +1869,7 @@ export default function MessagesPage() {
                       <div className="p-3 bg-gray-50 rounded-xl">
                         <p className="text-xs text-gray-500 mb-1">Date</p>
                         <p className="font-medium text-gray-900 text-sm">
-                          {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                          {bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleDateString('en-US', { 
                             weekday: 'short',
                             month: 'short', 
                             day: 'numeric'
@@ -1835,7 +1879,7 @@ export default function MessagesPage() {
                       <div className="p-3 bg-gray-50 rounded-xl">
                         <p className="text-xs text-gray-500 mb-1">Time</p>
                         <p className="font-medium text-gray-900 text-sm">
-                          {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                          {bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleTimeString('en-US', { 
                             hour: 'numeric', 
                             minute: '2-digit'
                           })}
@@ -2113,7 +2157,7 @@ export default function MessagesPage() {
                   <div className="p-4 bg-gray-50 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Date</p>
                     <p className="font-medium text-gray-900">
-                      {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                      {bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleDateString('en-US', { 
                         weekday: 'short',
                         month: 'short', 
                         day: 'numeric',
@@ -2124,7 +2168,7 @@ export default function MessagesPage() {
                   <div className="p-4 bg-gray-50 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Time</p>
                     <p className="font-medium text-gray-900">
-                      {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                      {bookingWhen(selectedConversation.booking.scheduledTime)?.toLocaleTimeString('en-US', { 
                         hour: 'numeric', 
                         minute: '2-digit'
                       })}
