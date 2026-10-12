@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Calendar,
-  Clock,
   MapPin,
   Loader2,
   MessageCircle,
@@ -324,11 +323,11 @@ export default function ConsumerBookingsModal({
                         </div>
                         <p className="text-sm text-gray-700 mt-0.5">{formatService(b)}</p>
                         <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
-                          {dateStr}
-                          <span className="mx-1">·</span>
-                          <Clock className="w-4 h-4 shrink-0 text-gray-400" />
-                          {timeStr}
+                          <span>{dateStr}</span>
+                          <span>·</span>
+                          <span>{timeStr}</span>
+                          <span>·</span>
+                          <span className="font-medium text-primary-600">{price}</span>
                         </div>
                         {b.location ? (
                           <div className="flex items-start gap-1.5 mt-1 text-sm text-gray-600">
@@ -336,7 +335,6 @@ export default function ConsumerBookingsModal({
                             <span>{b.location}</span>
                           </div>
                         ) : null}
-                        <p className="text-sm font-medium text-primary-600 mt-2">{price}</p>
                       </div>
                     </div>
 

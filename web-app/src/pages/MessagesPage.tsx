@@ -1765,17 +1765,13 @@ export default function MessagesPage() {
                 {/* Panel Header - Fixed */}
                 <div className="bg-brand-600 px-5 py-4 flex-shrink-0">
                   <h2 className="text-lg font-bold text-white">Service Details</h2>
-                  <p className="text-white/80 text-sm">Booking Information</p>
                 </div>
 
                 {/* Panel Content - Scrollable */}
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                   {/* Service Name & Price */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">{selectedConversation.booking.serviceName}</h3>
-                      <p className="text-xs text-gray-500">Service</p>
-                    </div>
+                    <h3 className="font-semibold text-gray-900 text-sm">{selectedConversation.booking.serviceName}</h3>
                     {selectedConversation.booking.servicePrice && (
                       <p className="text-base font-bold text-gray-900">${selectedConversation.booking.servicePrice}</p>
                     )}
@@ -1966,28 +1962,6 @@ export default function MessagesPage() {
                     </div>
                   )}
 
-                  {/* Barber/Consumer Info */}
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        {selectedConversation.otherUser?.profilePicture ? (
-                          <img 
-                            src={selectedConversation.otherUser.profilePicture} 
-                            alt=""
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-4 h-4 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">
-                          {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Action Buttons */}
                   {selectedConversation.booking.status !== 'completed' && 
                    selectedConversation.booking.status !== 'cancelled' && 
@@ -2070,7 +2044,6 @@ export default function MessagesPage() {
             <div className="sticky top-0 bg-brand-600 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Service Details</h2>
-                <p className="text-white/80 text-sm">Booking Information</p>
               </div>
               <button 
                 onClick={() => setShowServiceDetails(false)}
@@ -2084,10 +2057,7 @@ export default function MessagesPage() {
             <div className="p-6 space-y-4 overflow-y-auto max-h-[60dvh] sm:max-h-[60vh]">
               {/* Service Name & Price */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{selectedConversation.booking.serviceName}</h3>
-                  <p className="text-sm text-gray-500">Service</p>
-                </div>
+                <h3 className="font-semibold text-gray-900">{selectedConversation.booking.serviceName}</h3>
                 {selectedConversation.booking.servicePrice && (
                   <div className="text-right">
                     <p className="text-lg font-bold text-gray-900">${selectedConversation.booking.servicePrice}</p>
@@ -2290,27 +2260,6 @@ export default function MessagesPage() {
                 </div>
               )}
 
-              {/* Barber/Consumer Info */}
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                    {selectedConversation.otherUser?.profilePicture ? (
-                      <img 
-                        src={selectedConversation.otherUser.profilePicture} 
-                        alt=""
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Modal Footer - pt-4 above buttons, pb-4 below last element */}
