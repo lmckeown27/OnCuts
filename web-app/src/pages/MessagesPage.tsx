@@ -47,6 +47,7 @@ import Button from '../components/Button';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import DatePicker, { resolveMaxAdvanceBookingDays } from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
+import ConversationSpecialtyPortfolio from '../components/ConversationSpecialtyPortfolio';
 import { resolveBookingAppointmentDuration } from '../config/services';
 import { TivelaPlatformsLogo } from '@assets';
 import type { Conversation, Message } from '../types';
@@ -1801,6 +1802,11 @@ export default function MessagesPage() {
                     )}
                   </div>
 
+                  <ConversationSpecialtyPortfolio
+                    providerId={selectedConversation.booking.barberId || selectedConversation.otherUser?.barberInfo?.id}
+                    serviceName={selectedConversation.booking.serviceName}
+                  />
+
                   {/* Date & Time */}
                   {isEditingBooking ? (
                     <div className="space-y-3">
@@ -2123,6 +2129,11 @@ export default function MessagesPage() {
                   </div>
                 )}
               </div>
+
+              <ConversationSpecialtyPortfolio
+                providerId={selectedConversation.booking.barberId || selectedConversation.otherUser?.barberInfo?.id}
+                serviceName={selectedConversation.booking.serviceName}
+              />
 
               {/* Date & Time */}
               {isEditingBooking ? (

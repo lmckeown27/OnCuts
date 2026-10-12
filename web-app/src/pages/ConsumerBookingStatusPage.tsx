@@ -1037,15 +1037,10 @@ export default function ConsumerBookingStatusPage() {
           
           {isPending && (
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-primary-500 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-primary-800">Waiting for operator confirmation</p>
-                  <p className="text-sm text-primary-600 mt-1">
-                    {booking.barberName} will review and confirm your booking request.
-                  </p>
-                </div>
-              </div>
+              <p className="font-semibold text-primary-800">Waiting for operator confirmation</p>
+              <p className="text-sm text-primary-600 mt-1">
+                {booking.barberName} will review and confirm your booking request.
+              </p>
             </div>
           )}
           
@@ -1205,17 +1200,11 @@ export default function ConsumerBookingStatusPage() {
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-primary-500" />
-                <span className="text-sm text-gray-500">Date</span>
-              </div>
+              <p className="text-sm text-gray-500 mb-1">Date</p>
               <p className="font-semibold text-gray-900">{formatDate(booking.scheduledTime)}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-primary-500" />
-                <span className="text-sm text-gray-500">Time</span>
-              </div>
+              <p className="text-sm text-gray-500 mb-1">Time</p>
               <p className="font-semibold text-gray-900">{formatTime(booking.scheduledTime)}</p>
             </div>
           </div>
