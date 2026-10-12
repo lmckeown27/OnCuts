@@ -5,8 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
-  Pencil, Trash2, Check, AlertTriangle, Star, MessageSquare,
+  X, Clock, MapPin, User, DollarSign, FileText, 
+  Pencil, Trash2, Check, AlertTriangle, Star, Send,
   Phone, Mail, Save, RotateCcw
 } from 'lucide-react';
 import api from '../services/api.service';
@@ -412,7 +412,7 @@ export default function BookingDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 flex items-center justify-between">
+        <div className="bg-brand-600 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Booking Details</h2>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -639,19 +639,13 @@ export default function BookingDetailsModal({
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">When</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-primary-500" />
-                    <div>
-                      <p className="text-xs text-gray-500">Date</p>
-                      <p className="font-semibold text-gray-900">{formattedDate}</p>
-                    </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Date</p>
+                    <p className="font-semibold text-gray-900">{formattedDate}</p>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Clock className="w-5 h-5 text-primary-500" />
-                    <div>
-                      <p className="text-xs text-gray-500">Time</p>
-                      <p className="font-semibold text-gray-900">{formattedTime}</p>
-                    </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Time</p>
+                    <p className="font-semibold text-gray-900">{formattedTime}</p>
                   </div>
                 </div>
               </div>
@@ -839,7 +833,7 @@ export default function BookingDetailsModal({
                         }}
                         className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                       >
-                        <MessageSquare className="w-4 h-4" />
+                        <Send className="w-4 h-4" />
                         Message
                       </button>
                     </div>
