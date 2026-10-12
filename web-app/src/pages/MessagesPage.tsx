@@ -10,7 +10,6 @@ import {
   Send, 
   MessageCircle, 
   Calendar, 
-  MapPin, 
   Clock,
   User,
   ChevronLeft,
@@ -1266,10 +1265,7 @@ export default function MessagesPage() {
                   
                   {/* Booking context */}
                   {conv.booking && (
-                    <div className="flex items-center gap-1 text-xs text-primary-600 mb-1">
-                      <Calendar className="w-3 h-3" />
-                      <span className="truncate">{conv.booking.serviceName}</span>
-                    </div>
+                    <p className="truncate text-xs text-primary-600 mb-1">{conv.booking.serviceName}</p>
                   )}
 
                   {/* Last message */}
@@ -1387,12 +1383,9 @@ export default function MessagesPage() {
           {/* Pending Status Banner - Show when barber hasn't accepted yet */}
           {selectedConversation.booking?.status === 'pending' && !isBarberView && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-700">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <p className="text-sm">
-                  <span className="font-medium">Request Pending</span> - Your messages will be delivered once the operator accepts your booking request.
-                </p>
-              </div>
+              <p className="text-sm text-yellow-700">
+                <span className="font-medium">Request Pending</span> - Your messages will be delivered once the operator accepts your booking request.
+              </p>
             </div>
           )}
 
@@ -1788,14 +1781,9 @@ export default function MessagesPage() {
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                   {/* Service Name & Price */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center">
-                        <Scissors className="w-4 h-4 text-primary-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-sm">{selectedConversation.booking.serviceName}</h3>
-                        <p className="text-xs text-gray-500">Service</p>
-                      </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm">{selectedConversation.booking.serviceName}</h3>
+                      <p className="text-xs text-gray-500">Service</p>
                     </div>
                     {selectedConversation.booking.servicePrice && (
                       <p className="text-base font-bold text-gray-900">${selectedConversation.booking.servicePrice}</p>
@@ -1848,10 +1836,7 @@ export default function MessagesPage() {
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span className="text-xs">Date</span>
-                        </div>
+                        <p className="text-xs text-gray-500 mb-1">Date</p>
                         <p className="font-medium text-gray-900 text-sm">
                           {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
                             weekday: 'short',
@@ -1861,10 +1846,7 @@ export default function MessagesPage() {
                         </p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span className="text-xs">Time</span>
-                        </div>
+                        <p className="text-xs text-gray-500 mb-1">Time</p>
                         <p className="font-medium text-gray-900 text-sm">
                           {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
                             hour: 'numeric', 
@@ -1877,10 +1859,7 @@ export default function MessagesPage() {
 
                   {/* Location */}
                   <div className="p-3 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span className="text-xs">Location</span>
-                    </div>
+                    <p className="text-xs text-gray-500 mb-1">Location</p>
                     {isEditingBooking ? (
                       locationsLoading ? (
                         <div className="text-sm text-gray-500 py-1">Loading locations...</div>
@@ -2114,14 +2093,9 @@ export default function MessagesPage() {
             <div className="p-6 space-y-4 overflow-y-auto max-h-[60dvh] sm:max-h-[60vh]">
               {/* Service Name & Price */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Scissors className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{selectedConversation.booking.serviceName}</h3>
-                    <p className="text-sm text-gray-500">Service</p>
-                  </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{selectedConversation.booking.serviceName}</h3>
+                  <p className="text-sm text-gray-500">Service</p>
                 </div>
                 {selectedConversation.booking.servicePrice && (
                   <div className="text-right">
@@ -2176,10 +2150,7 @@ export default function MessagesPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-xs">Date</span>
-                    </div>
+                    <p className="text-xs text-gray-500 mb-1">Date</p>
                     <p className="font-medium text-gray-900">
                       {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
                         weekday: 'short',
@@ -2190,10 +2161,7 @@ export default function MessagesPage() {
                     </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs">Time</span>
-                    </div>
+                    <p className="text-xs text-gray-500 mb-1">Time</p>
                     <p className="font-medium text-gray-900">
                       {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
                         hour: 'numeric', 
@@ -2206,10 +2174,7 @@ export default function MessagesPage() {
 
               {/* Location */}
               <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-2 text-gray-500 mb-1">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-xs">Location</span>
-                </div>
+                <p className="text-xs text-gray-500 mb-1">Location</p>
                 {isEditingBooking ? (
                   locationsLoading ? (
                     <div className="text-sm text-gray-500 py-1">Loading locations...</div>
