@@ -246,9 +246,6 @@ export default function DiscoverClientPortfolio({
     const kept = sectionOrder.filter((id) => known.has(id));
     return [...kept, ...sectionIds.filter((id) => !kept.includes(id))];
   }, [options, items, sectionOrder]);
-  const workChips = orderedSectionIds.filter((specialtyId) =>
-    items.some((item) => itemSpecialties(item)[0] === specialtyId)
-  );
   const openItems = openSectionId ? items.filter((item) => itemSpecialties(item)[0] === openSectionId) : [];
   const shownWork = showAllWork ? openItems : openItems.slice(0, 8);
 
@@ -388,35 +385,43 @@ export default function DiscoverClientPortfolio({
             </button>
           )}
         </>
-      ) : workChips.length > 0 ? (
+      ) : orderedSectionIds.length > 0 ? (
         <div className="grid items-start gap-6 sm:grid-cols-[minmax(0,496px)_minmax(11rem,1fr)]">
           <div className="grid grid-cols-3 gap-2">
-            {workChips.map((specialtyId) => {
+            {orderedSectionIds.map((specialtyId) => {
               const label = specialtyLabel(specialtyId, options);
               const sectionItems = items.filter((item) => itemSpecialties(item)[0] === specialtyId);
               const tile = sectionCover(sectionItems, specialtyId) ?? sectionItems[0];
-              if (!tile) return null;
               const price = priceForSpecialty(specialtyId, options, prices);
               return (
                 <div key={specialtyId} className="min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenSectionId(specialtyId);
-                      setShowAllWork(false);
-                      closePreview();
-                    }}
-                    className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
-                    aria-label={`${label} section`}
-                  >
-                    <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
-                      {tile.media_type === 'video' ? (
-                        <video src={tile.media_url} className="h-full w-full object-cover" muted />
-                      ) : (
-                        <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
-                      )}
-                    </span>
-                  </button>
+                  {tile ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenSectionId(specialtyId);
+                        setShowAllWork(false);
+                        closePreview();
+                      }}
+                      className="relative block w-full rounded-lg hover:outline hover:outline-2 hover:outline-[#171717] hover:-outline-offset-2"
+                      aria-label={`${label} section`}
+                    >
+                      <span className="block aspect-[9/16] overflow-hidden rounded-lg bg-[#f5f5f5]">
+                        {tile.media_type === 'video' ? (
+                          <video src={tile.media_url} className="h-full w-full object-cover" muted />
+                        ) : (
+                          <img src={tile.media_url} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </span>
+                    </button>
+                  ) : (
+                    <div
+                      className="flex aspect-[9/16] items-center justify-center rounded-lg border-2 border-[#171717] px-2 text-center text-sm font-semibold leading-snug text-[#171717]"
+                      aria-label={`${label}, no work attached`}
+                    >
+                      No Work Attached
+                    </div>
+                  )}
                   <p className="mt-2 flex items-baseline justify-center gap-1.5 text-sm font-semibold text-[#171717]">
                     <span className="truncate">{label}</span>
                     {price && <span className="shrink-0">{price}</span>}
