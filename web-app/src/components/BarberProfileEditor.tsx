@@ -48,7 +48,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
   
   // Form state
   const [displayName, setDisplayName] = useState('');
-  const [bio, setBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [isHidden, setIsHidden] = useState(false); // Hide profile from consumers
@@ -148,7 +147,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       
       // Populate form fields
       setDisplayName(data.name || data.display_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || '');
-      setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setProfilePhoto(data.profile_photo_url || data.profile_picture_url || '');
       setIsHidden(Boolean(data.is_hidden));
@@ -172,7 +170,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
 
       const updateData: Partial<Barber> = {
         display_name: displayName,
-        bio,
         instagram_handle: instagramHandle,
         is_hidden: isHidden,
       };
@@ -409,20 +406,6 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
           maxLength={50}
         />
-      </Card>
-
-      {/* Bio */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Bio</h3>
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="Tell students about yourself, your style, and what makes you unique..."
-          rows={5}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-          maxLength={500}
-        />
-        <p className="text-xs text-gray-500 mt-2">{bio.length}/500 characters</p>
       </Card>
 
       {/* Instagram Handle (Optional) */}
