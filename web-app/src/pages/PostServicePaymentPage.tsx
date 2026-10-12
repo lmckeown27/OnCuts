@@ -11,7 +11,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
-  CreditCard, Check, Clock, DollarSign, User, Calendar,
+  CreditCard, Check, DollarSign, User, Calendar,
   MapPin, ArrowLeft, AlertCircle, Loader2, Undo2, Wallet, Banknote
 } from 'lucide-react';
 import api from '../services/api.service';
@@ -1385,18 +1385,12 @@ export default function PostServicePaymentPage() {
               </>
             ) : (
               <>
-                <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Clock className="w-10 h-10 text-primary-500 animate-pulse" />
-                </div>
-                
-                <h2 className={`text-2xl font-bold text-gray-900 ${awaitingTip ? 'mb-6' : 'mb-2'}`}>
+                <h2 className={`text-2xl font-bold text-gray-900 ${awaitingTip || awaitingPostCompletePay ? 'mb-6' : 'mb-2'}`}>
                   {awaitingTip ? 'Waiting for Tip' : 'Waiting for Payment'}
                 </h2>
-                {!awaitingTip && (
+                {!awaitingTip && !awaitingPostCompletePay && (
                   <p className="text-gray-600 mb-6">
-                    {awaitingPostCompletePay
-                      ? `${booking.consumer.firstName} needs to pay for the completed service.`
-                      : `${booking.consumer.firstName} needs to pay for the service to confirm this booking.`}
+                    {`${booking.consumer.firstName} needs to pay for the service to confirm this booking.`}
                   </p>
                 )}
               </>
