@@ -135,7 +135,7 @@ export default function ConsumerPage() {
       scheduledTime?: string;
     }>
   >([]);
-  /** Active appointments (PENDING / ACCEPTED / PAID) — Booking Reminder above provider browse. */
+  /** Unpaid upcoming appointments (PENDING / ACCEPTED) — Booking Reminder above provider browse. */
   const [activeReminderBookings, setActiveReminderBookings] = useState<
     Array<{
       bookingId: string;
@@ -265,7 +265,7 @@ export default function ConsumerPage() {
     try {
       const response = await api.get('/bookings-simple', {
         role: 'consumer',
-        status: 'PENDING,ACCEPTED,PAID,COMPLETED',
+        status: 'PENDING,ACCEPTED,COMPLETED',
       });
       const bookings = response.bookings || [];
 
@@ -284,12 +284,12 @@ export default function ConsumerPage() {
       setPendingPaymentBookings(pendingPay);
 
       const pendingPayIds = new Set(pendingPay.map((b) => b.bookingId));
-      // PAID is an active upcoming booking; exclude rows already shown as payment-needed.
       setActiveReminderBookings(
         bookings
           .filter((b: any) => {
             const status = String(b.status || '').toUpperCase();
-            if (!['PENDING', 'ACCEPTED', 'PAID'].includes(status)) return false;
+            if (status === 'PAID' || b.paidAt || b.paid_at) return false;
+            if (!['PENDING', 'ACCEPTED'].includes(status)) return false;
             return !pendingPayIds.has(b.id);
           })
           .map(mapConsumerBookingCard)
