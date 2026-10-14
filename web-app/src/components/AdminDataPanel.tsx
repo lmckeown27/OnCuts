@@ -7,6 +7,12 @@ import { downloadCsv } from '../utils/csv';
 
 type UploadKind = 'portfolio' | 'profile' | 'chat';
 
+const DATA_TABS: { id: UploadKind; label: string }[] = [
+  { id: 'profile', label: 'Profile pictures' },
+  { id: 'portfolio', label: 'Portfolio' },
+  { id: 'chat', label: 'Chat' },
+];
+
 interface UploadedMediaItem {
   id: string;
   kind: UploadKind;
@@ -118,6 +124,7 @@ function MediaSplit({
 }
 
 export default function AdminDataPanel() {
+  const [section, setSection] = useState<UploadKind>('profile');
   const [profile, setProfile] = useState<UploadBucket>(EMPTY_BUCKET);
   const [portfolio, setPortfolio] = useState<UploadBucket>(EMPTY_BUCKET);
   const [chat, setChat] = useState<UploadBucket>(EMPTY_BUCKET);
@@ -213,14 +220,34 @@ export default function AdminDataPanel() {
   const shownNote = (bucket: UploadBucket) =>
     bucket.total > bucket.items.length ? ` · showing ${bucket.items.length}` : '';
 
+  const activeBucket = section === 'profile' ? profile : section === 'portfolio' ? portfolio : chat;
+  const activeLabel = DATA_TABS.find((tab) => tab.id === section)?.label ?? 'Data';
+
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-6">
+      <nav className="grid grid-cols-3 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Data">
+        {DATA_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setSection(tab.id)}
+            className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
+              section === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Data</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{activeLabel}</p>
             <p className="text-xs text-gray-500 mt-1">
-              Profile pictures, portfolio photos and videos, and chat photos and videos.
+              {isLoading ? 'Loading files…' : `${fileCount(activeBucket.total)}${shownNote(activeBucket)}`}
             </p>
           </div>
           <Button type="button" size="sm" disabled={isExporting || isLoading} onClick={() => void exportRows()}>
@@ -239,42 +266,22 @@ export default function AdminDataPanel() {
           </div>
         ) : error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>
+        ) : section === 'profile' ? (
+          <MediaGrid items={profile.items} empty="No profile pictures." />
+        ) : section === 'portfolio' ? (
+          <MediaSplit
+            photos={portfolioPhotos}
+            videos={portfolioVideos}
+            photoEmpty="No portfolio photos."
+            videoEmpty="No portfolio videos."
+          />
         ) : (
-          <>
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-gray-900">Profile pictures</h3>
-                <span className="text-xs text-gray-500">{fileCount(profile.total)}{shownNote(profile)}</span>
-              </div>
-              <MediaGrid items={profile.items} empty="No profile pictures." />
-            </section>
-
-            <section className="space-y-3 border-t border-gray-100 pt-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-gray-900">Portfolio uploads</h3>
-                <span className="text-xs text-gray-500">{fileCount(portfolio.total)}{shownNote(portfolio)}</span>
-              </div>
-              <MediaSplit
-                photos={portfolioPhotos}
-                videos={portfolioVideos}
-                photoEmpty="No portfolio photos."
-                videoEmpty="No portfolio videos."
-              />
-            </section>
-
-            <section className="space-y-3 border-t border-gray-100 pt-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-gray-900">Chat uploads</h3>
-                <span className="text-xs text-gray-500">{fileCount(chat.total)}{shownNote(chat)}</span>
-              </div>
-              <MediaSplit
-                photos={chatPhotos}
-                videos={chatVideos}
-                photoEmpty="No chat photos."
-                videoEmpty="No chat videos."
-              />
-            </section>
-          </>
+          <MediaSplit
+            photos={chatPhotos}
+            videos={chatVideos}
+            photoEmpty="No chat photos."
+            videoEmpty="No chat videos."
+          />
         )}
       </div>
     </div>
