@@ -3,7 +3,7 @@ import { Download, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import Button from './Button';
-import { downloadCsv } from '../utils/csv';
+import { downloadCsv, slugifyForFilename } from '../utils/csv';
 
 type UploadKind = 'portfolio' | 'profile' | 'chat';
 
@@ -146,20 +146,33 @@ export default function AdminDataPanel() {
   }, [load]);
 
   const exportRows = async () => {
+    const pageKind = section;
+    const pageMedia = media;
+    const pageName =
+      pageKind === 'profile'
+        ? 'Profile pictures'
+        : pageKind === 'portfolio'
+          ? pageMedia === 'video'
+            ? 'Portfolio videos'
+            : 'Portfolio photos'
+          : pageMedia === 'video'
+            ? 'Chat videos'
+            : 'Chat photos';
     setIsExporting(true);
     try {
-      const [profileBucket, portfolioBucket, chatBucket] = await Promise.all([
-        loadKind('profile', 2000),
-        loadKind('portfolio', 2000),
-        loadKind('chat', 2000),
-      ]);
-      const rows = [...profileBucket.items, ...portfolioBucket.items, ...chatBucket.items];
+      const bucket = await loadKind(pageKind, 2000);
+      const rows =
+        pageKind === 'profile'
+          ? bucket.items
+          : bucket.items.filter((item) =>
+              pageMedia === 'video' ? item.mediaType === 'video' : item.mediaType !== 'video'
+            );
       if (rows.length === 0) {
-        toast.error('Nothing to export');
+        toast.error(`No ${pageName.toLowerCase()} to export`);
         return;
       }
       const stamp = new Date().toISOString().slice(0, 10);
-      downloadCsv(`oncuts-uploads-${stamp}.csv`, [
+      downloadCsv(`oncuts-uploads-${slugifyForFilename(pageName)}-${stamp}.csv`, [
         'Section',
         'Media type',
         'Owner',
@@ -178,7 +191,7 @@ export default function AdminDataPanel() {
         row.createdAt,
         row.mediaUrl,
       ]));
-      toast.success(`Exported ${rows.length} file${rows.length === 1 ? '' : 's'}`);
+      toast.success(`Exported ${rows.length} from ${pageName.toLowerCase()}`);
     } catch (err) {
       console.error(err);
       toast.error('Could not export uploaded files');
