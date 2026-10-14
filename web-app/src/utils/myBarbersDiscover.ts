@@ -336,6 +336,9 @@ export type DiscoverPin = {
 /** Target on-screen radius (px) so circles stay visually consistent across zoom. */
 export const DISCOVER_MAP_CIRCLE_PIXEL_RADIUS = 44;
 
+/** Geographic floor. Closer than this, the operator circle grows on screen instead of staying a label. */
+const DISCOVER_CIRCLE_MIN_METERS = 35;
+
 /** @deprecated Prefer zoom-based clustering via clusterDiscoverPins. */
 export const DISCOVER_MAP_AREA_RADIUS_KM = 0.4;
 
@@ -354,8 +357,21 @@ export function discoverCircleRadiusMeters(
 ): number {
   const visualZoom = Math.max(0, zoom - 1);
   const mpp = metersPerPixelAt(lat, visualZoom);
-  // Floor so ultra-close zooms still show a readable blob
-  return Math.max(35, pixelRadius * mpp);
+  return Math.max(DISCOVER_CIRCLE_MIN_METERS, pixelRadius * mpp);
+}
+
+/**
+ * Highest map zoom at which the operator circle is still a fixed on-screen size.
+ * The next zoom hits the meter floor and the label expands.
+ */
+export function discoverOperatorLabelMaxZoom(
+  lat: number,
+  pixelRadius: number = DISCOVER_MAP_CIRCLE_PIXEL_RADIUS
+): number {
+  const latitude = Number.isFinite(lat) ? lat : 0;
+  const cos = Math.max(0.2, Math.cos((latitude * Math.PI) / 180));
+  const maxVisualZoom = Math.log2((pixelRadius * 156543.03392 * cos) / DISCOVER_CIRCLE_MIN_METERS);
+  return Math.min(19, Math.max(1, Math.floor(maxVisualZoom + 1)));
 }
 
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {

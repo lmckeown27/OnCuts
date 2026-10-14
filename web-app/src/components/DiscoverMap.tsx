@@ -5,6 +5,7 @@ import type { DiscoverArea, DiscoverPin } from '../utils/myBarbersDiscover';
 import {
   clusterDiscoverPins,
   discoverCircleRadiusMeters,
+  discoverOperatorLabelMaxZoom,
 } from '../utils/myBarbersDiscover';
 import { mapZoomForRadiusKm } from '../constants/serviceAreaPresets';
 import { colors } from '../utils/colors';
@@ -90,6 +91,7 @@ export default function DiscoverMap({
     const map = L.map(containerRef.current, {
       center,
       zoom: 12,
+      maxZoom: discoverOperatorLabelMaxZoom(Array.isArray(center) ? center[0] : 35.2828),
       scrollWheelZoom: true,
     });
 
@@ -104,6 +106,13 @@ export default function DiscoverMap({
     const redraw = () => {
       const layer = layerRef.current;
       if (!layer) return;
+
+      const labelMaxZoom = discoverOperatorLabelMaxZoom(map.getCenter().lat);
+      if (map.getMaxZoom() !== labelMaxZoom) map.setMaxZoom(labelMaxZoom);
+      if (map.getZoom() > labelMaxZoom) {
+        map.setZoom(labelMaxZoom);
+        return;
+      }
 
       const zoom = map.getZoom();
       const nextPins = pinsRef.current;
