@@ -4706,10 +4706,15 @@ function pgErrorCode(error: unknown): string {
     : '';
 }
 
+function isVideoMediaUrl(url: string): boolean {
+  return /\.(mp4|mov|webm|m4v|avi|mkv)(\?|#|$)/i.test(url);
+}
+
 function mapUploadedMediaRow(row: Record<string, unknown>, kind: UploadedMediaKind): UploadedMediaRow | null {
   const mediaUrl = typeof row.media_url === 'string' ? row.media_url.trim() : '';
   if (!mediaUrl) return null;
-  const mediaType = String(row.media_type || 'image').toLowerCase() === 'video' ? 'video' : 'image';
+  const declaredVideo = String(row.media_type || '').toLowerCase() === 'video';
+  const mediaType = kind === 'profile' ? 'image' : declaredVideo || isVideoMediaUrl(mediaUrl) ? 'video' : 'image';
   const created = row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || '');
   return {
     id: String(row.id),
