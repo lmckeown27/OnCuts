@@ -81,7 +81,13 @@ function sectionCover(items: OperatorPortfolioItem[], specialtyId: string): Oper
 }
 
 function specialtyLabel(id: string, options: ServiceType[]): string {
-  return options.find((option) => option.id === id)?.name || id;
+  const offered = options.find((option) => option.id === id)?.name;
+  if (offered) return offered;
+  const key = id.trim().toLowerCase();
+  const catalog = SERVICE_TYPES.find(
+    (service) => service.id.toLowerCase() === key || service.name.toLowerCase() === key
+  );
+  return catalog?.name || id;
 }
 
 function formatSpecialtyPrice(price: number): string {
@@ -580,17 +586,9 @@ export default function OperatorPortfolioModal({
           duration_minutes: entry.duration_minutes,
         }));
       await barberService.updateBarberProfile(providerId, { specialties, pricing });
-      const doomed = items.filter((item) => matchesSpecialty(specialtyIds(item)[0]));
-      await Promise.all(
-        doomed.map((item) => api.delete(`/barbers/${providerId}/operator-portfolio/${item.id}`).catch(() => undefined))
-      );
-      const nextOrder = orderRef.current.filter((id) => id !== specialtyId);
-      orderRef.current = nextOrder;
-      setSectionOrder(nextOrder);
-      await api.put(`/barbers/${providerId}/operator-portfolio/section-order`, { specialtyIds: nextOrder }).catch(() => undefined);
-      setItems((current) => current.filter((item) => !matchesSpecialty(specialtyIds(item)[0])));
+      const stillHasWork = items.some((item) => matchesSpecialty(specialtyIds(item)[0]));
       setOptions((current) => current.filter((entry) => entry.id !== specialtyId));
-      if (openSectionId === specialtyId) setOpenSectionId(null);
+      if (!stillHasWork && openSectionId === specialtyId) setOpenSectionId(null);
     } catch (err) {
       setError(uploadErrorMessage(err));
     } finally {

@@ -532,18 +532,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                 return (
                   <div
                     key={service.serviceId}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      if (!saving) void toggleService(service.serviceId);
-                    }}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && !saving) {
-                        e.preventDefault();
-                        void toggleService(service.serviceId);
-                      }
-                    }}
-                    className={`rounded-[14px] border-2 px-3 py-3 transition-opacity cursor-pointer ${
+                    className={`rounded-[14px] border-2 px-3 py-3 transition-opacity ${
                       saving ? 'opacity-70' : ''
                     }`}
                     style={{
