@@ -373,7 +373,7 @@ router.delete(
 
 /**
  * @route   GET /api/v1/barbers/:id/operator-portfolio/preview
- * @desc    Public client view of a listed operator's portfolio
+ * @desc    Client view of an active operator's portfolio, including hidden profiles
  * @access  Public
  */
 router.get(

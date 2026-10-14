@@ -188,8 +188,7 @@ export const listPublicOperatorPortfolio = async (req: AuthRequest, res: Respons
       `SELECT id
        FROM barbers
        WHERE id = $1
-         AND "isActive" = true
-         AND COALESCE(is_hidden, false) = false`,
+         AND "isActive" = true`,
       [id]
     );
     if (visible.rows.length === 0) {
