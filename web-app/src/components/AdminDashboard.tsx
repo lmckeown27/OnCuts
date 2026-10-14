@@ -164,8 +164,8 @@ type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
-type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
-type ControlsSection = 'home' | 'pricing' | 'notifications';
+type AdminView = 'performance' | 'barbers' | 'users' | 'moderation' | 'controls';
+type ControlsSection = 'services' | 'home' | 'pricing' | 'notifications';
 type ConsumerHomeMode = 'providers' | 'waitlist';
 type PaymentTimingMode = 'on_accept' | 'after_complete';
 type PricingBurdenView = 'client' | 'operator';
@@ -2554,14 +2554,13 @@ export function AdminDashboard({
           <p className="text-center text-xs text-red-600">{campusLoadError}</p>
         )}
 
-        {/* Main tabs — Safety lives under Users; Controls is the 5th slot */}
-        <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
+        {/* Main tabs — Safety lives under Users */}
+        <nav className="grid grid-cols-4 gap-0.5 rounded-xl bg-stone-200/70 p-1">
           {(
             [
               { view: 'performance' as const, label: 'Performance', Icon: Activity },
               { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
               { view: 'users' as const, label: 'Users', Icon: Users },
-              { view: 'services' as const, label: 'Services', Icon: Scissors },
               { view: 'controls' as const, label: 'Controls', Icon: SlidersHorizontal },
             ] as const
           ).map(({ view, label, Icon }) => {
@@ -2574,7 +2573,6 @@ export function AdminDashboard({
                 onClick={() => {
                   startTransition(() => {
                     setAdminView(view);
-                    if (view === 'services') setServicesPanelMounted(true);
                     if (view === 'users') setUsersPanelMounted(true);
                   });
                 }}
@@ -5068,15 +5066,6 @@ export function AdminDashboard({
       </div>
       )}
       
-      {(deferredAdminView === 'services' || servicesPanelMounted) && (
-        <div
-          className={deferredAdminView === 'services' ? undefined : 'hidden'}
-          aria-hidden={deferredAdminView !== 'services'}
-        >
-          <ServicesManagementPanel />
-        </div>
-      )}
-      
       {/* Users View */}
       {(deferredAdminView === 'users' || usersPanelMounted) && (
       <div
@@ -5694,19 +5683,23 @@ export function AdminDashboard({
 
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
-          <nav className="grid grid-cols-3 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Controls">
+          <nav className="grid grid-cols-4 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Controls">
             {(
               [
                 { id: 'home' as const, label: 'Consumer Home' },
                 { id: 'pricing' as const, label: 'Pricing' },
                 { id: 'notifications' as const, label: 'Notifications' },
+                { id: 'services' as const, label: 'Services' },
               ] as const
             ).map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setControlsSection(tab.id)}
-                className={`px-2 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
+                onClick={() => {
+                  setControlsSection(tab.id);
+                  if (tab.id === 'services') setServicesPanelMounted(true);
+                }}
+                className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
                   controlsSection === tab.id
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -6109,6 +6102,15 @@ export function AdminDashboard({
           <div className={controlsSection === 'notifications' ? undefined : 'hidden'} aria-hidden={controlsSection !== 'notifications'}>
             <AdminNotificationControls />
           </div>
+
+          {servicesPanelMounted && (
+            <div
+              className={controlsSection === 'services' ? undefined : 'hidden'}
+              aria-hidden={controlsSection !== 'services'}
+            >
+              <ServicesManagementPanel />
+            </div>
+          )}
         </div>
       )}
 
