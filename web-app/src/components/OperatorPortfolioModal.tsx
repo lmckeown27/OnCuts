@@ -164,13 +164,13 @@ export default function OperatorPortfolioModal({
   const [specialtyPrices, setSpecialtyPrices] = useState<Record<string, number>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragGhost, setDragGhost] = useState<{ id: string; x: number; y: number; width: number; height: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
   const sectionRowRef = useRef<HTMLDivElement>(null);
   const orderRef = useRef<string[]>([]);
   const dragRef = useRef<SectionDrag | null>(null);
+  const dragGhostEl = useRef<HTMLElement | null>(null);
   const dragListeners = useRef<{
     move: (event: PointerEvent) => void;
     up: (event: PointerEvent) => void;
@@ -822,6 +822,37 @@ export default function OperatorPortfolioModal({
     });
   };
 
+  const clearDragGhost = () => {
+    dragGhostEl.current?.remove();
+    dragGhostEl.current = null;
+  };
+
+  const placeDragGhost = (card: HTMLElement, x: number, y: number, width: number) => {
+    clearDragGhost();
+    const ghost = card.cloneNode(true) as HTMLElement;
+    ghost.removeAttribute('data-section-id');
+    ghost.style.position = 'fixed';
+    ghost.style.left = `${x}px`;
+    ghost.style.top = `${y}px`;
+    ghost.style.width = `${width}px`;
+    ghost.style.margin = '0';
+    ghost.style.opacity = '1';
+    ghost.style.zIndex = '80';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.outline = '3px solid #f97316';
+    ghost.style.outlineOffset = '3px';
+    ghost.style.boxShadow = '0 16px 36px rgba(0,0,0,0.28)';
+    document.body.appendChild(ghost);
+    dragGhostEl.current = ghost;
+  };
+
+  const moveDragGhost = (x: number, y: number) => {
+    const ghost = dragGhostEl.current;
+    if (!ghost) return;
+    ghost.style.left = `${x}px`;
+    ghost.style.top = `${y}px`;
+  };
+
   const detachDragListeners = () => {
     const listeners = dragListeners.current;
     if (!listeners) return;
@@ -837,8 +868,8 @@ export default function OperatorPortfolioModal({
     if (drag?.timer) window.clearTimeout(drag.timer);
     dragRef.current = null;
     detachDragListeners();
+    clearDragGhost();
     setDraggingId(null);
-    setDragGhost(null);
     if (!drag?.armed) return;
     suppressClick.current = true;
     if (!drag.moved || !providerId) return;
@@ -888,13 +919,7 @@ export default function OperatorPortfolioModal({
       current.moved = true;
       const ghostLeft = native.clientX - current.offsetX;
       const ghostTop = native.clientY - current.offsetY;
-      setDragGhost({
-        id: current.id,
-        x: ghostLeft,
-        y: ghostTop,
-        width: current.width,
-        height: current.height,
-      });
+      moveDragGhost(ghostLeft, ghostTop);
       const row = sectionRowRef.current;
       if (!row) return;
       const bounds = row.getBoundingClientRect();
@@ -937,15 +962,9 @@ export default function OperatorPortfolioModal({
       } catch {
         /* The pointer may already have ended. */
       }
+      placeDragGhost(current.card, rect.left, rect.top, rect.width);
       setDraggingId(current.id);
       setSourceMenu(null);
-      setDragGhost({
-        id: current.id,
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height,
-      });
     }, SECTION_HOLD_MS);
 
     const touch = (touchEvent: TouchEvent) => {
@@ -962,6 +981,7 @@ export default function OperatorPortfolioModal({
 
   useEffect(() => () => {
     if (dragRef.current?.timer) window.clearTimeout(dragRef.current.timer);
+    dragGhostEl.current?.remove();
     const listeners = dragListeners.current;
     if (!listeners) return;
     window.removeEventListener('pointermove', listeners.move);
@@ -1347,6 +1367,8 @@ export default function OperatorPortfolioModal({
                   <div
                     key={specialtyId}
                     data-section-id={specialtyId}
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
                     className={`w-[150px] shrink-0 select-none touch-none ${
                       draggingId === specialtyId ? 'cursor-grabbing opacity-30' : 'cursor-grab'
                     }`}
@@ -1373,7 +1395,13 @@ export default function OperatorPortfolioModal({
                         aria-label={`${name} section`}
                       >
                         {cover ? (
-                          <img src={cover.media_url} alt="" className="h-full w-full rounded-xl object-cover" />
+                          <img
+                            src={cover.media_url}
+                            alt=""
+                            draggable={false}
+                            onDragStart={(event) => event.preventDefault()}
+                            className="pointer-events-none h-full w-full rounded-xl object-cover"
+                          />
                         ) : (
                           <span className="flex h-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl">
                             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
@@ -1573,45 +1601,6 @@ export default function OperatorPortfolioModal({
   return createPortal(
     <>
       {dialog}
-      {dragGhost && (
-        <div
-          className="pointer-events-none fixed z-[80] rounded-xl bg-white"
-          style={{
-            left: dragGhost.x,
-            top: dragGhost.y,
-            width: dragGhost.width,
-            outline: '3px solid #f97316',
-            outlineOffset: 3,
-            boxShadow: '0 16px 36px rgba(0,0,0,0.28)',
-          }}
-        >
-          {(() => {
-            const cover = sectionCover(items, dragGhost.id);
-            const name = specialtyLabel(dragGhost.id, options);
-            const price = priceForSpecialty(dragGhost.id, options, specialtyPrices);
-            return (
-              <>
-                <div className="relative overflow-hidden rounded-xl aspect-[9/16] border border-[#e5e5e5] bg-white">
-                  {cover ? (
-                    <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="flex h-full flex-col items-center justify-center gap-2">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
-                        <Plus className="h-5 w-5" />
-                      </span>
-                      <span className="px-2 text-center text-xs font-medium text-[#525252]">Set cover</span>
-                    </span>
-                  )}
-                </div>
-                <p className="mt-2 flex items-baseline justify-center gap-1.5 px-1 text-sm font-semibold text-[#171717]">
-                  <span className="truncate">{name}</span>
-                  {price && <span className="shrink-0">{price}</span>}
-                </p>
-              </>
-            );
-          })()}
-        </div>
-      )}
       {tagModal}
       {cameraKind && (
         <WebcamCapture
