@@ -165,6 +165,7 @@ type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'services' | 'moderation' | 'controls';
+type ControlsSection = 'home' | 'pricing' | 'notifications';
 type ConsumerHomeMode = 'providers' | 'waitlist';
 type PaymentTimingMode = 'on_accept' | 'after_complete';
 type PricingBurdenView = 'client' | 'operator';
@@ -500,6 +501,7 @@ export function AdminDashboard({
   
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
   const [adminView, setAdminView] = useState<AdminView>('performance');
+  const [controlsSection, setControlsSection] = useState<ControlsSection>('home');
   /** Defer heavy panel swaps so tab chrome stays responsive. */
   const deferredAdminView = useDeferredValue(adminView);
   const [servicesPanelMounted, setServicesPanelMounted] = useState(false);
@@ -5692,6 +5694,30 @@ export function AdminDashboard({
 
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
+          <nav className="grid grid-cols-3 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Controls">
+            {(
+              [
+                { id: 'home' as const, label: 'Consumer Home' },
+                { id: 'pricing' as const, label: 'Pricing' },
+                { id: 'notifications' as const, label: 'Notifications' },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setControlsSection(tab.id)}
+                className={`px-2 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
+                  controlsSection === tab.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {controlsSection === 'home' && (
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Consumer Home
@@ -5804,7 +5830,9 @@ export function AdminDashboard({
               Download QR Code
             </Button>
           </div>
+          )}
 
+          {controlsSection === 'pricing' && (
           <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Platform Pricing
@@ -6076,8 +6104,11 @@ export function AdminDashboard({
               </div>
             )}
           </div>
+          )}
 
-          <AdminNotificationControls />
+          <div className={controlsSection === 'notifications' ? undefined : 'hidden'} aria-hidden={controlsSection !== 'notifications'}>
+            <AdminNotificationControls />
+          </div>
         </div>
       )}
 
