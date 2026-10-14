@@ -92,39 +92,14 @@ function MediaGrid({ items, empty }: { items: UploadedMediaItem[]; empty: string
   );
 }
 
-function MediaSplit({
-  photos,
-  videos,
-  photoEmpty,
-  videoEmpty,
-}: {
-  photos: UploadedMediaItem[];
-  videos: UploadedMediaItem[];
-  photoEmpty: string;
-  videoEmpty: string;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Photos
-          <span className="ml-2 font-medium normal-case tracking-normal text-gray-400">{photos.length}</span>
-        </p>
-        <MediaGrid items={photos} empty={photoEmpty} />
-      </div>
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Videos
-          <span className="ml-2 font-medium normal-case tracking-normal text-gray-400">{videos.length}</span>
-        </p>
-        <MediaGrid items={videos} empty={videoEmpty} />
-      </div>
-    </div>
-  );
-}
+const MEDIA_TABS: { id: 'image' | 'video'; label: string }[] = [
+  { id: 'image', label: 'Photo' },
+  { id: 'video', label: 'Video' },
+];
 
 export default function AdminDataPanel() {
   const [section, setSection] = useState<UploadKind>('profile');
+  const [media, setMedia] = useState<'image' | 'video'>('image');
   const [profile, setProfile] = useState<UploadBucket>(EMPTY_BUCKET);
   const [portfolio, setPortfolio] = useState<UploadBucket>(EMPTY_BUCKET);
   const [chat, setChat] = useState<UploadBucket>(EMPTY_BUCKET);
@@ -222,6 +197,28 @@ export default function AdminDataPanel() {
 
   const activeBucket = section === 'profile' ? profile : section === 'portfolio' ? portfolio : chat;
   const activeLabel = DATA_TABS.find((tab) => tab.id === section)?.label ?? 'Data';
+  const visibleItems =
+    section === 'profile'
+      ? profile.items
+      : section === 'portfolio'
+        ? media === 'video'
+          ? portfolioVideos
+          : portfolioPhotos
+        : media === 'video'
+          ? chatVideos
+          : chatPhotos;
+  const visibleEmpty =
+    section === 'profile'
+      ? 'No profile pictures.'
+      : section === 'portfolio'
+        ? media === 'video'
+          ? 'No portfolio videos.'
+          : 'No portfolio photos.'
+        : media === 'video'
+          ? 'No chat videos.'
+          : 'No chat photos.';
+  const countBucket: UploadBucket =
+    section === 'profile' ? activeBucket : { items: visibleItems, total: visibleItems.length };
 
   return (
     <div className="space-y-4">
@@ -247,7 +244,7 @@ export default function AdminDataPanel() {
           <div className="min-w-0">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{activeLabel}</p>
             <p className="text-xs text-gray-500 mt-1">
-              {isLoading ? 'Loading files…' : `${fileCount(activeBucket.total)}${shownNote(activeBucket)}`}
+              {isLoading ? 'Loading files…' : `${fileCount(countBucket.total)}${shownNote(countBucket)}`}
             </p>
           </div>
           <Button type="button" size="sm" disabled={isExporting || isLoading} onClick={() => void exportRows()}>
@@ -260,28 +257,33 @@ export default function AdminDataPanel() {
           </Button>
         </div>
 
+        {section !== 'profile' && (
+          <nav className="grid grid-cols-2 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label={`${activeLabel} media`}>
+            {MEDIA_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setMedia(tab.id)}
+                className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
+                  media === tab.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
         {isLoading ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
         ) : error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>
-        ) : section === 'profile' ? (
-          <MediaGrid items={profile.items} empty="No profile pictures." />
-        ) : section === 'portfolio' ? (
-          <MediaSplit
-            photos={portfolioPhotos}
-            videos={portfolioVideos}
-            photoEmpty="No portfolio photos."
-            videoEmpty="No portfolio videos."
-          />
         ) : (
-          <MediaSplit
-            photos={chatPhotos}
-            videos={chatVideos}
-            photoEmpty="No chat photos."
-            videoEmpty="No chat videos."
-          />
+          <MediaGrid items={visibleItems} empty={visibleEmpty} />
         )}
       </div>
     </div>
