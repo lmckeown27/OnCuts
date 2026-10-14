@@ -4679,3 +4679,170 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+type UploadedMediaKind = 'portfolio' | 'profile' | 'chat';
+
+export interface UploadedMediaRow {
+  id: string;
+  kind: UploadedMediaKind;
+  mediaType: 'image' | 'video';
+  mediaUrl: string;
+  thumbnailUrl: string | null;
+  caption: string | null;
+  specialty: string | null;
+  createdAt: string;
+  ownerName: string;
+  ownerEmail: string;
+}
+
+const UPLOAD_OWNER_NAME_SQL = `COALESCE(
+  NULLIF(BTRIM(to_jsonb(u)->>'displayName'), ''),
+  NULLIF(BTRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))), ''),
+  u.email
+)`;
+
+function pgErrorCode(error: unknown): string {
+  return typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: string }).code || '')
+    : '';
+}
+
+function mapUploadedMediaRow(row: Record<string, unknown>, kind: UploadedMediaKind): UploadedMediaRow | null {
+  const mediaUrl = typeof row.media_url === 'string' ? row.media_url.trim() : '';
+  if (!mediaUrl) return null;
+  const mediaType = String(row.media_type || 'image').toLowerCase() === 'video' ? 'video' : 'image';
+  const created = row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || '');
+  return {
+    id: String(row.id),
+    kind,
+    mediaType,
+    mediaUrl,
+    thumbnailUrl: typeof row.thumbnail_url === 'string' && row.thumbnail_url.trim() ? row.thumbnail_url.trim() : null,
+    caption: typeof row.caption === 'string' && row.caption.trim() ? row.caption.trim() : null,
+    specialty: typeof row.specialty === 'string' && row.specialty.trim() ? row.specialty.trim() : null,
+    createdAt: created,
+    ownerName: String(row.owner_name || row.owner_email || 'User'),
+    ownerEmail: String(row.owner_email || ''),
+  };
+}
+
+async function queryUploadedPortfolio(): Promise<UploadedMediaRow[]> {
+  const owner = UPLOAD_OWNER_NAME_SQL;
+  const withTags = `
+    SELECT i.id::text AS id, i.media_type, i.media_url, i.thumbnail_url, i.caption,
+           CASE WHEN i.specialties IS NULL OR cardinality(i.specialties) = 0 THEN NULL ELSE i.specialties[1] END AS specialty,
+           i.created_at, ${owner} AS owner_name, u.email AS owner_email
+    FROM operator_portfolio_items i
+    JOIN barbers b ON b.id = i.provider_id
+    JOIN users u ON u.id = b."userId"
+    ORDER BY i.created_at DESC
+    LIMIT 2000`;
+  const withoutTags = `
+    SELECT i.id::text AS id, i.media_type, i.media_url, i.thumbnail_url, i.caption,
+           NULL::text AS specialty, i.created_at, ${owner} AS owner_name, u.email AS owner_email
+    FROM operator_portfolio_items i
+    JOIN barbers b ON b.id = i.provider_id
+    JOIN users u ON u.id = b."userId"
+    ORDER BY i.created_at DESC
+    LIMIT 2000`;
+  try {
+    const result = await pool.query(withTags);
+    return result.rows.map((row) => mapUploadedMediaRow(row, 'portfolio')).filter((row): row is UploadedMediaRow => row != null);
+  } catch (error) {
+    const code = pgErrorCode(error);
+    if (code !== '42703' && code !== '42P01') throw error;
+    if (code === '42P01') return [];
+    const result = await pool.query(withoutTags);
+    return result.rows.map((row) => mapUploadedMediaRow(row, 'portfolio')).filter((row): row is UploadedMediaRow => row != null);
+  }
+}
+
+async function queryUploadedProfiles(): Promise<UploadedMediaRow[]> {
+  const owner = UPLOAD_OWNER_NAME_SQL;
+  const result = await pool.query(`
+    SELECT u.id::text AS id, 'image' AS media_type, u."avatarUrl" AS media_url,
+           NULL::text AS thumbnail_url, NULL::text AS caption, NULL::text AS specialty,
+           u."createdAt" AS created_at, ${owner} AS owner_name, u.email AS owner_email
+    FROM users u
+    WHERE NULLIF(BTRIM(u."avatarUrl"), '') IS NOT NULL
+    ORDER BY u."createdAt" DESC
+    LIMIT 2000
+  `);
+  return result.rows.map((row) => mapUploadedMediaRow(row, 'profile')).filter((row): row is UploadedMediaRow => row != null);
+}
+
+async function queryUploadedChatMedia(): Promise<UploadedMediaRow[]> {
+  const owner = UPLOAD_OWNER_NAME_SQL;
+  const fullSql = `
+    SELECT m.id::text AS id,
+           CASE WHEN LOWER(COALESCE(m.message_type, '')) = 'video' THEN 'video' ELSE 'image' END AS media_type,
+           m.media_url, NULL::text AS thumbnail_url, NULLIF(BTRIM(m.content), '') AS caption,
+           NULL::text AS specialty, m.created_at, ${owner} AS owner_name, u.email AS owner_email
+    FROM messages m
+    JOIN users u ON u.id = m.sender_id
+    WHERE NULLIF(BTRIM(m.media_url), '') IS NOT NULL
+      AND COALESCE(m.is_deleted, false) = false
+    ORDER BY m.created_at DESC
+    LIMIT 2000`;
+  const bareSql = `
+    SELECT m.id::text AS id, 'image' AS media_type, m.media_url,
+           NULL::text AS thumbnail_url, NULL::text AS caption, NULL::text AS specialty,
+           m.created_at, ${owner} AS owner_name, u.email AS owner_email
+    FROM messages m
+    JOIN users u ON u.id = m.sender_id
+    WHERE NULLIF(BTRIM(m.media_url), '') IS NOT NULL
+    ORDER BY m.created_at DESC
+    LIMIT 2000`;
+  try {
+    const result = await pool.query(fullSql);
+    return result.rows.map((row) => mapUploadedMediaRow(row, 'chat')).filter((row): row is UploadedMediaRow => row != null);
+  } catch (error) {
+    const code = pgErrorCode(error);
+    if (code === '42P01') return [];
+    if (code !== '42703') throw error;
+    try {
+      const result = await pool.query(bareSql);
+      return result.rows.map((row) => mapUploadedMediaRow(row, 'chat')).filter((row): row is UploadedMediaRow => row != null);
+    } catch (retryError) {
+      if (pgErrorCode(retryError) === '42703' || pgErrorCode(retryError) === '42P01') return [];
+      throw retryError;
+    }
+  }
+}
+
+/**
+ * GET /api/admin/uploads
+ * Uploaded user files (portfolio, profile photos, chat media) for admin review and export.
+ */
+export const listUploadedMedia = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role?.toLowerCase() !== 'admin') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const rawKind = String(req.query.kind || 'portfolio').toLowerCase();
+    const kind: UploadedMediaKind | 'all' =
+      rawKind === 'profile' || rawKind === 'chat' || rawKind === 'all' || rawKind === 'portfolio'
+        ? rawKind
+        : 'portfolio';
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '120'), 10) || 120, 1), 2000);
+
+    const batches = await Promise.all([
+      kind === 'all' || kind === 'portfolio' ? queryUploadedPortfolio() : Promise.resolve([]),
+      kind === 'all' || kind === 'profile' ? queryUploadedProfiles() : Promise.resolve([]),
+      kind === 'all' || kind === 'chat' ? queryUploadedChatMedia() : Promise.resolve([]),
+    ]);
+    const merged = batches
+      .flat()
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+
+    res.json({
+      success: true,
+      data: {
+        items: merged.slice(0, limit),
+        total: merged.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

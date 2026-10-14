@@ -82,6 +82,7 @@ router.get('/bookings/:bookingId/messages', adminController.getBookingMessages);
 
 // User Management (admin only)
 router.get('/users', adminController.getAllUsers);
+router.get('/uploads', adminController.listUploadedMedia);
 
 // UGC moderation (App Store Guideline 1.2)
 router.get('/moderation/banned-users', adminController.listBannedUsers);
