@@ -2550,7 +2550,7 @@ export function AdminDashboard({
   return (
     <div className="relative flex flex-col min-h-0 flex-1 overflow-hidden">
       {/* Shared chrome: tabs */}
-      <div className="shrink-0 px-3 sm:px-4 pt-2 pb-2 space-y-2 border-b border-stone-200/80 bg-stone-50">
+      <div className="relative z-10 shrink-0 px-3 sm:px-4 pt-2 pb-2 space-y-2 border-b border-stone-200/80 bg-stone-50">
         {campusLoadError && (
           <p className="text-center text-xs text-red-600">{campusLoadError}</p>
         )}

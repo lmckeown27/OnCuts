@@ -884,7 +884,7 @@ export default function BarberPage() {
       {/* Admin Dashboard — pushed shell (admins only) */}
       {isAdmin && showAdminDashboard && (
         <div
-          className={`fixed inset-0 z-50 min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
+          className={`fixed inset-0 z-[1100] min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
             isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeAdminDashboard}
@@ -903,7 +903,7 @@ export default function BarberPage() {
             <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
             </div>
-            <div className="relative px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
+            <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
               <button
                 type="button"

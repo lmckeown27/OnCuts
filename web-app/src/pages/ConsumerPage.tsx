@@ -980,7 +980,7 @@ export default function ConsumerPage() {
             <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
             </div>
-            <div className="relative px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
+            <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">Admin</h2>
               <button
                 type="button"
