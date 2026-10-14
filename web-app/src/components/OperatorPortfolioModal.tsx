@@ -35,6 +35,27 @@ interface OperatorPortfolioModalProps {
 
 type SlotKind = 'image' | 'video';
 
+const SECTION_HOLD_MS = 420;
+const SECTION_HOLD_SLOP = 8;
+
+interface SectionDrag {
+  id: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  latestX: number;
+  latestY: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+  moved: boolean;
+  armed: boolean;
+  lastTarget: number;
+  timer: number;
+  card: HTMLDivElement;
+}
+
 interface UploadTarget {
   specialtyId: string;
   asCover: boolean;
@@ -143,12 +164,14 @@ export default function OperatorPortfolioModal({
   const [specialtyPrices, setSpecialtyPrices] = useState<Record<string, number>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragGhost, setDragGhost] = useState<{ id: string; x: number; y: number; width: number; height: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
   const sectionRowRef = useRef<HTMLDivElement>(null);
   const orderRef = useRef<string[]>([]);
-  const dragRef = useRef<{ id: string; startX: number; moved: boolean; lastTarget: number } | null>(null);
+  const dragRef = useRef<SectionDrag | null>(null);
+  const dragListeners = useRef<{ move: (event: PointerEvent) => void; up: (event: PointerEvent) => void } | null>(null);
   const suppressClick = useRef(false);
   const tagCloseTimer = useRef<number | null>(null);
   const previewCloseTimer = useRef<number | null>(null);
@@ -795,49 +818,140 @@ export default function OperatorPortfolioModal({
     });
   };
 
-  const onSectionPointerDown = (event: ReactPointerEvent<HTMLDivElement>, id: string) => {
-    if (event.button !== 0) return;
-    dragRef.current = { id, startX: event.clientX, moved: false, lastTarget: orderedSectionIds.indexOf(id) };
+  const detachDragListeners = () => {
+    const listeners = dragListeners.current;
+    if (!listeners) return;
+    window.removeEventListener('pointermove', listeners.move);
+    window.removeEventListener('pointerup', listeners.up);
+    window.removeEventListener('pointercancel', listeners.up);
+    dragListeners.current = null;
   };
 
-  const onSectionPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const finishSectionDrag = () => {
     const drag = dragRef.current;
-    const row = sectionRowRef.current;
-    if (!drag || !row) return;
-    if (!drag.moved && Math.abs(event.clientX - drag.startX) < 8) return;
-    if (!drag.moved) {
-      drag.moved = true;
-      row.setPointerCapture(event.pointerId);
-      setDraggingId(drag.id);
-      setSourceMenu(null);
-    }
-    const bounds = row.getBoundingClientRect();
-    if (event.clientX > bounds.right - 36) row.scrollLeft += 14;
-    if (event.clientX < bounds.left + 36) row.scrollLeft -= 14;
-    const cards = Array.from(row.querySelectorAll<HTMLElement>('[data-section-id]'));
-    let target = cards.length;
-    for (let index = 0; index < cards.length; index += 1) {
-      const rect = cards[index].getBoundingClientRect();
-      if (event.clientX < rect.left + rect.width / 2) {
-        target = index;
-        break;
-      }
-    }
-    if (target === drag.lastTarget) return;
-    drag.lastTarget = target;
-    reorderSections(drag.id, target);
-  };
-
-  const onSectionPointerUp = () => {
-    const drag = dragRef.current;
+    if (drag?.timer) window.clearTimeout(drag.timer);
     dragRef.current = null;
+    detachDragListeners();
     setDraggingId(null);
-    if (!drag?.moved || !providerId) return;
+    setDragGhost(null);
+    if (!drag?.armed) return;
     suppressClick.current = true;
+    if (!drag.moved || !providerId) return;
     void api
       .put(`/barbers/${providerId}/operator-portfolio/section-order`, { specialtyIds: orderRef.current })
       .catch((err) => setError(uploadErrorMessage(err)));
   };
+
+  const onSectionPointerDown = (event: ReactPointerEvent<HTMLDivElement>, id: string) => {
+    if (event.button !== 0) return;
+    const card = event.currentTarget;
+    if (dragRef.current?.timer) window.clearTimeout(dragRef.current.timer);
+    detachDragListeners();
+
+    const drag: SectionDrag = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      latestX: event.clientX,
+      latestY: event.clientY,
+      offsetX: 0,
+      offsetY: 0,
+      width: 0,
+      height: 0,
+      moved: false,
+      armed: false,
+      lastTarget: orderedSectionIds.indexOf(id),
+      timer: 0,
+      card,
+    };
+
+    const move = (native: PointerEvent) => {
+      if (native.pointerId !== drag.pointerId) return;
+      const current = dragRef.current;
+      if (!current || current !== drag) return;
+      current.latestX = native.clientX;
+      current.latestY = native.clientY;
+      if (!current.armed) {
+        if (Math.hypot(native.clientX - current.startX, native.clientY - current.startY) > SECTION_HOLD_SLOP) {
+          window.clearTimeout(current.timer);
+          dragRef.current = null;
+          detachDragListeners();
+        }
+        return;
+      }
+      current.moved = true;
+      setDragGhost({
+        id: current.id,
+        x: native.clientX - current.offsetX,
+        y: native.clientY - current.offsetY,
+        width: current.width,
+        height: current.height,
+      });
+      const row = sectionRowRef.current;
+      if (!row) return;
+      const bounds = row.getBoundingClientRect();
+      if (native.clientX > bounds.right - 36) row.scrollLeft += 14;
+      if (native.clientX < bounds.left + 36) row.scrollLeft -= 14;
+      const cards = Array.from(row.querySelectorAll<HTMLElement>('[data-section-id]'));
+      let target = cards.length;
+      for (let index = 0; index < cards.length; index += 1) {
+        const rect = cards[index].getBoundingClientRect();
+        if (native.clientX < rect.left + rect.width / 2) {
+          target = index;
+          break;
+        }
+      }
+      if (target === current.lastTarget) return;
+      current.lastTarget = target;
+      reorderSections(current.id, target);
+    };
+
+    const up = (native: PointerEvent) => {
+      if (native.pointerId !== drag.pointerId) return;
+      finishSectionDrag();
+    };
+
+    drag.timer = window.setTimeout(() => {
+      const current = dragRef.current;
+      if (!current || current !== drag) return;
+      const rect = current.card.getBoundingClientRect();
+      current.armed = true;
+      current.offsetX = current.latestX - rect.left;
+      current.offsetY = current.latestY - rect.top;
+      current.width = rect.width;
+      current.height = rect.height;
+      try {
+        current.card.setPointerCapture(current.pointerId);
+      } catch {
+        /* The pointer may already have ended. */
+      }
+      setDraggingId(current.id);
+      setSourceMenu(null);
+      setDragGhost({
+        id: current.id,
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      });
+    }, SECTION_HOLD_MS);
+
+    dragRef.current = drag;
+    dragListeners.current = { move, up };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
+  useEffect(() => () => {
+    if (dragRef.current?.timer) window.clearTimeout(dragRef.current.timer);
+    const listeners = dragListeners.current;
+    if (!listeners) return;
+    window.removeEventListener('pointermove', listeners.move);
+    window.removeEventListener('pointerup', listeners.up);
+    window.removeEventListener('pointercancel', listeners.up);
+  }, []);
 
   const clientWork = orderedSectionIds.flatMap((specialtyId) => {
     const sectionItems = items.filter((item) => specialtyIds(item)[0] === specialtyId);
@@ -1208,9 +1322,6 @@ export default function OperatorPortfolioModal({
             <div
               ref={sectionRowRef}
               className="flex gap-[14px] overflow-x-auto pb-2"
-              onPointerMove={onSectionPointerMove}
-              onPointerUp={onSectionPointerUp}
-              onPointerCancel={onSectionPointerUp}
             >
               {orderedSectionIds.map((specialtyId) => {
                 const cover = sectionCover(items, specialtyId);
@@ -1219,9 +1330,11 @@ export default function OperatorPortfolioModal({
                   <div
                     key={specialtyId}
                     data-section-id={specialtyId}
-                    className={`w-[150px] shrink-0 cursor-grab touch-none ${
-                      draggingId === specialtyId ? 'cursor-grabbing opacity-70' : ''
+                    className={`w-[150px] shrink-0 select-none ${
+                      draggingId === specialtyId ? 'cursor-grabbing opacity-30 touch-none' : 'cursor-grab touch-pan-x'
                     }`}
+                    style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
+                    onContextMenu={(event) => event.preventDefault()}
                     onPointerDown={(event) => onSectionPointerDown(event, specialtyId)}
                   >
                     <div className="relative">
@@ -1443,6 +1556,45 @@ export default function OperatorPortfolioModal({
   return createPortal(
     <>
       {dialog}
+      {dragGhost && (
+        <div
+          className="pointer-events-none fixed z-[80] rounded-xl bg-white"
+          style={{
+            left: dragGhost.x,
+            top: dragGhost.y,
+            width: dragGhost.width,
+            outline: '3px solid #f97316',
+            outlineOffset: 3,
+            boxShadow: '0 16px 36px rgba(0,0,0,0.28)',
+          }}
+        >
+          {(() => {
+            const cover = sectionCover(items, dragGhost.id);
+            const name = specialtyLabel(dragGhost.id, options);
+            const price = priceForSpecialty(dragGhost.id, options, specialtyPrices);
+            return (
+              <>
+                <div className="relative overflow-hidden rounded-xl aspect-[9/16] border border-[#e5e5e5] bg-white">
+                  {cover ? (
+                    <img src={cover.media_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full flex-col items-center justify-center gap-2">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171717] text-white">
+                        <Plus className="h-5 w-5" />
+                      </span>
+                      <span className="px-2 text-center text-xs font-medium text-[#525252]">Set cover</span>
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 flex items-baseline justify-center gap-1.5 px-1 text-sm font-semibold text-[#171717]">
+                  <span className="truncate">{name}</span>
+                  {price && <span className="shrink-0">{price}</span>}
+                </p>
+              </>
+            );
+          })()}
+        </div>
+      )}
       {tagModal}
       {cameraKind && (
         <WebcamCapture
