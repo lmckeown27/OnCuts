@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
+import { compressUploadPhoto } from '../utils/compressUploadPhoto';
 import api from '../services/api.service';
 import notificationService, { Notification } from '../services/notification.service';
 import socketService from '../services/socket.service';
@@ -1071,7 +1072,7 @@ export default function MessagesPage() {
     try {
       let mediaUrl: string | undefined;
       if (attachment) {
-        mediaUrl = await messageService.uploadChatImage(attachment.file);
+        mediaUrl = await messageService.uploadChatImage(await compressUploadPhoto(attachment.file));
         URL.revokeObjectURL(attachment.previewUrl);
         attachmentToRestore = null;
       }

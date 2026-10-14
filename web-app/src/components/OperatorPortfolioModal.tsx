@@ -9,6 +9,7 @@ import barberService from '../services/barber.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
 import { useBodyScrollLock } from '../hooks';
 import WebcamCapture from './WebcamCapture';
+import { compressUploadPhoto } from '../utils/compressUploadPhoto';
 
 export interface OperatorPortfolioItem {
   id: string;
@@ -399,8 +400,9 @@ export default function OperatorPortfolioModal({
   };
 
   const publishFile = async (kind: SlotKind, file: File, target: UploadTarget) => {
+    const uploadFile = kind === 'image' ? await compressUploadPhoto(file) : file;
     const maxBytes = kind === 'image' ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES;
-    if (file.size > maxBytes) {
+    if (uploadFile.size > maxBytes) {
       setCameraKind(null);
       setError(kind === 'image' ? 'Photos must be 8 MB or smaller' : 'Videos must be 80 MB or smaller');
       return;
@@ -416,7 +418,7 @@ export default function OperatorPortfolioModal({
     setSourceMenu(null);
     try {
       const form = new FormData();
-      form.append('media', file);
+      form.append('media', uploadFile);
       form.append('specialties', JSON.stringify([target.specialtyId]));
       if (target.asCover) form.append('is_cover', 'true');
       const created = await api.upload<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio`, form);
@@ -525,7 +527,8 @@ export default function OperatorPortfolioModal({
     try {
       if (draft) {
         const form = new FormData();
-        form.append('media', draft.file);
+        const media = draft.kind === 'image' ? await compressUploadPhoto(draft.file) : draft.file;
+        form.append('media', media);
         form.append('specialties', JSON.stringify(tagSelection));
         const created = await api.upload<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio`, form);
         if (draft.replaceId) {

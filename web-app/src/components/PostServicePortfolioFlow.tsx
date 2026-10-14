@@ -7,6 +7,7 @@ import barberService from '../services/barber.service';
 import { findService, SERVICE_TYPES, type ServiceType } from '../config/services';
 import { useBodyScrollLock } from '../hooks';
 import WebcamCapture from './WebcamCapture';
+import { compressUploadPhoto } from '../utils/compressUploadPhoto';
 import type { OperatorPortfolioItem } from './OperatorPortfolioModal';
 
 const PHOTO_SLOTS = [0, 1, 2, 3] as const;
@@ -214,7 +215,8 @@ export default function PostServicePortfolioFlow({
     const results = await Promise.allSettled(
       items.map(async (item) => {
         const form = new FormData();
-        form.append('media', item.file);
+        const media = item.kind === 'image' ? await compressUploadPhoto(item.file) : item.file;
+        form.append('media', media);
         form.append('specialties', JSON.stringify(item.specialties));
         form.append('booking_id', bookingId);
         await api.upload<OperatorPortfolioItem>(`/barbers/${providerId}/operator-portfolio`, form);

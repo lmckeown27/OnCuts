@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import OperatorPortfolioModal from './OperatorPortfolioModal';
+import { compressUploadPhoto } from '../utils/compressUploadPhoto';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -217,9 +218,9 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      console.warn('[ProfileEditor] File rejected: too large:', file.size);
+    const prepared = await compressUploadPhoto(file, 800);
+    if (prepared.size > 5 * 1024 * 1024) {
+      console.warn('[ProfileEditor] File rejected: too large:', prepared.size);
       toast.error('Image must be less than 5MB');
       return;
     }
@@ -231,7 +232,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       
       const uploadUserId = userId || barber?.user_id || '';
       console.log('[ProfileEditor] Starting upload for userId:', uploadUserId);
-      console.log('[ProfileEditor] File details:', { name: file.name, size: file.size, type: file.type });
+      console.log('[ProfileEditor] File details:', { name: prepared.name, size: prepared.size, type: prepared.type });
       
       if (!uploadUserId) {
         console.error('[ProfileEditor] No userId available for upload');
@@ -240,7 +241,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
       }
       
       // Upload the file
-      const response = await userService.uploadProfilePhoto(uploadUserId, file);
+      const response = await userService.uploadProfilePhoto(uploadUserId, prepared);
       console.log('[ProfileEditor] Upload response:', response);
       
       if (response.url) {
@@ -287,8 +288,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose, onOpenS
         return;
       }
       
-      // Upload the file
-      const response = await userService.uploadProfilePhoto(uploadUserId, file);
+      const response = await userService.uploadProfilePhoto(uploadUserId, await compressUploadPhoto(file, 800));
       console.log('[ProfileEditor] Upload response:', response);
       
       if (response.url) {

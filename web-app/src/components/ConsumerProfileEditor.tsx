@@ -18,6 +18,7 @@ import Loading from './Loading';
 import MobilePhotoUpload from './MobilePhotoUpload';
 import toast from 'react-hot-toast';
 import userService from '../services/user.service';
+import { compressUploadPhoto } from '../utils/compressUploadPhoto';
 import { useAuthStore } from '../store/useAuthStore';
 import type { User } from '../types';
 import { removeLocalStorageKeys } from '../utils/storageMigration';
@@ -273,15 +274,15 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    const prepared = await compressUploadPhoto(file, 800);
+    if (prepared.size > 5 * 1024 * 1024) {
       toast.error('Image must be less than 5MB');
       return;
     }
 
     try {
       toast.success('Uploading photo...');
-      const result = await userService.uploadProfilePhoto(userId, file);
+      const result = await userService.uploadProfilePhoto(userId, prepared);
       setProfilePhoto(result.url);
       
       // Update user profile with new photo URL
@@ -307,7 +308,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
   const handleMobilePhotoUpload = async (file: File) => {
     try {
       toast.success('Uploading photo...');
-      const result = await userService.uploadProfilePhoto(userId, file);
+      const result = await userService.uploadProfilePhoto(userId, await compressUploadPhoto(file, 800));
       setProfilePhoto(result.url);
       
       // Update user profile with new photo URL
