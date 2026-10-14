@@ -171,7 +171,11 @@ export default function OperatorPortfolioModal({
   const sectionRowRef = useRef<HTMLDivElement>(null);
   const orderRef = useRef<string[]>([]);
   const dragRef = useRef<SectionDrag | null>(null);
-  const dragListeners = useRef<{ move: (event: PointerEvent) => void; up: (event: PointerEvent) => void } | null>(null);
+  const dragListeners = useRef<{
+    move: (event: PointerEvent) => void;
+    up: (event: PointerEvent) => void;
+    touch: (event: TouchEvent) => void;
+  } | null>(null);
   const suppressClick = useRef(false);
   const tagCloseTimer = useRef<number | null>(null);
   const previewCloseTimer = useRef<number | null>(null);
@@ -804,15 +808,15 @@ export default function OperatorPortfolioModal({
   }, [sectionIds, sectionOrder]);
   orderRef.current = orderedSectionIds;
 
-  const reorderSections = (id: string, target: number) => {
+  const reorderSections = (id: string, insertAt: number) => {
     setSectionOrder(() => {
       const current = orderRef.current;
-      const from = current.indexOf(id);
-      if (from < 0) return current;
-      const next = current.slice();
-      next.splice(from, 1);
-      const insertAt = Math.max(0, Math.min(next.length, target > from ? target - 1 : target));
-      next.splice(insertAt, 0, id);
+      if (!current.includes(id)) return current;
+      const without = current.filter((entry) => entry !== id);
+      const index = Math.max(0, Math.min(without.length, insertAt));
+      if (current.indexOf(id) === index) return current;
+      const next = without.slice();
+      next.splice(index, 0, id);
       orderRef.current = next;
       return next;
     });
@@ -824,6 +828,7 @@ export default function OperatorPortfolioModal({
     window.removeEventListener('pointermove', listeners.move);
     window.removeEventListener('pointerup', listeners.up);
     window.removeEventListener('pointercancel', listeners.up);
+    window.removeEventListener('touchmove', listeners.touch);
     dragListeners.current = null;
   };
 
@@ -881,30 +886,36 @@ export default function OperatorPortfolioModal({
         return;
       }
       current.moved = true;
+      const ghostLeft = native.clientX - current.offsetX;
+      const ghostTop = native.clientY - current.offsetY;
       setDragGhost({
         id: current.id,
-        x: native.clientX - current.offsetX,
-        y: native.clientY - current.offsetY,
+        x: ghostLeft,
+        y: ghostTop,
         width: current.width,
         height: current.height,
       });
       const row = sectionRowRef.current;
       if (!row) return;
       const bounds = row.getBoundingClientRect();
-      if (native.clientX > bounds.right - 36) row.scrollLeft += 14;
-      if (native.clientX < bounds.left + 36) row.scrollLeft -= 14;
-      const cards = Array.from(row.querySelectorAll<HTMLElement>('[data-section-id]'));
-      let target = cards.length;
+      const ghostRight = ghostLeft + current.width;
+      if (ghostRight > bounds.right - 28) row.scrollLeft += 18;
+      if (ghostLeft < bounds.left + 28) row.scrollLeft -= 18;
+      const center = ghostLeft + current.width / 2;
+      const cards = Array.from(row.querySelectorAll<HTMLElement>('[data-section-id]')).filter(
+        (entry) => entry.dataset.sectionId !== current.id
+      );
+      let insertAt = cards.length;
       for (let index = 0; index < cards.length; index += 1) {
         const rect = cards[index].getBoundingClientRect();
-        if (native.clientX < rect.left + rect.width / 2) {
-          target = index;
+        if (center < rect.left + rect.width / 2) {
+          insertAt = index;
           break;
         }
       }
-      if (target === current.lastTarget) return;
-      current.lastTarget = target;
-      reorderSections(current.id, target);
+      if (insertAt === current.lastTarget) return;
+      current.lastTarget = insertAt;
+      reorderSections(current.id, insertAt);
     };
 
     const up = (native: PointerEvent) => {
@@ -937,11 +948,16 @@ export default function OperatorPortfolioModal({
       });
     }, SECTION_HOLD_MS);
 
+    const touch = (touchEvent: TouchEvent) => {
+      if (dragRef.current?.armed) touchEvent.preventDefault();
+    };
+
     dragRef.current = drag;
-    dragListeners.current = { move, up };
+    dragListeners.current = { move, up, touch };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
+    window.addEventListener('touchmove', touch, { passive: false });
   };
 
   useEffect(() => () => {
@@ -951,6 +967,7 @@ export default function OperatorPortfolioModal({
     window.removeEventListener('pointermove', listeners.move);
     window.removeEventListener('pointerup', listeners.up);
     window.removeEventListener('pointercancel', listeners.up);
+    window.removeEventListener('touchmove', listeners.touch);
   }, []);
 
   const clientWork = orderedSectionIds.flatMap((specialtyId) => {
@@ -1330,8 +1347,8 @@ export default function OperatorPortfolioModal({
                   <div
                     key={specialtyId}
                     data-section-id={specialtyId}
-                    className={`w-[150px] shrink-0 select-none ${
-                      draggingId === specialtyId ? 'cursor-grabbing opacity-30 touch-none' : 'cursor-grab touch-pan-x'
+                    className={`w-[150px] shrink-0 select-none touch-none ${
+                      draggingId === specialtyId ? 'cursor-grabbing opacity-30' : 'cursor-grab'
                     }`}
                     style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
                     onContextMenu={(event) => event.preventDefault()}
