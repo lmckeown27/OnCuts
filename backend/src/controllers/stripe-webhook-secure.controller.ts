@@ -112,6 +112,20 @@ async function archiveBookingMessages(bookingId: string, client: any): Promise<v
   }
 }
 
+async function deleteBookingConversation(bookingId: string, client: any): Promise<void> {
+  try {
+    await archiveBookingMessages(bookingId, client);
+    await client.query(
+      `DELETE FROM messages
+       WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+      [bookingId]
+    );
+    await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [bookingId]);
+  } catch (error: any) {
+    logger.debug(`No conversation to delete for booking ${bookingId}: ${error?.message || error}`);
+  }
+}
+
 /**
  * Check if event was already processed (idempotency)
  */
@@ -713,20 +727,9 @@ async function handlePaymentIntentSucceeded(
       }
       booking = tipUpdate.rows[0];
       logger.info(`✅ Tip recorded via webhook for booking ${booking_id}`);
-
-      try {
-        await archiveBookingMessages(booking_id, client);
-        await client.query(
-          `DELETE FROM messages
-           WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-          [booking_id]
-        );
-        await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
-      } catch {
-        logger.debug(`No conversation to delete for tip on booking ${booking_id}`);
-      }
+      await deleteBookingConversation(booking_id, client);
     } else {
-      // Service payment (pay-on-accept) → PAID; keep conversation open
+      // Service payment → PAID, then remove the booking chat
       const updateBookingResult = await client.query(
         `UPDATE bookings 
          SET status = 'PAID',
@@ -781,20 +784,10 @@ async function handlePaymentIntentSucceeded(
             [tipFromMeta, booking_id]
           );
           booking.tipAmountCents = tipFromMeta;
-          try {
-            await archiveBookingMessages(booking_id, client);
-            await client.query(
-              `DELETE FROM messages
-               WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-              [booking_id]
-            );
-            await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
-          } catch {
-            logger.debug(`No conversation to delete for after-complete pay on ${booking_id}`);
-          }
         }
       }
       logger.info(`✅ Booking ${booking_id} marked as PAID (service)`);
+      await deleteBookingConversation(booking_id, client);
 
       const syncedPlatformFee =
         paymentIntent.application_fee_amount != null

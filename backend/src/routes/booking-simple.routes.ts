@@ -237,6 +237,20 @@ async function archiveBookingMessages(bookingId: string, client: any = pool): Pr
   }
 }
 
+async function deleteBookingConversation(bookingId: string, client: any = pool): Promise<void> {
+  try {
+    await archiveBookingMessages(bookingId, client);
+    await client.query(
+      `DELETE FROM messages
+       WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+      [bookingId]
+    );
+    await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [bookingId]);
+  } catch (error: any) {
+    logger.debug(`No conversation to delete for booking ${bookingId}: ${error?.message || error}`);
+  }
+}
+
 /**
  * POST /api/v1/bookings-simple
  * Create a simple booking record
@@ -2289,7 +2303,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
     const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
     if (payOnAccept) {
-      await pool.query(
+      const paidUpdate = await pool.query(
         `UPDATE bookings 
          SET status = 'PAID',
              "tipAmountCents" = 0,
@@ -2302,8 +2316,9 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
          WHERE id = $2 AND status = 'ACCEPTED'`,
         [totalAmountCents, id, paymentIntentId]
       );
+      if ((paidUpdate.rowCount ?? 0) > 0) await deleteBookingConversation(id);
     } else {
-      await pool.query(
+      const paidUpdate = await pool.query(
         `UPDATE bookings 
          SET status = 'PAID',
              "tipAmountCents" = $1,
@@ -2319,17 +2334,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
          WHERE id = $3 AND status = 'COMPLETED'`,
         [tipAmountCents, totalAmountCents, id, paymentIntentId]
       );
-      try {
-        await archiveBookingMessages(id);
-        await pool.query(
-          `DELETE FROM messages
-           WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-          [id]
-        );
-        await pool.query(`DELETE FROM conversations WHERE booking_id = $1`, [id]);
-      } catch {
-        /* non-fatal */
-      }
+      if ((paidUpdate.rowCount ?? 0) > 0) await deleteBookingConversation(id);
     }
 
     try {
@@ -2511,8 +2516,9 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     const operatorEnrouteCents = feeSplit.barberEarningsCents + (payOnAccept ? 0 : tipAmountCents);
     const operatorEnrouteLabel = `$${(operatorEnrouteCents / 100).toFixed(2)}`;
 
+    let markedPaid = false;
     if (payOnAccept) {
-      await pool.query(
+      const paidUpdate = await pool.query(
         `UPDATE bookings 
          SET status = 'PAID',
              "tipAmountCents" = 0,
@@ -2524,8 +2530,9 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
          WHERE id = $3 AND status = 'ACCEPTED'`,
         [totalAmountCents, paymentMethod, id]
       );
+      markedPaid = (paidUpdate.rowCount ?? 0) > 0;
     } else {
-      await pool.query(
+      const paidUpdate = await pool.query(
         `UPDATE bookings 
          SET status = 'PAID',
              "tipAmountCents" = $1,
@@ -2540,9 +2547,10 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
          WHERE id = $4 AND status = 'COMPLETED'`,
         [tipAmountCents, totalAmountCents, paymentMethod, id]
       );
+      markedPaid = (paidUpdate.rowCount ?? 0) > 0;
     }
 
-    // Keep conversation open until tip decision (pay-on-accept only).
+    if (markedPaid) await deleteBookingConversation(id);
 
     const paymentMethodLabel = 'Cash';
     await sendTemplatedNotification({
@@ -2785,17 +2793,7 @@ router.post('/:id/confirm-tip', authenticate, async (req, res, next) => {
       [tipAmountCents, newTotal, id]
     );
 
-    try {
-      await archiveBookingMessages(id);
-      await pool.query(
-        `DELETE FROM messages
-         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
-        [id]
-      );
-      await pool.query(`DELETE FROM conversations WHERE booking_id = $1`, [id]);
-    } catch {
-      logger.debug(`No conversation to delete after tip for booking ${id}`);
-    }
+    await deleteBookingConversation(id);
 
     const tipLabel =
       tipAmountCents > 0
