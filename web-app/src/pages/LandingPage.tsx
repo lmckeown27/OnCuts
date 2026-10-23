@@ -275,32 +275,32 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Download OnCuts Operator on the App Store"
-                className="group/card flex flex-col items-center text-center gap-5 sm:gap-7 rounded-2xl border border-gray-200 bg-white p-6 sm:p-10 shadow-sm hover:shadow-md text-gray-900 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
+                className="group/card flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-white no-underline shadow-[0_10px_24px_rgba(0,0,0,0.2)] transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
               >
-                <div className="flex flex-col items-center gap-4 transition-transform duration-300 group-hover/card:scale-[1.02]">
-                  <div className="h-[72px] w-[72px] sm:h-24 sm:w-24 rounded-2xl overflow-hidden bg-gray-50">
-                    <img
-                      src={onCutsOperatorAppLogo}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">OnCuts Operator</p>
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white/10 transition-transform duration-300 group-hover/card:scale-[1.02]">
+                  <img
+                    src={onCutsOperatorAppLogo}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
-
-                <div className="inline-flex items-center gap-3.5 rounded-2xl bg-gray-900 px-6 py-3.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-base font-bold text-white sm:text-lg">OnCuts Operator</p>
+                  <p className="text-xs text-white/60">Get the app on the App Store</p>
+                </div>
+                <div className="inline-flex shrink-0 items-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
                   <img
                     src={appleWhiteLogo}
                     alt=""
-                    className="h-8 w-8 shrink-0 object-contain"
+                    className="h-6 w-6 shrink-0 object-contain"
                     aria-hidden="true"
                     decoding="async"
                   />
-                  <span className="leading-tight text-left">
-                    <span className="block text-xs uppercase tracking-wide text-white/80">Download on the</span>
-                    <span className="block text-xl font-semibold">App Store</span>
+                  <span className="hidden leading-tight text-left sm:block">
+                    <span className="block text-[10px] uppercase tracking-wide text-white/70">Download on the</span>
+                    <span className="block text-sm font-semibold">App Store</span>
                   </span>
                 </div>
               </a>
