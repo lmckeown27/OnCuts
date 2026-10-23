@@ -708,10 +708,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
             <h2 className="text-xl font-bold text-white">Apply to Become an OnCuts Operator</h2>
-            <p className="text-primary-100/90 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
+            <p className="text-white/85 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
           </div>
           <button
             onClick={handleClose}
