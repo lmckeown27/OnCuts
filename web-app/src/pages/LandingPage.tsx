@@ -287,9 +287,9 @@ export default function LandingPage() {
                     decoding="async"
                   />
                 </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-base font-bold text-white sm:text-lg">OnCuts Operator</p>
-                  <div className="mt-1.5 inline-flex shrink-0 items-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
+                <div className="min-w-0 flex-1 self-stretch flex flex-col justify-center text-left">
+                  <p className="w-full text-lg font-bold text-white sm:text-xl">OnCuts Operator</p>
+                  <div className="mt-1.5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
                     <img
                       src={appleWhiteLogo}
                       alt=""
