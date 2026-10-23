@@ -20,6 +20,7 @@ import { setBrowseConstrainByDistance, setBrowseDeviceTracking } from '../utils/
 import { buildContactComposeUrl, openContactCompose } from '../utils/contactComposeUrl';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
+import onCutsAppLogo from '../assets/logos/OnCuts_Logo.png';
 import onCutsOperatorAppLogo from '../assets/logos/iOS_OnCutsOperator_Logo.png';
 
 export default function LandingPage() {
@@ -166,24 +167,39 @@ export default function LandingPage() {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex flex-col gap-3">
                 <a
                   href={IOS_APP_STORE_LINKS.consumer}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 bg-neutral-900 text-white rounded-xl px-4 py-2.5 shadow-md hover:bg-neutral-800 transition-colors w-fit"
+                  aria-label="Download OnCuts on the App Store"
+                  className="group/card flex w-full max-w-[420px] items-center gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-gray-900 no-underline shadow-[0_10px_28px_rgba(90,114,104,0.12)] transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
                 >
-                  <img
-                    src={appleWhiteLogo}
-                    alt=""
-                    className="h-7 w-7 shrink-0 object-contain"
-                    aria-hidden="true"
-                    decoding="async"
-                  />
-                  <span className="leading-tight text-left">
-                    <span className="block text-[10px] text-white/70">Download on the</span>
-                    <span className="block text-base font-semibold">App Store</span>
-                  </span>
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 transition-transform duration-300 group-hover/card:scale-[1.02]">
+                    <img
+                      src={onCutsAppLogo}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 self-stretch flex flex-col justify-center text-left">
+                    <p className="w-full text-lg font-bold text-[#171717] sm:text-xl">OnCuts</p>
+                    <div className="mt-1.5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
+                      <img
+                        src={appleWhiteLogo}
+                        alt=""
+                        className="h-6 w-6 shrink-0 object-contain"
+                        aria-hidden="true"
+                        decoding="async"
+                      />
+                      <span className="leading-tight text-left">
+                        <span className="block text-[10px] uppercase tracking-wide text-white/70">Download on the</span>
+                        <span className="block text-sm font-semibold">App Store</span>
+                      </span>
+                    </div>
+                  </div>
                 </a>
                 <p className="text-sm text-[#6B6B6B]">Or book right here on the web.</p>
               </div>
