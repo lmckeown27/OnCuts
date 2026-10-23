@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, CheckCircle, User, X, ChevronDown } from 'lucide-react';
+import { CheckCircle, User, X, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -189,7 +189,7 @@ export default function LandingPage() {
 
             {/* Right column: booking preview */}
             <div
-              className="relative w-full max-w-[400px] shrink-0 pb-8 lg:pb-6"
+              className="w-full max-w-[400px] shrink-0"
               aria-hidden="true"
             >
               <div className="bg-white rounded-[28px] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.14)] flex flex-col gap-4">
@@ -198,17 +198,20 @@ export default function LandingPage() {
                     <User className="w-6 h-6 text-[#6B6B6B]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-[#171717] truncate">Jordan Lee</p>
-                    <p className="text-sm text-[#6B6B6B] truncate">Serves campus area</p>
+                    <p className="font-bold text-[#171717] truncate">John Smith</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map((slot) => (
+                  {['Insert', 'Portfolio', 'Here'].map((label) => (
                     <div
-                      key={slot}
-                      className="aspect-square rounded-xl bg-[#F1F1F1]"
-                    />
+                      key={label}
+                      className="aspect-square rounded-xl bg-[#F1F1F1] flex items-center justify-center px-1"
+                    >
+                      <span className="text-xs font-medium text-[#6B6B6B] text-center leading-tight">
+                        {label}
+                      </span>
+                    </div>
                   ))}
                 </div>
 
@@ -237,16 +240,6 @@ export default function LandingPage() {
                 <div className="w-full rounded-2xl bg-brand-500 text-white font-bold text-center py-3.5">
                   Request booking
                 </div>
-              </div>
-
-              <div className="absolute -bottom-4 -left-7 flex items-center gap-2.5 rounded-2xl bg-[#171717] text-white px-3.5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1F9D55] shrink-0">
-                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                </span>
-                <span className="leading-tight">
-                  <span className="block text-sm font-bold">Request accepted</span>
-                  <span className="block text-[11px] text-white/70">Pay and message your operator</span>
-                </span>
               </div>
             </div>
           </div>
