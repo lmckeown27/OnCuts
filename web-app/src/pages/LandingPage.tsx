@@ -19,6 +19,7 @@ import { setBrowseConstrainByDistance, setBrowseDeviceTracking } from '../utils/
 import { buildContactComposeUrl, openContactCompose } from '../utils/contactComposeUrl';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
+import onCutsOperatorAppLogo from '../assets/logos/iOS_OnCutsOperator_Logo.png';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -248,22 +249,65 @@ export default function LandingPage() {
 
       <IosAppPromoSection />
 
-      {/* Operator CTA */}
-      <div className="py-20 px-4 bg-gradient-to-br from-gray-900 to-gray-800 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be an OnCuts Operator?
-          </h2>
-          <div className="flex justify-center">
-            <button
-              onClick={() => setShowBarberApplication(true)}
-              className="px-12 py-5 sm:px-14 sm:py-6 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xl sm:text-2xl md:text-3xl transition-colors shadow-lg hover:shadow-xl active:scale-95"
-            >
-              Become an Operator
-            </button>
+      {/* Operator apply + Operator iOS app */}
+      <section className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
+        <div className="max-w-6xl mx-auto px-8 pt-[88px] pb-24">
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+            <div className="w-full lg:flex-1 min-w-0 max-w-[520px] lg:max-w-none">
+              <h2 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[0.98] tracking-tight text-white">
+                On-Demand
+                <br />
+                Clients
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-5 w-full max-w-[420px]">
+              <button
+                type="button"
+                onClick={() => setShowBarberApplication(true)}
+                className="w-full min-h-[68px] rounded-2xl bg-brand-500 hover:bg-brand-600 text-white text-xl font-bold shadow-[0_10px_24px_rgba(0,0,0,0.25)] active:scale-95 transition"
+              >
+                Become an operator
+              </button>
+
+              <a
+                href={IOS_APP_STORE_LINKS.oncutsOperator}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download OnCuts Operator on the App Store"
+                className="group/card flex flex-col items-center text-center gap-5 sm:gap-7 rounded-2xl border border-gray-200 bg-white p-6 sm:p-10 shadow-sm hover:shadow-md text-gray-900 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
+              >
+                <div className="flex flex-col items-center gap-4 transition-transform duration-300 group-hover/card:scale-[1.02]">
+                  <div className="h-[72px] w-[72px] sm:h-24 sm:w-24 rounded-2xl overflow-hidden bg-gray-50">
+                    <img
+                      src={onCutsOperatorAppLogo}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">OnCuts Operator</p>
+                </div>
+
+                <div className="inline-flex items-center gap-3.5 rounded-2xl bg-gray-900 px-6 py-3.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
+                  <img
+                    src={appleWhiteLogo}
+                    alt=""
+                    className="h-8 w-8 shrink-0 object-contain"
+                    aria-hidden="true"
+                    decoding="async"
+                  />
+                  <span className="leading-tight text-left">
+                    <span className="block text-xs uppercase tracking-wide text-white/80">Download on the</span>
+                    <span className="block text-xl font-semibold">App Store</span>
+                  </span>
+                </div>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* FAQ Section */}
       <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="faq">
