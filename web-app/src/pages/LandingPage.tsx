@@ -239,7 +239,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="w-full rounded-2xl bg-brand-500 text-white font-bold text-center py-3.5">
+                <div className="w-full rounded-2xl bg-gray-300 text-gray-500 font-bold text-center py-3.5 cursor-not-allowed">
                   Request booking
                 </div>
               </div>
