@@ -218,22 +218,22 @@ export default function LandingPage() {
                 <div className="rounded-xl border border-[#EDEDED] overflow-hidden">
                   <div className="flex items-center justify-between px-3.5 py-3 border-b border-[#EDEDED]">
                     <span className="text-sm text-[#4A4A4A]">Haircut</span>
-                    <span className="text-sm font-semibold text-[#171717]">$28</span>
+                    <span className="text-sm font-semibold text-[#171717]">reasonable</span>
                   </div>
                   <div className="flex items-center justify-between px-3.5 py-3">
                     <span className="text-sm text-[#4A4A4A]">Fade</span>
-                    <span className="text-sm font-semibold text-[#171717]">$35</span>
+                    <span className="text-sm font-semibold text-[#171717]">price</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-xl bg-[#F1F1F1] px-3 py-2.5">
                     <p className="text-[11px] text-[#6B6B6B]">When</p>
-                    <p className="text-sm font-bold text-[#171717]">Today · 4:30 PM</p>
+                    <p className="text-sm font-bold text-[#171717]">ever</p>
                   </div>
                   <div className="rounded-xl bg-[#F1F1F1] px-3 py-2.5">
                     <p className="text-[11px] text-[#6B6B6B]">Where</p>
-                    <p className="text-sm font-bold text-[#171717]">Your place</p>
+                    <p className="text-sm font-bold text-[#171717]">ever</p>
                   </div>
                 </div>
 
