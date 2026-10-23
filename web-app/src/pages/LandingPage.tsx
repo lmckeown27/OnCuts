@@ -204,9 +204,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right column: booking preview */}
+            {/* Right column: booking preview (desktop only) */}
             <div
-              className="w-full max-w-[400px] shrink-0"
+              className="hidden lg:block w-full max-w-[400px] shrink-0"
               aria-hidden="true"
             >
               <div className="bg-white rounded-[28px] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.14)] flex flex-col gap-4">
