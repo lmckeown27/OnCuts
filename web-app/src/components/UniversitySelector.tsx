@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import debounce from 'lodash.debounce';
-import { ChevronDown, X, Loader2, MapPin } from 'lucide-react';
+import { ChevronDown, X, Loader2 } from 'lucide-react';
 import campusService from '../services/campus.service';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import type { CollegeTown } from '../types';
@@ -406,11 +406,10 @@ export default function UniversitySelector({
                   <button
                     onClick={() => handleSelect(town)}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full px-5 py-4 text-left transition-colors flex items-start gap-3 ${
+                    className={`w-full px-5 py-4 text-left transition-colors ${
                       index === highlightedIndex ? 'bg-gray-100 text-gray-900' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <MapPin className="w-4 h-4 mt-1 text-gray-400 shrink-0" />
                     <span className="min-w-0">
                       <p className="font-medium text-base sm:text-lg text-gray-900">{town.name}</p>
                       {town.id.startsWith('campus-') ? (
