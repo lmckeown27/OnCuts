@@ -201,7 +201,6 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </a>
-                <p className="text-sm text-[#6B6B6B]">Or book right here on the web.</p>
               </div>
             </div>
 
