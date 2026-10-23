@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, X, ChevronDown } from 'lucide-react';
+import { Check, CheckCircle, User, X, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -18,6 +18,7 @@ import { writeStoredCollegeTown } from '../utils/collegeTowns';
 import { setBrowseConstrainByDistance, setBrowseDeviceTracking } from '../utils/consumerBrowseDistancePreference';
 import { buildContactComposeUrl, openContactCompose } from '../utils/contactComposeUrl';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
+import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -122,44 +123,135 @@ export default function LandingPage() {
       <div className="pt-20" />
 
       {/* Hero Section */}
-      <div className="py-24 px-4 bg-gradient-to-br from-gray-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[55vh]">
-          <div className="w-full max-w-2xl mb-8 text-center px-2">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
-              On-Demand Haircuts
-            </h1>
-            <p className="mt-3 text-base sm:text-lg md:text-xl text-gray-600">
-              Search below to browse and book operators near you
-            </p>
-          </div>
-          
-          <div className="w-full max-w-2xl mb-10">
-          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-5">
-              <UniversitySelector
-                value={selectedCollegeTown}
-                onChange={handleCollegeTownSelect}
-                placeholder="Search near you..."
-              />
+      <section className="bg-gradient-to-br from-gray-50 via-white to-pink-50">
+        <div className="max-w-6xl mx-auto px-8 py-24">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            {/* Left column */}
+            <div className="w-full lg:flex-1 flex flex-col gap-7 min-w-0">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[0.98] tracking-tight text-neutral-900">
+                On-Demand
+                <br />
+                Services
+              </h1>
+
+              <div>
+                <div className="bg-white rounded-[20px] p-2.5 shadow-[0_10px_28px_rgba(90,114,104,0.14)]">
+                  <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
+                    <UniversitySelector
+                      value={selectedCollegeTown}
+                      onChange={handleCollegeTownSelect}
+                      placeholder="Search near you..."
+                      className="flex-1 min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={goToConsumerPage}
+                      disabled={!selectedCollegeTown}
+                      className={`shrink-0 min-h-[60px] px-7 rounded-2xl font-bold text-lg transition-colors ${
+                        selectedCollegeTown
+                          ? 'bg-brand-500 hover:bg-brand-600 text-white cursor-pointer'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Find operator
+                    </button>
+                  </div>
+                </div>
+                {selectedCollegeTown && (
+                  <p className="mt-3 text-base sm:text-lg text-[#6B6B6B]">
+                    Searching operators near {selectedCollegeTown.shortName}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <a
+                  href={IOS_APP_STORE_LINKS.consumer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 bg-neutral-900 text-white rounded-xl px-4 py-2.5 shadow-md hover:bg-neutral-800 transition-colors w-fit"
+                >
+                  <img
+                    src={appleWhiteLogo}
+                    alt=""
+                    className="h-7 w-7 shrink-0 object-contain"
+                    aria-hidden="true"
+                    decoding="async"
+                  />
+                  <span className="leading-tight text-left">
+                    <span className="block text-[10px] text-white/70">Download on the</span>
+                    <span className="block text-base font-semibold">App Store</span>
+                  </span>
+                </a>
+                <p className="text-sm text-[#6B6B6B]">Or book right here on the web.</p>
+              </div>
             </div>
-            {selectedCollegeTown && (
-            <p className="mt-4 text-base sm:text-lg text-gray-600 text-center">
-                Searching operators near {selectedCollegeTown.shortName}
-              </p>
-            )}
-          </div>
-          
-          {/* CTA Button */}
-            <button
-              onClick={goToConsumerPage}
-              disabled={!selectedCollegeTown}
-              className={`px-20 py-8 sm:py-9 font-bold text-3xl sm:text-4xl md:text-5xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
-                selectedCollegeTown 
-                  ? 'bg-brand-500 hover:bg-brand-600 text-white cursor-pointer' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+
+            {/* Right column: booking preview */}
+            <div
+              className="relative w-full max-w-[400px] shrink-0 pb-8 lg:pb-6"
+              aria-hidden="true"
             >
-              Find Operator
-            </button>
-      </div>
+              <div className="bg-white rounded-[28px] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.14)] flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-[52px] h-[52px] rounded-full bg-[#F1F1F1] flex items-center justify-center shrink-0">
+                    <User className="w-6 h-6 text-[#6B6B6B]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-[#171717] truncate">Jordan Lee</p>
+                    <p className="text-sm text-[#6B6B6B] truncate">Serves campus area</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map((slot) => (
+                    <div
+                      key={slot}
+                      className="aspect-square rounded-xl bg-[#F1F1F1]"
+                    />
+                  ))}
+                </div>
+
+                <div className="rounded-xl border border-[#EDEDED] overflow-hidden">
+                  <div className="flex items-center justify-between px-3.5 py-3 border-b border-[#EDEDED]">
+                    <span className="text-sm text-[#4A4A4A]">Haircut</span>
+                    <span className="text-sm font-semibold text-[#171717]">$28</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-3">
+                    <span className="text-sm text-[#4A4A4A]">Fade</span>
+                    <span className="text-sm font-semibold text-[#171717]">$35</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-[#F1F1F1] px-3 py-2.5">
+                    <p className="text-[11px] text-[#6B6B6B]">When</p>
+                    <p className="text-sm font-bold text-[#171717]">Today · 4:30 PM</p>
+                  </div>
+                  <div className="rounded-xl bg-[#F1F1F1] px-3 py-2.5">
+                    <p className="text-[11px] text-[#6B6B6B]">Where</p>
+                    <p className="text-sm font-bold text-[#171717]">Your place</p>
+                  </div>
+                </div>
+
+                <div className="w-full rounded-2xl bg-brand-500 text-white font-bold text-center py-3.5">
+                  Request booking
+                </div>
+              </div>
+
+              <div className="absolute -bottom-4 -left-7 flex items-center gap-2.5 rounded-2xl bg-[#171717] text-white px-3.5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1F9D55] shrink-0">
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </span>
+                <span className="leading-tight">
+                  <span className="block text-sm font-bold">Request accepted</span>
+                  <span className="block text-[11px] text-white/70">Pay and message your operator</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <IosAppPromoSection />
 
