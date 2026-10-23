@@ -235,11 +235,11 @@ export default function LandingPage() {
                 <div className="rounded-xl border border-[#EDEDED] overflow-hidden">
                   <div className="flex items-center justify-between px-3.5 py-3 border-b border-[#EDEDED]">
                     <span className="text-sm text-[#4A4A4A]">Haircut</span>
-                    <span className="text-sm font-semibold text-[#171717]">reasonable</span>
+                    <span className="text-sm font-semibold text-[#171717]">$reasonable</span>
                   </div>
                   <div className="flex items-center justify-between px-3.5 py-3">
                     <span className="text-sm text-[#4A4A4A]">Fade</span>
-                    <span className="text-sm font-semibold text-[#171717]">price</span>
+                    <span className="text-sm font-semibold text-[#171717]">$price</span>
                   </div>
                 </div>
 
