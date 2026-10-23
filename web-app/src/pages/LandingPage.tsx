@@ -12,7 +12,8 @@ import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
-import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
+import { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
+// import IosAppPromoSection from '../components/IosAppPromoSection';
 import type { CollegeTown } from '../types';
 import { writeStoredCollegeTown } from '../utils/collegeTowns';
 import { setBrowseConstrainByDistance, setBrowseDeviceTracking } from '../utils/consumerBrowseDistancePreference';
@@ -247,7 +248,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <IosAppPromoSection />
+      {/* <IosAppPromoSection /> */}
 
       {/* Operator apply + Operator iOS app */}
       <section className="bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
@@ -288,20 +289,19 @@ export default function LandingPage() {
                 </div>
                 <div className="min-w-0 flex-1 text-left">
                   <p className="truncate text-base font-bold text-white sm:text-lg">OnCuts Operator</p>
-                  <p className="text-xs text-white/60">Get the app on the App Store</p>
-                </div>
-                <div className="inline-flex shrink-0 items-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
-                  <img
-                    src={appleWhiteLogo}
-                    alt=""
-                    className="h-6 w-6 shrink-0 object-contain"
-                    aria-hidden="true"
-                    decoding="async"
-                  />
-                  <span className="hidden leading-tight text-left sm:block">
-                    <span className="block text-[10px] uppercase tracking-wide text-white/70">Download on the</span>
-                    <span className="block text-sm font-semibold">App Store</span>
-                  </span>
+                  <div className="mt-1.5 inline-flex shrink-0 items-center gap-2.5 rounded-xl bg-neutral-950 px-3.5 py-2.5 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02]">
+                    <img
+                      src={appleWhiteLogo}
+                      alt=""
+                      className="h-6 w-6 shrink-0 object-contain"
+                      aria-hidden="true"
+                      decoding="async"
+                    />
+                    <span className="leading-tight text-left">
+                      <span className="block text-[10px] uppercase tracking-wide text-white/70">Download on the</span>
+                      <span className="block text-sm font-semibold">App Store</span>
+                    </span>
+                  </div>
                 </div>
               </a>
             </div>
