@@ -73,7 +73,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   barber_prices: 'operators',
   barber_payouts: 'operators',
   barber_rank_history: 'operators',
-  barber_rankings: 'operators',
   barber_student_blocks: 'operators',
 
   // Catalog / types

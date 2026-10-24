@@ -119,7 +119,6 @@ model Campus {
   barbers     Barber[]
   locations   Location[]
   marketFactors MarketFactors?
-  rankings    BarberRanking[]
   
   @@index([slug])
   @@index([city, state])
@@ -222,7 +221,6 @@ model Barber {
   availability Availability[]
   bookings    Booking[]
   reputationSnapshots ReputationSnapshot[]
-  rankings    BarberRanking[]
   
   @@index([userId])
   @@index([campusId, isActive])
@@ -416,36 +414,6 @@ model ReputationSnapshot {
   @@unique([barberId, snapshotDate])
   @@index([barberId, snapshotDate])
   @@map("reputation_snapshots")
-}
-
-model BarberRanking {
-  id          String   @id @default(uuid()) @db.Uuid
-  barberId    String   @db.Uuid
-  campusId    String   @db.Uuid
-  
-  // Composite ranking score
-  rankScore   Decimal  @db.Decimal(7,2)
-  
-  // Score breakdown (for transparency)
-  breakdown   Json     @db.JsonB
-  // Example: { bqs: 85.5, availability: 0.8, proximity: 0.9, surge: 1.0 }
-  
-  // Ranking metadata
-  rankPosition Int
-  totalBarbers Int
-  
-  // Timestamps
-  computedAt  DateTime @default(now()) @db.Timestamptz
-  validUntil  DateTime @db.Timestamptz
-  
-  // Relations
-  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  campus      Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  
-  @@unique([barberId, campusId, computedAt])
-  @@index([campusId, rankScore])
-  @@index([validUntil])
-  @@map("barber_rankings")
 }
 
 model MarketFactors {
