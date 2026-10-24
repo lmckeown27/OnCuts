@@ -54,7 +54,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   // Users / auth
   users: 'users',
   mobile_devices: 'users',
-  webauthn_credentials: 'users',
   customer_profiles: 'users',
   verification_requests: 'users',
   referrals: 'users',
