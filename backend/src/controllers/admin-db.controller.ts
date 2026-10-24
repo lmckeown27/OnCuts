@@ -134,7 +134,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   campuses: 'places',
   campus_locations: 'places',
   campus_location_aliases: 'places',
-  locations: 'places',
   location_enrichment_log: 'places',
   location_merge_log: 'places',
 

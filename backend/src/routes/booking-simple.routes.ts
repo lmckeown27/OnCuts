@@ -401,41 +401,6 @@ router.post('/', authenticate, async (req, res, next) => {
       logger.info(`Parsed scheduled time: ${scheduledTime} -> UTC: ${requestedTime.toISOString()}`);
     }
     
-    // Get or create location (requires campus -> location chain)
-    let locationId: string;
-    
-    // First check for existing location
-    let locationResult = await pool.query('SELECT id FROM locations LIMIT 1');
-    
-    if (locationResult.rows.length > 0) {
-      locationId = locationResult.rows[0].id;
-    } else {
-      // Need to create campus first, then location
-      let campusResult = await pool.query('SELECT id FROM campuses LIMIT 1');
-      let campusId: string;
-      
-      if (campusResult.rows.length > 0) {
-        campusId = campusResult.rows[0].id;
-      } else {
-        // Create a default campus
-        const newCampusResult = await pool.query(
-          `INSERT INTO campuses (id, name, "shortCode", city, state, latitude, longitude, "isActive", "createdAt", "updatedAt")
-           VALUES (gen_random_uuid(), 'Default Campus', 'DEFAULT', 'San Luis Obispo', 'CA', 35.3050, -120.6625, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-           RETURNING id`
-        );
-        campusId = newCampusResult.rows[0].id;
-      }
-      
-      // Create location with campus
-      const newLocationResult = await pool.query(
-        `INSERT INTO locations (id, "campusId", name, "normalizedName", type, cohort, "usageCount", confidence, "isVerified", "updatedAt")
-         VALUES (gen_random_uuid(), $1, 'Default Location', 'default-location', 'DORM'::"LocationType", 'UNKNOWN'::"LocationCohort", 1, 0.50, false, CURRENT_TIMESTAMP)
-         RETURNING id`,
-        [campusId]
-      );
-      locationId = newLocationResult.rows[0].id;
-    }
-
     const client = await pool.connect();
     let booking: {
       id: string;
@@ -502,11 +467,10 @@ router.post('/', authenticate, async (req, res, next) => {
         "serviceTypes",
         status,
         "updatedAt"
-      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, ARRAY[$6::"ServiceType"], 'BOOKED', CURRENT_TIMESTAMP)
+      ) VALUES (gen_random_uuid(), $1, NULL, $2, $3, $4, ARRAY[$5::"ServiceType"], 'BOOKED', CURRENT_TIMESTAMP)
       RETURNING id`,
         [
           barberRecordId,
-          locationId,
           requestedTime,
           new Date(requestedTime.getTime() + serviceDurationMinutes * 60 * 1000),
           price,

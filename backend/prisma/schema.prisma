@@ -24,30 +24,6 @@ enum UserRole {
   ADMIN
 }
 
-enum LocationType {
-  DORM
-  APARTMENT
-  OFF_CAMPUS
-  LIBRARY
-  COMMONS
-  GYM
-  PARKING_LOT
-  GREEK_HOUSE
-  OTHER
-}
-
-enum LocationCohort {
-  FRESHMAN_HOUSING
-  UPPERCLASS_HOUSING
-  GRADUATE_HOUSING
-  OFF_CAMPUS_POPULAR
-  CAMPUS_CENTER
-  ATHLETIC_FACILITY
-  GREEK_ROW
-  COMMUTER_LOT
-  UNKNOWN
-}
-
 enum AvailabilityStatus {
   OPEN           // Available for booking
   LOCKED         // Temporarily held during booking flow
@@ -117,7 +93,6 @@ model Campus {
   // Relations
   users       User[]
   barbers     Barber[]
-  locations   Location[]
   @@index([slug])
   @@index([city, state])
   @@index([isActive])
@@ -152,7 +127,6 @@ model User {
   campus          Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   barberProfile   Barber?
   consumerBookings Booking[] @relation("ConsumerBookings")
-  locationSubmissions Location[] @relation("LocationSubmitter")
   fraudFlags      FraudFlag[]
   
   @@index([walletAddress])
@@ -227,53 +201,10 @@ model Barber {
   @@map("barbers")
 }
 
-model Location {
-  id              String       @id @default(uuid()) @db.Uuid
-  campusId        String       @db.Uuid
-  
-  // Canonical name (AI-normalized)
-  name            String       @db.VarChar(200)
-  normalizedName  String       @db.VarChar(200)  // Lowercase, stripped
-  
-  // Classification
-  type            LocationType
-  cohort          LocationCohort @default(UNKNOWN)
-  
-  // Crowd-sourced metadata
-  usageCount      Int          @default(1)
-  confidence      Decimal      @default(0.50) @db.Decimal(4,2)  // 0.00 to 1.00
-  isVerified      Boolean      @default(false)  // Admin or AI-verified
-  
-  // Optional enrichment
-  address         String?      @db.Text
-  buildingCode    String?      @db.VarChar(20)
-  notes           String?      @db.Text
-  
-  // Attribution
-  createdByUserId String?      @db.Uuid
-  
-  // Timestamps
-  createdAt       DateTime     @default(now()) @db.Timestamptz
-  updatedAt       DateTime     @updatedAt @db.Timestamptz
-  
-  // Relations
-  campus          Campus       @relation(fields: [campusId], references: [id], onDelete: Restrict)
-  createdBy       User?        @relation("LocationSubmitter", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  availability    Availability[]
-  aiAnnotations   AIAnnotation[]
-  
-  @@unique([campusId, normalizedName])
-  @@index([campusId, isVerified])
-  @@index([campusId, type])
-  @@index([usageCount])
-  @@index([confidence])
-  @@map("locations")
-}
-
 model Availability {
   id          String   @id @default(uuid()) @db.Uuid
   barberId    String   @db.Uuid
-  locationId  String   @db.Uuid
+  locationId  String?  @db.Uuid
   
   // Time slot
   startTime   DateTime @db.Timestamptz
@@ -297,7 +228,6 @@ model Availability {
   
   // Relations
   barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  location    Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
   booking     Booking?
   
   @@index([barberId, status])
@@ -399,7 +329,7 @@ model AIAnnotation {
   id          String   @id @default(uuid()) @db.Uuid
   
   // Entity reference (polymorphic)
-  entityType  String   @db.VarChar(50)  // location | booking
+  entityType  String   @db.VarChar(50)  // booking
   entityId    String   @db.Uuid
   
   // AI metadata
@@ -412,9 +342,6 @@ model AIAnnotation {
   
   // Timestamps
   createdAt   DateTime @default(now()) @db.Timestamptz
-  
-  // Optional relations (for convenience)
-  location    Location? @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_location_fkey")
   
   @@index([entityType, entityId])
   @@index([modelType, createdAt])
