@@ -58,14 +58,6 @@ enum ServiceType {
   LOCS
 }
 
-enum AIModelType {
-  LOCATION_NORMALIZATION
-  FRAUD_DETECTION
-  SENTIMENT_ANALYSIS
-  QUALITY_ASSESSMENT
-  DEMAND_PREDICTION
-}
-
 // ═══════════════════════════════════════════════════════════════
 // CORE ENTITIES
 // ═══════════════════════════════════════════════════════════════
@@ -324,29 +316,6 @@ model ReputationSnapshot {
 // ═══════════════════════════════════════════════════════════════
 // AI & INTELLIGENCE LAYER
 // ═══════════════════════════════════════════════════════════════
-
-model AIAnnotation {
-  id          String   @id @default(uuid()) @db.Uuid
-  
-  // Entity reference (polymorphic)
-  entityType  String   @db.VarChar(50)  // booking
-  entityId    String   @db.Uuid
-  
-  // AI metadata
-  modelType   AIModelType
-  modelName   String   @db.VarChar(100)  // e.g., "gpt-4-turbo"
-  
-  // AI output
-  output      Json     @db.JsonB
-  confidence  Decimal? @db.Decimal(4,2)  // 0.00 to 1.00
-  
-  // Timestamps
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  
-  @@index([entityType, entityId])
-  @@index([modelType, createdAt])
-  @@map("ai_annotations")
-}
 
 model AIEventsLog {
   id          String   @id @default(uuid()) @db.Uuid
