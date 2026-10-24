@@ -1,6 +1,7 @@
 /**
- * Admin read-only curated Postgres browser (Data → Database).
- * Table names must match the allowlist — no arbitrary SQL.
+ * Admin read-only Postgres browser (Data → Database).
+ * Discovers public base tables; groups known ones into domains.
+ * Table names must exist in public schema — no arbitrary SQL.
  */
 
 import { Response, NextFunction } from 'express';
@@ -11,11 +12,14 @@ import { AuthRequest } from '../middleware/auth';
 type DbDomainId =
   | 'users'
   | 'operators'
+  | 'catalog'
   | 'bookings'
   | 'messaging'
   | 'payments'
   | 'places'
-  | 'platform';
+  | 'platform'
+  | 'safety'
+  | 'other';
 
 interface CatalogTable {
   name: string;
@@ -28,77 +32,156 @@ interface CatalogDomain {
   tables: CatalogTable[];
 }
 
-const CATALOG_SPEC: {
-  id: DbDomainId;
-  label: string;
-  tables: { name: string; label: string }[];
-}[] = [
-  {
-    id: 'users',
-    label: 'Users',
-    tables: [
-      { name: 'users', label: 'users' },
-      { name: 'mobile_devices', label: 'mobile_devices' },
-      { name: 'webauthn_credentials', label: 'webauthn_credentials' },
-    ],
-  },
-  {
-    id: 'operators',
-    label: 'Operators',
-    tables: [
-      { name: 'service_providers', label: 'service_providers' },
-      { name: 'barber_applications', label: 'barber_applications' },
-      { name: 'operator_portfolio_items', label: 'operator_portfolio_items' },
-    ],
-  },
-  {
-    id: 'bookings',
-    label: 'Bookings',
-    tables: [
-      { name: 'bookings', label: 'bookings' },
-      { name: 'booking_reschedule_requests', label: 'booking_reschedule_requests' },
-    ],
-  },
-  {
-    id: 'messaging',
-    label: 'Messaging',
-    tables: [
-      { name: 'conversations', label: 'conversations' },
-      { name: 'messages', label: 'messages' },
-      { name: 'chat_messages', label: 'chat_messages' },
-    ],
-  },
-  {
-    id: 'payments',
-    label: 'Payments',
-    tables: [
-      { name: 'payment_transactions', label: 'payment_transactions' },
-      { name: 'pending_payouts', label: 'pending_payouts' },
-      { name: 'ledger_entries', label: 'ledger_entries' },
-    ],
-  },
-  {
-    id: 'places',
-    label: 'Places',
-    tables: [
-      { name: 'campuses', label: 'campuses' },
-      { name: 'campus_locations', label: 'campus_locations' },
-    ],
-  },
-  {
-    id: 'platform',
-    label: 'Platform',
-    tables: [
-      { name: 'platform_settings', label: 'platform_settings' },
-      { name: 'audit_logs', label: 'audit_logs' },
-      { name: 'notification_templates', label: 'notification_templates' },
-      { name: 'services', label: 'services' },
-    ],
-  },
+/** Domain order + labels for the UI. */
+const DOMAIN_META: { id: DbDomainId; label: string }[] = [
+  { id: 'users', label: 'Users' },
+  { id: 'operators', label: 'Operators' },
+  { id: 'catalog', label: 'Catalog' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'messaging', label: 'Messaging' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'places', label: 'Places' },
+  { id: 'platform', label: 'Platform' },
+  { id: 'safety', label: 'Safety' },
+  { id: 'other', label: 'Other' },
 ];
 
-/** Flat allowlist: only these names may be queried. */
-const ALLOWED_TABLES = new Set(CATALOG_SPEC.flatMap((d) => d.tables.map((t) => t.name)));
+/**
+ * Known table → domain. Anything else discovered in public lands in Other.
+ * Includes lookups like provider_types and the services catalog.
+ */
+const TABLE_DOMAIN: Record<string, DbDomainId> = {
+  // Users / auth
+  users: 'users',
+  mobile_devices: 'users',
+  webauthn_credentials: 'users',
+  customer_profiles: 'users',
+  verification_requests: 'users',
+  referrals: 'users',
+
+  // Operators
+  service_providers: 'operators',
+  barbers: 'operators',
+  barber_applications: 'operators',
+  operator_portfolio_items: 'operators',
+  operator_portfolio_section_orders: 'operators',
+  portfolio_images: 'operators',
+  barber_time_blocks: 'operators',
+  availability_templates: 'operators',
+  availability: 'operators',
+  barber_locations: 'operators',
+  barber_metrics: 'operators',
+  barber_scores: 'operators',
+  barber_prices: 'operators',
+  barber_payouts: 'operators',
+  barber_rank_history: 'operators',
+  barber_rankings: 'operators',
+  barber_quality_scores: 'operators',
+  barber_pricing_multipliers: 'operators',
+  barber_student_blocks: 'operators',
+
+  // Catalog / types
+  provider_types: 'catalog',
+  services: 'catalog',
+  markets: 'catalog',
+  market_factors: 'catalog',
+  market_stats: 'catalog',
+  pricing_config: 'catalog',
+  pricing_config_audit: 'catalog',
+  campus_market_metrics: 'catalog',
+  price_recompute_log: 'catalog',
+  price_anomalies: 'catalog',
+  surge_events: 'catalog',
+
+  // Bookings / reviews
+  bookings: 'bookings',
+  booking_reschedule_requests: 'bookings',
+  booking_metadata: 'bookings',
+  booking_messages: 'bookings',
+  booking_request_notifications: 'bookings',
+  reviews: 'bookings',
+  customer_reviews: 'bookings',
+  review_metadata: 'bookings',
+  review_weighting_config: 'bookings',
+  review_weight_audit: 'bookings',
+  disputes: 'bookings',
+
+  // Messaging / notifications
+  conversations: 'messaging',
+  messages: 'messaging',
+  chat_messages: 'messaging',
+  archived_booking_messages: 'messaging',
+  notifications: 'messaging',
+  notification_logs: 'messaging',
+  notification_templates: 'messaging',
+
+  // Payments / ledger
+  payment_transactions: 'payments',
+  payments: 'payments',
+  pending_payouts: 'payments',
+  ledger_entries: 'payments',
+  withdrawal_requests: 'payments',
+  withdrawal_queue: 'payments',
+  withdrawal_batches: 'payments',
+  balances: 'payments',
+  transactions: 'payments',
+  escrow_holds: 'payments',
+  escrows: 'payments',
+  platform_fees: 'payments',
+  stripe_events: 'payments',
+  stripe_webhook_events: 'payments',
+  moonpay_offramp_sessions: 'payments',
+  circle_transactions: 'payments',
+  aptos_transactions: 'payments',
+  onchain_records: 'payments',
+  gas_wallets: 'payments',
+  gas_top_up_requests: 'payments',
+  gas_wallet_audit_logs: 'payments',
+  gas_estimation_config: 'payments',
+  reconciliation_reports: 'payments',
+
+  // Places
+  campuses: 'places',
+  campus_locations: 'places',
+  campus_location_aliases: 'places',
+  locations: 'places',
+  location_aliases: 'places',
+  location_enrichment_log: 'places',
+  location_merge_log: 'places',
+
+  // Platform
+  platform_settings: 'platform',
+  audit_logs: 'platform',
+  admin_notes: 'platform',
+  analytics_events: 'platform',
+  cron_history: 'platform',
+  sync_status: 'platform',
+  reputation_snapshots: 'platform',
+  ai_annotations: 'platform',
+  ai_events_log: 'platform',
+  fraud_flags: 'platform',
+  student_metrics: 'platform',
+  student_scores: 'platform',
+  student_grade_levels: 'platform',
+  student_restrictions: 'platform',
+  student_grading_config: 'platform',
+  student_grading_audit: 'platform',
+
+  // Safety / UGC
+  user_blocks: 'safety',
+  ugc_content_reports: 'safety',
+};
+
+/** PostGIS / system relation noise — never show or query. */
+const EXCLUDED_TABLES = new Set([
+  'spatial_ref_sys',
+  'geography_columns',
+  'geometry_columns',
+  'raster_columns',
+  'raster_overviews',
+]);
+
+const TABLE_NAME_RE = /^[a-z_][a-z0-9_]*$/;
 
 function requireAdmin(req: AuthRequest): void {
   if (req.user!.role?.toLowerCase() !== 'admin') {
@@ -106,19 +189,41 @@ function requireAdmin(req: AuthRequest): void {
   }
 }
 
+async function listPublicBaseTables(): Promise<string[]> {
+  const result = await pool.query<{ table_name: string }>(
+    `SELECT table_name
+     FROM information_schema.tables
+     WHERE table_schema = 'public'
+       AND table_type = 'BASE TABLE'
+     ORDER BY table_name`
+  );
+  return result.rows
+    .map((r) => r.table_name)
+    .filter((name) => TABLE_NAME_RE.test(name) && !EXCLUDED_TABLES.has(name));
+}
+
+async function isPublicBaseTable(tableName: string): Promise<boolean> {
+  if (!TABLE_NAME_RE.test(tableName) || EXCLUDED_TABLES.has(tableName)) {
+    return false;
+  }
+  const result = await pool.query<{ ok: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND table_type = 'BASE TABLE'
+         AND table_name = $1
+     ) AS ok`,
+    [tableName]
+  );
+  return Boolean(result.rows[0]?.ok);
+}
+
 function quoteIdent(name: string): string {
-  if (!ALLOWED_TABLES.has(name)) {
+  if (!TABLE_NAME_RE.test(name) || EXCLUDED_TABLES.has(name)) {
     throw new ApiError(400, 'Table not allowed');
   }
   return `"${name.replace(/"/g, '""')}"`;
-}
-
-async function tableExists(tableName: string): Promise<boolean> {
-  const result = await pool.query<{ exists: string | null }>(
-    `SELECT to_regclass($1) AS exists`,
-    [`public.${tableName}`]
-  );
-  return result.rows[0]?.exists != null;
 }
 
 function serializeCell(value: unknown): string | number | boolean | null {
@@ -149,18 +254,24 @@ export const getDbCatalog = async (req: AuthRequest, res: Response, next: NextFu
   try {
     requireAdmin(req);
 
-    const domains: CatalogDomain[] = [];
-    for (const domain of CATALOG_SPEC) {
-      const tables: CatalogTable[] = [];
-      for (const table of domain.tables) {
-        if (await tableExists(table.name)) {
-          tables.push({ name: table.name, label: table.label });
-        }
-      }
-      if (tables.length > 0) {
-        domains.push({ id: domain.id, label: domain.label, tables });
-      }
+    const tableNames = await listPublicBaseTables();
+    const buckets = new Map<DbDomainId, CatalogTable[]>();
+    for (const meta of DOMAIN_META) {
+      buckets.set(meta.id, []);
     }
+
+    for (const name of tableNames) {
+      const domainId = TABLE_DOMAIN[name] ?? 'other';
+      buckets.get(domainId)!.push({ name, label: name });
+    }
+
+    const domains: CatalogDomain[] = DOMAIN_META.filter(
+      (meta) => (buckets.get(meta.id)?.length ?? 0) > 0
+    ).map((meta) => ({
+      id: meta.id,
+      label: meta.label,
+      tables: buckets.get(meta.id)!,
+    }));
 
     res.json({ success: true, data: { domains } });
   } catch (error) {
@@ -177,10 +288,7 @@ export const getDbTable = async (req: AuthRequest, res: Response, next: NextFunc
     requireAdmin(req);
 
     const table = String(req.params.table || '').trim();
-    if (!ALLOWED_TABLES.has(table)) {
-      throw new ApiError(404, 'Table not found');
-    }
-    if (!(await tableExists(table))) {
+    if (!(await isPublicBaseTable(table))) {
       throw new ApiError(404, 'Table not found');
     }
 

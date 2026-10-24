@@ -504,17 +504,27 @@ export default function AdminDataPanel() {
             </div>
           ) : (
             <>
-              <SegmentedNav
-                label="Database domains"
-                tabs={catalog.map((d) => ({ id: d.id, label: d.label }))}
-                value={(domainId ?? catalog[0].id) as string}
-                onChange={(id) => {
-                  setDomainId(id);
-                  setTableOffset(0);
-                  setDetailRow(null);
-                }}
-                cols={Math.min(catalog.length, 7)}
-              />
+              <div className="flex flex-wrap gap-1.5" role="navigation" aria-label="Database domains">
+                {catalog.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => {
+                      setDomainId(d.id);
+                      setTableOffset(0);
+                      setDetailRow(null);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                      (domainId ?? catalog[0].id) === d.id
+                        ? 'bg-white text-gray-900 shadow-sm ring-1 ring-stone-200'
+                        : 'bg-stone-100 text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {d.label}
+                    <span className="ml-1 text-gray-400 font-normal">({d.tables.length})</span>
+                  </button>
+                ))}
+              </div>
 
               {activeTables.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
