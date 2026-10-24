@@ -313,30 +313,6 @@ model ReputationSnapshot {
   @@map("reputation_snapshots")
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AI & INTELLIGENCE LAYER
-// ═══════════════════════════════════════════════════════════════
-
-model AIEventsLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  
-  eventType   String   @db.VarChar(100)
-  entityType  String   @db.VarChar(50)
-  entityId    String   @db.Uuid
-  
-  payload     Json     @db.JsonB
-  processingStatus String @db.VarChar(50)  // pending | processing | completed | failed
-  
-  error       String?  @db.Text
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  processedAt DateTime? @db.Timestamptz
-  
-  @@index([processingStatus, createdAt])
-  @@index([eventType])
-  @@map("ai_events_log")
-}
-
 model FraudFlag {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @db.Uuid
