@@ -259,7 +259,6 @@ model Location {
   // Relations
   campus          Campus       @relation(fields: [campusId], references: [id], onDelete: Restrict)
   createdBy       User?        @relation("LocationSubmitter", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  aliases         LocationAlias[]
   availability    Availability[]
   aiAnnotations   AIAnnotation[]
   
@@ -269,27 +268,6 @@ model Location {
   @@index([usageCount])
   @@index([confidence])
   @@map("locations")
-}
-
-model LocationAlias {
-  id          String   @id @default(uuid()) @db.Uuid
-  locationId  String   @db.Uuid
-  
-  alias       String   @db.VarChar(200)
-  normalizedAlias String @db.VarChar(200)
-  
-  // Source tracking
-  isAiGenerated Boolean @default(false)
-  usageCount    Int     @default(0)
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  
-  // Relations
-  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  
-  @@unique([locationId, normalizedAlias])
-  @@index([normalizedAlias])
-  @@map("location_aliases")
 }
 
 model Availability {
