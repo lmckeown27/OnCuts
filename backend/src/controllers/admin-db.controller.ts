@@ -99,7 +99,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   booking_metadata: 'bookings',
   booking_messages: 'bookings',
   booking_request_notifications: 'bookings',
-  reviews: 'bookings',
   customer_reviews: 'bookings',
   review_metadata: 'bookings',
   review_weighting_config: 'bookings',

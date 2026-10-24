@@ -155,7 +155,6 @@ model User {
   campus          Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   barberProfile   Barber?
   consumerBookings Booking[] @relation("ConsumerBookings")
-  consumerReviews  Review[]  @relation("ConsumerReviews")
   locationSubmissions Location[] @relation("LocationSubmitter")
   adminNotes      AdminNote[]
   fraudFlags      FraudFlag[]
@@ -222,7 +221,6 @@ model Barber {
   campus      Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   availability Availability[]
   bookings    Booking[]
-  reviews     Review[]
   reputationSnapshots ReputationSnapshot[]
   rankings    BarberRanking[]
   qualityScores BarberQualityScore[]
@@ -385,7 +383,6 @@ model Booking {
   availability    Availability @relation(fields: [availabilityId], references: [id], onDelete: Restrict)
   barber          Barber   @relation(fields: [barberId], references: [id], onDelete: Restrict)
   consumer        User     @relation("ConsumerBookings", fields: [consumerId], references: [id], onDelete: Restrict)
-  review          Review?
   
   @@index([barberId, status])
   @@index([consumerId, status])
@@ -393,38 +390,6 @@ model Booking {
   @@index([status])
   @@index([requestedAt])
   @@map("bookings")
-}
-
-model Review {
-  id          String   @id @default(uuid()) @db.Uuid
-  bookingId   String   @unique @db.Uuid
-  barberId    String   @db.Uuid
-  consumerId  String   @db.Uuid
-  
-  // Review content
-  rating      Int      @db.SmallInt  // 1-5
-  comment     String?  @db.Text
-  
-  // AI analysis (advisory only)
-  sentimentScore Decimal? @db.Decimal(4,2)  // -1.00 to 1.00
-  
-  // Blockchain anchoring
-  aptosTxHash String?  @db.VarChar(66)
-  
-  // Timestamps
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
-  
-  // Relations
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Restrict)
-  consumer    User     @relation("ConsumerReviews", fields: [consumerId], references: [id], onDelete: Restrict)
-  aiAnnotations AIAnnotation[]
-  
-  @@index([barberId, rating])
-  @@index([consumerId])
-  @@index([createdAt])
-  @@map("reviews")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -559,7 +524,7 @@ model AIAnnotation {
   id          String   @id @default(uuid()) @db.Uuid
   
   // Entity reference (polymorphic)
-  entityType  String   @db.VarChar(50)  // location | review | booking
+  entityType  String   @db.VarChar(50)  // location | booking
   entityId    String   @db.Uuid
   
   // AI metadata
@@ -575,7 +540,6 @@ model AIAnnotation {
   
   // Optional relations (for convenience)
   location    Location? @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_location_fkey")
-  review      Review?   @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_review_fkey")
   
   @@index([entityType, entityId])
   @@index([modelType, createdAt])

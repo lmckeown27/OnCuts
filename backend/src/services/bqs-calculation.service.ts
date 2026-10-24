@@ -233,11 +233,17 @@ export class BQSCalculationService {
       // Update review stats
       await pool.query(`
         UPDATE barbers
-        SET 
-          review_count = (SELECT COUNT(*) FROM reviews WHERE barber_id = $1),
-          avg_rating = (SELECT COALESCE(AVG(rating), 0) FROM reviews WHERE barber_id = $1),
-          updated_at = NOW()
-        WHERE barber_id = $1
+        SET
+          "totalReviews" = (
+            SELECT COUNT(*)::int FROM bookings
+            WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL
+          ),
+          "avgRating" = (
+            SELECT COALESCE(AVG("reviewRating"), 0) FROM bookings
+            WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL
+          ),
+          "updatedAt" = NOW()
+        WHERE id = $1
       `, [barberId]);
 
       // Update booking stats

@@ -689,27 +689,8 @@ export const deleteAccount = async (req: Request, res: Response) => {
       [id]
     );
 
-    // 6. Reviews — try snake_case and camelCase column names (schema drift)
-    await safeDelete(
-      `DELETE FROM reviews WHERE booking_id IN (${userBookingIdsSubquery})`,
-      [id]
-    );
-    await safeDelete(
-      `DELETE FROM reviews WHERE "bookingId" IN (${userBookingIdsSubquery})`,
-      [id]
-    );
-    await safeDelete('DELETE FROM reviews WHERE consumer_id = $1', [id]);
-    await safeDelete('DELETE FROM reviews WHERE "consumerId" = $1', [id]);
-    await safeDelete(
-      `DELETE FROM reviews WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
-      [id]
-    );
-    await safeDelete(
-      `DELETE FROM reviews WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
-      [id]
-    );
-
-    // 7. Delete bookings (production camelCase + legacy snake_case)
+    // 6. Delete bookings (production camelCase + legacy snake_case)
+    // Review ratings live on bookings ("reviewRating" / "reviewComment"), not a reviews table.
     await safeDelete(`DELETE FROM bookings WHERE "consumerId" = $1`, [id]);
     await safeDelete(
       `DELETE FROM bookings WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,

@@ -137,7 +137,7 @@ export async function getDatabaseStatus(req: Request, res: Response) {
             (SELECT COUNT(*) FROM users) as users,
             (SELECT COUNT(*) FROM bookings) as bookings,
             (SELECT COUNT(*) FROM campuses) as campuses,
-            (SELECT COUNT(*) FROM reviews) as reviews
+            (SELECT COUNT(*) FROM bookings WHERE "reviewRating" IS NOT NULL) as reviews
         `);
         tableCounts = result.rows[0];
       } catch (e) {
@@ -219,8 +219,8 @@ export async function getSystemStats(req: Request, res: Response) {
         (SELECT COUNT(*) FROM bookings WHERE status = 'completed') as completed_bookings,
         (SELECT COUNT(*) FROM bookings WHERE status = 'pending') as pending_bookings,
         (SELECT COUNT(*) FROM campuses WHERE is_active = true) as active_campuses,
-        (SELECT COUNT(*) FROM reviews) as total_reviews,
-        (SELECT COALESCE(AVG(rating), 0) FROM reviews) as avg_rating
+        (SELECT COUNT(*) FROM bookings WHERE "reviewRating" IS NOT NULL) as total_reviews,
+        (SELECT COALESCE(AVG("reviewRating"), 0) FROM bookings WHERE "reviewRating" IS NOT NULL) as avg_rating
     `);
 
     const stats = statsResult.rows[0];

@@ -105,8 +105,16 @@ export async function fetchAlternativeBarbers(
         COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
         u.profile_picture_url as avatar,
         b."weeklySchedule" as weekly_schedule,
-        (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as average_rating,
-        (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+        COALESCE(b."avgRating", (
+          SELECT AVG(bk."reviewRating")::numeric(3,2)
+          FROM bookings bk
+          WHERE bk."barberId" = b.id AND bk."reviewRating" IS NOT NULL
+        )) as average_rating,
+        COALESCE(b."totalReviews", (
+          SELECT COUNT(*)::int
+          FROM bookings bk
+          WHERE bk."barberId" = b.id AND bk."reviewRating" IS NOT NULL
+        )) as total_reviews
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."campusId" = $1

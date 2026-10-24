@@ -714,11 +714,10 @@ export async function getBarberClients(req: AuthRequest, res: Response, next: Ne
          COUNT(*) FILTER (WHERE UPPER(b.status::text) IN ('COMPLETED', 'PAID'))::int AS paid_booking_count,
          COALESCE(SUM(b."totalPaidCents") FILTER (WHERE UPPER(b.status::text) IN ('COMPLETED', 'PAID')), 0)::bigint AS total_paid_cents,
          MAX(COALESCE(b."paidAt", b."updatedAt", b."createdAt")) AS last_booking_at,
-         COALESCE(AVG(r.rating), 0) AS avg_review_rating,
-         COUNT(r.rating)::int AS review_count
+         COALESCE(AVG(b."reviewRating"), 0) AS avg_review_rating,
+         COUNT(b."reviewRating")::int AS review_count
        FROM bookings b
        JOIN users u ON b."consumerId" = u.id
-       LEFT JOIN reviews r ON r."bookingId" = b.id
        WHERE b."barberId" = $1
          AND b."consumerId" IN (
            SELECT DISTINCT "consumerId"
@@ -795,10 +794,9 @@ export async function getBarberClientBookings(req: AuthRequest, res: Response, n
          b."requestedAt" AS scheduled_time,
          b."createdAt" AS created_at,
          b."paidAt" AS paid_at,
-         r.rating AS review_rating,
-         r.comment AS review_text
+         b."reviewRating" AS review_rating,
+         b."reviewComment" AS review_text
        FROM bookings b
-       LEFT JOIN reviews r ON r."bookingId" = b.id
        WHERE b."barberId" = $1 AND b."consumerId" = $2
        ORDER BY COALESCE(b."paidAt", b."requestedAt", b."createdAt") DESC`,
       [barberId, consumerId]

@@ -156,12 +156,13 @@ class MetricsAggregatorService {
     const ratingResult = await pool.query(
       `
       SELECT
-        AVG(rating) as avg_rating,
+        AVG("reviewRating") as avg_rating,
         COUNT(*) as total_ratings
-      FROM reviews
-      WHERE barber_id = $1
-        AND created_at >= $2
-        AND created_at < $3
+      FROM bookings
+      WHERE "barberId" = $1
+        AND "reviewRating" IS NOT NULL
+        AND "reviewedAt" >= $2
+        AND "reviewedAt" < $3
       `,
       [barberId, windowStart, windowEnd]
     );

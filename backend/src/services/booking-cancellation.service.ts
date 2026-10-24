@@ -287,8 +287,16 @@ export async function executeParticipantBookingCancellation(
             u."avatarUrl" as avatar,
             b."weeklySchedule" as weekly_schedule,
             b.pricing,
-            (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r."barberId" = b.id) as avg_rating,
-            (SELECT COUNT(*) FROM reviews r WHERE r."barberId" = b.id) as total_reviews
+            COALESCE(b."avgRating", (
+              SELECT AVG(bk."reviewRating")::numeric(3,2)
+              FROM bookings bk
+              WHERE bk."barberId" = b.id AND bk."reviewRating" IS NOT NULL
+            )) as avg_rating,
+            COALESCE(b."totalReviews", (
+              SELECT COUNT(*)::int
+              FROM bookings bk
+              WHERE bk."barberId" = b.id AND bk."reviewRating" IS NOT NULL
+            )) as total_reviews
           FROM barbers b
           JOIN users u ON b."userId" = u.id
           WHERE b."campusId" = $1 

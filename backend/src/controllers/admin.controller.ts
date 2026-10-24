@@ -3269,8 +3269,8 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         b."requestedAt" as scheduled_time,
         b."createdAt" as created_at,
         b."paidAt" as paid_at,
-        r.rating as review_rating,
-        r.comment as review_text,
+        b."reviewRating" as review_rating,
+        b."reviewComment" as review_text,
         u.id as consumer_id,
         u.first_name as consumer_first_name,
         u.last_name as consumer_last_name,
@@ -3279,7 +3279,6 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         0 as message_count
       FROM bookings b
       JOIN users u ON b."consumerId" = u.id
-      LEFT JOIN reviews r ON r."bookingId" = b.id
       WHERE b."barberId" = $1::uuid
       ORDER BY b."createdAt" DESC
       LIMIT $2 OFFSET $3
@@ -3364,8 +3363,8 @@ export const getUserBookings = async (req: AuthRequest, res: Response, next: Nex
         bk."requestedAt" as scheduled_time,
         bk."createdAt" as created_at,
         bk."paidAt" as paid_at,
-        r.rating as review_rating,
-        r.comment as review_text,
+        bk."reviewRating" as review_rating,
+        bk."reviewComment" as review_text,
         b.id as barber_record_id,
         u.id as barber_user_id,
         u.first_name as barber_first_name,
@@ -3375,7 +3374,6 @@ export const getUserBookings = async (req: AuthRequest, res: Response, next: Nex
       FROM bookings bk
       JOIN barbers b ON bk."barberId" = b.id
       JOIN users u ON b."userId" = u.id
-      LEFT JOIN reviews r ON r."bookingId" = bk.id
       WHERE bk."consumerId" = $1::uuid
       ORDER BY bk."createdAt" DESC
       LIMIT $2 OFFSET $3
