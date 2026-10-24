@@ -118,8 +118,6 @@ model Campus {
   users       User[]
   barbers     Barber[]
   locations   Location[]
-  marketFactors MarketFactors?
-  
   @@index([slug])
   @@index([city, state])
   @@index([isActive])
@@ -414,26 +412,6 @@ model ReputationSnapshot {
   @@unique([barberId, snapshotDate])
   @@index([barberId, snapshotDate])
   @@map("reputation_snapshots")
-}
-
-model MarketFactors {
-  id          String   @id @default(uuid()) @db.Uuid
-  campusId    String   @unique @db.Uuid
-  
-  // Market calibration factors
-  demandNormalizationFactor   Decimal @default(1.00) @db.Decimal(4,2)
-  reviewWeightAdjustment      Decimal @default(1.00) @db.Decimal(4,2)
-  competitionIntensityScore   Decimal @default(1.00) @db.Decimal(4,2)
-  surgeThreshold              Decimal @default(2.00) @db.Decimal(4,2)  // demand/supply ratio
-  
-  // Timestamps
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  updatedAt   DateTime @updatedAt @db.Timestamptz
-  
-  // Relations
-  campus      Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  
-  @@map("market_factors")
 }
 
 // ═══════════════════════════════════════════════════════════════

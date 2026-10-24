@@ -79,7 +79,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   provider_types: 'catalog',
   services: 'catalog',
   markets: 'catalog',
-  market_factors: 'catalog',
   market_stats: 'catalog',
   pricing_config: 'catalog',
   pricing_config_audit: 'catalog',

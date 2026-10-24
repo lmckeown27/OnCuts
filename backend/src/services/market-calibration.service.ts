@@ -29,44 +29,21 @@ export class MarketCalibrationService {
    * Get market factors
    */
   async getMarketFactors(marketId: string): Promise<MarketFactors> {
+    // market_factors table removed — always use neutral defaults.
+    let marketName = 'Unknown';
     try {
-      const result = await pool.query(`
-        SELECT 
-          mf.market_id,
-          m.name as market_name,
-          mf.demand_normalization_factor,
-          mf.review_weight_adjustment,
-          mf.competition_intensity_score
-        FROM market_factors mf
-        JOIN markets m ON mf.market_id = m.market_id
-        WHERE mf.market_id = $1
-      `, [marketId]);
-
-      if (result.rows.length === 0) {
-        // Return default factors if not configured
-        logger.warn(`No market factors found for ${marketId}, using defaults`);
-        return {
-          marketId,
-          marketName: 'Unknown',
-          demandNormalizationFactor: 1.0,
-          reviewWeightAdjustment: 1.0,
-          competitionIntensityScore: 1.0,
-        };
-      }
-
-      const row = result.rows[0];
-
-      return {
-        marketId: row.market_id,
-        marketName: row.market_name,
-        demandNormalizationFactor: parseFloat(row.demand_normalization_factor) || 1.0,
-        reviewWeightAdjustment: parseFloat(row.review_weight_adjustment) || 1.0,
-        competitionIntensityScore: parseFloat(row.competition_intensity_score) || 1.0,
-      };
-    } catch (error) {
-      logger.error(`Error getting market factors for ${marketId}:`, error);
-      throw error;
+      const result = await pool.query(`SELECT name FROM markets WHERE market_id = $1`, [marketId]);
+      if (result.rows[0]?.name) marketName = String(result.rows[0].name);
+    } catch {
+      // markets table may be absent; keep Unknown
     }
+    return {
+      marketId,
+      marketName,
+      demandNormalizationFactor: 1.0,
+      reviewWeightAdjustment: 1.0,
+      competitionIntensityScore: 1.0,
+    };
   }
 
   /**
@@ -106,51 +83,14 @@ export class MarketCalibrationService {
    * Update market factors (admin control)
    */
   async updateMarketFactors(
-    marketId: string,
-    factors: Partial<{
+    _marketId: string,
+    _factors: Partial<{
       demandNormalizationFactor: number;
       reviewWeightAdjustment: number;
       competitionIntensityScore: number;
     }>
   ): Promise<void> {
-    try {
-      const updates: string[] = [];
-      const values: any[] = [];
-      let paramIndex = 1;
-
-      if (factors.demandNormalizationFactor !== undefined) {
-        updates.push(`demand_normalization_factor = $${paramIndex++}`);
-        values.push(factors.demandNormalizationFactor);
-      }
-
-      if (factors.reviewWeightAdjustment !== undefined) {
-        updates.push(`review_weight_adjustment = $${paramIndex++}`);
-        values.push(factors.reviewWeightAdjustment);
-      }
-
-      if (factors.competitionIntensityScore !== undefined) {
-        updates.push(`competition_intensity_score = $${paramIndex++}`);
-        values.push(factors.competitionIntensityScore);
-      }
-
-      if (updates.length === 0) {
-        throw new Error('No factors to update');
-      }
-
-      updates.push(`updated_at = NOW()`);
-      values.push(marketId);
-
-      await pool.query(`
-        UPDATE market_factors
-        SET ${updates.join(', ')}
-        WHERE market_id = $${paramIndex}
-      `, values);
-
-      logger.info(`Updated market factors for ${marketId}`);
-    } catch (error) {
-      logger.error(`Error updating market factors for ${marketId}:`, error);
-      throw error;
-    }
+    throw new Error('market_factors table has been removed; market calibration factors are no longer stored');
   }
 
   /**
@@ -167,12 +107,8 @@ export class MarketCalibrationService {
           m.base_price,
           m.average_price,
           m.premium_price_ceiling,
-          mf.demand_normalization_factor,
-          mf.review_weight_adjustment,
-          mf.competition_intensity_score,
           (SELECT COUNT(*) FROM barbers WHERE market_id = m.market_id AND is_active = true) as active_barbers
         FROM markets m
-        LEFT JOIN market_factors mf ON m.market_id = mf.market_id
         ORDER BY m.name
       `);
 
@@ -184,9 +120,9 @@ export class MarketCalibrationService {
         basePrice: parseFloat(row.base_price),
         averagePrice: parseFloat(row.average_price),
         premiumPriceCeiling: parseFloat(row.premium_price_ceiling),
-        demandNormalizationFactor: parseFloat(row.demand_normalization_factor) || 1.0,
-        reviewWeightAdjustment: parseFloat(row.review_weight_adjustment) || 1.0,
-        competitionIntensityScore: parseFloat(row.competition_intensity_score) || 1.0,
+        demandNormalizationFactor: 1.0,
+        reviewWeightAdjustment: 1.0,
+        competitionIntensityScore: 1.0,
         activeBarbers: parseInt(row.active_barbers) || 0,
       }));
     } catch (error) {
