@@ -17,7 +17,6 @@ import {
   triggerPricingUpdate,
   triggerRankingRefresh,
   triggerSurgeDetection,
-  getCronHistory,
   getMarketSurgeStatus,
 } from '../controllers/marketplace.controller';
 
@@ -58,9 +57,6 @@ router.get('/admin/markets', getAllMarkets);
 
 // POST /api/marketplace/admin/markets/update - Update market config/factors
 router.post('/admin/markets/update', updateMarket);
-
-// GET /api/marketplace/admin/cron-history - Get cron job history
-router.get('/admin/cron-history', getCronHistory);
 
 // ============================================================
 // CRON TRIGGER ENDPOINTS (Admin/Testing)

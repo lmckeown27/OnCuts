@@ -335,25 +335,3 @@ model FraudFlag {
   @@map("fraud_flags")
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ADMIN & MODERATION
-// ═══════════════════════════════════════════════════════════════
-
-model CronHistory {
-  id          String   @id @default(uuid()) @db.Uuid
-  
-  jobName     String   @db.VarChar(100)
-  status      String   @db.VarChar(50)  // success | failed | partial
-  
-  duration    Int?     // milliseconds
-  recordsProcessed Int?
-  error       String?  @db.Text
-  metadata    Json?    @db.JsonB
-  
-  executedAt  DateTime @default(now()) @db.Timestamptz
-  
-  @@index([jobName, executedAt])
-  @@index([status])
-  @@map("cron_history")
-}
-

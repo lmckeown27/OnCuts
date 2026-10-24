@@ -253,26 +253,6 @@ export async function triggerSurgeDetection(req: Request, res: Response) {
 }
 
 /**
- * GET /admin/cron-history
- * Get cron job execution history
- */
-export async function getCronHistory(req: Request, res: Response) {
-  try {
-    const limit = parseInt(req.query.limit as string) || 100;
-
-    const history = await marketplaceCronService.getCronHistory(limit);
-
-    res.json({
-      count: history.length,
-      history,
-    });
-  } catch (error: any) {
-    logger.error('Error in getCronHistory:', error);
-    res.status(500).json({ error: error.message || 'Failed to get cron history' });
-  }
-}
-
-/**
  * GET /markets/:id/surge-status
  * Get current surge status for a market
  */

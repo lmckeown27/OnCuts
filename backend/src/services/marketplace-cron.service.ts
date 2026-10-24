@@ -18,49 +18,16 @@ export class MarketplaceCronService {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
 
   /**
-   * Log cron job execution
-   */
-  private async logCronExecution(
-    jobName: string,
-    status: 'success' | 'failed' | 'running',
-    durationMs?: number,
-    recordsProcessed?: number,
-    errorMessage?: string
-  ): Promise<void> {
-    try {
-      await pool.query(`
-        INSERT INTO cron_history (job_name, executed_at, status, duration_ms, records_processed, error_message)
-        VALUES ($1, NOW(), $2, $3, $4, $5)
-      `, [jobName, status, durationMs, recordsProcessed, errorMessage]);
-    } catch (error) {
-      // Silently fail if PostgreSQL is not available (blockchain fallback mode)
-      if (process.env.NODE_ENV !== 'production') {
-        logger.debug(`Cron logging skipped (PostgreSQL unavailable): ${jobName}`);
-      }
-    }
-  }
-
-  /**
    * Nightly BQS Recomputation (2am)
    */
   private async jobRecomputeBQS(): Promise<void> {
-    const jobName = 'recompute_bqs';
-    const startTime = Date.now();
-
     try {
-      await this.logCronExecution(jobName, 'running');
-
       logger.info('🌙 Starting nightly BQS recomputation...');
 
       const result = await bqsService.recomputeAllBQS();
-      const duration = Date.now() - startTime;
-
-      await this.logCronExecution(jobName, 'success', duration, result.processed);
 
       logger.info(`✅ BQS recomputation complete: ${result.processed} processed, ${result.failed} failed`);
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      await this.logCronExecution(jobName, 'failed', duration, 0, error.message);
       logger.error('❌ BQS recomputation failed:', error);
     }
   }
@@ -69,23 +36,13 @@ export class MarketplaceCronService {
    * Nightly Pricing Update (2am)
    */
   private async jobUpdatePrices(): Promise<void> {
-    const jobName = 'update_prices';
-    const startTime = Date.now();
-
     try {
-      await this.logCronExecution(jobName, 'running');
-
       logger.info('💰 Starting nightly pricing update...');
 
       const result = await marketplacePricingService.updateAllPricingBounds();
-      const duration = Date.now() - startTime;
-
-      await this.logCronExecution(jobName, 'success', duration, result.processed);
 
       logger.info(`✅ Pricing update complete: ${result.processed} processed, ${result.failed} failed`);
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      await this.logCronExecution(jobName, 'failed', duration, 0, error.message);
       logger.error('❌ Pricing update failed:', error);
     }
   }
@@ -94,23 +51,13 @@ export class MarketplaceCronService {
    * Nightly Rank Refresh (2am)
    */
   private async jobRefreshRankings(): Promise<void> {
-    const jobName = 'refresh_rankings';
-    const startTime = Date.now();
-
     try {
-      await this.logCronExecution(jobName, 'running');
-
       logger.info('📊 Starting nightly ranking refresh...');
 
       const result = await rankingService.refreshAllRankScores();
-      const duration = Date.now() - startTime;
-
-      await this.logCronExecution(jobName, 'success', duration, result.processed);
 
       logger.info(`✅ Ranking refresh complete: ${result.processed} processed, ${result.failed} failed`);
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      await this.logCronExecution(jobName, 'failed', duration, 0, error.message);
       logger.error('❌ Ranking refresh failed:', error);
     }
   }
@@ -119,12 +66,7 @@ export class MarketplaceCronService {
    * Surge Detection (every 15 minutes)
    */
   private async jobSurgeDetection(): Promise<void> {
-    const jobName = 'surge_detection';
-    const startTime = Date.now();
-
     try {
-      await this.logCronExecution(jobName, 'running');
-
       logger.info('🔥 Running surge detection...');
 
       // End expired surges first
@@ -132,16 +74,11 @@ export class MarketplaceCronService {
 
       // Check current surge status
       const result = await surgePricingService.checkAllMarketsSurge();
-      const duration = Date.now() - startTime;
-
-      await this.logCronExecution(jobName, 'success', duration, result.processed);
 
       if (result.surgeActive > 0) {
         logger.info(`🔥 Surge active in ${result.surgeActive} markets`);
       }
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      await this.logCronExecution(jobName, 'failed', duration, 0, error.message);
       logger.error('❌ Surge detection failed:', error);
     }
   }
@@ -242,24 +179,6 @@ export class MarketplaceCronService {
     await this.jobSurgeDetection();
   }
 
-  /**
-   * Get cron job history
-   */
-  async getCronHistory(limit: number = 100) {
-    try {
-      const result = await pool.query(`
-        SELECT *
-        FROM cron_history
-        ORDER BY executed_at DESC
-        LIMIT $1
-      `, [limit]);
-
-      return result.rows;
-    } catch (error) {
-      logger.error('Error getting cron history:', error);
-      throw error;
-    }
-  }
 }
 
 export const marketplaceCronService = new MarketplaceCronService();
