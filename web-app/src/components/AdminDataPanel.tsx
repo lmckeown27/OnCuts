@@ -87,9 +87,40 @@ function fileCount(total: number): string {
   return `${total} file${total === 1 ? '' : 's'}`;
 }
 
+/** ISO / Postgres-style timestamps → locale string; leave other strings alone. */
+const ISO_TIMESTAMP_RE =
+  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+function formatTimestampCell(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!ISO_TIMESTAMP_RE.test(trimmed)) return null;
+  const date = new Date(trimmed.length === 10 ? `${trimmed}T00:00:00` : trimmed);
+  if (Number.isNaN(date.getTime())) return null;
+  return trimmed.length === 10
+    ? date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+}
+
 function cellDisplay(value: string | number | boolean | null): string {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'number') return String(value);
+  return formatTimestampCell(value) ?? value;
+}
+
+function cellTitle(value: string | number | boolean | null): string {
+  if (value === null || value === undefined) return '';
   return String(value);
 }
 
@@ -630,7 +661,7 @@ export default function AdminDataPanel() {
                                 <td
                                   key={col.name}
                                   className="px-2 py-1.5 text-gray-800 max-w-[180px] truncate font-mono"
-                                  title={cellDisplay(row[col.name] ?? null)}
+                                  title={cellTitle(row[col.name] ?? null)}
                                 >
                                   {cellDisplay(row[col.name] ?? null)}
                                 </td>
