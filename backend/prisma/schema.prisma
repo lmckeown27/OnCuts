@@ -153,7 +153,6 @@ model User {
   barberProfile   Barber?
   consumerBookings Booking[] @relation("ConsumerBookings")
   locationSubmissions Location[] @relation("LocationSubmitter")
-  adminNotes      AdminNote[]
   fraudFlags      FraudFlag[]
   
   @@index([walletAddress])
@@ -489,23 +488,6 @@ model FraudFlag {
 // ═══════════════════════════════════════════════════════════════
 // ADMIN & MODERATION
 // ═══════════════════════════════════════════════════════════════
-
-model AdminNote {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  adminId     String   @db.Uuid
-  
-  note        String   @db.Text
-  isInternal  Boolean  @default(true)
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@map("admin_notes")
-}
 
 model CronHistory {
   id          String   @id @default(uuid()) @db.Uuid

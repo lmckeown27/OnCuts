@@ -142,7 +142,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   // Platform
   platform_settings: 'platform',
   audit_logs: 'platform',
-  admin_notes: 'platform',
   analytics_events: 'platform',
   cron_history: 'platform',
   sync_status: 'platform',
