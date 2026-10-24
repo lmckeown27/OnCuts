@@ -77,27 +77,17 @@ class PaymentService {
    * On-chain: Converts to USDC and creates blockchain escrow
    */
   async createEscrow(
-    bookingId: number,
-    amount: number,
-    studentId: number,
-    barberId: number,
-    metadata?: Record<string, string>
+    _bookingId: number,
+    _amount: number,
+    _studentId: number,
+    _barberId: number,
+    _metadata?: Record<string, string>
   ): Promise<PaymentResult> {
-    try {
-      logger.info(`Creating ${this.paymentMode} escrow for booking ${bookingId}`);
-      
-      if (this.paymentMode === 'offchain') {
-        return await this.createOffChainEscrow(bookingId, amount, studentId, barberId, metadata);
-      } else {
-        return await this.createOnChainEscrow(bookingId, amount, studentId, barberId, metadata);
-      }
-    } catch (error: any) {
-      logger.error('Failed to create escrow:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+    // escrows table removed — use Stripe booking payment APIs (bookings-simple / payment intents).
+    return {
+      success: false,
+      error: 'Escrow payments are disabled. Use the Stripe booking payment flow.',
+    };
   }
   
   /**
@@ -167,29 +157,15 @@ class PaymentService {
   /**
    * Get escrow status
    */
-  async getEscrow(escrowId: string): Promise<Escrow | null> {
-    const result = await pool.query(
-      'SELECT * FROM escrows WHERE id = $1',
-      [escrowId]
-    );
-    
-    if (result.rows.length === 0) {
-      return null;
-    }
-    
-    return this.mapDbRowToEscrow(result.rows[0]);
+  async getEscrow(_escrowId: string): Promise<Escrow | null> {
+    return null;
   }
   
   /**
    * Get all escrows for a booking
    */
-  async getEscrowsForBooking(bookingId: number): Promise<Escrow[]> {
-    const result = await pool.query(
-      'SELECT * FROM escrows WHERE booking_id = $1 ORDER BY created_at DESC',
-      [bookingId]
-    );
-    
-    return result.rows.map(row => this.mapDbRowToEscrow(row));
+  async getEscrowsForBooking(_bookingId: number): Promise<Escrow[]> {
+    return [];
   }
   
   // ==========================================

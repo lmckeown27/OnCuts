@@ -117,7 +117,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   balances: 'payments',
   transactions: 'payments',
   escrow_holds: 'payments',
-  escrows: 'payments',
   platform_fees: 'payments',
   stripe_events: 'payments',
   stripe_webhook_events: 'payments',
