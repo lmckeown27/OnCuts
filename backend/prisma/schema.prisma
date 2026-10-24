@@ -224,7 +224,6 @@ model Barber {
   reputationSnapshots ReputationSnapshot[]
   rankings    BarberRanking[]
   qualityScores BarberQualityScore[]
-  pricingMultipliers BarberPricingMultiplier[]
   
   @@index([userId])
   @@index([campusId, isActive])
@@ -472,28 +471,6 @@ model BarberQualityScore {
   
   @@index([barberId, computedAt])
   @@map("barber_quality_scores")
-}
-
-model BarberPricingMultiplier {
-  id          String   @id @default(uuid()) @db.Uuid
-  barberId    String   @db.Uuid
-  
-  // Multiplier (1.0 to 1.5)
-  multiplier  Decimal  @db.Decimal(4,2)
-  
-  // Reasoning
-  bqsScore    Decimal  @db.Decimal(5,2)
-  reason      String   @db.VarChar(200)
-  
-  // Validity period
-  validFrom   DateTime @db.Timestamptz
-  validUntil  DateTime @db.Timestamptz
-  
-  // Relations
-  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  
-  @@index([barberId, validFrom, validUntil])
-  @@map("barber_pricing_multipliers")
 }
 
 model MarketFactors {
