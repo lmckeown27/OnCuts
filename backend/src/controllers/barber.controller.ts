@@ -1509,33 +1509,61 @@ export const deletePortfolioImage = async (req: AuthRequest, res: Response, next
 export const updateAvailability = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { schedule } = req.body;
+    const { schedule, weeklySchedule: weeklyScheduleBody } = req.body;
     const userId = req.user!.userId;
 
-    const ownership = await pool.query('SELECT id FROM barbers WHERE id = $1 AND user_id = $2', [id, userId]);
-    
+    const ownership = await pool.query(
+      'SELECT id FROM barbers WHERE id = $1 AND "userId" = $2',
+      [id, userId]
+    );
+
     if (ownership.rows.length === 0) {
       throw new ApiError(403, 'Not authorized');
     }
 
-    // Delete existing availability
-    await pool.query('DELETE FROM availability_templates WHERE barber_id = $1', [id]);
+    // Prefer modern weeklySchedule JSON; optionally map legacy { dayOfWeek, startTime, endTime }[] slots.
+    let nextSchedule: WeeklySchedule | null =
+      weeklyScheduleBody && typeof weeklyScheduleBody === 'object' ? weeklyScheduleBody : null;
 
-    // Insert new schedule
-    for (const slot of schedule) {
-      await pool.query(
-        `INSERT INTO availability_templates (barber_id, day_of_week, start_time, end_time)
-         VALUES ($1, $2, $3, $4)`,
-        [id, slot.dayOfWeek, slot.startTime, slot.endTime]
-      );
+    if (!nextSchedule && Array.isArray(schedule)) {
+      const dayNames = [
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+      ] as const;
+      const built: WeeklySchedule = {};
+      for (const name of dayNames) {
+        built[name] = { enabled: false, start: '09:00', end: '17:00' };
+      }
+      for (const slot of schedule) {
+        const dayIndex = Number(slot?.dayOfWeek);
+        if (!Number.isInteger(dayIndex) || dayIndex < 0 || dayIndex > 6) continue;
+        const dayName = dayNames[dayIndex];
+        const start = String(slot.startTime || slot.start || '09:00').slice(0, 5);
+        const end = String(slot.endTime || slot.end || '17:00').slice(0, 5);
+        built[dayName] = { enabled: true, start, end };
+      }
+      nextSchedule = built;
     }
 
-    // Emit WebSocket event for real-time updates
+    if (!nextSchedule) {
+      throw new ApiError(400, 'Provide weeklySchedule or schedule array');
+    }
+
+    await pool.query(
+      `UPDATE barbers SET "weeklySchedule" = $1::jsonb, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2`,
+      [JSON.stringify(nextSchedule), id]
+    );
+
     try {
       const io = getSocketIO();
       if (io) {
         io.to(`user-${userId}`).emit('availability-update', {
-          barberId: id
+          barberId: id,
         });
         logger.info(`Emitted availability-update to user-${userId}`);
       }
@@ -1546,6 +1574,7 @@ export const updateAvailability = async (req: AuthRequest, res: Response, next: 
     res.json({
       success: true,
       message: 'Availability updated successfully',
+      data: { weeklySchedule: nextSchedule },
     });
   } catch (error) {
     next(error);
@@ -1780,13 +1809,6 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       });
     }
 
-    // Return the full weekly schedule
-    // Also get legacy availability_templates for backwards compatibility
-    const templatesResult = await pool.query(
-      'SELECT * FROM availability_templates WHERE barber_id = $1 AND is_active = TRUE ORDER BY day_of_week, start_time',
-      [id]
-    );
-
     // Prevent caching of weekly availability data to ensure fresh data on login
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -1800,8 +1822,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         booking_slot_interval_minutes: slotIncrementMinutes,
         max_advance_booking_days: maxAdvanceDays,
         maxAdvanceBookingDays: maxAdvanceDays,
-        legacyTemplates: templatesResult.rows
-      }
+      },
     });
   } catch (error) {
     next(error);

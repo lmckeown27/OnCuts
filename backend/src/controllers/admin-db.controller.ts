@@ -66,7 +66,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   operator_portfolio_section_orders: 'operators',
   portfolio_images: 'operators',
   barber_time_blocks: 'operators',
-  availability_templates: 'operators',
   availability: 'operators',
   barber_locations: 'operators',
   barber_metrics: 'operators',
