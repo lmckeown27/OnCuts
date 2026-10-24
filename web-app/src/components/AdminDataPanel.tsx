@@ -422,7 +422,7 @@ export default function AdminDataPanel() {
 
   return (
     <div className="space-y-4">
-      <SegmentedNav
+      <SegmentedNav<DataRoot>
         label="Data"
         tabs={ROOT_TABS}
         value={root}
@@ -432,7 +432,7 @@ export default function AdminDataPanel() {
 
       {root === 'uploads' ? (
         <div className="space-y-4">
-          <SegmentedNav
+          <SegmentedNav<UploadKind>
             label="Uploads"
             tabs={DATA_TABS}
             value={section}
@@ -466,7 +466,7 @@ export default function AdminDataPanel() {
             </div>
 
             {section !== 'profile' && (
-              <SegmentedNav
+              <SegmentedNav<'image' | 'video'>
                 label={`${activeLabel} media`}
                 tabs={MEDIA_TABS}
                 value={media}
