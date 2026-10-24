@@ -689,7 +689,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
       [id]
     );
 
-    // 6. Reviews / disputes — try snake_case and camelCase column names (schema drift)
+    // 6. Reviews — try snake_case and camelCase column names (schema drift)
     await safeDelete(
       `DELETE FROM reviews WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
@@ -708,15 +708,6 @@ export const deleteAccount = async (req: Request, res: Response) => {
       `DELETE FROM reviews WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
-    await safeDelete(
-      `DELETE FROM disputes WHERE booking_id IN (${userBookingIdsSubquery})`,
-      [id]
-    );
-    await safeDelete(
-      `DELETE FROM disputes WHERE "bookingId" IN (${userBookingIdsSubquery})`,
-      [id]
-    );
-    await safeDelete('DELETE FROM disputes WHERE opened_by = $1', [id]);
 
     // 7. Delete bookings (production camelCase + legacy snake_case)
     await safeDelete(`DELETE FROM bookings WHERE "consumerId" = $1`, [id]);

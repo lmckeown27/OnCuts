@@ -104,7 +104,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   review_metadata: 'bookings',
   review_weighting_config: 'bookings',
   review_weight_audit: 'bookings',
-  disputes: 'bookings',
 
   // Messaging / notifications
   conversations: 'messaging',

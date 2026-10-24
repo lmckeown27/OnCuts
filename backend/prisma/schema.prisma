@@ -62,7 +62,6 @@ enum BookingStatus {
   PAID           // Payment confirmed on-chain
   IN_PROGRESS    // Service started
   COMPLETED      // Service completed
-  DISPUTED       // Dispute opened
   CANCELLED      // Cancelled before completion
   REFUNDED       // Refund processed on-chain
 }
@@ -83,18 +82,9 @@ enum ServiceType {
   LOCS
 }
 
-enum DisputeStatus {
-  OPEN
-  UNDER_REVIEW
-  RESOLVED
-  ESCALATED
-  CLOSED
-}
-
 enum AIModelType {
   LOCATION_NORMALIZATION
   FRAUD_DETECTION
-  DISPUTE_RESOLUTION
   SENTIMENT_ANALYSIS
   QUALITY_ASSESSMENT
   DEMAND_PREDICTION
@@ -396,7 +386,6 @@ model Booking {
   barber          Barber   @relation(fields: [barberId], references: [id], onDelete: Restrict)
   consumer        User     @relation("ConsumerBookings", fields: [consumerId], references: [id], onDelete: Restrict)
   review          Review?
-  dispute         Dispute?
   
   @@index([barberId, status])
   @@index([consumerId, status])
@@ -436,36 +425,6 @@ model Review {
   @@index([consumerId])
   @@index([createdAt])
   @@map("reviews")
-}
-
-model Dispute {
-  id          String   @id @default(uuid()) @db.Uuid
-  bookingId   String   @unique @db.Uuid
-  
-  // Dispute details
-  openedBy    String   @db.Uuid  // User ID
-  reason      String   @db.Text
-  evidence    Json?    @db.JsonB
-  
-  // Status
-  status      DisputeStatus @default(OPEN)
-  
-  // Resolution
-  resolvedBy  String?  @db.Uuid  // Admin user ID
-  resolution  String?  @db.Text
-  refundAmountUsdCents Int?
-  
-  // Timestamps
-  openedAt    DateTime @default(now()) @db.Timestamptz
-  resolvedAt  DateTime? @db.Timestamptz
-  
-  // Relations
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  aiAnnotations AIAnnotation[]
-  
-  @@index([status])
-  @@index([openedAt])
-  @@map("disputes")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -600,7 +559,7 @@ model AIAnnotation {
   id          String   @id @default(uuid()) @db.Uuid
   
   // Entity reference (polymorphic)
-  entityType  String   @db.VarChar(50)  // location | review | dispute | booking
+  entityType  String   @db.VarChar(50)  // location | review | booking
   entityId    String   @db.Uuid
   
   // AI metadata
@@ -617,7 +576,6 @@ model AIAnnotation {
   // Optional relations (for convenience)
   location    Location? @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_location_fkey")
   review      Review?   @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_review_fkey")
-  dispute     Dispute?  @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_dispute_fkey")
   
   @@index([entityType, entityId])
   @@index([modelType, createdAt])

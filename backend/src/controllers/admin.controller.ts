@@ -1290,7 +1290,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const totalConsumers = await countCampusConsumers(campusId);
 
     // Get booking counts - simpler approach without complex joins
-    // Valid BookingStatus enum values: PENDING, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, DISPUTED, CANCELLED, REFUNDED
+    // Valid BookingStatus enum values: PENDING, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, CANCELLED, REFUNDED
     const bookingsResult = await pool.query(`
       SELECT 
         COUNT(*) as total,
