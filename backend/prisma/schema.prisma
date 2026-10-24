@@ -223,7 +223,6 @@ model Barber {
   bookings    Booking[]
   reputationSnapshots ReputationSnapshot[]
   rankings    BarberRanking[]
-  qualityScores BarberQualityScore[]
   
   @@index([userId])
   @@index([campusId, isActive])
@@ -447,30 +446,6 @@ model BarberRanking {
   @@index([campusId, rankScore])
   @@index([validUntil])
   @@map("barber_rankings")
-}
-
-model BarberQualityScore {
-  id          String   @id @default(uuid()) @db.Uuid
-  barberId    String   @db.Uuid
-  
-  // BQS components
-  reviewScoreWeighted    Decimal @db.Decimal(5,2)
-  demandScore            Decimal @db.Decimal(5,2)
-  priceJustificationScore Decimal @db.Decimal(5,2)
-  loyaltyScore           Decimal @db.Decimal(5,2)
-  
-  // Final BQS
-  bqsScore    Decimal  @db.Decimal(5,2)  // 0-100
-  
-  // Computation metadata
-  computedAt  DateTime @default(now()) @db.Timestamptz
-  dataWindow  String   @db.VarChar(50)  // e.g., "last_30_days"
-  
-  // Relations
-  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  
-  @@index([barberId, computedAt])
-  @@map("barber_quality_scores")
 }
 
 model MarketFactors {
