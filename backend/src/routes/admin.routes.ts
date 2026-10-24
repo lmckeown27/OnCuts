@@ -7,6 +7,7 @@
 import express from 'express';
 import { authenticate, refreshAccessRoleFromDb } from '../middleware/auth';
 import * as adminController from '../controllers/admin.controller';
+import * as adminDbController from '../controllers/admin-db.controller';
 import * as adminNotificationsController from '../controllers/admin-notifications.controller';
 
 const router = express.Router();
@@ -83,6 +84,10 @@ router.get('/bookings/:bookingId/messages', adminController.getBookingMessages);
 // User Management (admin only)
 router.get('/users', adminController.getAllUsers);
 router.get('/uploads', adminController.listUploadedMedia);
+
+// Curated read-only Postgres browser (Admin Data → Database)
+router.get('/db/catalog', adminDbController.getDbCatalog);
+router.get('/db/tables/:table', adminDbController.getDbTable);
 
 // UGC moderation (App Store Guideline 1.2)
 router.get('/moderation/banned-users', adminController.listBannedUsers);
