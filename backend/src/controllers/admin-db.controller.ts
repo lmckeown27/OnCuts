@@ -143,7 +143,6 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   analytics_events: 'platform',
   sync_status: 'platform',
   reputation_snapshots: 'platform',
-  fraud_flags: 'platform',
   student_metrics: 'platform',
   student_scores: 'platform',
   student_grade_levels: 'platform',
