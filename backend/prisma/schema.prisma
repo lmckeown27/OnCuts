@@ -182,7 +182,6 @@ model Barber {
   campus      Campus?  @relation(fields: [campusId], references: [id], onDelete: Restrict)
   availability Availability[]
   bookings    Booking[]
-  reputationSnapshots ReputationSnapshot[]
   
   @@index([userId])
   @@index([campusId, isActive])
@@ -282,33 +281,5 @@ model Booking {
   @@index([status])
   @@index([requestedAt])
   @@map("bookings")
-}
-
-// ═══════════════════════════════════════════════════════════════
-// REPUTATION & RANKING LAYER
-// ═══════════════════════════════════════════════════════════════
-
-model ReputationSnapshot {
-  id          String   @id @default(uuid()) @db.Uuid
-  barberId    String   @db.Uuid
-  
-  // Snapshot data (derived from blockchain)
-  totalBookings     Int
-  completedBookings Int
-  cancelledBookings Int
-  avgRating         Decimal @db.Decimal(3,2)
-  totalReviews      Int
-  repeatCustomerRate Decimal @db.Decimal(5,2)
-  
-  // Snapshot metadata
-  snapshotDate DateTime @db.Date
-  computedAt   DateTime @default(now()) @db.Timestamptz
-  
-  // Relations
-  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  
-  @@unique([barberId, snapshotDate])
-  @@index([barberId, snapshotDate])
-  @@map("reputation_snapshots")
 }
 
