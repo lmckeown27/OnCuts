@@ -486,21 +486,6 @@ model FraudFlag {
   @@map("fraud_flags")
 }
 
-model MarketStats {
-  id          String   @id @default(uuid()) @db.Uuid
-  campusId    String   @db.Uuid
-  
-  statType    String   @db.VarChar(100)  // demand | supply | pricing | surge
-  value       Decimal  @db.Decimal(10,2)
-  metadata    Json?    @db.JsonB
-  
-  timestamp   DateTime @db.Timestamptz
-  createdAt   DateTime @default(now()) @db.Timestamptz
-  
-  @@index([campusId, statType, timestamp])
-  @@map("market_stats")
-}
-
 // ═══════════════════════════════════════════════════════════════
 // ADMIN & MODERATION
 // ═══════════════════════════════════════════════════════════════
