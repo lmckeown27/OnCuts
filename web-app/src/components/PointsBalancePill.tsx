@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Gift } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -54,11 +53,10 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 shrink-0 ${className}`}
+      className={`inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-900 shrink-0 ${className}`}
       title="OnCuts Points"
       aria-label={`${label} OnCuts Points`}
     >
-      <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-700 shrink-0" aria-hidden />
       <span className="text-xs sm:text-sm font-semibold tabular-nums whitespace-nowrap">{label}</span>
     </div>
   );
