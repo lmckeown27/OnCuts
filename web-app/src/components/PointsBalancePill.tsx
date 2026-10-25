@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBodyScrollLock } from '../hooks';
@@ -45,6 +44,8 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
   const [lifetimeSpentPts, setLifetimeSpentPts] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useBodyScrollLock(open);
 
@@ -81,6 +82,19 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
   }, [open, load]);
 
   useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsVisible(true));
+      });
+      return;
+    }
+    setIsVisible(false);
+    const timer = setTimeout(() => setShouldRender(false), 150);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -108,46 +122,44 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
         <span className="text-xs sm:text-sm font-semibold tabular-nums whitespace-nowrap">{label}</span>
       </button>
 
-      {open && (
+      {shouldRender && (
         <div
-          className="fixed inset-0 z-[1100] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1100] p-2 sm:p-4 transition-all duration-150 ease-out ${
+            isVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
           role="presentation"
+          onClick={() => setOpen(false)}
         >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40 border-0 cursor-default"
-            aria-label="Close points details"
-            onClick={() => setOpen(false)}
-          />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="oncuts-points-title"
-            className="relative z-10 w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-gray-200 max-h-[85vh] overflow-y-auto"
+            className={`bg-stone-50 rounded-2xl shadow-2xl max-w-lg w-full max-h-[95dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-150 ease-out ${
+              isVisible
+                ? 'opacity-100 scale-100 translate-y-0'
+                : 'opacity-0 scale-95 translate-y-4'
+            }`}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 flex items-start justify-between gap-3 px-4 pt-4 pb-3 bg-white border-b border-gray-100 rounded-t-2xl sm:rounded-t-2xl">
+            <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
               <div className="min-w-0">
-                <p
-                  id="oncuts-points-title"
-                  className="text-base font-semibold text-gray-900"
-                >
+                <h2 id="oncuts-points-title" className="text-2xl font-bold">
                   OnCuts Points
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                </h2>
+                <p className="text-sm text-white/80 mt-0.5">
                   {isOperator ? 'Operator rewards' : 'Client rewards'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="p-2 -mr-1 -mt-1 rounded-lg hover:bg-gray-100 text-gray-500"
-                aria-label="Close"
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
               >
-                <X className="w-5 h-5" />
+                Close
               </button>
             </div>
 
-            <div className="px-4 py-4 space-y-4">
+            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4">
               <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/80">
                   Available balance
@@ -162,7 +174,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
               </div>
 
               <dl className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-gray-200 bg-stone-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-white p-3">
                   <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                     Lifetime earned
                   </dt>
@@ -170,7 +182,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                     {formatPts(lifetimeEarnedPts)} pts
                   </dd>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-stone-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-white p-3">
                   <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                     Lifetime spent
                   </dt>
@@ -215,7 +227,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                 )}
               </div>
 
-              <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+              <p className="text-xs text-gray-500 border-t border-gray-200 pt-3">
                 Referral invites and applying points are rolling out next. Your balance here
                 updates as soon as rewards are granted.
               </p>
