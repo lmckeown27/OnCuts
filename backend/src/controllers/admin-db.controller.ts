@@ -264,6 +264,7 @@ export const getDbCatalog = async (req: AuthRequest, res: Response, next: NextFu
 /**
  * GET /api/admin/db/tables/:table
  * Query: limit (default 50, max 200), offset
+ * Optional view=unique_users for mobile_devices (one row per user_id).
  */
 export const getDbTable = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -276,7 +277,69 @@ export const getDbTable = async (req: AuthRequest, res: Response, next: NextFunc
 
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '50'), 10) || 50, 1), 200);
     const offset = Math.max(parseInt(String(req.query.offset || '0'), 10) || 0, 0);
+    const viewRaw = String(req.query.view || '').trim().toLowerCase();
+    const uniqueUsersView = table === 'mobile_devices' && viewRaw === 'unique_users';
     const quoted = quoteIdent(table);
+
+    if (uniqueUsersView) {
+      const columns = [
+        { name: 'user_id', dataType: 'uuid' },
+        { name: 'device_count', dataType: 'integer' },
+        { name: 'active_device_count', dataType: 'integer' },
+        { name: 'has_active', dataType: 'boolean' },
+        { name: 'platforms', dataType: 'text' },
+        { name: 'bundle_ids', dataType: 'text' },
+        { name: 'apns_environments', dataType: 'text' },
+        { name: 'first_registered_at', dataType: 'timestamp without time zone' },
+        { name: 'last_updated_at', dataType: 'timestamp without time zone' },
+      ];
+
+      const countResult = await pool.query<{ count: string }>(
+        `SELECT COUNT(DISTINCT user_id)::text AS count FROM mobile_devices`
+      );
+      const total = parseInt(countResult.rows[0]?.count || '0', 10) || 0;
+
+      const rowsResult = await pool.query(
+        `SELECT
+           user_id,
+           COUNT(*)::int AS device_count,
+           COUNT(*) FILTER (WHERE is_active IS TRUE)::int AS active_device_count,
+           BOOL_OR(is_active IS TRUE) AS has_active,
+           string_agg(DISTINCT platform, ', ') AS platforms,
+           string_agg(DISTINCT bundle_id, ', ')
+             FILTER (WHERE bundle_id IS NOT NULL AND bundle_id <> '') AS bundle_ids,
+           string_agg(DISTINCT COALESCE(apns_environment, 'production'), ', ') AS apns_environments,
+           MIN(created_at) AS first_registered_at,
+           MAX(updated_at) AS last_updated_at
+         FROM mobile_devices
+         GROUP BY user_id
+         ORDER BY MAX(updated_at) DESC NULLS LAST, user_id
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      );
+
+      const rows = rowsResult.rows.map((row) => {
+        const out: Record<string, string | number | boolean | null> = {};
+        for (const col of columns) {
+          out[col.name] = serializeCell(row[col.name]);
+        }
+        return out;
+      });
+
+      res.json({
+        success: true,
+        data: {
+          table,
+          view: 'unique_users',
+          columns,
+          rows,
+          total,
+          limit,
+          offset,
+        },
+      });
+      return;
+    }
 
     const columnsResult = await pool.query<{
       column_name: string;
@@ -315,6 +378,7 @@ export const getDbTable = async (req: AuthRequest, res: Response, next: NextFunc
       success: true,
       data: {
         table,
+        view: 'rows',
         columns,
         rows,
         total,

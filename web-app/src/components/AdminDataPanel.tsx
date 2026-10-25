@@ -60,14 +60,22 @@ interface DbColumn {
   dataType: string;
 }
 
+type MobileDevicesView = 'rows' | 'unique_users';
+
 interface DbTablePage {
   table: string;
+  view?: string;
   columns: DbColumn[];
   rows: Record<string, string | number | boolean | null>[];
   total: number;
   limit: number;
   offset: number;
 }
+
+const MOBILE_DEVICES_VIEWS: { id: MobileDevicesView; label: string }[] = [
+  { id: 'rows', label: 'All devices' },
+  { id: 'unique_users', label: 'Unique users' },
+];
 
 const EMPTY_BUCKET: UploadBucket = { items: [], total: 0 };
 
@@ -228,6 +236,7 @@ export default function AdminDataPanel() {
   const [tableLoading, setTableLoading] = useState(false);
   const [tableError, setTableError] = useState<string | null>(null);
   const [tableOffset, setTableOffset] = useState(0);
+  const [mobileDevicesView, setMobileDevicesView] = useState<MobileDevicesView>('rows');
   const [detailRow, setDetailRow] = useState<Record<string, string | number | boolean | null> | null>(null);
   const [dbExporting, setDbExporting] = useState(false);
 
@@ -310,29 +319,43 @@ export default function AdminDataPanel() {
     }
   }, [activeDomain, activeTables, tableName]);
 
-  const loadTable = useCallback(async (name: string, offset: number) => {
-    setTableLoading(true);
-    setTableError(null);
-    setDetailRow(null);
-    try {
-      const data = await api.get<DbTablePage>(`/admin/db/tables/${encodeURIComponent(name)}`, {
-        limit: PAGE_SIZE,
-        offset,
-      });
-      setTablePage(data);
-    } catch (err) {
-      console.error('Failed to load table', err);
-      setTablePage(null);
-      setTableError('Could not load table rows.');
-    } finally {
-      setTableLoading(false);
-    }
-  }, []);
+  const loadTable = useCallback(
+    async (name: string, offset: number, view: MobileDevicesView = 'rows') => {
+      setTableLoading(true);
+      setTableError(null);
+      setDetailRow(null);
+      try {
+        const params: Record<string, string | number> = {
+          limit: PAGE_SIZE,
+          offset,
+        };
+        if (name === 'mobile_devices' && view === 'unique_users') {
+          params.view = 'unique_users';
+        }
+        const data = await api.get<DbTablePage>(
+          `/admin/db/tables/${encodeURIComponent(name)}`,
+          params
+        );
+        setTablePage(data);
+      } catch (err) {
+        console.error('Failed to load table', err);
+        setTablePage(null);
+        setTableError('Could not load table rows.');
+      } finally {
+        setTableLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (root !== 'database' || !tableName) return;
-    void loadTable(tableName, tableOffset);
-  }, [root, tableName, tableOffset, loadTable]);
+    void loadTable(
+      tableName,
+      tableOffset,
+      tableName === 'mobile_devices' ? mobileDevicesView : 'rows'
+    );
+  }, [root, tableName, tableOffset, mobileDevicesView, loadTable]);
 
   const exportUploads = async () => {
     const pageKind = section;
@@ -398,12 +421,20 @@ export default function AdminDataPanel() {
     try {
       const headers = tablePage.columns.map((c) => c.name);
       const stamp = new Date().toISOString().slice(0, 10);
+      const viewSuffix =
+        tablePage.table === 'mobile_devices' && tablePage.view === 'unique_users'
+          ? '-unique-users'
+          : '';
       downloadCsv(
-        `oncuts-db-${slugifyForFilename(tablePage.table)}-${stamp}.csv`,
+        `oncuts-db-${slugifyForFilename(tablePage.table)}${viewSuffix}-${stamp}.csv`,
         headers,
         tablePage.rows.map((row) => headers.map((h) => cellDisplay(row[h] ?? null)))
       );
-      toast.success(`Exported ${tablePage.rows.length} rows from ${tablePage.table}`);
+      toast.success(
+        tablePage.view === 'unique_users'
+          ? `Exported ${tablePage.rows.length} unique users from ${tablePage.table}`
+          : `Exported ${tablePage.rows.length} rows from ${tablePage.table}`
+      );
     } catch (err) {
       console.error(err);
       toast.error('Could not export table');
@@ -450,6 +481,11 @@ export default function AdminDataPanel() {
   const canNext = tableOffset + PAGE_SIZE < totalRows;
   const rangeStart = totalRows === 0 ? 0 : tableOffset + 1;
   const rangeEnd = Math.min(tableOffset + PAGE_SIZE, totalRows);
+  const showingUniqueUsers =
+    tableName === 'mobile_devices' && mobileDevicesView === 'unique_users';
+  const tableSummaryLabel = showingUniqueUsers
+    ? `${totalRows.toLocaleString()} unique user${totalRows === 1 ? '' : 's'} with APNs · showing ${rangeStart}–${rangeEnd}`
+    : `${totalRows.toLocaleString()} row${totalRows === 1 ? '' : 's'} · showing ${rangeStart}–${rangeEnd}`;
 
   return (
     <div className="space-y-4">
@@ -567,6 +603,9 @@ export default function AdminDataPanel() {
                         setTableName(t.name);
                         setTableOffset(0);
                         setDetailRow(null);
+                        if (t.name !== 'mobile_devices') {
+                          setMobileDevicesView('rows');
+                        }
                       }}
                       className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold font-mono transition-colors ${
                         tableName === t.name
@@ -580,17 +619,45 @@ export default function AdminDataPanel() {
                 </div>
               )}
 
+              {tableName === 'mobile_devices' && (
+                <div
+                  className="flex flex-wrap gap-1.5"
+                  role="navigation"
+                  aria-label="mobile_devices views"
+                >
+                  {MOBILE_DEVICES_VIEWS.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        setMobileDevicesView(v.id);
+                        setTableOffset(0);
+                        setDetailRow(null);
+                      }}
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                        mobileDevicesView === v.id
+                          ? 'bg-white text-gray-900 shadow-sm ring-1 ring-stone-200'
+                          : 'bg-stone-100 text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {tableName ?? 'Table'}
+                      {showingUniqueUsers ? ' · unique users' : ''}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {tableLoading
                         ? 'Loading rows…'
                         : tablePage
-                          ? `${totalRows.toLocaleString()} row${totalRows === 1 ? '' : 's'} · showing ${rangeStart}–${rangeEnd}`
+                          ? tableSummaryLabel
                           : '—'}
                     </p>
                   </div>
@@ -600,7 +667,14 @@ export default function AdminDataPanel() {
                       size="sm"
                       variant="outline"
                       disabled={tableLoading || !tableName}
-                      onClick={() => tableName && void loadTable(tableName, tableOffset)}
+                      onClick={() =>
+                        tableName &&
+                        void loadTable(
+                          tableName,
+                          tableOffset,
+                          tableName === 'mobile_devices' ? mobileDevicesView : 'rows'
+                        )
+                      }
                     >
                       <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${tableLoading ? 'animate-spin' : ''}`} />
                       Refresh
@@ -631,7 +705,9 @@ export default function AdminDataPanel() {
                   </div>
                 ) : !tablePage || tablePage.rows.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-gray-200 py-8 text-center text-sm text-gray-500">
-                    No rows in this table.
+                    {showingUniqueUsers
+                      ? 'No users have registered for APNs.'
+                      : 'No rows in this table.'}
                   </div>
                 ) : (
                   <>
