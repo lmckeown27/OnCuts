@@ -4,7 +4,7 @@ import {
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
   Copy, Check, MapPin, Filter, Shield, Briefcase, Activity, Minus, Plus,
-  ArrowDown, ArrowUp, Download, SlidersHorizontal, Database
+  ArrowDown, ArrowUp, Download, SlidersHorizontal, Database, Gift
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -30,6 +30,7 @@ import {
 } from './AdminCampusPanels';
 import AdminNotificationControls from './AdminNotificationControls';
 import AdminDataPanel from './AdminDataPanel';
+import AdminPointsPanel from './AdminPointsPanel';
 import { buildBarberBookingPageUrl } from './BarberBookingLinkCard';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
@@ -165,7 +166,7 @@ type MetricsListPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
 type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
-type AdminView = 'performance' | 'barbers' | 'users' | 'moderation' | 'controls' | 'data';
+type AdminView = 'performance' | 'barbers' | 'users' | 'moderation' | 'controls' | 'data' | 'points';
 type ControlsSection = 'services' | 'home' | 'pricing' | 'notifications';
 type ConsumerHomeMode = 'providers' | 'waitlist';
 type PaymentTimingMode = 'on_accept' | 'after_complete';
@@ -2556,12 +2557,13 @@ export function AdminDashboard({
         )}
 
         {/* Main tabs — Safety lives under Users */}
-        <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-200/70 p-1">
+        <nav className="grid grid-cols-6 gap-0.5 rounded-xl bg-stone-200/70 p-1">
           {(
             [
               { view: 'performance' as const, label: 'Performance', Icon: Activity },
               { view: 'barbers' as const, label: 'Operators', Icon: Briefcase },
               { view: 'users' as const, label: 'Users', Icon: Users },
+              { view: 'points' as const, label: 'Points', Icon: Gift },
               { view: 'controls' as const, label: 'Controls', Icon: SlidersHorizontal },
               { view: 'data' as const, label: 'Data', Icon: Database },
             ] as const
@@ -5682,6 +5684,8 @@ export function AdminDashboard({
           </section>
         </div>
       )}
+
+      {deferredAdminView === 'points' && <AdminPointsPanel />}
 
       {deferredAdminView === 'data' && <AdminDataPanel />}
 

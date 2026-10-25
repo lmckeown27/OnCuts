@@ -17,6 +17,7 @@ type DbDomainId =
   | 'messaging'
   | 'payments'
   | 'places'
+  | 'points'
   | 'platform'
   | 'safety'
   | 'other';
@@ -41,6 +42,7 @@ const DOMAIN_META: { id: DbDomainId; label: string }[] = [
   { id: 'messaging', label: 'Messaging' },
   { id: 'payments', label: 'Payments' },
   { id: 'places', label: 'Places' },
+  { id: 'points', label: 'Points' },
   { id: 'platform', label: 'Platform' },
   { id: 'safety', label: 'Safety' },
   { id: 'other', label: 'Other' },
@@ -136,6 +138,10 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   campus_location_aliases: 'places',
   location_enrichment_log: 'places',
   location_merge_log: 'places',
+
+  // Points (referral balances)
+  operator_points: 'points',
+  client_points: 'points',
 
   // Platform
   platform_settings: 'platform',
