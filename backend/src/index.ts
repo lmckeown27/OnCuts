@@ -69,6 +69,7 @@ import pricingRoutes from './routes/pricing.routes';
 
 // User Management Routes
 import userRoutes from './routes/user.routes';
+import pointsRoutes from './routes/points.routes';
 import geocodeRoutes from './routes/geocode.routes';
 
 // Admin Transaction Monitoring Routes
@@ -417,6 +418,8 @@ app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 // User Management Routes
 app.use('/api/v1/users', userRoutes);  // User profile management (versioned)
 app.use('/api/users', userRoutes);  // User profile management (legacy)
+app.use('/api/v1/points', pointsRoutes);
+app.use('/api/points', pointsRoutes);
 app.use('/api/v1/geocode', geocodeRoutes);
 app.use('/api/geocode', geocodeRoutes);
 

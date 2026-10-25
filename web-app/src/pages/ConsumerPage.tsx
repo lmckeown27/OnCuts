@@ -70,6 +70,7 @@ import ConsumerHomeSegmentPill, {
 import DiscoverMap from '../components/DiscoverMap';
 import MyBarbersView from '../components/MyBarbersView';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
+import PointsBalancePill from '../components/PointsBalancePill';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 import {
@@ -720,7 +721,7 @@ export default function ConsumerPage() {
       <div className="relative z-[900] bg-white shadow-sm border-b border-gray-200">
         <div className="w-full mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section — logo home + Become an Operator / Operator View */}
+            {/* Left section — logo home + Become an Operator / Operator View + Points */}
             <div className="flex items-center gap-2 sm:gap-4">
               <button
                 type="button"
@@ -749,6 +750,7 @@ export default function ConsumerPage() {
                   <span className="text-sm sm:text-base font-semibold text-white">Become an Operator</span>
                 </button>
               )}
+              {user ? <PointsBalancePill kind="client" /> : null}
             </div>
             
             {/* Center: My Operators / Discover (browse home only) */}
