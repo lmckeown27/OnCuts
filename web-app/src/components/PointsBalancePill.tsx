@@ -140,11 +140,13 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
             </div>
 
             <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4">
-              <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-center">
-                <p className="text-2xl font-semibold tabular-nums text-emerald-950">
-                  {formatPts(balancePts)}{' '}
-                  <span className="text-base font-medium text-emerald-800">pts</span>
-                </p>
+              <div className="flex justify-center">
+                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-center inline-block">
+                  <p className="text-2xl font-semibold tabular-nums text-emerald-950">
+                    {formatPts(balancePts)}{' '}
+                    <span className="text-base font-medium text-emerald-800">pts</span>
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2 text-sm text-gray-700 leading-relaxed">
@@ -182,10 +184,6 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                 )}
               </div>
 
-              <p className="text-xs text-gray-500 border-t border-gray-200 pt-3">
-                Referral invites and applying points are rolling out next. Your balance here
-                updates as soon as rewards are granted.
-              </p>
             </div>
           </div>
         </div>
