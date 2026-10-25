@@ -146,9 +146,6 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                 <h2 id="oncuts-points-title" className="text-2xl font-bold">
                   OnCuts Points
                 </h2>
-                <p className="text-sm text-white/80 mt-0.5">
-                  {isOperator ? 'Operator rewards' : 'Client rewards'}
-                </p>
               </div>
               <button
                 type="button"
