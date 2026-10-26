@@ -27,8 +27,10 @@ type RewardsMe = {
 export default function RewardsPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
-  const role = String(user?.role || '').toUpperCase();
-  const kind = role === 'BARBER' || role === 'ADMIN' ? 'operator' : 'client';
+  const kind =
+    user?.user_type === 'barber' || user?.user_type === 'admin' || user?.is_admin
+      ? 'operator'
+      : 'client';
   const [data, setData] = useState<RewardsMe | null>(null);
   const [error, setError] = useState<string | null>(null);
 
