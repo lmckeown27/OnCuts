@@ -1561,6 +1561,7 @@ export default function ConsumerPage() {
         </div>
       )}
     </PullToRefresh>
+    </>
   );
 }
 

@@ -4557,6 +4557,5 @@ function AvailabilityModal({
         </PullToRefresh>
       </div>
     </div>
-    </>
   );
 }
