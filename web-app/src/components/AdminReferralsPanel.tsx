@@ -36,6 +36,7 @@ type ReferralSettings = {
   promptCooldownDays: number;
   promptMaxDismissals: number;
   adminIndefinitePrompts: boolean;
+  pointsVisible: boolean;
   estimatedCostPerNewOperatorPts?: number;
   estimatedCostPerNewOperatorDollars?: number;
 };
@@ -241,6 +242,16 @@ export default function AdminReferralsPanel() {
               }
             />
             Admin indefinite referral prompts
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.pointsVisible}
+              onChange={(e) =>
+                setSettings({ ...settings, pointsVisible: e.target.checked })
+              }
+            />
+            Points visible in app
           </label>
           {(
             [

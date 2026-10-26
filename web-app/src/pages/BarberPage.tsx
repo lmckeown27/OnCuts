@@ -109,6 +109,7 @@ export default function BarberPage() {
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
+  const { pointsVisible } = useFrontendConfig();
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
@@ -667,16 +668,18 @@ export default function BarberPage() {
                     >
                       Referrals
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigate(`${platformPrefix}/rewards`);
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Rewards
-                    </button>
+                    {pointsVisible && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigate(`${platformPrefix}/rewards`);
+                          setShowProfileDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Rewards
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {

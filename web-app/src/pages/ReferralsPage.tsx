@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Eye, EyeOff, MessageSquare, RefreshCw } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 
 type Attribution = {
   id: string;
@@ -52,6 +53,7 @@ type ReferralMe = {
 export default function ReferralsPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const { pointsVisible } = useFrontendConfig();
   const [data, setData] = useState<ReferralMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,9 +149,11 @@ export default function ReferralsPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Referrals</h1>
-          <Link to="/web/rewards" className="ml-auto text-sm font-medium text-brand-700 hover:underline">
-            Rewards
-          </Link>
+          {pointsVisible && (
+            <Link to="/web/rewards" className="ml-auto text-sm font-medium text-brand-700 hover:underline">
+              Rewards
+            </Link>
+          )}
         </div>
 
         <p className="text-sm text-gray-600">

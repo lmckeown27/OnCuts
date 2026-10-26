@@ -17,6 +17,7 @@ export interface FrontendConfig {
   consumerHomeMode: ConsumerHomeMode;
   consumerHomeReviewsEnabled: boolean;
   paymentTimingMode: PaymentTimingMode;
+  pointsVisible: boolean;
   consumerUserCount: number;
   platformFeePercent: number;
   platformCommissionEnabled: boolean;
@@ -28,6 +29,7 @@ const DEFAULT_CONFIG: FrontendConfig = {
   consumerHomeMode: 'providers',
   consumerHomeReviewsEnabled: true,
   paymentTimingMode: 'on_accept',
+  pointsVisible: true,
   consumerUserCount: 0,
   platformFeePercent: 15,
   platformCommissionEnabled: true,
@@ -48,6 +50,7 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
         consumerHomeMode?: string;
         consumerHomeReviewsEnabled?: boolean;
         paymentTimingMode?: string;
+        pointsVisible?: boolean;
         consumerUserCount?: number;
         platformFeePercent?: number;
         platformCommissionEnabled?: boolean;
@@ -60,6 +63,7 @@ async function fetchFrontendConfig(): Promise<FrontendConfig> {
         consumerHomeReviewsEnabled: data?.consumerHomeReviewsEnabled !== false,
         paymentTimingMode:
           data?.paymentTimingMode === 'after_complete' ? 'after_complete' : 'on_accept',
+        pointsVisible: data?.pointsVisible !== false,
         consumerUserCount: Math.max(0, Number(data?.consumerUserCount) || 0),
         platformFeePercent: Number.isFinite(percent) ? percent : 15,
         platformCommissionEnabled: data?.platformCommissionEnabled !== false,

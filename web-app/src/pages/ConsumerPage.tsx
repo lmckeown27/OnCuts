@@ -96,7 +96,7 @@ export default function ConsumerPage() {
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
-  const { paymentTimingMode, consumerHomeMode } = useFrontendConfig();
+  const { paymentTimingMode, consumerHomeMode, pointsVisible } = useFrontendConfig();
   const payOnAccept = paymentTimingMode !== 'after_complete';
   const [homeSegment, setHomeSegment] = useState<ConsumerHomeSegment>('discover');
   
@@ -840,16 +840,18 @@ export default function ConsumerPage() {
                         >
                           Referrals
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigate(`${platformPrefix}/rewards`);
-                            setShowProfileDropdown(false);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                        >
-                          Rewards
-                        </button>
+                        {pointsVisible && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigate(`${platformPrefix}/rewards`);
+                              setShowProfileDropdown(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                          >
+                            Rewards
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setShowBlockedProvidersModal(true);

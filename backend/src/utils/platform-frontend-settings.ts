@@ -39,6 +39,8 @@ export interface PlatformFrontendSettings {
   consumerHomeMode: ConsumerHomeMode;
   consumerHomeReviewsEnabled: boolean;
   paymentTimingMode: PaymentTimingMode;
+  /** When false, hide OnCuts Points UI for clients/operators. */
+  pointsVisible: boolean;
 }
 
 export interface PlatformSettingsPayload extends PlatformFrontendSettings {
@@ -64,6 +66,7 @@ const DEFAULTS: PlatformFrontendSettings = {
   consumerHomeMode: 'providers',
   consumerHomeReviewsEnabled: true,
   paymentTimingMode: 'on_accept',
+  pointsVisible: true,
 };
 
 const CACHE_TTL_MS = 30_000;
@@ -95,7 +98,7 @@ export async function getPlatformFrontendSettings(
   try {
     const result = await client.query(
       `SELECT cash_payment_enabled, consumer_home_mode, consumer_home_reviews_enabled,
-              payment_timing_mode
+              payment_timing_mode, points_visible
        FROM platform_settings
        WHERE id = 1
        LIMIT 1`
@@ -107,6 +110,7 @@ export async function getPlatformFrontendSettings(
         consumerHomeMode: parseHomeMode(row.consumer_home_mode),
         consumerHomeReviewsEnabled: row.consumer_home_reviews_enabled !== false,
         paymentTimingMode: parsePaymentTimingMode(row.payment_timing_mode),
+        pointsVisible: row.points_visible !== false,
       };
       cachedFrontend = next;
       cachedFrontendExpiresAt = now + CACHE_TTL_MS;

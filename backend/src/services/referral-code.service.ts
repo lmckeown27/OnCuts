@@ -31,6 +31,8 @@ export interface ReferralProgramSettings {
   promptMaxDismissals: number;
   /** Admins: show refer-operators prompt on entry with no cooldown / max dismissals. */
   adminIndefinitePrompts: boolean;
+  /** When false, hide points balances and spend UI for clients/operators. */
+  pointsVisible: boolean;
 }
 
 const DEFAULT_SETTINGS: ReferralProgramSettings = {
@@ -52,6 +54,7 @@ const DEFAULT_SETTINGS: ReferralProgramSettings = {
   promptCooldownDays: 30,
   promptMaxDismissals: 3,
   adminIndefinitePrompts: false,
+  pointsVisible: true,
 };
 
 export function normalizeReferralCode(raw: string): string {
@@ -108,7 +111,8 @@ export async function getReferralProgramSettings(): Promise<ReferralProgramSetti
          COALESCE(referral_validate_lockout_hours, 24) AS lockout_hours,
          COALESCE(referral_prompt_cooldown_days, 30) AS prompt_cooldown,
          COALESCE(referral_prompt_max_dismissals, 3) AS prompt_max_dismiss,
-         COALESCE(referral_admin_indefinite_prompts, FALSE) AS admin_indefinite_prompts
+         COALESCE(referral_admin_indefinite_prompts, FALSE) AS admin_indefinite_prompts,
+         COALESCE(points_visible, TRUE) AS points_visible
        FROM platform_settings WHERE id = 1 LIMIT 1`
     );
     const row = r.rows[0];
@@ -132,6 +136,7 @@ export async function getReferralProgramSettings(): Promise<ReferralProgramSetti
       promptCooldownDays: Number(row.prompt_cooldown) || 30,
       promptMaxDismissals: Number(row.prompt_max_dismiss) || 3,
       adminIndefinitePrompts: Boolean(row.admin_indefinite_prompts),
+      pointsVisible: row.points_visible !== false,
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

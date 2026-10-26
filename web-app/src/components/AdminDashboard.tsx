@@ -510,6 +510,7 @@ export function AdminDashboard({
   const [servicesPanelMounted, setServicesPanelMounted] = useState(false);
   const [referralProgramEnabled, setReferralProgramEnabled] = useState(true);
   const [adminIndefiniteReferPrompts, setAdminIndefiniteReferPrompts] = useState(false);
+  const [pointsVisible, setPointsVisible] = useState(true);
   const [isLoadingReferralProgram, setIsLoadingReferralProgram] = useState(true);
   const [isSavingReferralProgram, setIsSavingReferralProgram] = useState(false);
   const [usersPanelMounted, setUsersPanelMounted] = useState(false);
@@ -781,9 +782,11 @@ export function AdminDashboard({
         const data = await api.get<{
           programEnabled?: boolean;
           adminIndefinitePrompts?: boolean;
+          pointsVisible?: boolean;
         }>('/admin/referrals/settings');
         setReferralProgramEnabled(data?.programEnabled !== false);
         setAdminIndefiniteReferPrompts(data?.adminIndefinitePrompts === true);
+        setPointsVisible(data?.pointsVisible !== false);
       } catch (error) {
         console.error('Failed to fetch referral program settings:', error);
       } finally {
@@ -829,6 +832,25 @@ export function AdminDashboard({
       );
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update admin referral prompts');
+    } finally {
+      setIsSavingReferralProgram(false);
+    }
+  };
+
+  const handleSavePointsVisible = async (enabled: boolean) => {
+    if (enabled === pointsVisible) return;
+    setIsSavingReferralProgram(true);
+    try {
+      const data = await api.put<{ pointsVisible?: boolean }>('/admin/referrals/settings', {
+        pointsVisible: enabled,
+      });
+      setPointsVisible(
+        typeof data?.pointsVisible === 'boolean' ? data.pointsVisible : enabled
+      );
+      invalidateFrontendConfigCache();
+      toast.success(enabled ? 'Points visible' : 'Points hidden');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update points visibility');
     } finally {
       setIsSavingReferralProgram(false);
     }
@@ -6273,6 +6295,47 @@ export function AdminDashboard({
                         disabled={isLoadingReferralProgram || isSavingReferralProgram}
                         onChange={() => {
                           void handleSaveAdminIndefiniteReferPrompts(opt.id);
+                        }}
+                        className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="text-sm text-gray-900">{opt.label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              </div>
+              <div className="flex items-start justify-between gap-3 border-t border-gray-100 pt-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">Visible points</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    When off, hide the points balance, Rewards page, and points spend options for clients and operators.
+                  </p>
+                </div>
+                <fieldset
+                  className="flex items-center gap-4 shrink-0"
+                  disabled={isLoadingReferralProgram || isSavingReferralProgram}
+                >
+                  {(
+                    [
+                      { id: true, label: 'On' },
+                      { id: false, label: 'Off' },
+                    ] as const
+                  ).map((opt) => (
+                    <label
+                      key={String(opt.id)}
+                      className={`flex items-center gap-2 cursor-pointer ${
+                        isLoadingReferralProgram || isSavingReferralProgram
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="points-visible"
+                        value={opt.id ? 'on' : 'off'}
+                        checked={pointsVisible === opt.id}
+                        disabled={isLoadingReferralProgram || isSavingReferralProgram}
+                        onChange={() => {
+                          void handleSavePointsVisible(opt.id);
                         }}
                         className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
                       />

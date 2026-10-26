@@ -4,6 +4,7 @@ import { ChevronLeft, Copy, Eye, EyeOff, Info, RefreshCw, X } from 'lucide-react
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBodyScrollLock } from '../hooks';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 
 export type PointsPillKind = 'operator' | 'client';
 
@@ -35,6 +36,7 @@ function formatPts(n: number): string {
  */
 export default function PointsBalancePill({ kind, className = '' }: PointsBalancePillProps) {
   const user = useAuthStore((s) => s.user);
+  const { pointsVisible } = useFrontendConfig();
   const [balancePts, setBalancePts] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
@@ -195,7 +197,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
     return () => window.removeEventListener('keydown', onKey);
   }, [open, subShouldRender, closeSubPage, closeAll]);
 
-  if (!user) return null;
+  if (!user || !pointsVisible) return null;
 
   const label = loaded ? `${formatPts(balancePts)} pts` : '… pts';
   const isOperator = kind === 'operator';

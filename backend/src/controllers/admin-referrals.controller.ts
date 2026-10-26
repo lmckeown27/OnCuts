@@ -8,6 +8,7 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { getReferralProgramSettings, tablesReady } from '../services/referral-code.service';
 import { adminResolveCheck2 } from '../services/referral-lifecycle.service';
+import { invalidatePlatformFrontendSettingsCache } from '../utils/platform-frontend-settings';
 
 export const listReferralAttributions = async (
   req: AuthRequest,
@@ -166,6 +167,7 @@ export const updateReferralSettings = async (
       promptCooldownDays: 'referral_prompt_cooldown_days',
       promptMaxDismissals: 'referral_prompt_max_dismissals',
       adminIndefinitePrompts: 'referral_admin_indefinite_prompts',
+      pointsVisible: 'points_visible',
     };
 
     for (const [key, col] of Object.entries(map)) {
@@ -179,6 +181,7 @@ export const updateReferralSettings = async (
     sets.push(`updated_by = $${vals.length}`);
 
     await pool.query(`UPDATE platform_settings SET ${sets.join(', ')} WHERE id = 1`, vals);
+    invalidatePlatformFrontendSettingsCache();
     const settings = await getReferralProgramSettings();
     res.json({ success: true, data: settings });
   } catch (error) {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
 
 type RewardsMe = {
   kind: 'operator' | 'client';
@@ -27,6 +28,7 @@ type RewardsMe = {
 export default function RewardsPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const { pointsVisible, isLoading: configLoading } = useFrontendConfig();
   const kind =
     user?.user_type === 'barber' || user?.user_type === 'admin' || user?.is_admin
       ? 'operator'
@@ -45,8 +47,14 @@ export default function RewardsPage() {
   }, [kind]);
 
   useEffect(() => {
-    if (user) void load();
-  }, [user, load]);
+    if (user && pointsVisible) void load();
+  }, [user, load, pointsVisible]);
+
+  useEffect(() => {
+    if (!configLoading && !pointsVisible) {
+      navigate(kind === 'operator' ? '/web/barber' : '/web/consumer', { replace: true });
+    }
+  }, [configLoading, pointsVisible, kind, navigate]);
 
   if (!user) {
     return (
@@ -55,6 +63,8 @@ export default function RewardsPage() {
       </div>
     );
   }
+
+  if (!pointsVisible) return null;
 
   const backTo = kind === 'operator' ? '/web/barber' : '/web/consumer';
 

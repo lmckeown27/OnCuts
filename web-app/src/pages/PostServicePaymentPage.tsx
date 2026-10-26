@@ -996,6 +996,7 @@ function OperatorPointsApplyPanel({
   bookingId: string;
   serviceDollars: number;
 }) {
+  const { pointsVisible } = useFrontendConfig();
   const [balancePts, setBalancePts] = useState(0);
   const [pointsPerDollar, setPointsPerDollar] = useState(10);
   const [sliderPts, setSliderPts] = useState(0);
@@ -1003,6 +1004,7 @@ function OperatorPointsApplyPanel({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!pointsVisible) return;
     void (async () => {
       try {
         const rewards = await api.get<{ pointsPerDollar: number; balancePts: number }>(
@@ -1015,7 +1017,7 @@ function OperatorPointsApplyPanel({
         /* ignore */
       }
     })();
-  }, []);
+  }, [pointsVisible]);
 
   const maxPts = Math.min(balancePts, Math.floor(serviceDollars * pointsPerDollar));
 
@@ -1036,7 +1038,7 @@ function OperatorPointsApplyPanel({
     }
   };
 
-  if (maxPts <= 0 && !applied) return null;
+  if (!pointsVisible || (maxPts <= 0 && !applied)) return null;
 
   return (
     <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left space-y-3">
@@ -1110,6 +1112,7 @@ function ClientPointsDiscountPanel({
   serviceDollars: number;
   onDiscount?: (dollars: number) => void;
 }) {
+  const { pointsVisible } = useFrontendConfig();
   const [maxPts, setMaxPts] = useState(0);
   const [pointsPerDollar, setPointsPerDollar] = useState(10);
   const [sliderPts, setSliderPts] = useState(0);
@@ -1130,8 +1133,11 @@ function ClientPointsDiscountPanel({
   }, [serviceDollars]);
 
   useEffect(() => {
+    if (!pointsVisible) return;
     void refresh();
-  }, [refresh]);
+  }, [refresh, pointsVisible]);
+
+  if (!pointsVisible) return null;
 
   if (maxPts <= 0 || committed) {
     if (committed) {
