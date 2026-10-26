@@ -190,7 +190,26 @@ export default function ReferralsPage() {
                 className="p-2 rounded-lg hover:bg-stone-100"
                 aria-label={revealed ? 'Hide code' : 'Show code'}
               >
-                {revealed ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {revealed ? <EyeOff className="w-5 h-5" aria-hidden /> : <Eye className="w-5 h-5" aria-hidden />}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void copyCode()}
+                className="p-2 rounded-lg hover:bg-stone-100"
+                aria-label="Copy code"
+              >
+                <Copy className="w-5 h-5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void rotate()}
+                className="p-2 rounded-lg hover:bg-stone-100"
+                aria-label="Rotate code"
+                title="Rotate code"
+              >
+                <RefreshCw className="w-5 h-5" aria-hidden />
               </button>
             </div>
             <p className="text-xs text-gray-500">

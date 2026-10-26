@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Copy, Eye, Info, X } from 'lucide-react';
+import { ChevronLeft, Copy, Eye, EyeOff, Info, RefreshCw, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBodyScrollLock } from '../hooks';
@@ -127,6 +127,14 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
     }
   }, []);
 
+  const toggleReferralCodeVisibility = useCallback(async () => {
+    if (referralRevealed) {
+      setReferralRevealed(null);
+      return;
+    }
+    await revealReferralCode();
+  }, [referralRevealed, revealReferralCode]);
+
   const copyReferralCode = useCallback(async () => {
     let code = referralRevealed;
     if (!code) {
@@ -136,6 +144,19 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
       await navigator.clipboard.writeText(code);
     }
   }, [referralRevealed, revealReferralCode]);
+
+  const rotateReferralCode = useCallback(async () => {
+    if (!window.confirm('Rotate your code? The old code stops working immediately.')) return;
+    try {
+      const res = await api.post<{ code: string; masked?: string }>('/referrals/codes/rotate', {});
+      setReferralMasked(res.masked || `${String(res.code).slice(0, 4)}-••••`);
+      setReferralRevealed(res.code);
+      await loadReferralMe();
+      setReferralRevealed(res.code);
+    } catch {
+      /* ignore — full Referrals page surfaces errors */
+    }
+  }, [loadReferralMe]);
 
   const openSubPage = useCallback((page: PointsSubPage) => {
     setSubPage(page);
@@ -273,10 +294,14 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                       <button
                         type="button"
                         className="p-2 rounded-lg hover:bg-stone-100"
-                        aria-label="Show code"
-                        onClick={() => void revealReferralCode()}
+                        aria-label={referralRevealed ? 'Hide code' : 'Show code'}
+                        onClick={() => void toggleReferralCodeVisibility()}
                       >
-                        <Eye className="w-4 h-4" aria-hidden />
+                        {referralRevealed ? (
+                          <EyeOff className="w-4 h-4" aria-hidden />
+                        ) : (
+                          <Eye className="w-4 h-4" aria-hidden />
+                        )}
                       </button>
                       <button
                         type="button"
@@ -285,6 +310,15 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                         onClick={() => void copyReferralCode()}
                       >
                         <Copy className="w-4 h-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label="Rotate code"
+                        title="Rotate code"
+                        onClick={() => void rotateReferralCode()}
+                      >
+                        <RefreshCw className="w-4 h-4" aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -356,10 +390,14 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                             <button
                               type="button"
                               className="p-2 rounded-lg hover:bg-stone-100"
-                              aria-label="Show code"
-                              onClick={() => void revealReferralCode()}
+                              aria-label={referralRevealed ? 'Hide code' : 'Show code'}
+                              onClick={() => void toggleReferralCodeVisibility()}
                             >
-                              <Eye className="w-4 h-4" aria-hidden />
+                              {referralRevealed ? (
+                                <EyeOff className="w-4 h-4" aria-hidden />
+                              ) : (
+                                <Eye className="w-4 h-4" aria-hidden />
+                              )}
                             </button>
                             <button
                               type="button"
@@ -368,6 +406,15 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                               onClick={() => void copyReferralCode()}
                             >
                               <Copy className="w-4 h-4" aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              className="p-2 rounded-lg hover:bg-stone-100"
+                              aria-label="Rotate code"
+                              title="Rotate code"
+                              onClick={() => void rotateReferralCode()}
+                            >
+                              <RefreshCw className="w-4 h-4" aria-hidden />
                             </button>
                           </div>
                         </div>
