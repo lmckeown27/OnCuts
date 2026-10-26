@@ -9,6 +9,7 @@ import { authenticate, refreshAccessRoleFromDb } from '../middleware/auth';
 import * as adminController from '../controllers/admin.controller';
 import * as adminDbController from '../controllers/admin-db.controller';
 import * as adminPointsController from '../controllers/admin-points.controller';
+import * as adminReferralsController from '../controllers/admin-referrals.controller';
 import * as adminNotificationsController from '../controllers/admin-notifications.controller';
 
 const router = express.Router();
@@ -92,6 +93,12 @@ router.get('/db/tables/:table', adminDbController.getDbTable);
 
 // OnCuts Points balances (Admin Points tab)
 router.get('/points/balances', adminPointsController.getPointsBalances);
+
+// Referral ledger + settings
+router.get('/referrals/attributions', adminReferralsController.listReferralAttributions);
+router.post('/referrals/attributions/:id/resolve', adminReferralsController.resolveReferralAttribution);
+router.get('/referrals/settings', adminReferralsController.getReferralSettings);
+router.put('/referrals/settings', adminReferralsController.updateReferralSettings);
 
 // UGC moderation (App Store Guideline 1.2)
 router.get('/moderation/banned-users', adminController.listBannedUsers);

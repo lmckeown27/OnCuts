@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
 import { barberProviderTypeInsertFragments } from '../services/barber-provider-schema.service';
 import { notifyOperatorApplicationApproved } from '../utils/notify-application-approved';
+import { claimReferralAtCheck1, normalizeReferralCode } from '../services/referral-code.service';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -57,6 +58,7 @@ interface BarberApplicationBody {
   portfolioDescription?: string;
   socialMedia?: string;
   additionalNotes?: string;
+  referralCode?: string;
 }
 
 /**
@@ -83,7 +85,8 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       whyBeBarber,
       portfolioDescription,
       socialMedia,
-      additionalNotes
+      additionalNotes,
+      referralCode,
     }: BarberApplicationBody = req.body;
 
     // Validate required fields (campus is optional for provider applications)
@@ -140,13 +143,27 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(400, `You already have a ${existing.status.replace('_', ' ')} application. Please wait for it to be processed.`);
     }
 
+    const normalizedReferral =
+      typeof referralCode === 'string' && referralCode.trim()
+        ? normalizeReferralCode(referralCode)
+        : null;
+
+    // Check 1: lock referral at operator application (before insert so bad codes fail fast)
+    if (normalizedReferral) {
+      await claimReferralAtCheck1({
+        code: normalizedReferral,
+        referredUserId: userId,
+        referredPhoneE164: phoneNumber || null,
+      });
+    }
+
     // Insert the application
     const result = await pool.query(
       `INSERT INTO barber_applications (
         user_id, campus_id, phone_number, years_experience, has_license, license_number,
         specialties, has_own_tools, available_hours, why_be_barber,
-        portfolio_description, social_media, additional_notes, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending')
+        portfolio_description, social_media, additional_notes, status, referral_code
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', $14)
       RETURNING id, status, created_at`,
       [
         userId,
@@ -161,7 +178,8 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
         whyBeBarber,
         portfolioDescription || null,
         socialMedia || null,
-        additionalNotes || null
+        additionalNotes || null,
+        normalizedReferral,
       ]
     );
 
@@ -467,7 +485,9 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
     // If not found in regular table, check guest_barber_applications
     if (existing.rows.length === 0) {
       existing = await pool.query(
-        'SELECT id, linked_user_id as user_id, email, status, campus_id, specialties FROM guest_barber_applications WHERE id = $1',
+        `SELECT id, linked_user_id as user_id, email, status, campus_id, specialties,
+                phone_number, referral_code
+         FROM guest_barber_applications WHERE id = $1`,
         [id]
       );
       if (existing.rows.length === 0) {
@@ -545,6 +565,20 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
             [userId, specialties, JSON.stringify(pricing), 'barber']
           );
+
+          if (applicationData.referral_code) {
+            try {
+              await claimReferralAtCheck1({
+                code: applicationData.referral_code,
+                referredUserId: userId,
+                referredPhoneE164: applicationData.phone_number || null,
+              });
+            } catch (claimErr: any) {
+              logger.warn(
+                `Guest referral claim failed for application ${id}: ${claimErr?.message || claimErr}`
+              );
+            }
+          }
 
           logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
           void notifyOperatorApplicationApproved({
@@ -679,7 +713,8 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       whyBeBarber,
       portfolioDescription,
       socialMedia,
-      additionalNotes
+      additionalNotes,
+      referralCode,
     }: GuestBarberApplicationBody = req.body;
 
     // Validate required fields
@@ -791,13 +826,23 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       /* already nullable or table just created */
     });
 
+    const normalizedGuestReferral =
+      typeof referralCode === 'string' && referralCode.trim()
+        ? normalizeReferralCode(referralCode)
+        : null;
+
+    // Ensure referral_code column exists on older DBs before insert
+    await pool.query(
+      `ALTER TABLE guest_barber_applications ADD COLUMN IF NOT EXISTS referral_code VARCHAR(9)`
+    ).catch(() => undefined);
+
     // Insert the guest application
     const result = await pool.query(
       `INSERT INTO guest_barber_applications (
         email, first_name, last_name, phone_number, campus_id, years_experience, has_license, license_number,
         specialties, has_own_tools, available_hours, why_be_barber,
-        portfolio_description, social_media, additional_notes, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')
+        portfolio_description, social_media, additional_notes, status, referral_code
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending', $16)
       RETURNING id, status, created_at`,
       [
         email.toLowerCase(),
@@ -814,7 +859,8 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
         whyBeBarber,
         portfolioDescription || null,
         socialMedia || null,
-        additionalNotes || null
+        additionalNotes || null,
+        normalizedGuestReferral,
       ]
     );
 

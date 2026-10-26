@@ -31,6 +31,7 @@ import {
 import AdminNotificationControls from './AdminNotificationControls';
 import AdminDataPanel from './AdminDataPanel';
 import AdminPointsPanel from './AdminPointsPanel';
+import AdminReferralsPanel from './AdminReferralsPanel';
 import { buildBarberBookingPageUrl } from './BarberBookingLinkCard';
 import { useAuthStore } from '../store/useAuthStore';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
@@ -5685,7 +5686,15 @@ export function AdminDashboard({
         </div>
       )}
 
-      {deferredAdminView === 'points' && <AdminPointsPanel />}
+      {deferredAdminView === 'points' && (
+        <div className="space-y-8">
+          <AdminPointsPanel />
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900">Referrals</h2>
+            <AdminReferralsPanel />
+          </section>
+        </div>
+      )}
 
       {deferredAdminView === 'data' && <AdminDataPanel />}
 

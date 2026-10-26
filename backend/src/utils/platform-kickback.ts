@@ -124,7 +124,8 @@ export async function loadProviderKickbackPercent(
     `SELECT kickback_percent,
             commission_free_bookings_remaining,
             commission_incentive_mode,
-            commission_incentive_expires_at
+            commission_incentive_expires_at,
+            "userId" AS user_id
      FROM barbers WHERE id = $1::uuid`,
     [barberRecordId]
   );
@@ -145,12 +146,25 @@ export async function loadProviderKickbackPercent(
 
   const raw = row.kickback_percent;
   const percent = raw != null ? parseFloat(String(raw)) : 0;
-  if (Number.isFinite(percent) && percent > 0) {
-    return Math.min(100, Math.max(0, percent));
+  let resolved =
+    Number.isFinite(percent) && percent > 0
+      ? Math.min(100, Math.max(0, percent))
+      : await getConfiguredKickbackPercent(client);
+
+  // Referred new operators: platform kickback on first 3 completed bookings
+  try {
+    const { getNewOperatorReferralKickbackPercent } = await import(
+      '../services/referral-lifecycle.service'
+    );
+    if (row.user_id) {
+      const referralPct = await getNewOperatorReferralKickbackPercent(String(row.user_id));
+      if (referralPct > resolved) resolved = referralPct;
+    }
+  } catch {
+    /* referral tables may not exist yet */
   }
 
-  // New operators default to 0 — inherit the Controls → Price rate.
-  return getConfiguredKickbackPercent(client);
+  return resolved;
 }
 
 /**

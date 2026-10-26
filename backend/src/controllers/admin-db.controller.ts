@@ -142,6 +142,13 @@ const TABLE_DOMAIN: Record<string, DbDomainId> = {
   // Points (referral balances)
   operator_points: 'points',
   client_points: 'points',
+  referral_codes: 'points',
+  referral_code_history: 'points',
+  referral_code_attempts: 'points',
+  referral_attributions: 'points',
+  referral_code_requests: 'points',
+  points_ledger: 'points',
+  referral_prompt_state: 'points',
 
   // Platform
   platform_settings: 'platform',

@@ -45,6 +45,7 @@ interface ApplicationForm {
   needsTools: boolean;
   toolsNeeded: string;
   socialMedia: string;
+  referralCode: string;
 }
 
 const TOTAL_STEPS = 3;
@@ -63,6 +64,7 @@ const emptyApplicationForm = (): ApplicationForm => ({
   needsTools: false,
   toolsNeeded: '',
   socialMedia: '',
+  referralCode: '',
 });
 
 function phoneDigits(formatted: string): string {
@@ -268,7 +270,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
-          socialMedia: form.socialMedia || undefined
+          socialMedia: form.socialMedia || undefined,
+          referralCode: form.referralCode.trim() || undefined,
         });
         result = { applicationId: guestResult.id, status: guestResult.status, submittedAt: guestResult.createdAt };
       } else {
@@ -283,7 +286,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
-          socialMedia: form.socialMedia || undefined
+          socialMedia: form.socialMedia || undefined,
+          referralCode: form.referralCode.trim() || undefined,
         });
       }
       
@@ -941,6 +945,28 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Referral code (optional)
+                </label>
+                <input
+                  type="text"
+                  value={form.referralCode}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
+                    })
+                  }
+                  placeholder="XXXX-XXXX"
+                  maxLength={9}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 font-mono tracking-widest"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  If someone referred you, enter their code here.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

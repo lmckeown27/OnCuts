@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Info, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, Copy, Eye, Info, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBodyScrollLock } from '../hooks';
@@ -43,6 +44,12 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
   const [subPage, setSubPage] = useState<PointsSubPage | null>(null);
   const [subShouldRender, setSubShouldRender] = useState(false);
   const [subAnimating, setSubAnimating] = useState(false);
+  const [referralMasked, setReferralMasked] = useState<string | null>(null);
+  const [referralRevealed, setReferralRevealed] = useState<string | null>(null);
+  const [referralCanRefer, setReferralCanRefer] = useState(true);
+  const [referralHint, setReferralHint] = useState<{ m1: number; m2: number; total: number } | null>(
+    null
+  );
 
   useBodyScrollLock(open);
 
@@ -96,9 +103,26 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
   const openSubPage = useCallback((page: PointsSubPage) => {
     setSubPage(page);
     setSubShouldRender(true);
+    setReferralRevealed(null);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setSubAnimating(true));
     });
+    if (page === 'referral') {
+      void (async () => {
+        try {
+          const me = await api.get<{
+            canRefer: boolean;
+            code: { masked: string } | null;
+            rewardsHint: { m1: number; m2: number; total: number };
+          }>('/referrals/me');
+          setReferralCanRefer(Boolean(me.canRefer));
+          setReferralMasked(me.code?.masked || null);
+          setReferralHint(me.rewardsHint || null);
+        } catch {
+          setReferralMasked(null);
+        }
+      })();
+    }
   }, []);
 
   const closeSubPage = useCallback(() => {
@@ -265,43 +289,82 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                   {subPage === 'referral' && (
                     <>
                       <p className="text-gray-600">
-                        Referral on OnCuts means inviting someone to join as an operator — beauty
-                        pros included (braids, nails, lashes, makeup, tanning, and more). When they
-                        sign up with your invite and grow on the platform, you earn OnCuts Points.
+                        Invite operators onto OnCuts — beauty pros included (braids, nails, lashes,
+                        makeup, tanning). Earn up to{' '}
+                        {referralHint?.total ?? (isOperator ? 750 : 1050)} pts when they pass
+                        checks and complete bookings.
                       </p>
-                      {isOperator ? (
-                        <ul className="list-disc pl-4 space-y-1.5 text-gray-600">
-                          <li>Share your invite link and a unique referral code.</li>
-                          <li>
-                            The new operator enters your code on onboarding, applies, completes
-                            setup, and takes bookings.
-                          </li>
-                          <li>+250 pts when they finish onboarding.</li>
-                          <li>
-                            +500 pts after their first 3 paid card bookings (750 pts / about $75
-                            total).
-                          </li>
-                          <li>Points never expire.</li>
-                        </ul>
+                      {!referralCanRefer ? (
+                        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                          Complete your first booking to unlock referring.
+                        </p>
                       ) : (
-                        <ul className="list-disc pl-4 space-y-1.5 text-gray-600">
-                          <li>
-                            You can refer operators after your own first completed booking —
-                            campus or hometown.
-                          </li>
-                          <li>They join with your unique referral code.</li>
-                          <li>+350 pts when they finish onboarding.</li>
-                          <li>
-                            +700 pts after their first 3 paid bookings (1,050 pts / about $105
-                            total). At most one of those three can be with you.
-                          </li>
-                          <li>Points never expire and cannot be cashed out.</li>
-                        </ul>
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-3 space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Your code
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 text-lg font-semibold tracking-widest tabular-nums">
+                              {referralRevealed || referralMasked || '••••-••••'}
+                            </code>
+                            <button
+                              type="button"
+                              className="p-2 rounded-lg hover:bg-stone-100"
+                              aria-label="Show code"
+                              onClick={async () => {
+                                try {
+                                  const res = await api.post<{ code: string }>(
+                                    '/referrals/codes/reveal',
+                                    {}
+                                  );
+                                  setReferralRevealed(res.code);
+                                } catch {
+                                  /* ignore */
+                                }
+                              }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="p-2 rounded-lg hover:bg-stone-100"
+                              aria-label="Copy code"
+                              onClick={async () => {
+                                let code = referralRevealed;
+                                if (!code) {
+                                  const res = await api.post<{ code: string }>(
+                                    '/referrals/codes/reveal',
+                                    {}
+                                  );
+                                  code = res.code;
+                                  setReferralRevealed(code);
+                                }
+                                await navigator.clipboard.writeText(code);
+                              }}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      <p className="text-xs text-gray-500 pt-1">
-                        Invite links and codes are rolling out next. This page explains how
-                        referral will work once live.
-                      </p>
+                      <ul className="list-disc pl-4 space-y-1.5 text-gray-600">
+                        <li>
+                          +{referralHint?.m1 ?? (isOperator ? 250 : 350)} pts when Check 2
+                          passes
+                        </li>
+                        <li>
+                          +{referralHint?.m2 ?? (isOperator ? 500 : 700)} pts after 3 qualifying
+                          paid card bookings
+                        </li>
+                        <li>Points never expire.</li>
+                      </ul>
+                      <Link
+                        to="/web/referrals"
+                        onClick={closeAll}
+                        className="inline-flex w-full justify-center rounded-xl bg-brand-600 text-white text-sm font-semibold py-2.5"
+                      >
+                        Open Referrals
+                      </Link>
                     </>
                   )}
 

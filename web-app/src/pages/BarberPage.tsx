@@ -54,6 +54,7 @@ import toast from 'react-hot-toast';
 import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storageMigration';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import PointsBalancePill from '../components/PointsBalancePill';
+import ReferPromptModal from '../components/ReferPromptModal';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
 const BARBER_HIDDEN_PAID_BOOKINGS_PREFIX = 'oncuts_barber_hidden_paid_bookings_';
@@ -578,6 +579,7 @@ export default function BarberPage() {
 
   return (
     <>
+    <ReferPromptModal />
     <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
       <IosAppDownloadBanner variant="operator" />
@@ -654,6 +656,26 @@ export default function BarberPage() {
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate(`${platformPrefix}/referrals`);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Referrals
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate(`${platformPrefix}/rewards`);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Rewards
                     </button>
                     <button
                       type="button"
@@ -4535,5 +4557,6 @@ function AvailabilityModal({
         </PullToRefresh>
       </div>
     </div>
+    </>
   );
 }

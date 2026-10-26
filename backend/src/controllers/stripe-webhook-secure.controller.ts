@@ -29,6 +29,12 @@ import {
   isInstantPayoutsEnabled,
   persistInstantPayoutOutcome,
 } from '../services/instant-payout.service';
+import { runReferralCheck2 } from '../services/referral-lifecycle.service';
+import {
+  clawbackReferralForBooking,
+  incrementNewOperatorKickbackBooking,
+  recordQualifyingReferralBooking,
+} from '../services/referral-lifecycle.service';
 
 /**
  * Soft Instant Payout of Connect take-home after funds are on the Express balance.
@@ -453,6 +459,32 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
         await handleAccountUpdated(event.data.object as Stripe.Account, event.id);
         break;
 
+      case 'charge.refunded':
+      case 'charge.dispute.created': {
+        const charge = event.data.object as Stripe.Charge;
+        const bookingId =
+          charge.metadata?.booking_id ||
+          charge.metadata?.bookingId ||
+          (typeof charge.payment_intent === 'string'
+            ? (
+                await query(
+                  `SELECT booking_id FROM payments WHERE payment_intent_id = $1 LIMIT 1`,
+                  [charge.payment_intent]
+                )
+              ).rows[0]?.booking_id
+            : null);
+        if (bookingId) {
+          try {
+            await clawbackReferralForBooking(String(bookingId));
+          } catch (clawErr: unknown) {
+            const message = clawErr instanceof Error ? clawErr.message : String(clawErr);
+            logger.warn(`Referral clawback soft-failed for ${bookingId}: ${message}`);
+          }
+        }
+        await markEventProcessed(event.id, event.type, charge.metadata || {}, 'success');
+        break;
+      }
+
       default:
         logger.info(`Unhandled event type: ${event.type}`);
         await markEventProcessed(event.id, event.type, event.data.object, 'success');
@@ -638,6 +670,35 @@ async function handleCheckoutSessionCompleted(
 
     await client.query('COMMIT');
     logger.info(`✅ Checkout complete for booking ${booking_id}`);
+
+    // Referral milestones / new-operator kickback counter (best-effort after commit)
+    try {
+      const barberRecordId = barber_id || booking.barberId;
+      const consumerId = consumer_id || booking.consumerId;
+      if (barberRecordId && consumerId) {
+        const barberUser = await pool.query(
+          `SELECT "userId" AS user_id FROM barbers WHERE id = $1 LIMIT 1`,
+          [barberRecordId]
+        );
+        const barberUserId = barberUser.rows[0]?.user_id;
+        if (barberUserId) {
+          const tipMeta = 0;
+          const serviceCents = Math.max(0, amountCents - tipMeta);
+          await recordQualifyingReferralBooking({
+            bookingId: booking_id,
+            barberId: barberUserId,
+            consumerId,
+            serviceCents,
+            paymentMethod: 'card',
+          });
+          await incrementNewOperatorKickbackBooking(barberUserId);
+        }
+      }
+    } catch (referralPayErr: unknown) {
+      const message =
+        referralPayErr instanceof Error ? referralPayErr.message : String(referralPayErr);
+      logger.warn(`Referral paid-booking hook soft-failed for ${booking_id}: ${message}`);
+    }
   } catch (error: unknown) {
     await client.query('ROLLBACK');
     logger.error(`❌ Failed checkout.session.completed for ${booking_id}:`, error);
@@ -964,6 +1025,19 @@ async function handleAccountUpdated(account: Stripe.Account, eventId: string) {
        WHERE id = $2`,
       [isOnboarded, account.metadata.userId]
     );
+
+    if (isOnboarded) {
+      try {
+        await runReferralCheck2({
+          referredUserId: account.metadata.userId,
+          stripeAccount: account,
+        });
+      } catch (referralErr: unknown) {
+        const message =
+          referralErr instanceof Error ? referralErr.message : String(referralErr);
+        logger.warn(`Referral Check 2 soft-failed for ${account.metadata.userId}: ${message}`);
+      }
+    }
   }
 
   await markEventProcessed(eventId, 'account.updated', account.metadata || {}, 'success');

@@ -6,7 +6,7 @@
  * - Consumer sees the Stripe payment form with Apple Pay support
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -989,6 +989,203 @@ function ReviewForm({
   );
 }
 
+function OperatorPointsApplyPanel({
+  bookingId,
+  serviceDollars,
+}: {
+  bookingId: string;
+  serviceDollars: number;
+}) {
+  const [balancePts, setBalancePts] = useState(0);
+  const [pointsPerDollar, setPointsPerDollar] = useState(10);
+  const [sliderPts, setSliderPts] = useState(0);
+  const [applied, setApplied] = useState<{ pts: number; dollars: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const rewards = await api.get<{ pointsPerDollar: number; balancePts: number }>(
+          '/referrals/rewards/me',
+          { kind: 'operator' }
+        );
+        setBalancePts(rewards.balancePts ?? 0);
+        setPointsPerDollar(rewards.pointsPerDollar || 10);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
+  const maxPts = Math.min(balancePts, Math.floor(serviceDollars * pointsPerDollar));
+
+  const apply = async (pts: number) => {
+    try {
+      setBusy(true);
+      const res = await api.post<{ appliedPts: number; payoutBoostDollars: number }>(
+        `/referrals/spend/operator/${bookingId}`,
+        { pointsPts: pts }
+      );
+      setApplied({ pts: res.appliedPts, dollars: res.payoutBoostDollars });
+      setBalancePts((b) => Math.max(0, b - res.appliedPts));
+      toast.success(`Applied ${res.appliedPts} pts (+$${res.payoutBoostDollars.toFixed(2)} payout)`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not apply points');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (maxPts <= 0 && !applied) return null;
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left space-y-3">
+      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points</p>
+      <p className="text-xs text-gray-600">
+        Boost your payout up to the service price. Client price stays the same. Balance:{' '}
+        {balancePts.toLocaleString()} pts.
+      </p>
+      {applied ? (
+        <p className="text-sm text-emerald-800 font-medium">
+          Applied {applied.pts.toLocaleString()} pts (+${applied.dollars.toFixed(2)})
+        </p>
+      ) : (
+        <>
+          <input
+            type="range"
+            min={0}
+            max={maxPts}
+            value={sliderPts}
+            onChange={(e) => setSliderPts(Number(e.target.value))}
+            className="w-full"
+          />
+          <p className="text-sm tabular-nums text-gray-800">
+            {sliderPts.toLocaleString()} pts ≈ ${(sliderPts / pointsPerDollar).toFixed(2)}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setSliderPts(maxPts);
+                void apply(maxPts);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold"
+            >
+              Max
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                const half = Math.floor(maxPts / 2);
+                setSliderPts(half);
+                void apply(half);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-stone-200 text-xs font-semibold"
+            >
+              Half
+            </button>
+            <button
+              type="button"
+              disabled={busy || sliderPts <= 0}
+              onClick={() => void apply(sliderPts)}
+              className="px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold"
+            >
+              Apply
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ClientPointsDiscountPanel({
+  bookingId,
+  serviceDollars,
+  onDiscount,
+}: {
+  bookingId: string;
+  serviceDollars: number;
+  onDiscount?: (dollars: number) => void;
+}) {
+  const [maxPts, setMaxPts] = useState(0);
+  const [pointsPerDollar, setPointsPerDollar] = useState(10);
+  const [sliderPts, setSliderPts] = useState(0);
+  const [committed, setCommitted] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const quote = await api.post<{
+        maxPts: number;
+        pointsPerDollar: number;
+      }>('/referrals/spend/client/quote', { serviceDollars, pointsPts: 0 });
+      setMaxPts(quote.maxPts || 0);
+      setPointsPerDollar(quote.pointsPerDollar || 10);
+    } catch {
+      /* ignore */
+    }
+  }, [serviceDollars]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  if (maxPts <= 0 || committed) {
+    if (committed) {
+      return (
+        <p className="text-sm text-emerald-800 mb-3">
+          Points discount applied.
+        </p>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 mb-4 space-y-2">
+      <p className="text-sm font-semibold text-gray-900">Use OnCuts Points</p>
+      <p className="text-xs text-gray-600">Discount the service (not the tip).</p>
+      <input
+        type="range"
+        min={0}
+        max={maxPts}
+        value={sliderPts}
+        onChange={(e) => setSliderPts(Number(e.target.value))}
+        className="w-full"
+      />
+      <p className="text-sm tabular-nums">
+        {sliderPts.toLocaleString()} pts ≈ −${(sliderPts / pointsPerDollar).toFixed(2)}
+      </p>
+      <button
+        type="button"
+        disabled={busy || sliderPts <= 0}
+        onClick={async () => {
+          try {
+            setBusy(true);
+            const res = await api.post<{ discountDollars: number }>(
+              '/referrals/spend/client/commit',
+              { bookingId, pointsPts: sliderPts }
+            );
+            setCommitted(true);
+            onDiscount?.(res.discountDollars);
+            toast.success(`Saved $${res.discountDollars.toFixed(2)} with points`);
+          } catch (e: any) {
+            toast.error(e?.message || 'Could not apply points');
+          } finally {
+            setBusy(false);
+          }
+        }}
+        className="w-full py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold disabled:opacity-50"
+      >
+        Apply points
+      </button>
+    </div>
+  );
+}
+
 // Main Page Component
 export default function PostServicePaymentPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -1449,6 +1646,13 @@ export default function PostServicePaymentPage() {
               )}
             </div>
 
+            {servicePaid && booking.id && (
+              <OperatorPointsApplyPanel
+                bookingId={booking.id}
+                serviceDollars={(booking.priceUsdCents || 0) / 100}
+              />
+            )}
+
             {awaitingTip ? (
               <div className="space-y-3">
                 <button
@@ -1581,6 +1785,12 @@ export default function PostServicePaymentPage() {
 
             {/* Payment Form */}
             <div className="p-6">
+              {consumerMode === 'service' && booking.id && (
+                <ClientPointsDiscountPanel
+                  bookingId={booking.id}
+                  serviceDollars={(booking.priceUsdCents || 0) / 100}
+                />
+              )}
               <PaymentForm
                 booking={booking}
                 onSuccess={handlePaymentSuccess}

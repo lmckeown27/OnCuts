@@ -71,6 +71,7 @@ import DiscoverMap from '../components/DiscoverMap';
 import MyBarbersView from '../components/MyBarbersView';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import PointsBalancePill from '../components/PointsBalancePill';
+import ReferPromptModal from '../components/ReferPromptModal';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 import {
@@ -715,6 +716,8 @@ export default function ConsumerPage() {
   }
 
   return (
+    <>
+    <ReferPromptModal />
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>
       <IosAppDownloadBanner variant="consumer" />
       {/* Header */}
@@ -826,6 +829,26 @@ export default function ConsumerPage() {
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
                           Edit Profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate(`${platformPrefix}/referrals`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          Referrals
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate(`${platformPrefix}/rewards`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          Rewards
                         </button>
                         <button
                           onClick={() => {

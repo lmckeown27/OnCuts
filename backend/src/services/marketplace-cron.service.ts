@@ -124,6 +124,18 @@ export class MarketplaceCronService {
 
     this.jobs.set('nightly', nightlyJob);
 
+    // Referral M2 hold releases (hourly)
+    const referralM2Job = cron.schedule('15 * * * *', async () => {
+      try {
+        const { processDueReferralM2Awards } = await import('./referral-lifecycle.service');
+        const n = await processDueReferralM2Awards();
+        if (n > 0) logger.info(`Referral M2 awards released: ${n}`);
+      } catch (err: any) {
+        logger.warn('Referral M2 cron soft-failed', { error: err?.message || String(err) });
+      }
+    });
+    this.jobs.set('referral_m2', referralM2Job);
+
     // Surge detection disabled - requires surge_events table
     // TODO: Re-enable when surge pricing feature is implemented
     // const surgeJob = cron.schedule('*/15 * * * *', async () => {
@@ -133,6 +145,7 @@ export class MarketplaceCronService {
 
     logger.info('✅ Marketplace cron jobs started:');
     logger.info('   - Nightly update: 2am (BQS → Pricing → Rankings)');
+    logger.info('   - Referral M2 holds: hourly');
     logger.info('   - Surge detection: Disabled');
   }
 

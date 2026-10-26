@@ -13,6 +13,7 @@ export interface BarberApplicationForm {
   whyBeBarber: string;
   portfolioDescription?: string;
   socialMedia?: string;
+  referralCode?: string;
   additionalNotes?: string;
 }
 

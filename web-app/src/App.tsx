@@ -98,6 +98,9 @@ const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
 const PaymentProcessingPage = lazy(() => import('./pages/student/PaymentProcessingPage'));
 const PostServicePaymentPage = lazy(() => import('./pages/PostServicePaymentPage'));
+const ReferralsPage = lazy(() => import('./pages/ReferralsPage'));
+const RewardsPage = lazy(() => import('./pages/RewardsPage'));
+const ReferralCodeRequestPage = lazy(() => import('./pages/ReferralCodeRequestPage'));
 
 // Barber Pages - Lazy loaded
 const BarberPage = lazy(() => import('./pages/BarberPage'));
@@ -195,6 +198,9 @@ function AppContent() {
         <Route path="/web/student/booking/payment" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BookingPaymentPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/student/payment/processing" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PaymentProcessingPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/payment/:bookingId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PostServicePaymentPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/referrals" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ReferralsPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/rewards" element={<PlatformGuard requiredPlatform="web"><LazyRoute><RewardsPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/refer/:operatorUserId" element={<LazyRoute><ReferralCodeRequestPage /></LazyRoute>} />
         
         {/* Web - Barber Routes */}
         <Route path="/web/barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberPage /></LazyRoute></PlatformGuard>} />
