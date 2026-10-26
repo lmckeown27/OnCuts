@@ -165,10 +165,20 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
               </button>
             </div>
 
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4">
+            <div className="relative p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4">
               {page === 'home' && (
                 <>
-                  <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setPage('info')}
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full border border-stone-300 bg-white text-gray-700 hover:bg-stone-100 transition-colors shadow-sm"
+                    aria-label="About OnCuts Points"
+                    title="About OnCuts Points"
+                  >
+                    <Info className="w-5 h-5" aria-hidden />
+                  </button>
+
+                  <div className="flex justify-center pt-2">
                     <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-center inline-block">
                       <p className="text-2xl font-semibold tabular-nums text-emerald-950">
                         {formatPts(balancePts)}{' '}
@@ -177,22 +187,13 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-3 pt-1">
+                  <div className="flex items-center justify-center pt-1">
                     <button
                       type="button"
                       onClick={() => setPage('referral')}
                       className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                     >
                       Referral
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPage('info')}
-                      className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-stone-300 bg-white text-gray-700 hover:bg-stone-100 transition-colors shadow-sm"
-                      aria-label="About OnCuts Points"
-                      title="About OnCuts Points"
-                    >
-                      <Info className="w-5 h-5" aria-hidden />
                     </button>
                   </div>
                 </>
