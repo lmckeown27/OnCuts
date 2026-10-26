@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 
+const adminSessionKey = (userId: string) => `oncuts_admin_refer_prompt_${userId}`;
+
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
  * At most once per cooldown; stops after max dismissals (server-enforced).
+ * Admins with indefinite prompts: once per browser session on platform entry.
  */
 export default function ReferPromptModal() {
   const user = useAuthStore((s) => s.user);
@@ -22,11 +25,26 @@ export default function ReferPromptModal() {
           show: boolean;
           message?: string;
           rewardPts?: number;
+          indefiniteAdminPrompt?: boolean;
         }>('/referrals/prompts/refer');
         if (cancelled || !res.show) return;
+        if (res.indefiniteAdminPrompt) {
+          try {
+            if (sessionStorage.getItem(adminSessionKey(user.id)) === '1') return;
+          } catch {
+            /* ignore */
+          }
+        }
         setMessage(res.message || 'Know a great operator? Refer them and earn points.');
         setRewardPts(res.rewardPts || 0);
         setOpen(true);
+        if (res.indefiniteAdminPrompt) {
+          try {
+            sessionStorage.setItem(adminSessionKey(user.id), '1');
+          } catch {
+            /* ignore */
+          }
+        }
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
         /* ignore */

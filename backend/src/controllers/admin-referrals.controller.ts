@@ -165,6 +165,7 @@ export const updateReferralSettings = async (
       validateLockoutHours: 'referral_validate_lockout_hours',
       promptCooldownDays: 'referral_prompt_cooldown_days',
       promptMaxDismissals: 'referral_prompt_max_dismissals',
+      adminIndefinitePrompts: 'referral_admin_indefinite_prompts',
     };
 
     for (const [key, col] of Object.entries(map)) {

@@ -35,6 +35,7 @@ type ReferralSettings = {
   validateLockoutHours: number;
   promptCooldownDays: number;
   promptMaxDismissals: number;
+  adminIndefinitePrompts: boolean;
   estimatedCostPerNewOperatorPts?: number;
   estimatedCostPerNewOperatorDollars?: number;
 };
@@ -230,6 +231,16 @@ export default function AdminReferralsPanel() {
               onChange={(e) => setSettings({ ...settings, programEnabled: e.target.checked })}
             />
             Program enabled
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.adminIndefinitePrompts}
+              onChange={(e) =>
+                setSettings({ ...settings, adminIndefinitePrompts: e.target.checked })
+              }
+            />
+            Admin indefinite referral prompts
           </label>
           {(
             [

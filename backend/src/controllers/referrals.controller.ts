@@ -327,39 +327,50 @@ export const getReferPrompt = async (req: AuthRequest, res: Response, next: Next
       return;
     }
 
+    const isAdmin = String(req.user?.role || '').toLowerCase() === 'admin';
+    const indefiniteAdmin = isAdmin && settings.adminIndefinitePrompts;
     const kind = pointsKindFromRole(req.user?.role);
-    if (kind === 'client' && !(await clientHasCompletedBooking(userId))) {
+    if (!indefiniteAdmin && kind === 'client' && !(await clientHasCompletedBooking(userId))) {
       res.json({ success: true, data: { show: false } });
       return;
     }
 
-    const state = await pool.query(
-      `SELECT dismiss_count, last_prompt_at, last_dismiss_at
-       FROM referral_prompt_state WHERE user_id = $1`,
-      [userId]
-    );
-    const row = state.rows[0];
-    if (row && Number(row.dismiss_count) >= settings.promptMaxDismissals) {
-      res.json({ success: true, data: { show: false, reason: 'max_dismissals' } });
-      return;
-    }
-    if (row?.last_prompt_at) {
-      const nextOk = new Date(row.last_prompt_at);
-      nextOk.setDate(nextOk.getDate() + settings.promptCooldownDays);
-      if (nextOk > new Date()) {
-        res.json({ success: true, data: { show: false, reason: 'cooldown' } });
+    if (!indefiniteAdmin) {
+      const state = await pool.query(
+        `SELECT dismiss_count, last_prompt_at, last_dismiss_at
+         FROM referral_prompt_state WHERE user_id = $1`,
+        [userId]
+      );
+      const row = state.rows[0];
+      if (row && Number(row.dismiss_count) >= settings.promptMaxDismissals) {
+        res.json({ success: true, data: { show: false, reason: 'max_dismissals' } });
         return;
+      }
+      if (row?.last_prompt_at) {
+        const nextOk = new Date(row.last_prompt_at);
+        nextOk.setDate(nextOk.getDate() + settings.promptCooldownDays);
+        if (nextOk > new Date()) {
+          res.json({ success: true, data: { show: false, reason: 'cooldown' } });
+          return;
+        }
       }
     }
 
-    const rewardPts = kind === 'operator' ? settings.operatorM1 + settings.operatorM2 : settings.clientM1 + settings.clientM2;
+    const rewardPts =
+      kind === 'operator'
+        ? settings.operatorM1 + settings.operatorM2
+        : settings.clientM1 + settings.clientM2;
+    const message = indefiniteAdmin
+      ? `Know operators who should be on OnCuts? Share your referral code and earn up to ${rewardPts} pts (about $${rewardPts / settings.pointsPerDollar}) when they join and get going. Beauty pros count too — braids, nails, lashes, makeup, tanning.`
+      : `Know a great operator? Refer them and earn up to ${rewardPts} pts (about $${rewardPts / settings.pointsPerDollar}). Beauty pros count too — braids, nails, lashes, makeup, tanning.`;
     res.json({
       success: true,
       data: {
         show: true,
+        indefiniteAdminPrompt: indefiniteAdmin,
         rewardPts,
         rewardDollars: rewardPts / settings.pointsPerDollar,
-        message: `Know a great operator? Refer them and earn up to ${rewardPts} pts (about $${rewardPts / settings.pointsPerDollar}). Beauty pros count too — braids, nails, lashes, makeup, tanning.`,
+        message,
       },
     });
   } catch (error) {
