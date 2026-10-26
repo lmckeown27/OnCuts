@@ -168,7 +168,7 @@ type MetricsView = 'revenue' | 'bookings' | 'signups';
 type MetricsListView = 'bookings' | 'signups' | 'profit';
 type MetricsDisplayMode = 'graph' | 'list';
 type AdminView = 'performance' | 'barbers' | 'users' | 'moderation' | 'controls' | 'data' | 'points';
-type ControlsSection = 'services' | 'home' | 'pricing' | 'notifications';
+type ControlsSection = 'services' | 'home' | 'pricing' | 'notifications' | 'referrals';
 type ConsumerHomeMode = 'providers' | 'waitlist';
 type PaymentTimingMode = 'on_accept' | 'after_complete';
 type PricingBurdenView = 'client' | 'operator';
@@ -508,6 +508,9 @@ export function AdminDashboard({
   /** Defer heavy panel swaps so tab chrome stays responsive. */
   const deferredAdminView = useDeferredValue(adminView);
   const [servicesPanelMounted, setServicesPanelMounted] = useState(false);
+  const [referralProgramEnabled, setReferralProgramEnabled] = useState(true);
+  const [isLoadingReferralProgram, setIsLoadingReferralProgram] = useState(true);
+  const [isSavingReferralProgram, setIsSavingReferralProgram] = useState(false);
   const [usersPanelMounted, setUsersPanelMounted] = useState(false);
   
   // Barber detail view state
@@ -769,6 +772,39 @@ export function AdminDashboard({
     };
     void fetchPlatformSettings();
   }, []);
+
+  useEffect(() => {
+    const fetchReferralProgram = async () => {
+      setIsLoadingReferralProgram(true);
+      try {
+        const data = await api.get<{ programEnabled?: boolean }>('/admin/referrals/settings');
+        setReferralProgramEnabled(data?.programEnabled !== false);
+      } catch (error) {
+        console.error('Failed to fetch referral program settings:', error);
+      } finally {
+        setIsLoadingReferralProgram(false);
+      }
+    };
+    void fetchReferralProgram();
+  }, []);
+
+  const handleSaveReferralProgram = async (enabled: boolean) => {
+    if (enabled === referralProgramEnabled) return;
+    setIsSavingReferralProgram(true);
+    try {
+      const data = await api.put<{ programEnabled?: boolean }>('/admin/referrals/settings', {
+        programEnabled: enabled,
+      });
+      setReferralProgramEnabled(
+        typeof data?.programEnabled === 'boolean' ? data.programEnabled : enabled
+      );
+      toast.success(enabled ? 'Referral program on' : 'Referral program off');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update referral program');
+    } finally {
+      setIsSavingReferralProgram(false);
+    }
+  };
 
   const handleSavePlatformFee = async () => {
     const percent = parseFloat(platformFeeInput.trim());
@@ -5700,13 +5736,14 @@ export function AdminDashboard({
 
       {deferredAdminView === 'controls' && (
         <div className="space-y-4">
-          <nav className="grid grid-cols-4 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Controls">
+          <nav className="grid grid-cols-5 gap-0.5 rounded-xl bg-stone-100 p-1" aria-label="Controls">
             {(
               [
                 { id: 'home' as const, label: 'Consumer Home' },
                 { id: 'pricing' as const, label: 'Pricing' },
                 { id: 'notifications' as const, label: 'Notifications' },
                 { id: 'services' as const, label: 'Services' },
+                { id: 'referrals' as const, label: 'Referrals' },
               ] as const
             ).map((tab) => (
               <button
@@ -6126,6 +6163,61 @@ export function AdminDashboard({
               aria-hidden={controlsSection !== 'services'}
             >
               <ServicesManagementPanel />
+            </div>
+          )}
+
+          {controlsSection === 'referrals' && (
+            <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Referrals
+              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">Referral program</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    When off, referral codes cannot be claimed and rewards are paused.
+                  </p>
+                </div>
+                <fieldset
+                  className="flex items-center gap-4 shrink-0"
+                  disabled={isLoadingReferralProgram || isSavingReferralProgram}
+                >
+                  {(
+                    [
+                      { id: true, label: 'On' },
+                      { id: false, label: 'Off' },
+                    ] as const
+                  ).map((opt) => (
+                    <label
+                      key={String(opt.id)}
+                      className={`flex items-center gap-2 cursor-pointer ${
+                        isLoadingReferralProgram || isSavingReferralProgram
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="referral-program-enabled"
+                        value={opt.id ? 'on' : 'off'}
+                        checked={referralProgramEnabled === opt.id}
+                        disabled={isLoadingReferralProgram || isSavingReferralProgram}
+                        onChange={() => {
+                          void handleSaveReferralProgram(opt.id);
+                        }}
+                        className="h-4 w-4 shrink-0 border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="text-sm text-gray-900">{opt.label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              </div>
+              {(isLoadingReferralProgram || isSavingReferralProgram) && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {isSavingReferralProgram ? 'Saving…' : 'Loading…'}
+                </div>
+              )}
             </div>
           )}
         </div>
