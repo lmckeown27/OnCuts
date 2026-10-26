@@ -159,64 +159,72 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
             role="dialog"
             aria-modal="true"
             aria-labelledby="oncuts-points-title"
-            className={`relative bg-stone-50 w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-200 ease-out ${
+            className={`bg-stone-50 w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-200 ease-out grid ${
               isVisible
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-2 pb-1 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
-            </div>
-
-            <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-10 shrink-0 gap-2">
-              <h2 id="oncuts-points-title" className="text-2xl font-bold truncate">
-                OnCuts Points
-              </h2>
-              <button
-                type="button"
-                onClick={closeAll}
-                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="relative p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0 space-y-4">
-              <button
-                type="button"
-                onClick={() => openSubPage('info')}
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full border border-stone-300 bg-white text-gray-700 hover:bg-stone-100 transition-colors shadow-sm"
-                aria-label="About OnCuts Points"
-                title="About OnCuts Points"
-              >
-                <Info className="w-5 h-5" aria-hidden />
-              </button>
-
-              <div className="flex justify-center pt-2">
-                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-center inline-block">
-                  <p className="text-2xl font-semibold tabular-nums text-emerald-950">
-                    {formatPts(balancePts)}{' '}
-                    <span className="text-base font-medium text-emerald-800">pts</span>
-                  </p>
-                </div>
+            {/* Home — stays in layout so height can grow to the taller sub-page */}
+            <div
+              className={`col-start-1 row-start-1 flex flex-col min-w-0 ${
+                subShouldRender ? 'invisible pointer-events-none' : ''
+              }`}
+              aria-hidden={subShouldRender}
+            >
+              <div className="flex justify-center pt-2 pb-1 sm:hidden">
+                <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
               </div>
 
-              <div className="flex items-center justify-center pt-1">
+              <div className="bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 gap-2">
+                <h2 id="oncuts-points-title" className="text-2xl font-bold truncate">
+                  OnCuts Points
+                </h2>
                 <button
                   type="button"
-                  onClick={() => openSubPage('referral')}
-                  className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                  onClick={closeAll}
+                  className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
                 >
-                  Referral
+                  Close
                 </button>
+              </div>
+
+              <div className="relative p-4 sm:p-5 space-y-4">
+                <button
+                  type="button"
+                  onClick={() => openSubPage('info')}
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 inline-flex items-center justify-center w-10 h-10 rounded-full border border-stone-300 bg-white text-gray-700 hover:bg-stone-100 transition-colors shadow-sm"
+                  aria-label="About OnCuts Points"
+                  title="About OnCuts Points"
+                >
+                  <Info className="w-5 h-5" aria-hidden />
+                </button>
+
+                <div className="flex justify-center pt-2">
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-center inline-block">
+                    <p className="text-2xl font-semibold tabular-nums text-emerald-950">
+                      {formatPts(balancePts)}{' '}
+                      <span className="text-base font-medium text-emerald-800">pts</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => openSubPage('referral')}
+                    className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                  >
+                    Referral
+                  </button>
+                </div>
               </div>
             </div>
 
             {subShouldRender && subPage && (
               <div
-                className={`absolute inset-0 z-40 bg-stone-50 flex flex-col overflow-hidden transition-all duration-200 ease-out ${
+                className={`col-start-1 row-start-1 z-10 flex flex-col min-w-0 max-h-[85dvh] sm:max-h-[90vh] overflow-hidden bg-stone-50 transition-all duration-200 ease-out ${
                   subAnimating
                     ? 'opacity-100 translate-y-0'
                     : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
@@ -225,7 +233,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                 aria-modal="true"
                 aria-label={subTitle}
               >
-                <div className="flex justify-center pt-2 pb-1 sm:hidden">
+                <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
                   <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
                 </div>
 
@@ -253,7 +261,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                   </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4 text-sm text-gray-700 leading-relaxed">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 text-sm text-gray-700 leading-relaxed">
                   {subPage === 'referral' && (
                     <>
                       <p className="text-gray-600">
