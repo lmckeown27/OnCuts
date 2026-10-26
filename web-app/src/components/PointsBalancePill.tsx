@@ -74,16 +74,33 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
     void load();
   }, [load]);
 
+  const loadReferralMe = useCallback(async () => {
+    try {
+      const me = await api.get<{
+        canRefer: boolean;
+        code: { masked: string } | null;
+        rewardsHint: { m1: number; m2: number; total: number };
+      }>('/referrals/me');
+      setReferralCanRefer(Boolean(me.canRefer));
+      setReferralMasked(me.code?.masked || null);
+      setReferralHint(me.rewardsHint || null);
+    } catch {
+      setReferralMasked(null);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     void load();
-  }, [open, load]);
+    void loadReferralMe();
+  }, [open, load, loadReferralMe]);
 
   useEffect(() => {
     if (open) {
       setSubAnimating(false);
       setSubShouldRender(false);
       setSubPage(null);
+      setReferralRevealed(null);
       setShouldRender(true);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setIsVisible(true));
@@ -100,30 +117,36 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
     return () => clearTimeout(timer);
   }, [open]);
 
+  const revealReferralCode = useCallback(async () => {
+    try {
+      const res = await api.post<{ code: string }>('/referrals/codes/reveal', {});
+      setReferralRevealed(res.code);
+      return res.code;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const copyReferralCode = useCallback(async () => {
+    let code = referralRevealed;
+    if (!code) {
+      code = await revealReferralCode();
+    }
+    if (code) {
+      await navigator.clipboard.writeText(code);
+    }
+  }, [referralRevealed, revealReferralCode]);
+
   const openSubPage = useCallback((page: PointsSubPage) => {
     setSubPage(page);
     setSubShouldRender(true);
-    setReferralRevealed(null);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setSubAnimating(true));
     });
     if (page === 'referral') {
-      void (async () => {
-        try {
-          const me = await api.get<{
-            canRefer: boolean;
-            code: { masked: string } | null;
-            rewardsHint: { m1: number; m2: number; total: number };
-          }>('/referrals/me');
-          setReferralCanRefer(Boolean(me.canRefer));
-          setReferralMasked(me.code?.masked || null);
-          setReferralHint(me.rewardsHint || null);
-        } catch {
-          setReferralMasked(null);
-        }
-      })();
+      void loadReferralMe();
     }
-  }, []);
+  }, [loadReferralMe]);
 
   const closeSubPage = useCallback(() => {
     setSubAnimating(false);
@@ -234,15 +257,38 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => openSubPage('referral')}
-                    className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                  >
-                    Referral
-                  </button>
-                </div>
+                {!referralCanRefer ? (
+                  <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    Complete your first booking to unlock referring.
+                  </p>
+                ) : (
+                  <div className="rounded-xl border border-stone-200 bg-white px-3 py-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Referral code
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-lg font-semibold tracking-widest tabular-nums">
+                        {referralRevealed || referralMasked || '••••-••••'}
+                      </code>
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label="Show code"
+                        onClick={() => void revealReferralCode()}
+                      >
+                        <Eye className="w-4 h-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label="Copy code"
+                        onClick={() => void copyReferralCode()}
+                      >
+                        <Copy className="w-4 h-4" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -301,7 +347,7 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                       ) : (
                         <div className="rounded-xl border border-stone-200 bg-white px-3 py-3 space-y-2">
                           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Your code
+                            Referral code
                           </p>
                           <div className="flex items-center gap-2">
                             <code className="flex-1 text-lg font-semibold tracking-widest tabular-nums">
@@ -311,38 +357,17 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                               type="button"
                               className="p-2 rounded-lg hover:bg-stone-100"
                               aria-label="Show code"
-                              onClick={async () => {
-                                try {
-                                  const res = await api.post<{ code: string }>(
-                                    '/referrals/codes/reveal',
-                                    {}
-                                  );
-                                  setReferralRevealed(res.code);
-                                } catch {
-                                  /* ignore */
-                                }
-                              }}
+                              onClick={() => void revealReferralCode()}
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4" aria-hidden />
                             </button>
                             <button
                               type="button"
                               className="p-2 rounded-lg hover:bg-stone-100"
                               aria-label="Copy code"
-                              onClick={async () => {
-                                let code = referralRevealed;
-                                if (!code) {
-                                  const res = await api.post<{ code: string }>(
-                                    '/referrals/codes/reveal',
-                                    {}
-                                  );
-                                  code = res.code;
-                                  setReferralRevealed(code);
-                                }
-                                await navigator.clipboard.writeText(code);
-                              }}
+                              onClick={() => void copyReferralCode()}
                             >
-                              <Copy className="w-4 h-4" />
+                              <Copy className="w-4 h-4" aria-hidden />
                             </button>
                           </div>
                         </div>

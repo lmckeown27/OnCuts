@@ -174,7 +174,7 @@ export default function ReferralsPage() {
         {!loading && data?.canRefer && data.code && (
           <section className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Your code</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Referral code</h2>
               <p className="text-xs text-gray-500">
                 {data.code.usesThisMonth}/{data.code.maxUsesPerMonth} uses this month
               </p>
