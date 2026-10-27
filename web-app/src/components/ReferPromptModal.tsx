@@ -98,17 +98,15 @@ export default function ReferPromptModal() {
             )}
 
             {adminPage === 0 && (
-              <div className="space-y-3 pt-1">
-                <h2 className="text-xl font-bold text-gray-900 pr-8 text-center sm:text-left">
-                  OnCuts Thanks You!
-                </h2>
-                <p className="text-xl text-gray-600 leading-snug pr-8 text-center sm:text-left">
+              <div className="space-y-3 pt-1 text-center">
+                <h2 className="text-xl font-bold text-gray-900 px-8">OnCuts Thanks You!</h2>
+                <p className="text-xl text-gray-600 leading-snug px-8">
                   Interested in earning OnCuts points?
                 </p>
                 <button
                   type="button"
                   onClick={() => setAdminPage(1)}
-                  className="w-full text-xl font-semibold text-brand-700 hover:underline text-center sm:text-left transition-colors"
+                  className="w-full text-xl font-semibold text-brand-700 hover:underline transition-colors"
                 >
                   Learn How →
                 </button>
