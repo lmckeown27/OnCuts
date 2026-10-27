@@ -82,10 +82,8 @@ export default function AdminPointsPanel() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [selected, setSelected] = useState<SearchUserItem | null>(null);
   const [grantPts, setGrantPts] = useState('');
-  const [grantNote, setGrantNote] = useState('');
   const [grantBusy, setGrantBusy] = useState(false);
   const [detailPts, setDetailPts] = useState('');
-  const [detailNote, setDetailNote] = useState('');
   const [detailBusy, setDetailBusy] = useState(false);
 
   const load = useCallback(
@@ -199,7 +197,6 @@ export default function AdminPointsPanel() {
     target: { userId: string },
     adjustKind: PointsKind,
     signedPts: number,
-    note: string,
     opts?: { source: 'distribute' | 'detail' }
   ) => {
     if (!Number.isFinite(signedPts) || !Number.isInteger(signedPts) || signedPts === 0) {
@@ -216,7 +213,6 @@ export default function AdminPointsPanel() {
         userId: target.userId,
         kind: adjustKind,
         deltaPts: signedPts,
-        note: note.trim() || undefined,
       });
       const nextBalance = Number(data?.balanceAfter) || 0;
       if (opts?.source !== 'detail' && selected?.userId === target.userId) {
@@ -277,7 +273,6 @@ export default function AdminPointsPanel() {
               setOffset(0);
               setDetail(null);
               setDetailPts('');
-              setDetailNote('');
             }}
             className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
               kind === tab.id
@@ -395,41 +390,26 @@ export default function AdminPointsPanel() {
                 onClick={() => {
                   setSelected(null);
                   setGrantPts('');
-                  setGrantNote('');
                 }}
               >
                 Clear
               </button>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-              <label className="block min-w-0 flex-1">
-                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Points
-                </span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  step={1}
-                  value={grantPts}
-                  onChange={(e) => setGrantPts(e.target.value)}
-                  placeholder="e.g. 100"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-                />
-              </label>
-              <label className="block min-w-0 flex-[1.4]">
-                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Note (optional)
-                </span>
-                <input
-                  type="text"
-                  value={grantNote}
-                  onChange={(e) => setGrantNote(e.target.value)}
-                  placeholder="Reason for ledger"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-                />
-              </label>
-            </div>
+            <label className="block max-w-xs">
+              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                Points
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={grantPts}
+                onChange={(e) => setGrantPts(e.target.value)}
+                placeholder="e.g. 100"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+              />
+            </label>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -437,9 +417,7 @@ export default function AdminPointsPanel() {
                 disabled={grantBusy}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(selected, distributeKind, n, grantNote, {
-                    source: 'distribute',
-                  });
+                  void submitAdjust(selected, distributeKind, n, { source: 'distribute' });
                 }}
               >
                 {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
@@ -451,12 +429,34 @@ export default function AdminPointsPanel() {
                 disabled={grantBusy || selected.balancePts <= 0}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(selected, distributeKind, -Math.abs(n), grantNote, {
+                  void submitAdjust(selected, distributeKind, -Math.abs(n), {
                     source: 'distribute',
                   });
                 }}
               >
                 Remove points
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={grantBusy || selected.balancePts <= 0}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      `Remove all ${formatPts(selected.balancePts)} pts from ${
+                        selected.displayName || selected.email || 'this user'
+                      }?`
+                    )
+                  ) {
+                    return;
+                  }
+                  void submitAdjust(selected, distributeKind, -selected.balancePts, {
+                    source: 'distribute',
+                  });
+                }}
+              >
+                Remove all
               </Button>
             </div>
           </div>
@@ -578,7 +578,6 @@ export default function AdminPointsPanel() {
                         onClick={() => {
                           setDetail(row);
                           setDetailPts('');
-                          setDetailNote('');
                         }}
                       >
                         {row.displayName || '—'}
@@ -588,7 +587,6 @@ export default function AdminPointsPanel() {
                         onClick={() => {
                           setDetail(row);
                           setDetailPts('');
-                          setDetailNote('');
                         }}
                       >
                         {row.email || '—'}
@@ -612,7 +610,6 @@ export default function AdminPointsPanel() {
                           onClick={() => {
                             setDetail(row);
                             setDetailPts('');
-                            setDetailNote('');
                           }}
                         >
                           Adjust
@@ -663,7 +660,6 @@ export default function AdminPointsPanel() {
                 onClick={() => {
                   setDetail(null);
                   setDetailPts('');
-                  setDetailNote('');
                 }}
               >
                 Close
@@ -696,35 +692,21 @@ export default function AdminPointsPanel() {
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Give or remove points
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-                <label className="block min-w-0 flex-1">
-                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Points
-                  </span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    step={1}
-                    value={detailPts}
-                    onChange={(e) => setDetailPts(e.target.value)}
-                    placeholder="e.g. 50"
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-                  />
-                </label>
-                <label className="block min-w-0 flex-[1.4]">
-                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Note (optional)
-                  </span>
-                  <input
-                    type="text"
-                    value={detailNote}
-                    onChange={(e) => setDetailNote(e.target.value)}
-                    placeholder="Reason for ledger"
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-                  />
-                </label>
-              </div>
+              <label className="block max-w-xs">
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Points
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
+                  value={detailPts}
+                  onChange={(e) => setDetailPts(e.target.value)}
+                  placeholder="e.g. 50"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+                />
+              </label>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -732,7 +714,7 @@ export default function AdminPointsPanel() {
                   disabled={detailBusy}
                   onClick={() => {
                     const n = parseInt(detailPts.trim(), 10);
-                    void submitAdjust(detail, kind, n, detailNote, { source: 'detail' });
+                    void submitAdjust(detail, kind, n, { source: 'detail' });
                   }}
                 >
                   {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
@@ -744,12 +726,30 @@ export default function AdminPointsPanel() {
                   disabled={detailBusy || detail.balancePts <= 0}
                   onClick={() => {
                     const n = parseInt(detailPts.trim(), 10);
-                    void submitAdjust(detail, kind, -Math.abs(n), detailNote, {
-                      source: 'detail',
-                    });
+                    void submitAdjust(detail, kind, -Math.abs(n), { source: 'detail' });
                   }}
                 >
                   Remove points
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={detailBusy || detail.balancePts <= 0}
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        `Remove all ${formatPts(detail.balancePts)} pts from ${
+                          detail.displayName || detail.email || 'this user'
+                        }?`
+                      )
+                    ) {
+                      return;
+                    }
+                    void submitAdjust(detail, kind, -detail.balancePts, { source: 'detail' });
+                  }}
+                >
+                  Remove all
                 </Button>
               </div>
             </div>
