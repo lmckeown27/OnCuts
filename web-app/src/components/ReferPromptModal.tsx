@@ -188,8 +188,8 @@ export default function ReferPromptModal() {
                         Apply points to a completed booking to earn a kickback from the platform
                       </li>
                       <li>
-                        Example: after a $50 paid cut, spend 100 pts for a $10 platform kickback on
-                        your next payout (client still pays $50)
+                        If a client pays $30 for a service, apply 100 points to receive $10 from the
+                        platform
                       </li>
                     </ul>
                   </div>
@@ -198,8 +198,9 @@ export default function ReferPromptModal() {
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>Earn discounts on bookings that will be covered by the platform</li>
                       <li>
-                        Example: at checkout for a $40 service, spend 100 pts for $10 off (platform
-                        covers it; tip is unchanged)
+                        If a service costs $30, apply 100 points to receive $10 off of your service.
+                        Don&apos;t worry, that $10 still goes to the operator complementary of the
+                        OnCuts
                       </li>
                     </ul>
                   </div>
