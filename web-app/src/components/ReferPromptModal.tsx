@@ -25,6 +25,7 @@ export default function ReferPromptModal() {
   const [welcomePts, setWelcomePts] = useState(100);
   const [adminPage, setAdminPage] = useState(0);
   const [claimBusy, setClaimBusy] = useState(false);
+  const [pointsAudience, setPointsAudience] = useState<'operator' | 'client'>('operator');
 
   useEffect(() => {
     if (!user?.id) return;
@@ -57,6 +58,9 @@ export default function ReferPromptModal() {
         setWelcomePts(Number(res.welcomePts) || 100);
         // Always open on the first (claim) page for admin indefinite prompts.
         setAdminPage(0);
+        setPointsAudience(
+          user?.user_type === 'consumer' || user?.user_type === 'client' ? 'client' : 'operator'
+        );
         setOpen(true);
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
@@ -180,30 +184,52 @@ export default function ReferPromptModal() {
                   <h2 className="text-xl font-bold text-gray-900">How OnCuts Points work</h2>
                   <p className="text-xl font-bold text-gray-900">10 pts = $1.</p>
                 </div>
-                <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
-                  <div className="space-y-2">
-                    <p className="font-bold text-gray-900">Operators</p>
+                <nav
+                  className="grid gap-0.5 rounded-lg bg-stone-100 p-1"
+                  style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}
+                  aria-label="Points audience"
+                >
+                  {(
+                    [
+                      { id: 'operator' as const, label: 'Operators' },
+                      { id: 'client' as const, label: 'Clients' },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setPointsAudience(tab.id)}
+                      className={`px-2 py-2 rounded-md text-sm font-bold text-center transition-colors ${
+                        pointsAudience === tab.id
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+                <div className="text-sm text-gray-600 leading-relaxed pr-1">
+                  {pointsAudience === 'operator' ? (
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>
-                        Apply points to a completed booking to earn a kickback from the platform
+                        Apply points to a completed booking to earn a kickback from OnCuts
                       </li>
                       <li>
-                        If a client pays $30 for a service, apply 100 points to receive $10 from the
-                        platform
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-bold text-gray-900">Clients</p>
-                    <ul className="list-disc pl-5 space-y-1.5">
-                      <li>Earn discounts on bookings that will be covered by the platform</li>
-                      <li>
-                        If a service costs $30, apply 100 points to receive $10 off of your service.
-                        Don&apos;t worry, that $10 still goes to the operator complementary of the
+                        If a client pays $30 for a service, apply 100 points to receive $10 from
                         OnCuts
                       </li>
                     </ul>
-                  </div>
+                  ) : (
+                    <ul className="list-disc pl-5 space-y-1.5">
+                      <li>Earn discounts on bookings that will be covered by OnCuts</li>
+                      <li>
+                        If a service costs $30, apply 100 points to receive $10 off of your service.
+                        Don&apos;t worry, that $10 still goes to the operator complementary of
+                        OnCuts
+                      </li>
+                    </ul>
+                  )}
                 </div>
                 <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
                   <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
