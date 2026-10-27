@@ -369,17 +369,109 @@ export const getReferPrompt = async (req: AuthRequest, res: Response, next: Next
             : ''
         } tap into a bigger client pool, and help grow OnCuts.`
       : `Know a great operator? Refer them and earn up to ${rewardPts} pts (about $${rewardDollars}). Beauty pros count too — braids, nails, lashes, makeup, tanning.`;
+
+    let welcomeClaimAvailable = false;
+    if (indefiniteAdmin) {
+      const claimed = await pool.query(
+        `SELECT 1 FROM points_ledger
+         WHERE user_id = $1 AND reason = 'admin_welcome_claim'
+         LIMIT 1`,
+        [userId]
+      );
+      welcomeClaimAvailable = claimed.rows.length === 0;
+    }
+
     res.json({
       success: true,
       data: {
         show: true,
         indefiniteAdminPrompt: indefiniteAdmin,
+        welcomeClaimAvailable,
+        welcomePts: ADMIN_WELCOME_PTS,
         rewardPts,
         rewardDollars,
         newOpKickbackPercent: settings.newOpKickbackPercent,
         message,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const ADMIN_WELCOME_PTS = 100;
+
+/** One-time 100 pts claim from the admin thank-you prompt. */
+export const claimAdminWelcomePoints = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+    const isAdmin = String(req.user?.role || '').toLowerCase() === 'admin';
+    if (!isAdmin) throw new ApiError(403, 'Admin only');
+
+    const settings = await getReferralProgramSettings();
+    if (!settings.adminIndefinitePrompts) {
+      throw new ApiError(403, 'Admin welcome points are not enabled');
+    }
+
+    const existing = await pool.query(
+      `SELECT id, balance_after_pts FROM points_ledger
+       WHERE user_id = $1 AND reason = 'admin_welcome_claim'
+       LIMIT 1`,
+      [userId]
+    );
+    if (existing.rows[0]) {
+      res.json({
+        success: true,
+        data: {
+          alreadyClaimed: true,
+          grantedPts: 0,
+          welcomePts: ADMIN_WELCOME_PTS,
+          balanceAfter: Number(existing.rows[0].balance_after_pts) || 0,
+          ledgerId: existing.rows[0].id,
+        },
+      });
+      return;
+    }
+
+    try {
+      const result = await applyPointsDelta({
+        userId,
+        kind: 'operator',
+        deltaPts: ADMIN_WELCOME_PTS,
+        reason: 'admin_welcome_claim',
+        meta: { source: 'admin_refer_prompt' },
+      });
+      res.json({
+        success: true,
+        data: {
+          alreadyClaimed: false,
+          grantedPts: ADMIN_WELCOME_PTS,
+          welcomePts: ADMIN_WELCOME_PTS,
+          balanceAfter: result.balanceAfter,
+          ledgerId: result.ledgerId,
+        },
+      });
+    } catch (err: unknown) {
+      // Unique index race: treat as already claimed
+      const code = (err as { code?: string })?.code;
+      if (code === '23505') {
+        res.json({
+          success: true,
+          data: {
+            alreadyClaimed: true,
+            grantedPts: 0,
+            welcomePts: ADMIN_WELCOME_PTS,
+          },
+        });
+        return;
+      }
+      throw err;
+    }
   } catch (error) {
     next(error);
   }

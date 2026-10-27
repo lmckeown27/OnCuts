@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronLeft, X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
  * At most once per cooldown; stops after max dismissals (server-enforced).
- * Admins with indefinite prompts: multi-page intro on every platform home entry.
+ * Admins with indefinite prompts: claim complimentary points, then how-to earn more.
  */
 export default function ReferPromptModal() {
   const user = useAuthStore((s) => s.user);
@@ -18,7 +19,10 @@ export default function ReferPromptModal() {
   const [rewardDollars, setRewardDollars] = useState(0);
   const [kickbackPercent, setKickbackPercent] = useState(0);
   const [indefiniteAdmin, setIndefiniteAdmin] = useState(false);
+  const [welcomeClaimAvailable, setWelcomeClaimAvailable] = useState(false);
+  const [welcomePts, setWelcomePts] = useState(100);
   const [adminPage, setAdminPage] = useState(0);
+  const [claimBusy, setClaimBusy] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -34,6 +38,8 @@ export default function ReferPromptModal() {
           rewardDollars?: number;
           newOpKickbackPercent?: number;
           indefiniteAdminPrompt?: boolean;
+          welcomeClaimAvailable?: boolean;
+          welcomePts?: number;
         }>('/referrals/prompts/refer');
         if (cancelled || !res.show) return;
         setMessage(res.message || 'Know a great operator? Refer them and earn points.');
@@ -44,8 +50,13 @@ export default function ReferPromptModal() {
             : (res.rewardPts || 0) / 10
         );
         setKickbackPercent(Number(res.newOpKickbackPercent) || 0);
-        setIndefiniteAdmin(Boolean(res.indefiniteAdminPrompt));
-        setAdminPage(0);
+        const isAdminPrompt = Boolean(res.indefiniteAdminPrompt);
+        setIndefiniteAdmin(isAdminPrompt);
+        const canClaim = Boolean(res.welcomeClaimAvailable);
+        setWelcomeClaimAvailable(canClaim);
+        setWelcomePts(Number(res.welcomePts) || 100);
+        // Already claimed: open on the how-to page; otherwise claim page first.
+        setAdminPage(isAdminPrompt && !canClaim ? 1 : 0);
         setOpen(true);
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
@@ -68,6 +79,29 @@ export default function ReferPromptModal() {
     setOpen(false);
   };
 
+  const claimWelcome = async () => {
+    if (claimBusy) return;
+    setClaimBusy(true);
+    try {
+      const res = await api.post<{
+        alreadyClaimed?: boolean;
+        grantedPts?: number;
+        welcomePts?: number;
+        balanceAfter?: number;
+      }>('/referrals/prompts/welcome-claim');
+      const granted = Number(res?.grantedPts) || 0;
+      if (granted > 0) {
+        toast.success(`Claimed ${granted.toLocaleString()} OnCuts points`);
+      }
+      setWelcomeClaimAvailable(false);
+      setAdminPage(1);
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not claim points');
+    } finally {
+      setClaimBusy(false);
+    }
+  };
+
   const ptsLabel = rewardPts > 0 ? rewardPts.toLocaleString() : '750';
   const dollarsLabel =
     rewardDollars > 0 ? `$${Math.round(rewardDollars)}` : rewardPts > 0 ? null : '$75';
@@ -86,29 +120,20 @@ export default function ReferPromptModal() {
 
         {indefiniteAdmin ? (
           <>
-            {adminPage > 0 && (
-              <button
-                type="button"
-                onClick={() => setAdminPage((p) => Math.max(0, p - 1))}
-                className="absolute top-3 left-3 p-1.5 rounded-full text-gray-500 hover:bg-stone-100 hover:text-gray-800 transition-colors"
-                aria-label="Back"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-            )}
-
             {adminPage === 0 && (
-              <div className="space-y-3 pt-1 text-center">
+              <div className="space-y-4 pt-1 text-center">
                 <h2 className="text-xl font-bold text-gray-900 px-8">OnCuts Thanks You!</h2>
                 <p className="text-xl text-gray-600 leading-snug px-8">
-                  Interested in earning OnCuts points?
+                  Please enjoy {welcomePts.toLocaleString()} complimentary OnCuts points
                 </p>
                 <button
                   type="button"
-                  onClick={() => setAdminPage(1)}
-                  className="w-full text-xl font-semibold text-brand-700 hover:underline transition-colors"
+                  disabled={claimBusy || !welcomeClaimAvailable}
+                  onClick={() => void claimWelcome()}
+                  className="w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
-                  Learn How →
+                  {claimBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Claim
                 </button>
               </div>
             )}
@@ -118,7 +143,7 @@ export default function ReferPromptModal() {
                 <h2 className="text-xl font-bold text-gray-900 pr-8">How OnCuts Points work</h2>
                 <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
                   <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">How you earn</p>
+                    <p className="font-semibold text-gray-900">How you earn more</p>
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>Share your referral code with operators you know (beauty pros count too).</li>
                       <li>
