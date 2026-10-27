@@ -40,12 +40,17 @@ export async function ensurePointsAccount(
   const table = tableForKind(kind);
   await withClient(client || null, async (c) => {
     await c.query(
-      `INSERT INTO ${table} (user_id, balance_pts, lifetime_earned_pts, lifetime_spent_pts)
-       VALUES ($1, 0, 0, 0)
+      `INSERT INTO ${table} (user_id, balance_pts, lifetime_earned_pts, lifetime_spent_pts, lifetime_revoked_pts)
+       VALUES ($1, 0, 0, 0, 0)
        ON CONFLICT (user_id) DO NOTHING`,
       [userId]
     );
   });
+}
+
+/** Admin removals count as revoked, not spent. */
+function isAdminRevocation(reason: string): boolean {
+  return reason === 'admin_clawback';
 }
 
 export async function applyPointsDelta(opts: {
@@ -66,8 +71,8 @@ export async function applyPointsDelta(opts: {
   return withClient(opts.client || null, async (c) => {
     const table = tableForKind(opts.kind);
     await c.query(
-      `INSERT INTO ${table} (user_id, balance_pts, lifetime_earned_pts, lifetime_spent_pts)
-       VALUES ($1, 0, 0, 0)
+      `INSERT INTO ${table} (user_id, balance_pts, lifetime_earned_pts, lifetime_spent_pts, lifetime_revoked_pts)
+       VALUES ($1, 0, 0, 0, 0)
        ON CONFLICT (user_id) DO NOTHING`,
       [opts.userId]
     );
@@ -90,6 +95,15 @@ export async function applyPointsDelta(opts: {
              updated_at = NOW()
          WHERE user_id = $1`,
         [opts.userId, next, opts.deltaPts]
+      );
+    } else if (isAdminRevocation(opts.reason)) {
+      await c.query(
+        `UPDATE ${table}
+         SET balance_pts = $2,
+             lifetime_revoked_pts = lifetime_revoked_pts + $3,
+             updated_at = NOW()
+         WHERE user_id = $1`,
+        [opts.userId, next, Math.abs(opts.deltaPts)]
       );
     } else {
       await c.query(

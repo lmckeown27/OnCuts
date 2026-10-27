@@ -84,6 +84,7 @@ export const getPointsBalances = async (req: AuthRequest, res: Response, next: N
          p.balance_pts,
          p.lifetime_earned_pts,
          p.lifetime_spent_pts,
+         COALESCE(p.lifetime_revoked_pts, 0) AS lifetime_revoked_pts,
          p.meta,
          p.created_at,
          p.updated_at,
@@ -93,7 +94,11 @@ export const getPointsBalances = async (req: AuthRequest, res: Response, next: N
            NULLIF(BTRIM(to_jsonb(u)->>'displayName'), ''),
            NULLIF(BTRIM(u.email), ''),
            p.user_id::text
-         ) AS display_name
+         ) AS display_name,
+         EXISTS (
+           SELECT 1 FROM points_ledger pl
+           WHERE pl.user_id = p.user_id AND pl.reason = 'admin_welcome_claim'
+         ) AS welcome_claimed
        FROM ${table} p
        LEFT JOIN users u ON u.id = p.user_id
        WHERE ${where}
@@ -110,6 +115,8 @@ export const getPointsBalances = async (req: AuthRequest, res: Response, next: N
       balancePts: Number(row.balance_pts) || 0,
       lifetimeEarnedPts: Number(row.lifetime_earned_pts) || 0,
       lifetimeSpentPts: Number(row.lifetime_spent_pts) || 0,
+      lifetimeRevokedPts: Number(row.lifetime_revoked_pts) || 0,
+      welcomeClaimed: Boolean(row.welcome_claimed),
       meta: row.meta ?? {},
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
       updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
@@ -170,7 +177,12 @@ export const searchPointsUsers = async (req: AuthRequest, res: Response, next: N
          COALESCE(p.balance_pts, 0) AS balance_pts,
          COALESCE(p.lifetime_earned_pts, 0) AS lifetime_earned_pts,
          COALESCE(p.lifetime_spent_pts, 0) AS lifetime_spent_pts,
-         p.id AS account_id
+         COALESCE(p.lifetime_revoked_pts, 0) AS lifetime_revoked_pts,
+         p.id AS account_id,
+         EXISTS (
+           SELECT 1 FROM points_ledger pl
+           WHERE pl.user_id = u.id AND pl.reason = 'admin_welcome_claim'
+         ) AS welcome_claimed
        FROM users u
        LEFT JOIN ${table} p ON p.user_id = u.id
        WHERE ${roleFilterSql(kind)}
@@ -200,6 +212,8 @@ export const searchPointsUsers = async (req: AuthRequest, res: Response, next: N
           balancePts: Number(row.balance_pts) || 0,
           lifetimeEarnedPts: Number(row.lifetime_earned_pts) || 0,
           lifetimeSpentPts: Number(row.lifetime_spent_pts) || 0,
+          lifetimeRevokedPts: Number(row.lifetime_revoked_pts) || 0,
+          welcomeClaimed: Boolean(row.welcome_claimed),
           hasAccount: Boolean(row.account_id),
         })),
       },

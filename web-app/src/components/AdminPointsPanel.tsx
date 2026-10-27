@@ -22,6 +22,8 @@ interface PointsBalanceItem {
   balancePts: number;
   lifetimeEarnedPts: number;
   lifetimeSpentPts: number;
+  lifetimeRevokedPts: number;
+  welcomeClaimed: boolean;
   meta: Record<string, unknown> | unknown;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +46,8 @@ interface SearchUserItem {
   balancePts: number;
   lifetimeEarnedPts: number;
   lifetimeSpentPts: number;
+  lifetimeRevokedPts: number;
+  welcomeClaimed: boolean;
   hasAccount: boolean;
 }
 
@@ -170,6 +174,8 @@ export default function AdminPointsPanel() {
           'Balance pts',
           'Lifetime earned',
           'Lifetime spent',
+          'Lifetime revoked',
+          'Welcome claimed',
           'Updated',
           'Created',
         ],
@@ -180,6 +186,8 @@ export default function AdminPointsPanel() {
           row.balancePts,
           row.lifetimeEarnedPts,
           row.lifetimeSpentPts,
+          row.lifetimeRevokedPts ?? 0,
+          row.welcomeClaimed ? 'yes' : 'no',
           row.updatedAt,
           row.createdAt,
         ])
@@ -224,10 +232,10 @@ export default function AdminPointsPanel() {
             signedPts > 0
               ? selected.lifetimeEarnedPts + signedPts
               : selected.lifetimeEarnedPts,
-          lifetimeSpentPts:
+          lifetimeRevokedPts:
             signedPts < 0
-              ? selected.lifetimeSpentPts + Math.abs(signedPts)
-              : selected.lifetimeSpentPts,
+              ? (selected.lifetimeRevokedPts || 0) + Math.abs(signedPts)
+              : selected.lifetimeRevokedPts || 0,
         });
         setGrantPts('');
       }
@@ -237,17 +245,17 @@ export default function AdminPointsPanel() {
           balancePts: nextBalance,
           lifetimeEarnedPts:
             signedPts > 0 ? detail.lifetimeEarnedPts + signedPts : detail.lifetimeEarnedPts,
-          lifetimeSpentPts:
+          lifetimeRevokedPts:
             signedPts < 0
-              ? detail.lifetimeSpentPts + Math.abs(signedPts)
-              : detail.lifetimeSpentPts,
+              ? (detail.lifetimeRevokedPts || 0) + Math.abs(signedPts)
+              : detail.lifetimeRevokedPts || 0,
         });
         setDetailPts('');
       }
       toast.success(
         signedPts > 0
           ? `Granted ${formatPts(signedPts)} pts (balance ${formatPts(nextBalance)})`
-          : `Removed ${formatPts(Math.abs(signedPts))} pts (balance ${formatPts(nextBalance)})`
+          : `Revoked ${formatPts(Math.abs(signedPts))} pts (balance ${formatPts(nextBalance)})`
       );
       void load(kind, offset, listQueryApplied);
     } catch (err: any) {
@@ -560,6 +568,9 @@ export default function AdminPointsPanel() {
                       Spent
                     </th>
                     <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
+                      Revoked
+                    </th>
+                    <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
                       Updated
                     </th>
                   </tr>
@@ -612,6 +623,9 @@ export default function AdminPointsPanel() {
                         </td>
                         <td className="px-2 py-1.5 text-gray-800 font-mono">
                           {formatPts(row.lifetimeSpentPts)}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 font-mono">
+                          {formatPts(row.lifetimeRevokedPts ?? 0)}
                         </td>
                         <td className="px-2 py-1.5 text-gray-800 whitespace-nowrap">
                           {formatWhen(row.updatedAt)}
@@ -676,6 +690,8 @@ export default function AdminPointsPanel() {
                   ['balancePts', detail.balancePts],
                   ['lifetimeEarnedPts', detail.lifetimeEarnedPts],
                   ['lifetimeSpentPts', detail.lifetimeSpentPts],
+                  ['lifetimeRevokedPts', detail.lifetimeRevokedPts ?? 0],
+                  ['welcomeClaim', detail.welcomeClaimed ? 'Claimed' : 'Not claimed'],
                   ['createdAt', formatWhen(detail.createdAt)],
                   ['updatedAt', formatWhen(detail.updatedAt)],
                 ] as const
