@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import Button from './Button';
 import { downloadCsv, slugifyForFilename } from '../utils/csv';
+import { notifyPointsBalanceChanged } from '../utils/pointsBalanceEvents';
 
 type PointsKind = 'operator' | 'client';
 
@@ -333,6 +334,11 @@ export default function AdminPointsPanel() {
         setDetailPts('');
         await refreshDetailAccounts(target.userId, adjustKind);
       }
+      notifyPointsBalanceChanged({
+        userId: target.userId,
+        kind: adjustKind,
+        balancePts: nextBalance,
+      });
       toast.success(
         signedPts > 0
           ? `Granted ${formatPts(signedPts)} ${adjustKind} pts (balance ${formatPts(nextBalance)})`

@@ -4,6 +4,7 @@ import { ChevronLeft, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
+import { notifyPointsBalanceChanged } from '../utils/pointsBalanceEvents';
 
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
@@ -90,6 +91,15 @@ export default function ReferPromptModal() {
       const granted = Number(res?.grantedPts) || 0;
       if (granted > 0) {
         toast.success(`Claimed ${granted.toLocaleString()} OnCuts points`);
+      }
+      if (user?.id && typeof res?.balanceAfter === 'number') {
+        notifyPointsBalanceChanged({
+          userId: user.id,
+          kind: 'operator',
+          balancePts: res.balanceAfter,
+        });
+      } else if (user?.id && granted > 0) {
+        notifyPointsBalanceChanged({ userId: user.id, kind: 'operator' });
       }
       setWelcomeClaimAvailable(false);
       setAdminPage(1);

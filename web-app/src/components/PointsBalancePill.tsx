@@ -5,6 +5,10 @@ import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useBodyScrollLock } from '../hooks';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import {
+  POINTS_BALANCE_CHANGED_EVENT,
+  type PointsBalanceChangedDetail,
+} from '../utils/pointsBalanceEvents';
 
 export type PointsPillKind = 'operator' | 'client';
 
@@ -75,6 +79,23 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const onChanged = (event: Event) => {
+      const detail = (event as CustomEvent<PointsBalanceChangedDetail>).detail;
+      if (!detail?.userId || detail.userId !== user.id) return;
+      if (detail.kind && detail.kind !== kind) return;
+      if (typeof detail.balancePts === 'number' && Number.isFinite(detail.balancePts)) {
+        setBalancePts(detail.balancePts);
+        setLoaded(true);
+        return;
+      }
+      void load();
+    };
+    window.addEventListener(POINTS_BALANCE_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(POINTS_BALANCE_CHANGED_EVENT, onChanged);
+  }, [user?.id, kind, load]);
 
   const loadReferralMe = useCallback(async () => {
     try {
