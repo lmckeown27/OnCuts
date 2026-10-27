@@ -58,9 +58,7 @@ export default function ReferPromptModal() {
         setWelcomePts(Number(res.welcomePts) || 100);
         // Always open on the first (claim) page for admin indefinite prompts.
         setAdminPage(0);
-        setPointsAudience(
-          user?.user_type === 'consumer' || user?.user_type === 'client' ? 'client' : 'operator'
-        );
+        setPointsAudience(user?.user_type === 'student' ? 'client' : 'operator');
         setOpen(true);
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
