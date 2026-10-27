@@ -185,15 +185,22 @@ export default function ReferPromptModal() {
                     <p className="font-bold text-gray-900">Operators</p>
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>
-                        Apply points as a payout boost on a completed paid booking (client price
-                        stays the same).
+                        Apply points to a completed booking to earn a kickback from the platform
+                      </li>
+                      <li>
+                        Example: after a $50 paid cut, spend 100 pts for a $10 platform kickback on
+                        your next payout (client still pays $50)
                       </li>
                     </ul>
                   </div>
                   <div className="space-y-2">
                     <p className="font-bold text-gray-900">Clients</p>
                     <ul className="list-disc pl-5 space-y-1.5">
-                      <li>Use points at checkout for dollars off the service (not the tip).</li>
+                      <li>Earn discounts on bookings that will be covered by the platform</li>
+                      <li>
+                        Example: at checkout for a $40 service, spend 100 pts for $10 off (platform
+                        covers it; tip is unchanged)
+                      </li>
                     </ul>
                   </div>
                 </div>
