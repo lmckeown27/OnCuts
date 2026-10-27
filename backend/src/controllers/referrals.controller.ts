@@ -361,16 +361,22 @@ export const getReferPrompt = async (req: AuthRequest, res: Response, next: Next
       kind === 'operator'
         ? settings.operatorM1 + settings.operatorM2
         : settings.clientM1 + settings.clientM2;
+    const rewardDollars = rewardPts / settings.pointsPerDollar;
     const message = indefiniteAdmin
-      ? `Know operators who should be on OnCuts? Share your referral code and earn up to ${rewardPts} pts (about $${rewardPts / settings.pointsPerDollar}) when they join and get going. Beauty pros count too — braids, nails, lashes, makeup, tanning.`
-      : `Know a great operator? Refer them and earn up to ${rewardPts} pts (about $${rewardPts / settings.pointsPerDollar}). Beauty pros count too — braids, nails, lashes, makeup, tanning.`;
+      ? `Refer operators you know: earn up to ${rewardPts} pts (about $${rewardDollars}),${
+          settings.newOpKickbackPercent > 0
+            ? ` plus a ${settings.newOpKickbackPercent}% kickback on their early bookings,`
+            : ''
+        } tap into a bigger client pool, and help grow OnCuts.`
+      : `Know a great operator? Refer them and earn up to ${rewardPts} pts (about $${rewardDollars}). Beauty pros count too — braids, nails, lashes, makeup, tanning.`;
     res.json({
       success: true,
       data: {
         show: true,
         indefiniteAdminPrompt: indefiniteAdmin,
         rewardPts,
-        rewardDollars: rewardPts / settings.pointsPerDollar,
+        rewardDollars,
+        newOpKickbackPercent: settings.newOpKickbackPercent,
         message,
       },
     });
