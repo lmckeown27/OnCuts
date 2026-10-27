@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Loader2, X } from 'lucide-react';
+import { ChevronLeft, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -8,7 +8,7 @@ import { useAuthStore } from '../store/useAuthStore';
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
  * At most once per cooldown; stops after max dismissals (server-enforced).
- * Admins with indefinite prompts: claim complimentary points, then how-to earn more.
+ * Admins with indefinite prompts: always open on claim page; Claim is one-time.
  */
 export default function ReferPromptModal() {
   const user = useAuthStore((s) => s.user);
@@ -50,13 +50,11 @@ export default function ReferPromptModal() {
             : (res.rewardPts || 0) / 10
         );
         setKickbackPercent(Number(res.newOpKickbackPercent) || 0);
-        const isAdminPrompt = Boolean(res.indefiniteAdminPrompt);
-        setIndefiniteAdmin(isAdminPrompt);
-        const canClaim = Boolean(res.welcomeClaimAvailable);
-        setWelcomeClaimAvailable(canClaim);
+        setIndefiniteAdmin(Boolean(res.indefiniteAdminPrompt));
+        setWelcomeClaimAvailable(Boolean(res.welcomeClaimAvailable));
         setWelcomePts(Number(res.welcomePts) || 100);
-        // Already claimed: open on the how-to page; otherwise claim page first.
-        setAdminPage(isAdminPrompt && !canClaim ? 1 : 0);
+        // Always open on the first (claim) page for admin indefinite prompts.
+        setAdminPage(0);
         setOpen(true);
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
@@ -80,7 +78,7 @@ export default function ReferPromptModal() {
   };
 
   const claimWelcome = async () => {
-    if (claimBusy) return;
+    if (claimBusy || !welcomeClaimAvailable) return;
     setClaimBusy(true);
     try {
       const res = await api.post<{
@@ -120,6 +118,17 @@ export default function ReferPromptModal() {
 
         {indefiniteAdmin ? (
           <>
+            {adminPage === 1 && (
+              <button
+                type="button"
+                onClick={() => setAdminPage(0)}
+                className="absolute top-3 left-3 p-1.5 rounded-full text-gray-500 hover:bg-stone-100 hover:text-gray-800 transition-colors"
+                aria-label="Back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+
             {adminPage === 0 && (
               <div className="space-y-4 pt-1 text-center">
                 <h2 className="text-xl font-bold text-gray-900 px-8">OnCuts Thanks You!</h2>
@@ -132,17 +141,33 @@ export default function ReferPromptModal() {
                   type="button"
                   disabled={claimBusy || !welcomeClaimAvailable}
                   onClick={() => void claimWelcome()}
-                  className="mx-auto rounded-xl bg-brand-600 text-white px-8 py-2.5 text-xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  aria-disabled={!welcomeClaimAvailable}
+                  className={`mx-auto rounded-xl px-8 py-2.5 text-xl font-semibold inline-flex items-center justify-center gap-2 transition-colors ${
+                    welcomeClaimAvailable
+                      ? 'bg-brand-600 text-white hover:bg-brand-700'
+                      : 'bg-stone-200 text-stone-500 cursor-not-allowed'
+                  }`}
                 >
                   {claimBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                  Claim
+                  {welcomeClaimAvailable ? 'Claim' : 'Claimed'}
                 </button>
+                {!welcomeClaimAvailable && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminPage(1)}
+                    className="block w-full text-xl font-semibold text-brand-700 hover:underline transition-colors"
+                  >
+                    Continue →
+                  </button>
+                )}
               </div>
             )}
 
             {adminPage === 1 && (
               <div className="space-y-4 pt-6">
-                <h2 className="text-xl font-bold text-gray-900 pr-8">How OnCuts Points work</h2>
+                <h2 className="text-xl font-bold text-gray-900 px-8 sm:pr-8 sm:pl-8">
+                  How OnCuts Points work
+                </h2>
                 <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
                   <div className="space-y-2">
                     <p className="font-semibold text-gray-900">How you earn more</p>
