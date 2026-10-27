@@ -91,8 +91,10 @@ router.get('/uploads', adminController.listUploadedMedia);
 router.get('/db/catalog', adminDbController.getDbCatalog);
 router.get('/db/tables/:table', adminDbController.getDbTable);
 
-// OnCuts Points balances (Admin Points tab)
+// OnCuts Points balances + distribute (Admin Points tab)
 router.get('/points/balances', adminPointsController.getPointsBalances);
+router.get('/points/users', adminPointsController.searchPointsUsers);
+router.post('/points/adjust', adminPointsController.adjustPoints);
 
 // Referral ledger + settings
 router.get('/referrals/attributions', adminReferralsController.listReferralAttributions);
