@@ -562,61 +562,63 @@ export default function AdminPointsPanel() {
                     <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
                       Updated
                     </th>
-                    <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {page.items.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b border-gray-100 hover:bg-stone-50"
-                    >
-                      <td
-                        className="px-2 py-1.5 text-gray-800 max-w-[160px] truncate cursor-pointer"
+                  {page.items.map((row) => {
+                    const isOpen = detail?.id === row.id;
+                    return (
+                      <tr
+                        key={row.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isOpen}
+                        className={`border-b border-gray-100 hover:bg-stone-50 cursor-pointer ${
+                          isOpen ? 'bg-stone-50' : ''
+                        }`}
                         onClick={() => {
-                          setDetail(row);
-                          setDetailPts('');
-                        }}
-                      >
-                        {row.displayName || '—'}
-                      </td>
-                      <td
-                        className="px-2 py-1.5 text-gray-800 max-w-[180px] truncate font-mono cursor-pointer"
-                        onClick={() => {
-                          setDetail(row);
-                          setDetailPts('');
-                        }}
-                      >
-                        {row.email || '—'}
-                      </td>
-                      <td className="px-2 py-1.5 text-gray-800 font-mono">
-                        {formatPts(row.balancePts)}
-                      </td>
-                      <td className="px-2 py-1.5 text-gray-800 font-mono">
-                        {formatPts(row.lifetimeEarnedPts)}
-                      </td>
-                      <td className="px-2 py-1.5 text-gray-800 font-mono">
-                        {formatPts(row.lifetimeSpentPts)}
-                      </td>
-                      <td className="px-2 py-1.5 text-gray-800 whitespace-nowrap">
-                        {formatWhen(row.updatedAt)}
-                      </td>
-                      <td className="px-2 py-1.5 whitespace-nowrap">
-                        <button
-                          type="button"
-                          className="text-[11px] font-semibold text-brand-700 hover:underline mr-2"
-                          onClick={() => {
+                          if (isOpen) {
+                            setDetail(null);
+                            setDetailPts('');
+                          } else {
                             setDetail(row);
                             setDetailPts('');
-                          }}
-                        >
-                          Adjust
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            if (isOpen) {
+                              setDetail(null);
+                              setDetailPts('');
+                            } else {
+                              setDetail(row);
+                              setDetailPts('');
+                            }
+                          }
+                        }}
+                      >
+                        <td className="px-2 py-1.5 text-gray-800 max-w-[160px] truncate">
+                          {row.displayName || '—'}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 max-w-[180px] truncate font-mono">
+                          {row.email || '—'}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 font-mono">
+                          {formatPts(row.balancePts)}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 font-mono">
+                          {formatPts(row.lifetimeEarnedPts)}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 font-mono">
+                          {formatPts(row.lifetimeSpentPts)}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800 whitespace-nowrap">
+                          {formatWhen(row.updatedAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
