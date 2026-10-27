@@ -398,11 +398,7 @@ export default function AdminPointsPanel() {
       <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4">
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Distribute points
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Search {kind === 'operator' ? 'operators' : 'clients'} by name or email, then give or
-            remove points.
+            Distribute {kind === 'operator' ? 'OPERATOR' : 'CLIENT'} points
           </p>
         </div>
 
