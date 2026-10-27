@@ -41,8 +41,111 @@ type ReferralSettings = {
   estimatedCostPerNewOperatorDollars?: number;
 };
 
+const SETTINGS_GLOSSARY: { term: string; definition: string }[] = [
+  {
+    term: 'Program enabled',
+    definition:
+      'Master switch for the referral program. When off, new referrals and rewards stop (admin indefinite prompts can still show separately).',
+  },
+  {
+    term: 'Admin indefinite referral prompts',
+    definition:
+      'When on, admins always see the referral thank-you / points explainer on entry, ignoring cooldown and max-dismissal limits. Claim of welcome points remains one-time.',
+  },
+  {
+    term: 'Points visible in app',
+    definition:
+      'Shows the OnCuts Points balance pill, Rewards surfaces, and points spend options for clients and operators. When off, those UI pieces are hidden.',
+  },
+  {
+    term: 'Points per $',
+    definition:
+      'Conversion rate between points and dollars (e.g. 10 means 10 pts = $1) for display, spend, and kickback math.',
+  },
+  {
+    term: 'Operator M1 pts',
+    definition:
+      'Points awarded to an operator referrer at Milestone 1 — when their referred operator passes Check 2 (onboarding / verification).',
+  },
+  {
+    term: 'Operator M2 pts',
+    definition:
+      'Points awarded to an operator referrer at Milestone 2 — after the referred operator completes enough qualifying paid bookings (and any hold period).',
+  },
+  {
+    term: 'Client M1 pts',
+    definition:
+      'Points awarded to a client referrer at Milestone 1 when their referred operator passes Check 2.',
+  },
+  {
+    term: 'Client M2 pts',
+    definition:
+      'Points awarded to a client referrer at Milestone 2 after the referred operator’s qualifying bookings (and any hold).',
+  },
+  {
+    term: 'Hold days',
+    definition:
+      'Days to wait after Milestone 2 conditions are met before releasing M2 points. Unlimited (0) means no hold — M2 can release immediately.',
+  },
+  {
+    term: 'Qualify window days',
+    definition:
+      'How long after Check 2 a referred operator’s paid bookings can count toward the 3 qualifying bookings for M2. Unlimited (0) means no expiry.',
+  },
+  {
+    term: 'Min booking cents',
+    definition:
+      'Minimum paid booking amount in cents that can count as a qualifying booking (e.g. 2000 = $20.00).',
+  },
+  {
+    term: 'New op kickback %',
+    definition:
+      'Percent of early booking revenue paid as a platform kickback to the referrer when a newly referred operator completes early bookings.',
+  },
+  {
+    term: 'Max spend %',
+    definition:
+      'Maximum share of a service price that can be paid with points (operators for kickback, clients for checkout discount). 100 means up to the full service amount.',
+  },
+  {
+    term: 'Rotations / day',
+    definition:
+      'How many times a user may rotate (replace) their referral code in a calendar day. Unlimited (0) means no daily rotation cap.',
+  },
+  {
+    term: 'Max uses / month',
+    definition:
+      'How many successful attributions a single referral code may create in a calendar month. Unlimited (0) means no monthly use cap.',
+  },
+  {
+    term: 'Validate max attempts',
+    definition:
+      'Failed referral-code entry attempts allowed before a temporary lockout. Unlimited (0) means no attempt lockout.',
+  },
+  {
+    term: 'Lockout hours',
+    definition:
+      'How long a user is blocked from trying codes after hitting Validate max attempts. Unlimited (0) means no lockout duration.',
+  },
+  {
+    term: 'Prompt cooldown days',
+    definition:
+      'Minimum days between referral prompts for non-admin users. Unlimited (0) means no cooldown between prompts.',
+  },
+  {
+    term: 'Prompt max dismissals',
+    definition:
+      'How many times a non-admin can dismiss the referral prompt before it stops showing. Unlimited (0) means dismissals never permanently stop the prompt.',
+  },
+  {
+    term: 'Est. cost per new operator',
+    definition:
+      'Rough points-side cost of a fully rewarded referral (typically client or operator M1+M2 converted at Points per $), shown as a planning hint; kickback is additional.',
+  },
+];
+
 export default function AdminReferralsPanel() {
-  const [tab, setTab] = useState<'ledger' | 'settings'>('ledger');
+  const [tab, setTab] = useState<'ledger' | 'settings' | 'glossary'>('ledger');
   const [items, setItems] = useState<AttributionRow[]>([]);
   const [statusFilter, setStatusFilter] = useState('admin_review');
   const [settings, setSettings] = useState<ReferralSettings | null>(null);
@@ -73,7 +176,7 @@ export default function AdminReferralsPanel() {
 
   useEffect(() => {
     if (tab === 'ledger') void loadLedger();
-    else void loadSettings();
+    else if (tab === 'settings') void loadSettings();
   }, [tab, loadLedger, loadSettings]);
 
   const resolve = async (id: string, decision: 'approve' | 'reject') => {
@@ -103,25 +206,25 @@ export default function AdminReferralsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setTab('ledger')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-            tab === 'ledger' ? 'bg-brand-600 text-white' : 'bg-stone-100 text-gray-700'
-          }`}
-        >
-          Ledger
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('settings')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-            tab === 'settings' ? 'bg-brand-600 text-white' : 'bg-stone-100 text-gray-700'
-          }`}
-        >
-          Settings
-        </button>
+      <div className="flex gap-2 flex-wrap">
+        {(
+          [
+            { id: 'ledger' as const, label: 'Ledger' },
+            { id: 'settings' as const, label: 'Settings' },
+            { id: 'glossary' as const, label: 'Glossary' },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+              tab === t.id ? 'bg-brand-600 text-white' : 'bg-stone-100 text-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -336,6 +439,26 @@ export default function AdminReferralsPanel() {
           >
             Save settings
           </button>
+        </div>
+      )}
+
+      {tab === 'glossary' && (
+        <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-4 max-w-2xl">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Settings glossary</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              What each referral / points setting controls. Unlimited means 0 on timeframe and rate
+              limits.
+            </p>
+          </div>
+          <dl className="space-y-3">
+            {SETTINGS_GLOSSARY.map((entry) => (
+              <div key={entry.term} className="border-b border-stone-100 pb-3 last:border-0 last:pb-0">
+                <dt className="text-sm font-semibold text-gray-900">{entry.term}</dt>
+                <dd className="text-sm text-gray-600 mt-1 leading-relaxed">{entry.definition}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       )}
     </div>
