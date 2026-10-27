@@ -176,9 +176,10 @@ export default function ReferPromptModal() {
 
             {adminPage === 1 && (
               <div className="space-y-4 pt-6">
-                <h2 className="text-xl font-bold text-gray-900 px-8 sm:pr-8 sm:pl-8">
-                  How OnCuts Points work
-                </h2>
+                <div className="text-center space-y-1 px-8">
+                  <h2 className="text-xl font-bold text-gray-900">How OnCuts Points work</h2>
+                  <p className="text-xl font-bold text-gray-900">10 pts = $1.</p>
+                </div>
                 <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
                   <div className="space-y-2">
                     <p className="font-semibold text-gray-900">How you earn more</p>
@@ -219,7 +220,6 @@ export default function ReferPromptModal() {
                       <li>
                         Clients: use points at checkout for dollars off the service (not the tip).
                       </li>
-                      <li>10 pts = $1.</li>
                     </ul>
                   </div>
                 </div>
