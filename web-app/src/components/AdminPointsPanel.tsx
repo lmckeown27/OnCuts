@@ -498,18 +498,21 @@ export default function AdminPointsPanel() {
                 Clear
               </button>
             </div>
-            <label className="block max-w-xs mx-auto">
+            <label className="block w-24 mx-auto">
               <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Points
               </span>
               <input
                 type="number"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 min={1}
                 step={1}
                 value={grantPts}
-                onChange={(e) => setGrantPts(e.target.value)}
-                placeholder="e.g. 100"
+                onChange={(e) => setGrantPts(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+                }}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
               />
             </label>
@@ -897,18 +900,21 @@ export default function AdminPointsPanel() {
                   {detailAdjustKind} points
                 </p>
               )}
-              <label className="block max-w-xs mx-auto">
+              <label className="block w-24 mx-auto">
                 <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                   Points
                 </span>
                 <input
                   type="number"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   min={1}
                   step={1}
                   value={detailPts}
-                  onChange={(e) => setDetailPts(e.target.value)}
-                  placeholder="e.g. 50"
+                  onChange={(e) => setDetailPts(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+                  }}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
                 />
               </label>
