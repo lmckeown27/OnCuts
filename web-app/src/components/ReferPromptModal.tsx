@@ -129,10 +129,10 @@ export default function ReferPromptModal() {
 
         {indefiniteAdmin ? (
           <>
-            {adminPage === 1 && (
+            {adminPage > 0 && (
               <button
                 type="button"
-                onClick={() => setAdminPage(0)}
+                onClick={() => setAdminPage((p) => Math.max(0, p - 1))}
                 className="absolute top-3 left-3 p-1.5 rounded-full text-gray-500 hover:bg-stone-100 hover:text-gray-800 transition-colors"
                 aria-label="Back"
               >
@@ -180,50 +180,70 @@ export default function ReferPromptModal() {
                   <h2 className="text-xl font-bold text-gray-900">How OnCuts Points work</h2>
                   <p className="text-xl font-bold text-gray-900">10 pts = $1.</p>
                 </div>
-                <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
-                  <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">How you earn more</p>
-                    <ul className="list-disc pl-5 space-y-1.5">
-                      <li>Share your referral code with operators you know (beauty pros count too).</li>
-                      <li>
-                        Earn up to{' '}
-                        <span className="font-semibold text-gray-900">{ptsLabel} pts</span>
-                        {dollarsLabel ? (
-                          <>
-                            {' '}
-                            (about{' '}
-                            <span className="font-semibold text-gray-900">{dollarsLabel}</span>)
-                          </>
-                        ) : null}{' '}
-                        when they onboard and complete their first bookings
-                        {kickbackPercent > 0 ? (
-                          <>
-                            , plus a{' '}
-                            <span className="font-semibold text-gray-900">
-                              {kickbackPercent}% kickback
-                            </span>{' '}
-                            on their early bookings
-                          </>
-                        ) : null}
-                        .
-                      </li>
-                      <li>Points never expire.</li>
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">What points are for</p>
-                    <ul className="list-disc pl-5 space-y-1.5">
-                      <li>
-                        Operators: apply points as a payout boost on a completed paid booking
-                        (client price stays the same).
-                      </li>
-                      <li>
-                        Clients: use points at checkout for dollars off the service (not the tip).
-                      </li>
-                    </ul>
-                  </div>
+                <div className="text-sm text-gray-600 leading-relaxed space-y-2 pr-1">
+                  <p className="font-semibold text-gray-900">What points are for</p>
+                  <ul className="list-disc pl-5 space-y-1.5">
+                    <li>
+                      Operators: apply points as a payout boost on a completed paid booking
+                      (client price stays the same).
+                    </li>
+                    <li>
+                      Clients: use points at checkout for dollars off the service (not the tip).
+                    </li>
+                  </ul>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
+                  <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminPage(2)}
+                  className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
+                >
+                  Earn Points
+                </button>
+              </div>
+            )}
+
+            {adminPage === 2 && (
+              <div className="space-y-4 pt-6">
+                <div className="text-center space-y-1 px-8">
+                  <h2 className="text-xl font-bold text-gray-900">How you earn more</h2>
+                </div>
+                <div className="text-sm text-gray-600 leading-relaxed pr-1">
+                  <ul className="list-disc pl-5 space-y-1.5">
+                    <li>
+                      Share your referral code with operators you know (beauty pros count too).
+                    </li>
+                    <li>
+                      Earn up to{' '}
+                      <span className="font-semibold text-gray-900">{ptsLabel} pts</span>
+                      {dollarsLabel ? (
+                        <>
+                          {' '}
+                          (about{' '}
+                          <span className="font-semibold text-gray-900">{dollarsLabel}</span>)
+                        </>
+                      ) : null}{' '}
+                      when they onboard and complete their first bookings
+                      {kickbackPercent > 0 ? (
+                        <>
+                          , plus a{' '}
+                          <span className="font-semibold text-gray-900">
+                            {kickbackPercent}% kickback
+                          </span>{' '}
+                          on their early bookings
+                        </>
+                      ) : null}
+                      .
+                    </li>
+                    <li>Points never expire.</li>
+                  </ul>
+                </div>
+                <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
+                  <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
                   <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
                 </div>
@@ -235,7 +255,7 @@ export default function ReferPromptModal() {
                   }}
                   className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
                 >
-                  Earn Points
+                  Get referral code
                 </button>
               </div>
             )}
@@ -243,6 +263,7 @@ export default function ReferPromptModal() {
             {adminPage === 0 && (
               <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
+                <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
                 <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
               </div>
             )}
