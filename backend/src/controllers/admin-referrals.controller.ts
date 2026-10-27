@@ -48,11 +48,11 @@ export const listReferralAttributions = async (
          a.m2_awarded_at,
          a.m2_clawed_back_at,
          a.created_at,
-         rf."firstName" AS referrer_first,
-         rf."lastName" AS referrer_last,
+         rf.first_name AS referrer_first,
+         rf.last_name AS referrer_last,
          rf.email AS referrer_email,
-         rd."firstName" AS referred_first,
-         rd."lastName" AS referred_last,
+         rd.first_name AS referred_first,
+         rd.last_name AS referred_last,
          rd.email AS referred_email
        FROM referral_attributions a
        JOIN users rf ON rf.id = a.referrer_id

@@ -616,8 +616,8 @@ export async function listMyAttributions(referrerId: string) {
        a.m1_awarded_at,
        a.m2_hold_until,
        a.m2_awarded_at,
-       u."firstName" AS first_name,
-       u."lastName" AS last_name
+       u.first_name AS first_name,
+       u.last_name AS last_name
      FROM referral_attributions a
      JOIN users u ON u.id = a.referred_user_id
      WHERE a.referrer_id = $1

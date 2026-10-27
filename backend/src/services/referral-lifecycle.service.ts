@@ -30,8 +30,8 @@ export async function runReferralCheck2(opts: {
   if (!(await tablesReady())) return null;
 
   const attr = await pool.query(
-    `SELECT a.*, r."firstName" AS ref_first, r."lastName" AS ref_last,
-            u."firstName" AS new_first, u."lastName" AS new_last,
+    `SELECT a.*, r.first_name AS ref_first, r.last_name AS ref_last,
+            u.first_name AS new_first, u.last_name AS new_last,
             u.phone_e164 AS new_phone,
             r.phone_e164 AS ref_phone
      FROM referral_attributions a
