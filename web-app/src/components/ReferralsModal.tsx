@@ -214,7 +214,9 @@ export default function ReferralsModal({
                       Referral code
                     </h3>
                     <p className="text-xs text-gray-500">
-                      {data.code.usesThisMonth}/{data.code.maxUsesPerMonth} uses this month
+                      {data.code.maxUsesPerMonth > 0
+                        ? `${data.code.usesThisMonth}/${data.code.maxUsesPerMonth} uses this month`
+                        : 'Unlimited uses'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

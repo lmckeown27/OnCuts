@@ -255,36 +255,72 @@ export default function AdminReferralsPanel() {
           </label>
           {(
             [
-              ['pointsPerDollar', 'Points per $'],
-              ['operatorM1', 'Operator M1 pts'],
-              ['operatorM2', 'Operator M2 pts'],
-              ['clientM1', 'Client M1 pts'],
-              ['clientM2', 'Client M2 pts'],
-              ['holdDays', 'Hold days'],
-              ['qualifyWindowDays', 'Qualify window days'],
-              ['minBookingCents', 'Min booking cents'],
-              ['newOpKickbackPercent', 'New op kickback %'],
-              ['maxSpendPercent', 'Max spend %'],
-              ['rotationsPerDay', 'Rotations / day'],
-              ['maxUsesPerMonth', 'Max uses / month'],
-              ['validateMaxAttempts', 'Validate max attempts'],
-              ['validateLockoutHours', 'Lockout hours'],
-              ['promptCooldownDays', 'Prompt cooldown days'],
-              ['promptMaxDismissals', 'Prompt max dismissals'],
+              ['pointsPerDollar', 'Points per $', false],
+              ['operatorM1', 'Operator M1 pts', false],
+              ['operatorM2', 'Operator M2 pts', false],
+              ['clientM1', 'Client M1 pts', false],
+              ['clientM2', 'Client M2 pts', false],
+              ['holdDays', 'Hold days', true],
+              ['qualifyWindowDays', 'Qualify window days', true],
+              ['minBookingCents', 'Min booking cents', false],
+              ['newOpKickbackPercent', 'New op kickback %', false],
+              ['maxSpendPercent', 'Max spend %', false],
+              ['rotationsPerDay', 'Rotations / day', true],
+              ['maxUsesPerMonth', 'Max uses / month', true],
+              ['validateMaxAttempts', 'Validate max attempts', true],
+              ['validateLockoutHours', 'Lockout hours', true],
+              ['promptCooldownDays', 'Prompt cooldown days', true],
+              ['promptMaxDismissals', 'Prompt max dismissals', true],
             ] as const
-          ).map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between gap-3 text-sm">
-              <label className="text-gray-700">{label}</label>
-              <input
-                type="number"
-                className="w-32 rounded-lg border border-stone-300 px-2 py-1.5"
-                value={Number(settings[key])}
-                onChange={(e) =>
-                  setSettings({ ...settings, [key]: Number(e.target.value) })
-                }
-              />
-            </div>
-          ))}
+          ).map(([key, label, unlimitedable]) => {
+            const unlimited = unlimitedable && Number(settings[key]) === 0;
+            return (
+              <div key={key} className="flex items-center justify-between gap-3 text-sm">
+                <label className="text-gray-700">{label}</label>
+                <div className="flex items-center gap-3">
+                  {unlimitedable && (
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={unlimited}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSettings({ ...settings, [key]: 0 });
+                          } else {
+                            const defaults: Partial<ReferralSettings> = {
+                              holdDays: 7,
+                              qualifyWindowDays: 60,
+                              rotationsPerDay: 3,
+                              maxUsesPerMonth: 10,
+                              validateMaxAttempts: 5,
+                              validateLockoutHours: 24,
+                              promptCooldownDays: 30,
+                              promptMaxDismissals: 3,
+                            };
+                            setSettings({
+                              ...settings,
+                              [key]: defaults[key] ?? 1,
+                            });
+                          }
+                        }}
+                      />
+                      Unlimited
+                    </label>
+                  )}
+                  <input
+                    type="number"
+                    min={unlimitedable ? 0 : undefined}
+                    disabled={unlimited}
+                    className="w-32 rounded-lg border border-stone-300 px-2 py-1.5 disabled:bg-stone-100 disabled:text-gray-500"
+                    value={Number(settings[key])}
+                    onChange={(e) =>
+                      setSettings({ ...settings, [key]: Number(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+            );
+          })}
           {settings.estimatedCostPerNewOperatorDollars != null && (
             <p className="text-xs text-gray-500">
               Est. cost per new operator (points side): $

@@ -117,24 +117,29 @@ export async function getReferralProgramSettings(): Promise<ReferralProgramSetti
     );
     const row = r.rows[0];
     if (!row) return { ...DEFAULT_SETTINGS };
+    const num = (value: unknown, fallback: number) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    };
     return {
       programEnabled: Boolean(row.program_enabled),
-      pointsPerDollar: Number(row.points_per_dollar) || 10,
-      operatorM1: Number(row.operator_m1) || 250,
-      operatorM2: Number(row.operator_m2) || 500,
-      clientM1: Number(row.client_m1) || 350,
-      clientM2: Number(row.client_m2) || 700,
-      holdDays: Number(row.hold_days) || 7,
-      qualifyWindowDays: Number(row.qualify_window_days) || 60,
-      minBookingCents: Number(row.min_booking_cents) || 2000,
-      newOpKickbackPercent: Number(row.new_op_kickback) || 10,
-      maxSpendPercent: Number(row.max_spend) || 100,
-      rotationsPerDay: Number(row.rotations_per_day) || 3,
-      maxUsesPerMonth: Number(row.max_uses_month) || 10,
-      validateMaxAttempts: Number(row.max_attempts) || 5,
-      validateLockoutHours: Number(row.lockout_hours) || 24,
-      promptCooldownDays: Number(row.prompt_cooldown) || 30,
-      promptMaxDismissals: Number(row.prompt_max_dismiss) || 3,
+      pointsPerDollar: num(row.points_per_dollar, 10),
+      operatorM1: num(row.operator_m1, 250),
+      operatorM2: num(row.operator_m2, 500),
+      clientM1: num(row.client_m1, 350),
+      clientM2: num(row.client_m2, 700),
+      // 0 = unlimited / no wait for timeframe and rate-limit knobs below.
+      holdDays: num(row.hold_days, 7),
+      qualifyWindowDays: num(row.qualify_window_days, 60),
+      minBookingCents: num(row.min_booking_cents, 2000),
+      newOpKickbackPercent: num(row.new_op_kickback, 10),
+      maxSpendPercent: num(row.max_spend, 100),
+      rotationsPerDay: num(row.rotations_per_day, 3),
+      maxUsesPerMonth: num(row.max_uses_month, 10),
+      validateMaxAttempts: num(row.max_attempts, 5),
+      validateLockoutHours: num(row.lockout_hours, 24),
+      promptCooldownDays: num(row.prompt_cooldown, 30),
+      promptMaxDismissals: num(row.prompt_max_dismiss, 3),
       adminIndefinitePrompts: Boolean(row.admin_indefinite_prompts),
       pointsVisible: row.points_visible !== false,
     };
@@ -245,7 +250,7 @@ export async function rotateReferralCode(userId: string): Promise<{
     if (String(row.rotation_day).slice(0, 10) !== today) {
       rotationsToday = 0;
     }
-    if (rotationsToday >= settings.rotationsPerDay) {
+    if (settings.rotationsPerDay > 0 && rotationsToday >= settings.rotationsPerDay) {
       throw new ApiError(429, `You can rotate your code at most ${settings.rotationsPerDay} times per day`);
     }
 
@@ -313,6 +318,7 @@ async function getAttemptKey(opts: { userId?: string | null; phoneE164?: string 
 }
 
 async function assertNotLocked(attemptKey: string, settings: ReferralProgramSettings): Promise<void> {
+  if (settings.validateMaxAttempts <= 0 || settings.validateLockoutHours <= 0) return;
   const r = await pool.query(
     `SELECT fail_count, locked_until FROM referral_code_attempts WHERE attempt_key = $1`,
     [attemptKey]
@@ -327,6 +333,8 @@ async function assertNotLocked(attemptKey: string, settings: ReferralProgramSett
 }
 
 async function recordFailedAttempt(attemptKey: string, settings: ReferralProgramSettings): Promise<void> {
+  // 0 = unlimited attempts / no lockout.
+  if (settings.validateMaxAttempts <= 0 || settings.validateLockoutHours <= 0) return;
   await pool.query(
     `INSERT INTO referral_code_attempts (attempt_key, fail_count, updated_at)
      VALUES ($1, 1, NOW())
@@ -482,7 +490,7 @@ export async function validateReferralCode(opts: {
   const monthBucket = new Date().toISOString().slice(0, 7);
   let usesThisMonth = Number(row.uses_this_month) || 0;
   if (row.month_bucket !== monthBucket) usesThisMonth = 0;
-  if (usesThisMonth >= settings.maxUsesPerMonth) {
+  if (settings.maxUsesPerMonth > 0 && usesThisMonth >= settings.maxUsesPerMonth) {
     return {
       ok: false,
       error: 'This referral code has reached its monthly limit',

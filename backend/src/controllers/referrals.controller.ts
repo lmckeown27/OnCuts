@@ -343,11 +343,15 @@ export const getReferPrompt = async (req: AuthRequest, res: Response, next: Next
         [userId]
       );
       const row = state.rows[0];
-      if (row && Number(row.dismiss_count) >= settings.promptMaxDismissals) {
+      if (
+        settings.promptMaxDismissals > 0 &&
+        row &&
+        Number(row.dismiss_count) >= settings.promptMaxDismissals
+      ) {
         res.json({ success: true, data: { show: false, reason: 'max_dismissals' } });
         return;
       }
-      if (row?.last_prompt_at) {
+      if (settings.promptCooldownDays > 0 && row?.last_prompt_at) {
         const nextOk = new Date(row.last_prompt_at);
         nextOk.setDate(nextOk.getDate() + settings.promptCooldownDays);
         if (nextOk > new Date()) {

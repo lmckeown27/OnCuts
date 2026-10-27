@@ -254,9 +254,12 @@ export async function recordQualifyingReferralBooking(opts: {
   if (opts.serviceCents < settings.minBookingCents) return;
 
   const approvedAt = row.check2_at || row.check1_at;
-  const windowEnd = new Date(approvedAt);
-  windowEnd.setDate(windowEnd.getDate() + settings.qualifyWindowDays);
-  if (new Date() > windowEnd) return;
+  // 0 = unlimited qualify window.
+  if (settings.qualifyWindowDays > 0) {
+    const windowEnd = new Date(approvedAt);
+    windowEnd.setDate(windowEnd.getDate() + settings.qualifyWindowDays);
+    if (new Date() > windowEnd) return;
+  }
 
   const ids: string[] = Array.isArray(row.qualifying_booking_ids)
     ? row.qualifying_booking_ids.map(String)
