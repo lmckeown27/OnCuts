@@ -237,7 +237,7 @@ export default function ReferPromptModal() {
                 <button
                   type="button"
                   onClick={() => setAdminPage(2)}
-                  className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
+                  className="mx-auto block rounded-xl bg-brand-600 text-white px-8 py-2.5 text-xl font-semibold text-center"
                 >
                   Earn Points
                 </button>
