@@ -75,6 +75,8 @@ export default function AdminPointsPanel() {
   const [detail, setDetail] = useState<PointsBalanceItem | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  /** Independent of balances tab so admins can grant to either kind anytime. */
+  const [distributeKind, setDistributeKind] = useState<PointsKind>('operator');
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUserItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -82,6 +84,9 @@ export default function AdminPointsPanel() {
   const [grantPts, setGrantPts] = useState('');
   const [grantNote, setGrantNote] = useState('');
   const [grantBusy, setGrantBusy] = useState(false);
+  const [detailPts, setDetailPts] = useState('');
+  const [detailNote, setDetailNote] = useState('');
+  const [detailBusy, setDetailBusy] = useState(false);
 
   const load = useCallback(
     async (nextKind: PointsKind, nextOffset: number, q: string) => {
@@ -124,7 +129,7 @@ export default function AdminPointsPanel() {
       void (async () => {
         try {
           const data = await api.get<{ items: SearchUserItem[] }>('/admin/points/users', {
-            kind,
+            kind: distributeKind,
             q,
           });
           if (!cancelled) setSearchResults(data?.items || []);
@@ -140,7 +145,7 @@ export default function AdminPointsPanel() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [searchQ, kind]);
+  }, [searchQ, distributeKind]);
 
   const total = page?.total ?? 0;
   const balanceSum = page?.totals?.balancePts ?? 0;
@@ -190,41 +195,59 @@ export default function AdminPointsPanel() {
     }
   };
 
-  const submitAdjust = async (signedPts: number) => {
-    if (!selected) {
-      toast.error('Select a user first');
+  const submitAdjust = async (
+    target: { userId: string },
+    adjustKind: PointsKind,
+    signedPts: number,
+    note: string,
+    opts?: { source: 'distribute' | 'detail' }
+  ) => {
+    if (!Number.isFinite(signedPts) || !Number.isInteger(signedPts) || signedPts === 0) {
+      toast.error('Enter a non-zero whole number of points');
       return;
     }
-    if (!Number.isFinite(signedPts) || signedPts === 0) {
-      toast.error('Enter a non-zero points amount');
-      return;
-    }
-    setGrantBusy(true);
+    const busy = opts?.source === 'detail' ? setDetailBusy : setGrantBusy;
+    busy(true);
     try {
       const data = await api.post<{
         balanceAfter: number;
         deltaPts: number;
       }>('/admin/points/adjust', {
-        userId: selected.userId,
-        kind,
+        userId: target.userId,
+        kind: adjustKind,
         deltaPts: signedPts,
-        note: grantNote.trim() || undefined,
+        note: note.trim() || undefined,
       });
       const nextBalance = Number(data?.balanceAfter) || 0;
-      setSelected({
-        ...selected,
-        balancePts: nextBalance,
-        hasAccount: true,
-        lifetimeEarnedPts:
-          signedPts > 0
-            ? selected.lifetimeEarnedPts + signedPts
-            : selected.lifetimeEarnedPts,
-        lifetimeSpentPts:
-          signedPts < 0
-            ? selected.lifetimeSpentPts + Math.abs(signedPts)
-            : selected.lifetimeSpentPts,
-      });
-      setGrantPts('');
+      if (opts?.source !== 'detail' && selected?.userId === target.userId) {
+        setSelected({
+          ...selected,
+          balancePts: nextBalance,
+          hasAccount: true,
+          lifetimeEarnedPts:
+            signedPts > 0
+              ? selected.lifetimeEarnedPts + signedPts
+              : selected.lifetimeEarnedPts,
+          lifetimeSpentPts:
+            signedPts < 0
+              ? selected.lifetimeSpentPts + Math.abs(signedPts)
+              : selected.lifetimeSpentPts,
+        });
+        setGrantPts('');
+      }
+      if (opts?.source === 'detail' && detail?.userId === target.userId) {
+        setDetail({
+          ...detail,
+          balancePts: nextBalance,
+          lifetimeEarnedPts:
+            signedPts > 0 ? detail.lifetimeEarnedPts + signedPts : detail.lifetimeEarnedPts,
+          lifetimeSpentPts:
+            signedPts < 0
+              ? detail.lifetimeSpentPts + Math.abs(signedPts)
+              : detail.lifetimeSpentPts,
+        });
+        setDetailPts('');
+      }
       toast.success(
         signedPts > 0
           ? `Granted ${formatPts(signedPts)} pts (balance ${formatPts(nextBalance)})`
@@ -234,7 +257,7 @@ export default function AdminPointsPanel() {
     } catch (err: any) {
       toast.error(err?.message || 'Could not adjust points');
     } finally {
-      setGrantBusy(false);
+      busy(false);
     }
   };
 
@@ -253,11 +276,8 @@ export default function AdminPointsPanel() {
               setKind(tab.id);
               setOffset(0);
               setDetail(null);
-              setSelected(null);
-              setSearchQ('');
-              setSearchResults([]);
-              setGrantPts('');
-              setGrantNote('');
+              setDetailPts('');
+              setDetailNote('');
             }}
             className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
               kind === tab.id
@@ -276,9 +296,35 @@ export default function AdminPointsPanel() {
             Distribute points
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Search {kindLabel.toLowerCase()} by name or email, then grant or remove points.
+            Search operators or clients by name or email, then give or remove points.
           </p>
         </div>
+
+        <nav
+          className="grid gap-0.5 rounded-lg bg-stone-100 p-1"
+          style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}
+          aria-label="Distribute kind"
+        >
+          {KIND_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setDistributeKind(tab.id);
+                setSelected(null);
+                setSearchResults([]);
+                setGrantPts('');
+              }}
+              className={`px-2 py-1.5 rounded-md text-xs font-semibold text-center transition-colors ${
+                distributeKind === tab.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -289,7 +335,9 @@ export default function AdminPointsPanel() {
               setSearchQ(e.target.value);
               setSelected(null);
             }}
-            placeholder={`Search ${kindLabel.toLowerCase()}…`}
+            placeholder={`Search ${
+              distributeKind === 'operator' ? 'operators' : 'clients'
+            }…`}
             className="w-full rounded-lg border border-stone-300 pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
           />
           {searchLoading && (
@@ -335,6 +383,7 @@ export default function AdminPointsPanel() {
                 <p className="text-xs text-gray-500 truncate">
                   {selected.email || selected.userId}
                   {selected.role ? ` · ${selected.role}` : ''}
+                  {` · ${distributeKind} points`}
                 </p>
                 <p className="text-xs text-gray-700 mt-1 font-mono">
                   Balance {formatPts(selected.balancePts)} pts
@@ -388,7 +437,9 @@ export default function AdminPointsPanel() {
                 disabled={grantBusy}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(n);
+                  void submitAdjust(selected, distributeKind, n, grantNote, {
+                    source: 'distribute',
+                  });
                 }}
               >
                 {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
@@ -397,10 +448,12 @@ export default function AdminPointsPanel() {
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={grantBusy}
+                disabled={grantBusy || selected.balancePts <= 0}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(-Math.abs(n));
+                  void submitAdjust(selected, distributeKind, -Math.abs(n), grantNote, {
+                    source: 'distribute',
+                  });
                 }}
               >
                 Remove points
@@ -509,19 +562,35 @@ export default function AdminPointsPanel() {
                     <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
                       Updated
                     </th>
+                    <th className="px-2 py-2 font-semibold text-gray-500 whitespace-nowrap sticky top-0 bg-white">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {page.items.map((row) => (
                     <tr
                       key={row.id}
-                      className="border-b border-gray-100 hover:bg-stone-50 cursor-pointer"
-                      onClick={() => setDetail(row)}
+                      className="border-b border-gray-100 hover:bg-stone-50"
                     >
-                      <td className="px-2 py-1.5 text-gray-800 max-w-[160px] truncate">
+                      <td
+                        className="px-2 py-1.5 text-gray-800 max-w-[160px] truncate cursor-pointer"
+                        onClick={() => {
+                          setDetail(row);
+                          setDetailPts('');
+                          setDetailNote('');
+                        }}
+                      >
                         {row.displayName || '—'}
                       </td>
-                      <td className="px-2 py-1.5 text-gray-800 max-w-[180px] truncate font-mono">
+                      <td
+                        className="px-2 py-1.5 text-gray-800 max-w-[180px] truncate font-mono cursor-pointer"
+                        onClick={() => {
+                          setDetail(row);
+                          setDetailPts('');
+                          setDetailNote('');
+                        }}
+                      >
                         {row.email || '—'}
                       </td>
                       <td className="px-2 py-1.5 text-gray-800 font-mono">
@@ -535,6 +604,19 @@ export default function AdminPointsPanel() {
                       </td>
                       <td className="px-2 py-1.5 text-gray-800 whitespace-nowrap">
                         {formatWhen(row.updatedAt)}
+                      </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          className="text-[11px] font-semibold text-brand-700 hover:underline mr-2"
+                          onClick={() => {
+                            setDetail(row);
+                            setDetailPts('');
+                            setDetailNote('');
+                          }}
+                        >
+                          Adjust
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -572,13 +654,17 @@ export default function AdminPointsPanel() {
         )}
 
         {detail && (
-          <div className="rounded-lg border border-gray-200 bg-stone-50 p-3 space-y-2">
+          <div className="rounded-lg border border-gray-200 bg-stone-50 p-3 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-gray-700">Account detail</p>
               <button
                 type="button"
                 className="text-xs text-gray-500 hover:text-gray-800"
-                onClick={() => setDetail(null)}
+                onClick={() => {
+                  setDetail(null);
+                  setDetailPts('');
+                  setDetailNote('');
+                }}
               >
                 Close
               </button>
@@ -594,12 +680,6 @@ export default function AdminPointsPanel() {
                   ['lifetimeSpentPts', detail.lifetimeSpentPts],
                   ['createdAt', formatWhen(detail.createdAt)],
                   ['updatedAt', formatWhen(detail.updatedAt)],
-                  [
-                    'meta',
-                    typeof detail.meta === 'string'
-                      ? detail.meta
-                      : JSON.stringify(detail.meta ?? {}, null, 2),
-                  ],
                 ] as const
               ).map(([key, value]) => (
                 <div key={key} className="min-w-0">
@@ -612,28 +692,67 @@ export default function AdminPointsPanel() {
                 </div>
               ))}
             </dl>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelected({
-                  userId: detail.userId,
-                  email: detail.email,
-                  role: null,
-                  displayName: detail.displayName,
-                  balancePts: detail.balancePts,
-                  lifetimeEarnedPts: detail.lifetimeEarnedPts,
-                  lifetimeSpentPts: detail.lifetimeSpentPts,
-                  hasAccount: true,
-                });
-                setSearchQ(detail.email || detail.displayName || detail.userId);
-                setDetail(null);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            >
-              Distribute to this user
-            </Button>
+            <div className="border-t border-stone-200 pt-3 space-y-3">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                Give or remove points
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                <label className="block min-w-0 flex-1">
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    Points
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    step={1}
+                    value={detailPts}
+                    onChange={(e) => setDetailPts(e.target.value)}
+                    placeholder="e.g. 50"
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+                  />
+                </label>
+                <label className="block min-w-0 flex-[1.4]">
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    Note (optional)
+                  </span>
+                  <input
+                    type="text"
+                    value={detailNote}
+                    onChange={(e) => setDetailNote(e.target.value)}
+                    placeholder="Reason for ledger"
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={detailBusy}
+                  onClick={() => {
+                    const n = parseInt(detailPts.trim(), 10);
+                    void submitAdjust(detail, kind, n, detailNote, { source: 'detail' });
+                  }}
+                >
+                  {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={detailBusy || detail.balancePts <= 0}
+                  onClick={() => {
+                    const n = parseInt(detailPts.trim(), 10);
+                    void submitAdjust(detail, kind, -Math.abs(n), detailNote, {
+                      source: 'detail',
+                    });
+                  }}
+                >
+                  Remove points
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

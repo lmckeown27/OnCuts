@@ -124,7 +124,9 @@ export default function ReferPromptModal() {
               <div className="space-y-4 pt-1 text-center">
                 <h2 className="text-xl font-bold text-gray-900 px-8">OnCuts Thanks You!</h2>
                 <p className="text-xl text-gray-600 leading-snug px-8">
-                  Please enjoy {welcomePts.toLocaleString()} complimentary OnCuts points
+                  Please enjoy{' '}
+                  <span className="font-bold text-gray-900">{welcomePts.toLocaleString()}</span>{' '}
+                  complimentary OnCuts points
                 </p>
                 <button
                   type="button"
