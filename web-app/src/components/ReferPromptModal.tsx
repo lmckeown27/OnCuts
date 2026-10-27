@@ -180,17 +180,22 @@ export default function ReferPromptModal() {
                   <h2 className="text-xl font-bold text-gray-900">How OnCuts Points work</h2>
                   <p className="text-xl font-bold text-gray-900">10 pts = $1.</p>
                 </div>
-                <div className="text-sm text-gray-600 leading-relaxed space-y-2 pr-1">
-                  <p className="font-semibold text-gray-900">What points are for</p>
-                  <ul className="list-disc pl-5 space-y-1.5">
-                    <li>
-                      Operators: apply points as a payout boost on a completed paid booking
-                      (client price stays the same).
-                    </li>
-                    <li>
-                      Clients: use points at checkout for dollars off the service (not the tip).
-                    </li>
-                  </ul>
+                <div className="text-sm text-gray-600 leading-relaxed space-y-4 pr-1">
+                  <div className="space-y-2">
+                    <p className="font-bold text-gray-900">Operators</p>
+                    <ul className="list-disc pl-5 space-y-1.5">
+                      <li>
+                        Apply points as a payout boost on a completed paid booking (client price
+                        stays the same).
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-bold text-gray-900">Clients</p>
+                    <ul className="list-disc pl-5 space-y-1.5">
+                      <li>Use points at checkout for dollars off the service (not the tip).</li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
                   <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
