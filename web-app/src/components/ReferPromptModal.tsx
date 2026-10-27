@@ -19,7 +19,6 @@ export default function ReferPromptModal() {
   const [message, setMessage] = useState('');
   const [rewardPts, setRewardPts] = useState(0);
   const [rewardDollars, setRewardDollars] = useState(0);
-  const [kickbackPercent, setKickbackPercent] = useState(0);
   const [indefiniteAdmin, setIndefiniteAdmin] = useState(false);
   const [welcomeClaimAvailable, setWelcomeClaimAvailable] = useState(false);
   const [welcomePts, setWelcomePts] = useState(100);
@@ -39,7 +38,6 @@ export default function ReferPromptModal() {
           message?: string;
           rewardPts?: number;
           rewardDollars?: number;
-          newOpKickbackPercent?: number;
           indefiniteAdminPrompt?: boolean;
           welcomeClaimAvailable?: boolean;
           welcomePts?: number;
@@ -52,7 +50,6 @@ export default function ReferPromptModal() {
             ? res.rewardDollars
             : (res.rewardPts || 0) / 10
         );
-        setKickbackPercent(Number(res.newOpKickbackPercent) || 0);
         setIndefiniteAdmin(Boolean(res.indefiniteAdminPrompt));
         setWelcomeClaimAvailable(Boolean(res.welcomeClaimAvailable));
         setWelcomePts(Number(res.welcomePts) || 100);
@@ -247,36 +244,25 @@ export default function ReferPromptModal() {
             {adminPage === 2 && (
               <div className="space-y-4 pt-6">
                 <div className="text-center space-y-1 px-8">
-                  <h2 className="text-xl font-bold text-gray-900">How you earn more</h2>
+                  <h2 className="text-xl font-bold text-gray-900">How to Earn OnCuts Points</h2>
                 </div>
                 <div className="text-sm text-gray-600 leading-relaxed pr-1">
                   <ul className="list-disc pl-5 space-y-1.5">
                     <li>
-                      Share your referral code with operators you know (beauty pros count too).
+                      Share your Referral Code with operators you know whether they be barbers or
+                      beauty professionals
                     </li>
                     <li>
                       Earn up to{' '}
-                      <span className="font-semibold text-gray-900">{ptsLabel} pts</span>
+                      <span className="font-semibold text-gray-900">{ptsLabel} points</span>
                       {dollarsLabel ? (
                         <>
                           {' '}
-                          (about{' '}
-                          <span className="font-semibold text-gray-900">{dollarsLabel}</span>)
+                          (or <span className="font-semibold text-gray-900">{dollarsLabel}</span>)
                         </>
                       ) : null}{' '}
-                      when they onboard and complete their first bookings
-                      {kickbackPercent > 0 ? (
-                        <>
-                          , plus a{' '}
-                          <span className="font-semibold text-gray-900">
-                            {kickbackPercent}% kickback
-                          </span>{' '}
-                          on their early bookings
-                        </>
-                      ) : null}
-                      .
+                      when they onboard to OnCuts using your Referral Code
                     </li>
-                    <li>Points never expire.</li>
                   </ul>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 pt-1" aria-hidden>
@@ -290,7 +276,7 @@ export default function ReferPromptModal() {
                     setOpen(false);
                     notifyOpenReferrals();
                   }}
-                  className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
+                  className="mx-auto block rounded-xl bg-brand-600 text-white px-8 py-2.5 text-xl font-semibold text-center"
                 >
                   Get referral code
                 </button>
