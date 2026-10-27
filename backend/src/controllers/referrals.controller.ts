@@ -322,13 +322,14 @@ export const getReferPrompt = async (req: AuthRequest, res: Response, next: Next
     const userId = req.user?.userId;
     if (!userId) throw new ApiError(401, 'Authentication required');
     const settings = await getReferralProgramSettings();
-    if (!settings.programEnabled) {
+    const isAdmin = String(req.user?.role || '').toLowerCase() === 'admin';
+    const indefiniteAdmin = isAdmin && settings.adminIndefinitePrompts;
+    // Admin indefinite prompts are controlled separately from the main program toggle.
+    if (!settings.programEnabled && !indefiniteAdmin) {
       res.json({ success: true, data: { show: false } });
       return;
     }
 
-    const isAdmin = String(req.user?.role || '').toLowerCase() === 'admin';
-    const indefiniteAdmin = isAdmin && settings.adminIndefinitePrompts;
     const kind = pointsKindFromRole(req.user?.role);
     if (!indefiniteAdmin && kind === 'client' && !(await clientHasCompletedBooking(userId))) {
       res.json({ success: true, data: { show: false } });

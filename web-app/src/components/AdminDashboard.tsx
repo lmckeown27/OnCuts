@@ -6266,7 +6266,7 @@ export function AdminDashboard({
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-900">Admin referral prompts</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    When on, admins see a refer-operators popup on each platform entry (no cooldown or dismiss limit).
+                    When on, admins see a refer-operators popup every time they open Consumer or Operator home (no cooldown or dismiss limit). Works even if the referral program is off.
                   </p>
                 </div>
                 <fieldset

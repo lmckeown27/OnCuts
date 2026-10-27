@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
-
-const adminSessionKey = (userId: string) => `oncuts_admin_refer_prompt_${userId}`;
 
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
  * At most once per cooldown; stops after max dismissals (server-enforced).
- * Admins with indefinite prompts: once per browser session on platform entry.
+ * Admins with indefinite prompts: show on every platform home entry.
  */
 export default function ReferPromptModal() {
   const user = useAuthStore((s) => s.user);
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [rewardPts, setRewardPts] = useState(0);
+  const [indefiniteAdmin, setIndefiniteAdmin] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
+    setOpen(false);
     void (async () => {
       try {
         const res = await api.get<{
@@ -28,23 +29,10 @@ export default function ReferPromptModal() {
           indefiniteAdminPrompt?: boolean;
         }>('/referrals/prompts/refer');
         if (cancelled || !res.show) return;
-        if (res.indefiniteAdminPrompt) {
-          try {
-            if (sessionStorage.getItem(adminSessionKey(user.id)) === '1') return;
-          } catch {
-            /* ignore */
-          }
-        }
         setMessage(res.message || 'Know a great operator? Refer them and earn points.');
         setRewardPts(res.rewardPts || 0);
+        setIndefiniteAdmin(Boolean(res.indefiniteAdminPrompt));
         setOpen(true);
-        if (res.indefiniteAdminPrompt) {
-          try {
-            sessionStorage.setItem(adminSessionKey(user.id), '1');
-          } catch {
-            /* ignore */
-          }
-        }
         await api.post('/referrals/prompts/refer', { action: 'shown' });
       } catch {
         /* ignore */
@@ -53,7 +41,7 @@ export default function ReferPromptModal() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, location.pathname]);
 
   if (!open) return null;
 
@@ -69,7 +57,9 @@ export default function ReferPromptModal() {
   return (
     <div className="fixed inset-0 z-[1200] flex items-end sm:items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-        <h2 className="text-xl font-bold text-gray-900">Thanks — and one more thing</h2>
+        <h2 className="text-xl font-bold text-gray-900">
+          {indefiniteAdmin ? 'Refer operators you know' : 'Thanks — and one more thing'}
+        </h2>
         <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
         {rewardPts > 0 && (
           <p className="text-sm font-semibold text-emerald-800">
