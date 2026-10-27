@@ -94,8 +94,6 @@ export default function AdminPointsPanel() {
   const [detailAdjustKind, setDetailAdjustKind] = useState<PointsKind>('operator');
   const [exporting, setExporting] = useState(false);
 
-  /** Independent of balances tab so admins can grant to either kind anytime. */
-  const [distributeKind, setDistributeKind] = useState<PointsKind>('operator');
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUserItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -189,7 +187,7 @@ export default function AdminPointsPanel() {
       void (async () => {
         try {
           const data = await api.get<{ items: SearchUserItem[] }>('/admin/points/users', {
-            kind: distributeKind,
+            kind,
             q,
           });
           if (!cancelled) setSearchResults(data?.items || []);
@@ -205,7 +203,7 @@ export default function AdminPointsPanel() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [searchQ, distributeKind]);
+  }, [searchQ, kind]);
 
   const total = page?.total ?? 0;
   const balanceSum = page?.totals?.balancePts ?? 0;
@@ -382,6 +380,9 @@ export default function AdminPointsPanel() {
               setKind(tab.id);
               setOffset(0);
               clearDetail();
+              setSelected(null);
+              setSearchResults([]);
+              setGrantPts('');
             }}
             className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
               kind === tab.id
@@ -400,35 +401,10 @@ export default function AdminPointsPanel() {
             Distribute points
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Search operators or clients by name or email, then give or remove points.
+            Search {kind === 'operator' ? 'operators' : 'clients'} by name or email, then give or
+            remove points.
           </p>
         </div>
-
-        <nav
-          className="grid gap-0.5 rounded-lg bg-stone-100 p-1"
-          style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}
-          aria-label="Distribute kind"
-        >
-          {KIND_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setDistributeKind(tab.id);
-                setSelected(null);
-                setSearchResults([]);
-                setGrantPts('');
-              }}
-              className={`px-2 py-1.5 rounded-md text-xs font-semibold text-center transition-colors ${
-                distributeKind === tab.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -439,9 +415,7 @@ export default function AdminPointsPanel() {
               setSearchQ(e.target.value);
               setSelected(null);
             }}
-            placeholder={`Search ${
-              distributeKind === 'operator' ? 'operators' : 'clients'
-            }…`}
+            placeholder={`Search ${kind === 'operator' ? 'operators' : 'clients'}…`}
             className="w-full rounded-lg border border-stone-300 pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
           />
           {searchLoading && (
@@ -487,7 +461,7 @@ export default function AdminPointsPanel() {
                 <p className="text-xs text-gray-500 truncate">
                   {selected.email || selected.userId}
                   {selected.role ? ` · ${selected.role}` : ''}
-                  {` · ${distributeKind} points`}
+                  {` · ${kind} points`}
                 </p>
                 <p className="text-xs text-gray-700 mt-1 font-mono">
                   Balance {formatPts(selected.balancePts)} pts
@@ -529,7 +503,7 @@ export default function AdminPointsPanel() {
                 disabled={grantBusy}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(selected, distributeKind, n, { source: 'distribute' });
+                  void submitAdjust(selected, kind, n, { source: 'distribute' });
                 }}
               >
                 {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Select Points'}
@@ -541,7 +515,7 @@ export default function AdminPointsPanel() {
                 disabled={grantBusy || selected.balancePts <= 0}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
-                  void submitAdjust(selected, distributeKind, -Math.abs(n), {
+                  void submitAdjust(selected, kind, -Math.abs(n), {
                     source: 'distribute',
                   });
                 }}
@@ -563,7 +537,7 @@ export default function AdminPointsPanel() {
                   ) {
                     return;
                   }
-                  void submitAdjust(selected, distributeKind, -selected.balancePts, {
+                  void submitAdjust(selected, kind, -selected.balancePts, {
                     source: 'distribute',
                   });
                 }}
