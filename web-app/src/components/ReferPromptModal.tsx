@@ -130,9 +130,9 @@ export default function ReferPromptModal() {
                   type="button"
                   disabled={claimBusy || !welcomeClaimAvailable}
                   onClick={() => void claimWelcome()}
-                  className="w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  className="mx-auto rounded-xl bg-brand-600 text-white px-8 py-2.5 text-xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
-                  {claimBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {claimBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
                   Claim
                 </button>
               </div>
