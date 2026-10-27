@@ -403,7 +403,7 @@ export default function AdminPointsPanel() {
                 Clear
               </button>
             </div>
-            <label className="block max-w-xs">
+            <label className="block max-w-xs mx-auto">
               <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Points
               </span>
@@ -418,7 +418,7 @@ export default function AdminPointsPanel() {
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
               />
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               <Button
                 type="button"
                 size="sm"
@@ -428,7 +428,7 @@ export default function AdminPointsPanel() {
                   void submitAdjust(selected, distributeKind, n, { source: 'distribute' });
                 }}
               >
-                {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Points'}
+                {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Select Points'}
               </Button>
               <Button
                 type="button"
@@ -442,7 +442,7 @@ export default function AdminPointsPanel() {
                   });
                 }}
               >
-                Remove points
+                Remove Select points
               </Button>
               <Button
                 type="button"
@@ -710,7 +710,7 @@ export default function AdminPointsPanel() {
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Give or remove points
               </p>
-              <label className="block max-w-xs">
+              <label className="block max-w-xs mx-auto">
                 <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                   Points
                 </span>
@@ -725,7 +725,7 @@ export default function AdminPointsPanel() {
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
                 />
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 <Button
                   type="button"
                   size="sm"
@@ -735,7 +735,7 @@ export default function AdminPointsPanel() {
                     void submitAdjust(detail, kind, n, { source: 'detail' });
                   }}
                 >
-                  {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Points'}
+                  {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Select Points'}
                 </Button>
                 <Button
                   type="button"
@@ -747,7 +747,7 @@ export default function AdminPointsPanel() {
                     void submitAdjust(detail, kind, -Math.abs(n), { source: 'detail' });
                   }}
                 >
-                  Remove points
+                  Remove Select points
                 </Button>
                 <Button
                   type="button"
