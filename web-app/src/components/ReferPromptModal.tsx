@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { ChevronLeft, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { notifyPointsBalanceChanged } from '../utils/pointsBalanceEvents';
+import { notifyOpenReferrals } from '../utils/referralsRewardsEvents';
 
 /**
  * Post-booking / milestone thank-you prompt to refer someone.
@@ -226,13 +227,16 @@ export default function ReferPromptModal() {
                   <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
                 </div>
-                <Link
-                  to="/web/referrals"
-                  onClick={() => setOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    notifyOpenReferrals();
+                  }}
                   className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
                 >
                   Earn Points
-                </Link>
+                </button>
               </div>
             )}
 
@@ -252,13 +256,16 @@ export default function ReferPromptModal() {
                 Up to {rewardPts.toLocaleString()} pts
               </p>
             )}
-            <Link
-              to="/web/referrals"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                notifyOpenReferrals();
+              }}
               className="block w-full rounded-xl bg-brand-600 text-white py-2.5 text-sm font-semibold text-center"
             >
               Refer someone
-            </Link>
+            </button>
           </>
         )}
       </div>

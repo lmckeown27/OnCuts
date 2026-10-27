@@ -55,6 +55,12 @@ import { migrateLocalStorageKey, removeLocalStorageKeys } from '../utils/storage
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import PointsBalancePill from '../components/PointsBalancePill';
 import ReferPromptModal from '../components/ReferPromptModal';
+import ReferralsModal from '../components/ReferralsModal';
+import RewardsModal from '../components/RewardsModal';
+import {
+  OPEN_REFERRALS_EVENT,
+  OPEN_REWARDS_EVENT,
+} from '../utils/referralsRewardsEvents';
 
 /** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
 const BARBER_HIDDEN_PAID_BOOKINGS_PREFIX = 'oncuts_barber_hidden_paid_bookings_';
@@ -124,6 +130,10 @@ export default function BarberPage() {
   
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
+  const [showReferrals, setShowReferrals] = useState(false);
+  const [isReferralsVisible, setIsReferralsVisible] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
+  const [isRewardsVisible, setIsRewardsVisible] = useState(false);
   const [showPortfolio, setShowPortfolio] = useState(false);
   const [isPortfolioVisible, setIsPortfolioVisible] = useState(false);
   
@@ -188,6 +198,8 @@ export default function BarberPage() {
     showBookingLink ||
     showServiceSpecialties ||
     showAdminDashboard ||
+    showReferrals ||
+    showRewards ||
     showPortfolio ||
     showBarberChats ||
     showBookings ||
@@ -355,6 +367,28 @@ export default function BarberPage() {
   
   const openAdminDashboard = () => openModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   const closeAdminDashboard = () => closeModal(setShowAdminDashboard, setIsAdminDashboardVisible);
+  const openReferrals = () => openModal(setShowReferrals, setIsReferralsVisible);
+  const closeReferrals = () => closeModal(setShowReferrals, setIsReferralsVisible);
+  const openRewards = () => openModal(setShowRewards, setIsRewardsVisible);
+  const closeRewards = () => closeModal(setShowRewards, setIsRewardsVisible);
+
+  useEffect(() => {
+    const onOpenReferrals = () => {
+      closeRewards();
+      openReferrals();
+    };
+    const onOpenRewards = () => {
+      closeReferrals();
+      openRewards();
+    };
+    window.addEventListener(OPEN_REFERRALS_EVENT, onOpenReferrals);
+    window.addEventListener(OPEN_REWARDS_EVENT, onOpenRewards);
+    return () => {
+      window.removeEventListener(OPEN_REFERRALS_EVENT, onOpenReferrals);
+      window.removeEventListener(OPEN_REWARDS_EVENT, onOpenRewards);
+    };
+  }, []);
+
   const openPortfolio = () => openModal(setShowPortfolio, setIsPortfolioVisible);
   const closePortfolio = () => closeModal(setShowPortfolio, setIsPortfolioVisible);
   
@@ -661,7 +695,7 @@ export default function BarberPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        navigate(`${platformPrefix}/referrals`);
+                        openReferrals();
                         setShowProfileDropdown(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -672,7 +706,7 @@ export default function BarberPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          navigate(`${platformPrefix}/rewards`);
+                          openRewards();
                           setShowProfileDropdown(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -907,6 +941,29 @@ export default function BarberPage() {
         />
       )}
       */}
+
+      <ReferralsModal
+        open={showReferrals}
+        visible={isReferralsVisible}
+        onClose={closeReferrals}
+        onOpenRewards={
+          pointsVisible
+            ? () => {
+                closeReferrals();
+                openRewards();
+              }
+            : undefined
+        }
+      />
+      <RewardsModal
+        open={showRewards}
+        visible={isRewardsVisible}
+        onClose={closeRewards}
+        onOpenReferrals={() => {
+          closeRewards();
+          openReferrals();
+        }}
+      />
 
       {/* Admin Dashboard — pushed shell (admins only) */}
       {isAdmin && showAdminDashboard && (

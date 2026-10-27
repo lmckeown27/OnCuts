@@ -72,6 +72,12 @@ import MyBarbersView from '../components/MyBarbersView';
 import IosAppDownloadBanner from '../components/IosAppDownloadBanner';
 import PointsBalancePill from '../components/PointsBalancePill';
 import ReferPromptModal from '../components/ReferPromptModal';
+import ReferralsModal from '../components/ReferralsModal';
+import RewardsModal from '../components/RewardsModal';
+import {
+  OPEN_REFERRALS_EVENT,
+  OPEN_REWARDS_EVENT,
+} from '../utils/referralsRewardsEvents';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 import { readLocalStorageWithMigration, removeLocalStorageKeys } from '../utils/storageMigration';
 import {
@@ -159,6 +165,10 @@ export default function ConsumerPage() {
   const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
+  const [showReferrals, setShowReferrals] = useState(false);
+  const [isReferralsVisible, setIsReferralsVisible] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
+  const [isRewardsVisible, setIsRewardsVisible] = useState(false);
   const [alternativeBarbersData, setAlternativeBarbersData] = useState<{
     scheduledTime: string;
     serviceType: string;
@@ -178,13 +188,15 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showBookingsModal || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal || showAdminDashboard;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showBookingsModal || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal || showAdminDashboard || showReferrals || showRewards;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
   useBodyScrollLock(showBlockedProvidersModal);
   useBodyScrollLock(showBookingsModal);
   useBodyScrollLock(showAdminDashboard);
+  useBodyScrollLock(showReferrals);
+  useBodyScrollLock(showRewards);
   
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void, setVisible?: (v: boolean) => void) => {
@@ -221,6 +233,45 @@ export default function ConsumerPage() {
       setShowAdminDashboard(false);
     }, 150);
   };
+
+  const openReferrals = () => {
+    scrollToTopAndOpen(setShowReferrals, setIsReferralsVisible);
+  };
+
+  const closeReferrals = () => {
+    setIsReferralsVisible(false);
+    setTimeout(() => {
+      setShowReferrals(false);
+    }, 150);
+  };
+
+  const openRewards = () => {
+    scrollToTopAndOpen(setShowRewards, setIsRewardsVisible);
+  };
+
+  const closeRewards = () => {
+    setIsRewardsVisible(false);
+    setTimeout(() => {
+      setShowRewards(false);
+    }, 150);
+  };
+
+  useEffect(() => {
+    const onOpenReferrals = () => {
+      closeRewards();
+      openReferrals();
+    };
+    const onOpenRewards = () => {
+      closeReferrals();
+      openRewards();
+    };
+    window.addEventListener(OPEN_REFERRALS_EVENT, onOpenReferrals);
+    window.addEventListener(OPEN_REWARDS_EVENT, onOpenRewards);
+    return () => {
+      window.removeEventListener(OPEN_REFERRALS_EVENT, onOpenReferrals);
+      window.removeEventListener(OPEN_REWARDS_EVENT, onOpenRewards);
+    };
+  }, []);
   
   // Determine platform prefix based on current route
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
@@ -833,7 +884,7 @@ export default function ConsumerPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            navigate(`${platformPrefix}/referrals`);
+                            openReferrals();
                             setShowProfileDropdown(false);
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -844,7 +895,7 @@ export default function ConsumerPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              navigate(`${platformPrefix}/rewards`);
+                              openRewards();
                               setShowProfileDropdown(false);
                             }}
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -984,6 +1035,29 @@ export default function ConsumerPage() {
           </div>
         </div>
       )}
+
+      <ReferralsModal
+        open={showReferrals}
+        visible={isReferralsVisible}
+        onClose={closeReferrals}
+        onOpenRewards={
+          pointsVisible
+            ? () => {
+                closeReferrals();
+                openRewards();
+              }
+            : undefined
+        }
+      />
+      <RewardsModal
+        open={showRewards}
+        visible={isRewardsVisible}
+        onClose={closeRewards}
+        onOpenReferrals={() => {
+          closeRewards();
+          openReferrals();
+        }}
+      />
 
       {/* Admin Dashboard — consumer-admins (no barber profile required) */}
       {isAdmin && showAdminDashboard && (

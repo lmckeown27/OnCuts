@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ChevronLeft, Copy, Eye, EyeOff, Info, RefreshCw, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -9,6 +8,7 @@ import {
   POINTS_BALANCE_CHANGED_EVENT,
   type PointsBalanceChangedDetail,
 } from '../utils/pointsBalanceEvents';
+import { notifyOpenReferrals } from '../utils/referralsRewardsEvents';
 
 export type PointsPillKind = 'operator' | 'client';
 
@@ -453,13 +453,16 @@ export default function PointsBalancePill({ kind, className = '' }: PointsBalanc
                         </li>
                         <li>Points never expire.</li>
                       </ul>
-                      <Link
-                        to="/web/referrals"
-                        onClick={closeAll}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeAll();
+                          notifyOpenReferrals();
+                        }}
                         className="inline-flex w-full justify-center rounded-xl bg-brand-600 text-white text-sm font-semibold py-2.5"
                       >
                         Open Referrals
-                      </Link>
+                      </button>
                     </>
                   )}
 

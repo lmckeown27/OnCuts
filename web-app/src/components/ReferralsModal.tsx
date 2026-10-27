@@ -1,0 +1,378 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Copy, Eye, EyeOff, MessageSquare, RefreshCw, X } from 'lucide-react';
+import api from '../services/api.service';
+import { useAuthStore } from '../store/useAuthStore';
+import { useFrontendConfig } from '../hooks/useFrontendConfig';
+import { useBodyScrollLock } from '../hooks';
+
+type Attribution = {
+  id: string;
+  displayName: string;
+  check1At: string;
+  check2Status: string;
+  qualifyingBookingCount: number;
+  m1AwardedAt: string | null;
+  m2HoldUntil: string | null;
+  m2AwardedAt: string | null;
+};
+
+type CodeRequest = {
+  id: string;
+  requesterName: string | null;
+  requesterEmail: string | null;
+  requesterPhone: string | null;
+  message: string | null;
+  status: string;
+  createdAt: string;
+};
+
+type ReferralMe = {
+  canRefer: boolean;
+  referrerKind: 'operator' | 'client';
+  pointsPerDollar: number;
+  code: {
+    masked: string;
+    createdAt: string;
+    useCount: number;
+    lastUsedAt: string | null;
+    usesThisMonth: number;
+    maxUsesPerMonth: number;
+  } | null;
+  history: Array<{
+    code: string;
+    createdAt: string;
+    retiredAt: string;
+    useCount: number;
+    lastUsedAt: string | null;
+  }>;
+  attributions: Attribution[];
+  codeRequests: CodeRequest[];
+  rewardsHint: { m1: number; m2: number; total: number };
+};
+
+interface ReferralsModalProps {
+  open: boolean;
+  visible: boolean;
+  onClose: () => void;
+  onOpenRewards?: () => void;
+}
+
+export default function ReferralsModal({
+  open,
+  visible,
+  onClose,
+  onOpenRewards,
+}: ReferralsModalProps) {
+  const user = useAuthStore((s) => s.user);
+  const { pointsVisible } = useFrontendConfig();
+  const [data, setData] = useState<ReferralMe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useBodyScrollLock(open);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get<ReferralMe>('/referrals/me');
+      setData(res);
+    } catch (e: any) {
+      setError(e?.message || 'Could not load referrals');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open || !user) return;
+    setRevealed(null);
+    void load();
+  }, [open, user, load]);
+
+  const reveal = async () => {
+    try {
+      setBusy(true);
+      const res = await api.post<{ code: string }>('/referrals/codes/reveal', {});
+      setRevealed(res.code);
+    } catch (e: any) {
+      setError(e?.message || 'Could not reveal code');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rotate = async () => {
+    if (!window.confirm('Rotate your code? The old code stops working immediately.')) return;
+    try {
+      setBusy(true);
+      const res = await api.post<{ code: string }>('/referrals/codes/rotate', {});
+      setRevealed(res.code);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'Could not rotate code');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyCode = async () => {
+    const code = revealed || data?.code?.masked;
+    if (!code || code.includes('•')) {
+      await reveal();
+      return;
+    }
+    await navigator.clipboard.writeText(code);
+  };
+
+  const textCode = async () => {
+    let code = revealed;
+    if (!code) {
+      const res = await api.post<{ code: string }>('/referrals/codes/reveal', {});
+      code = res.code;
+      setRevealed(code);
+    }
+    const body = encodeURIComponent(
+      `Join OnCuts with my referral code ${code}. Beauty pros welcome — braids, nails, lashes, makeup, tanning.`
+    );
+    window.open(`sms:?&body=${body}`, '_blank');
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={`fixed inset-0 z-[1100] min-h-[100dvh] flex items-end sm:items-center justify-center transition-colors duration-200 ${
+        visible ? 'bg-black/50' : 'bg-black/0'
+      }`}
+      onClick={onClose}
+    >
+      <div
+        className={`bg-stone-50 w-full sm:max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+          visible
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-8 sm:translate-y-4 sm:scale-95'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Referrals"
+      >
+        <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
+          <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
+        </div>
+        <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900">Referrals</h2>
+          {pointsVisible && onOpenRewards && (
+            <button
+              type="button"
+              onClick={onOpenRewards}
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-brand-700 hover:underline"
+            >
+              Rewards
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-5">
+          {!user ? (
+            <p className="text-sm text-gray-600">Sign in to view referrals.</p>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600">
+                Refer operators onto OnCuts — beauty pros included (braids, nails, lashes, makeup,
+                tanning). Earn up to {data?.rewardsHint.total ?? '—'} pts when they onboard and
+                complete bookings.
+              </p>
+
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">
+                  {error}
+                </div>
+              )}
+
+              {loading && <p className="text-sm text-gray-500">Loading…</p>}
+
+              {!loading && data && !data.canRefer && (
+                <div className="rounded-xl border border-stone-200 bg-white p-5 text-sm text-gray-700">
+                  Complete your first booking to unlock referring operators.
+                </div>
+              )}
+
+              {!loading && data?.canRefer && data.code && (
+                <section className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                      Referral code
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {data.code.usesThisMonth}/{data.code.maxUsesPerMonth} uses this month
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-2xl font-semibold tracking-widest text-gray-900 tabular-nums">
+                      {revealed || data.code.masked}
+                    </code>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => (revealed ? setRevealed(null) : void reveal())}
+                      className="p-2 rounded-lg hover:bg-stone-100"
+                      aria-label={revealed ? 'Hide code' : 'Show code'}
+                    >
+                      {revealed ? (
+                        <EyeOff className="w-5 h-5" aria-hidden />
+                      ) : (
+                        <Eye className="w-5 h-5" aria-hidden />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void copyCode()}
+                      className="p-2 rounded-lg hover:bg-stone-100"
+                      aria-label="Copy code"
+                    >
+                      <Copy className="w-5 h-5" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void rotate()}
+                      className="p-2 rounded-lg hover:bg-stone-100"
+                      aria-label="Rotate code"
+                      title="Rotate code"
+                    >
+                      <RefreshCw className="w-5 h-5" aria-hidden />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Created {new Date(data.code.createdAt).toLocaleDateString()} ·{' '}
+                    {data.code.useCount} total uses
+                    {data.code.lastUsedAt
+                      ? ` · last used ${new Date(data.code.lastUsedAt).toLocaleDateString()}`
+                      : ''}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void copyCode()}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
+                    >
+                      <Copy className="w-4 h-4" /> Copy
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void textCode()}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
+                    >
+                      <MessageSquare className="w-4 h-4" /> Text
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void rotate()}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-stone-300 text-sm font-medium hover:bg-stone-50"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Rotate
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {!loading && data && data.attributions.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Progress
+                  </h3>
+                  {data.attributions.map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-xl border border-stone-200 bg-white p-4 space-y-2"
+                    >
+                      <p className="font-medium text-gray-900">{a.displayName}</p>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>Check 1: {a.check1At ? 'Passed' : '—'}</li>
+                        <li>
+                          Check 2:{' '}
+                          {a.check2Status === 'passed'
+                            ? 'Passed'
+                            : a.check2Status === 'admin_review'
+                              ? 'In review'
+                              : a.check2Status === 'failed'
+                                ? 'Failed'
+                                : 'Pending'}
+                        </li>
+                        <li>Bookings toward 3: {a.qualifyingBookingCount}/3</li>
+                        {a.m1AwardedAt && <li>Milestone 1 awarded</li>}
+                        {a.m2HoldUntil && !a.m2AwardedAt && (
+                          <li>
+                            Milestone 2 on hold until{' '}
+                            {new Date(a.m2HoldUntil).toLocaleDateString()}
+                          </li>
+                        )}
+                        {a.m2AwardedAt && <li>Milestone 2 awarded</li>}
+                      </ul>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {!loading && data && data.codeRequests.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Code requests
+                  </h3>
+                  {data.codeRequests.map((r) => (
+                    <div
+                      key={r.id}
+                      className="rounded-xl border border-stone-200 bg-white p-4 text-sm space-y-1"
+                    >
+                      <p className="font-medium text-gray-900">{r.requesterName || 'Prospect'}</p>
+                      {r.requesterEmail && <p className="text-gray-600">{r.requesterEmail}</p>}
+                      {r.message && <p className="text-gray-600">{r.message}</p>}
+                      <p className="text-xs text-gray-500">
+                        {r.status} · {new Date(r.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {!loading && data && data.history.length > 0 && (
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Past codes
+                  </h3>
+                  {data.history.map((h, i) => (
+                    <div
+                      key={`${h.retiredAt}-${i}`}
+                      className="text-sm text-gray-600 flex justify-between gap-2"
+                    >
+                      <span className="font-mono">{h.code}</span>
+                      <span>
+                        {h.useCount} uses · retired {new Date(h.retiredAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </section>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
