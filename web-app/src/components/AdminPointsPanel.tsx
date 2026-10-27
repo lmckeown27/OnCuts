@@ -19,6 +19,7 @@ interface PointsBalanceItem {
   userId: string;
   displayName: string | null;
   email: string | null;
+  role?: string | null;
   balancePts: number;
   lifetimeEarnedPts: number;
   lifetimeSpentPts: number;
@@ -27,6 +28,17 @@ interface PointsBalanceItem {
   meta: Record<string, unknown> | unknown;
   createdAt: string;
   updatedAt: string;
+}
+
+interface UserPointsBalances {
+  userId: string;
+  role: string | null;
+  displayName: string | null;
+  email: string | null;
+  welcomeClaimed: boolean;
+  availableKinds: PointsKind[];
+  operator: PointsBalanceItem | null;
+  client: PointsBalanceItem | null;
 }
 
 interface PointsBalancesPage {
@@ -77,6 +89,8 @@ export default function AdminPointsPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<PointsBalanceItem | null>(null);
+  const [detailAccounts, setDetailAccounts] = useState<UserPointsBalances | null>(null);
+  const [detailAdjustKind, setDetailAdjustKind] = useState<PointsKind>('operator');
   const [exporting, setExporting] = useState(false);
 
   /** Independent of balances tab so admins can grant to either kind anytime. */
@@ -90,11 +104,54 @@ export default function AdminPointsPanel() {
   const [detailPts, setDetailPts] = useState('');
   const [detailBusy, setDetailBusy] = useState(false);
 
+  const clearDetail = useCallback(() => {
+    setDetail(null);
+    setDetailAccounts(null);
+    setDetailPts('');
+  }, []);
+
+  const openDetail = useCallback(
+    async (row: PointsBalanceItem, preferKind: PointsKind) => {
+      setDetail(row);
+      setDetailPts('');
+      setDetailAdjustKind(preferKind);
+      setDetailAccounts(null);
+      try {
+        const data = await api.get<UserPointsBalances>('/admin/points/user-balances', {
+          userId: row.userId,
+        });
+        setDetailAccounts(data);
+        const kinds = data?.availableKinds?.length
+          ? data.availableKinds
+          : ([preferKind] as PointsKind[]);
+        setDetailAdjustKind(kinds.includes(preferKind) ? preferKind : kinds[0]);
+        const active = preferKind === 'operator' ? data?.operator : data?.client;
+        if (active) {
+          setDetail({ ...active, role: data?.role ?? active.role });
+        } else {
+          setDetail({ ...row, role: data?.role ?? row.role });
+        }
+      } catch (err) {
+        console.error('Failed to load user point balances', err);
+      }
+    },
+    []
+  );
+
   const load = useCallback(
-    async (nextKind: PointsKind, nextOffset: number, q: string) => {
+    async (
+      nextKind: PointsKind,
+      nextOffset: number,
+      q: string,
+      opts?: { keepDetail?: boolean }
+    ) => {
       setLoading(true);
       setError(null);
-      setDetail(null);
+      if (!opts?.keepDetail) {
+        setDetail(null);
+        setDetailAccounts(null);
+        setDetailPts('');
+      }
       try {
         const data = await api.get<PointsBalancesPage>('/admin/points/balances', {
           kind: nextKind,
@@ -201,6 +258,39 @@ export default function AdminPointsPanel() {
     }
   };
 
+  const refreshDetailAccounts = useCallback(async (userId: string, preferKind: PointsKind) => {
+    try {
+      const data = await api.get<UserPointsBalances>('/admin/points/user-balances', {
+        userId,
+      });
+      setDetailAccounts(data);
+      const active = preferKind === 'operator' ? data?.operator : data?.client;
+      if (active) {
+        setDetail({
+          ...active,
+          role: data?.role ?? active.role,
+          welcomeClaimed: data?.welcomeClaimed ?? active.welcomeClaimed,
+        });
+      } else if (data) {
+        setDetail((prev) =>
+          prev
+            ? {
+                ...prev,
+                role: data.role ?? prev.role,
+                welcomeClaimed: data.welcomeClaimed,
+                balancePts: 0,
+                lifetimeEarnedPts: 0,
+                lifetimeSpentPts: 0,
+                lifetimeRevokedPts: 0,
+              }
+            : prev
+        );
+      }
+    } catch (err) {
+      console.error('Failed to refresh user point balances', err);
+    }
+  }, []);
+
   const submitAdjust = async (
     target: { userId: string },
     adjustKind: PointsKind,
@@ -240,30 +330,36 @@ export default function AdminPointsPanel() {
         setGrantPts('');
       }
       if (opts?.source === 'detail' && detail?.userId === target.userId) {
-        setDetail({
-          ...detail,
-          balancePts: nextBalance,
-          lifetimeEarnedPts:
-            signedPts > 0 ? detail.lifetimeEarnedPts + signedPts : detail.lifetimeEarnedPts,
-          lifetimeRevokedPts:
-            signedPts < 0
-              ? (detail.lifetimeRevokedPts || 0) + Math.abs(signedPts)
-              : detail.lifetimeRevokedPts || 0,
-        });
         setDetailPts('');
+        await refreshDetailAccounts(target.userId, adjustKind);
       }
       toast.success(
         signedPts > 0
-          ? `Granted ${formatPts(signedPts)} pts (balance ${formatPts(nextBalance)})`
-          : `Revoked ${formatPts(Math.abs(signedPts))} pts (balance ${formatPts(nextBalance)})`
+          ? `Granted ${formatPts(signedPts)} ${adjustKind} pts (balance ${formatPts(nextBalance)})`
+          : `Revoked ${formatPts(Math.abs(signedPts))} ${adjustKind} pts (balance ${formatPts(nextBalance)})`
       );
-      void load(kind, offset, listQueryApplied);
+      void load(kind, offset, listQueryApplied, {
+        keepDetail: opts?.source === 'detail',
+      });
     } catch (err: any) {
       toast.error(err?.message || 'Could not adjust points');
     } finally {
       busy(false);
     }
   };
+
+  const detailAvailableKinds: PointsKind[] =
+    detailAccounts?.availableKinds?.length
+      ? detailAccounts.availableKinds
+      : detail
+        ? [kind]
+        : [];
+  const detailIsDual = detailAvailableKinds.length > 1;
+  const detailActiveAccount =
+    detailAdjustKind === 'operator'
+      ? detailAccounts?.operator ?? (kind === 'operator' ? detail : null)
+      : detailAccounts?.client ?? (kind === 'client' ? detail : null);
+  const detailActiveBalance = detailActiveAccount?.balancePts ?? 0;
 
   return (
     <div className="space-y-4">
@@ -279,8 +375,7 @@ export default function AdminPointsPanel() {
             onClick={() => {
               setKind(tab.id);
               setOffset(0);
-              setDetail(null);
-              setDetailPts('');
+              clearDetail();
             }}
             className={`px-1 py-2 rounded-lg text-[10px] sm:text-xs font-semibold leading-tight text-center transition-colors ${
               kind === tab.id
@@ -577,7 +672,7 @@ export default function AdminPointsPanel() {
                 </thead>
                 <tbody>
                   {page.items.map((row) => {
-                    const isOpen = detail?.id === row.id;
+                    const isOpen = detail?.userId === row.userId;
                     return (
                       <tr
                         key={row.id}
@@ -589,22 +684,18 @@ export default function AdminPointsPanel() {
                         }`}
                         onClick={() => {
                           if (isOpen) {
-                            setDetail(null);
-                            setDetailPts('');
+                            clearDetail();
                           } else {
-                            setDetail(row);
-                            setDetailPts('');
+                            void openDetail(row, kind);
                           }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             if (isOpen) {
-                              setDetail(null);
-                              setDetailPts('');
+                              clearDetail();
                             } else {
-                              setDetail(row);
-                              setDetailPts('');
+                              void openDetail(row, kind);
                             }
                           }
                         }}
@@ -673,10 +764,7 @@ export default function AdminPointsPanel() {
               <button
                 type="button"
                 className="text-xs text-gray-500 hover:text-gray-800"
-                onClick={() => {
-                  setDetail(null);
-                  setDetailPts('');
-                }}
+                onClick={clearDetail}
               >
                 Close
               </button>
@@ -687,11 +775,70 @@ export default function AdminPointsPanel() {
                   ['userId', detail.userId],
                   ['displayName', detail.displayName],
                   ['email', detail.email],
-                  ['balancePts', detail.balancePts],
-                  ['lifetimeEarnedPts', detail.lifetimeEarnedPts],
-                  ['lifetimeSpentPts', detail.lifetimeSpentPts],
-                  ['lifetimeRevokedPts', detail.lifetimeRevokedPts ?? 0],
-                  ['welcomeClaim', detail.welcomeClaimed ? 'Claimed' : 'Not claimed'],
+                  ['role', detail.role || detailAccounts?.role || '—'],
+                  ...(detailIsDual
+                    ? ([
+                        [
+                          'operatorBalancePts',
+                          detailAccounts?.operator
+                            ? formatPts(detailAccounts.operator.balancePts)
+                            : '0 (no account)',
+                        ],
+                        [
+                          'clientBalancePts',
+                          detailAccounts?.client
+                            ? formatPts(detailAccounts.client.balancePts)
+                            : '0 (no account)',
+                        ],
+                        [
+                          'operatorLifetimeEarnedPts',
+                          detailAccounts?.operator
+                            ? formatPts(detailAccounts.operator.lifetimeEarnedPts)
+                            : '0',
+                        ],
+                        [
+                          'clientLifetimeEarnedPts',
+                          detailAccounts?.client
+                            ? formatPts(detailAccounts.client.lifetimeEarnedPts)
+                            : '0',
+                        ],
+                        [
+                          'operatorLifetimeSpentPts',
+                          detailAccounts?.operator
+                            ? formatPts(detailAccounts.operator.lifetimeSpentPts)
+                            : '0',
+                        ],
+                        [
+                          'clientLifetimeSpentPts',
+                          detailAccounts?.client
+                            ? formatPts(detailAccounts.client.lifetimeSpentPts)
+                            : '0',
+                        ],
+                        [
+                          'operatorLifetimeRevokedPts',
+                          detailAccounts?.operator
+                            ? formatPts(detailAccounts.operator.lifetimeRevokedPts ?? 0)
+                            : '0',
+                        ],
+                        [
+                          'clientLifetimeRevokedPts',
+                          detailAccounts?.client
+                            ? formatPts(detailAccounts.client.lifetimeRevokedPts ?? 0)
+                            : '0',
+                        ],
+                      ] as const)
+                    : ([
+                        ['balancePts', detail.balancePts],
+                        ['lifetimeEarnedPts', detail.lifetimeEarnedPts],
+                        ['lifetimeSpentPts', detail.lifetimeSpentPts],
+                        ['lifetimeRevokedPts', detail.lifetimeRevokedPts ?? 0],
+                      ] as const)),
+                  [
+                    'welcomeClaim',
+                    (detailAccounts?.welcomeClaimed ?? detail.welcomeClaimed)
+                      ? 'Claimed'
+                      : 'Not claimed',
+                  ],
                   ['createdAt', formatWhen(detail.createdAt)],
                   ['updatedAt', formatWhen(detail.updatedAt)],
                 ] as const
@@ -710,6 +857,46 @@ export default function AdminPointsPanel() {
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Give or remove points
               </p>
+              {detailIsDual && (
+                <nav
+                  className="grid gap-0.5 rounded-lg bg-stone-100 p-1 max-w-xs mx-auto"
+                  style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}
+                  aria-label="Detail points kind"
+                >
+                  {detailAvailableKinds.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setDetailAdjustKind(k);
+                        setDetailPts('');
+                        const account =
+                          k === 'operator' ? detailAccounts?.operator : detailAccounts?.client;
+                        if (account) {
+                          setDetail({
+                            ...account,
+                            role: detailAccounts?.role ?? account.role,
+                            welcomeClaimed:
+                              detailAccounts?.welcomeClaimed ?? account.welcomeClaimed,
+                          });
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-md text-xs font-semibold text-center transition-colors ${
+                        detailAdjustKind === k
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {k === 'operator' ? 'Operator' : 'Client'}
+                    </button>
+                  ))}
+                </nav>
+              )}
+              {!detailIsDual && (
+                <p className="text-center text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  {detailAdjustKind} points
+                </p>
+              )}
               <label className="block max-w-xs mx-auto">
                 <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                   Points
@@ -732,7 +919,7 @@ export default function AdminPointsPanel() {
                   disabled={detailBusy}
                   onClick={() => {
                     const n = parseInt(detailPts.trim(), 10);
-                    void submitAdjust(detail, kind, n, { source: 'detail' });
+                    void submitAdjust(detail, detailAdjustKind, n, { source: 'detail' });
                   }}
                 >
                   {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Select Points'}
@@ -741,10 +928,12 @@ export default function AdminPointsPanel() {
                   type="button"
                   size="sm"
                   variant="danger"
-                  disabled={detailBusy || detail.balancePts <= 0}
+                  disabled={detailBusy || detailActiveBalance <= 0}
                   onClick={() => {
                     const n = parseInt(detailPts.trim(), 10);
-                    void submitAdjust(detail, kind, -Math.abs(n), { source: 'detail' });
+                    void submitAdjust(detail, detailAdjustKind, -Math.abs(n), {
+                      source: 'detail',
+                    });
                   }}
                 >
                   Remove Select Points
@@ -753,24 +942,26 @@ export default function AdminPointsPanel() {
                   type="button"
                   size="sm"
                   variant="danger"
-                  disabled={detailBusy || detail.balancePts <= 0}
+                  disabled={detailBusy || detailActiveBalance <= 0}
                   onClick={() => {
                     if (
                       !window.confirm(
-                        `Remove all ${formatPts(detail.balancePts)} pts from ${
+                        `Remove all ${formatPts(detailActiveBalance)} ${detailAdjustKind} pts from ${
                           detail.displayName || detail.email || 'this user'
                         }?`
                       )
                     ) {
                       return;
                     }
-                    void submitAdjust(detail, kind, -detail.balancePts, { source: 'detail' });
+                    void submitAdjust(detail, detailAdjustKind, -detailActiveBalance, {
+                      source: 'detail',
+                    });
                   }}
                 >
                   Remove all
                 </Button>
               </div>
-              {detail.welcomeClaimed && (
+              {(detailAccounts?.welcomeClaimed ?? detail.welcomeClaimed) && (
                 <div className="pt-1 flex justify-center">
                   <Button
                     type="button"
@@ -794,8 +985,11 @@ export default function AdminPointsPanel() {
                             userId: detail.userId,
                           });
                           setDetail({ ...detail, welcomeClaimed: false });
+                          setDetailAccounts((prev) =>
+                            prev ? { ...prev, welcomeClaimed: false } : prev
+                          );
                           toast.success('Welcome claim reset');
-                          void load(kind, offset, listQueryApplied);
+                          void load(kind, offset, listQueryApplied, { keepDetail: true });
                         } catch (err: any) {
                           toast.error(err?.message || 'Could not reset welcome claim');
                         } finally {

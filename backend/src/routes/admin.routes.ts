@@ -94,6 +94,7 @@ router.get('/db/tables/:table', adminDbController.getDbTable);
 // OnCuts Points balances + distribute (Admin Points tab)
 router.get('/points/balances', adminPointsController.getPointsBalances);
 router.get('/points/users', adminPointsController.searchPointsUsers);
+router.get('/points/user-balances', adminPointsController.getUserPointsBalances);
 router.post('/points/adjust', adminPointsController.adjustPoints);
 router.post('/points/reset-welcome-claim', adminPointsController.resetWelcomeClaim);
 

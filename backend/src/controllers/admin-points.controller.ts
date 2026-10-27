@@ -23,9 +23,76 @@ function tableForKind(kind: string): { kind: PointsKind; table: string } {
 }
 
 function roleFilterSql(kind: PointsKind): string {
+  // ADMIN can hold both operator and client points (acts as either side).
   return kind === 'operator'
     ? `u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')`
-    : `u.role IN ('CONSUMER')`;
+    : `u.role IN ('CONSUMER', 'ADMIN')`;
+}
+
+function mapBalanceRow(row: Record<string, unknown>, includeRole = false) {
+  const item: Record<string, unknown> = {
+    id: String(row.id),
+    userId: String(row.user_id),
+    displayName: row.display_name != null ? String(row.display_name) : null,
+    email: row.email != null ? String(row.email) : null,
+    balancePts: Number(row.balance_pts) || 0,
+    lifetimeEarnedPts: Number(row.lifetime_earned_pts) || 0,
+    lifetimeSpentPts: Number(row.lifetime_spent_pts) || 0,
+    lifetimeRevokedPts: Number(row.lifetime_revoked_pts) || 0,
+    welcomeClaimed: Boolean(row.welcome_claimed),
+    meta: row.meta ?? {},
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at ?? null,
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at ?? null,
+  };
+  if (includeRole) {
+    item.role = row.role != null ? String(row.role) : null;
+  }
+  return item;
+}
+
+async function loadBalanceForUser(table: string, userId: string) {
+  const exists = await pool.query<{ ok: boolean }>(
+    `SELECT to_regclass($1) IS NOT NULL AS ok`,
+    [`public.${table}`]
+  );
+  if (!exists.rows[0]?.ok) return null;
+
+  const result = await pool.query(
+    `SELECT
+       p.id,
+       p.user_id,
+       p.balance_pts,
+       p.lifetime_earned_pts,
+       p.lifetime_spent_pts,
+       COALESCE(p.lifetime_revoked_pts, 0) AS lifetime_revoked_pts,
+       p.meta,
+       p.created_at,
+       p.updated_at,
+       u.email,
+       u.role,
+       COALESCE(
+         NULLIF(BTRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+         NULLIF(BTRIM(to_jsonb(u)->>'displayName'), ''),
+         NULLIF(BTRIM(u.email), ''),
+         p.user_id::text
+       ) AS display_name,
+       EXISTS (
+         SELECT 1 FROM points_ledger pl
+         WHERE pl.user_id = p.user_id AND pl.reason = 'admin_welcome_claim'
+       ) AS welcome_claimed
+     FROM ${table} p
+     LEFT JOIN users u ON u.id = p.user_id
+     WHERE p.user_id = $1
+     LIMIT 1`,
+    [userId]
+  );
+  return result.rows[0] ? mapBalanceRow(result.rows[0], true) : null;
 }
 
 /**
@@ -89,6 +156,7 @@ export const getPointsBalances = async (req: AuthRequest, res: Response, next: N
          p.created_at,
          p.updated_at,
          u.email,
+         u.role,
          COALESCE(
            NULLIF(BTRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
            NULLIF(BTRIM(to_jsonb(u)->>'displayName'), ''),
@@ -107,20 +175,7 @@ export const getPointsBalances = async (req: AuthRequest, res: Response, next: N
       listParams
     );
 
-    const items = rowsResult.rows.map((row) => ({
-      id: String(row.id),
-      userId: String(row.user_id),
-      displayName: row.display_name != null ? String(row.display_name) : null,
-      email: row.email != null ? String(row.email) : null,
-      balancePts: Number(row.balance_pts) || 0,
-      lifetimeEarnedPts: Number(row.lifetime_earned_pts) || 0,
-      lifetimeSpentPts: Number(row.lifetime_spent_pts) || 0,
-      lifetimeRevokedPts: Number(row.lifetime_revoked_pts) || 0,
-      welcomeClaimed: Boolean(row.welcome_claimed),
-      meta: row.meta ?? {},
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
-      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
-    }));
+    const items = rowsResult.rows.map((row) => mapBalanceRow(row, true));
 
     res.json({
       success: true,
@@ -224,6 +279,72 @@ export const searchPointsUsers = async (req: AuthRequest, res: Response, next: N
 };
 
 /**
+ * GET /api/admin/points/user-balances?userId=
+ * Returns operator + client balances for one user (null when no account yet).
+ */
+export const getUserPointsBalances = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    requireAdmin(req);
+    const userId = String(req.query.userId || '').trim();
+    if (!userId) throw new ApiError(400, 'userId is required');
+
+    const user = await pool.query<{
+      id: string;
+      role: string;
+      email: string | null;
+      display_name: string | null;
+    }>(
+      `SELECT
+         id,
+         role,
+         email,
+         COALESCE(
+           NULLIF(BTRIM(CONCAT_WS(' ', first_name, last_name)), ''),
+           NULLIF(BTRIM(email), ''),
+           id::text
+         ) AS display_name
+       FROM users WHERE id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!user.rows[0]) throw new ApiError(404, 'User not found');
+
+    const role = String(user.rows[0].role || '').toUpperCase();
+    const [operator, client] = await Promise.all([
+      loadBalanceForUser('operator_points', userId),
+      loadBalanceForUser('client_points', userId),
+    ]);
+
+    const welcome = await pool.query<{ claimed: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM points_ledger
+         WHERE user_id = $1 AND reason = 'admin_welcome_claim'
+       ) AS claimed`,
+      [userId]
+    );
+
+    const kinds: PointsKind[] = [];
+    if (['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(role)) kinds.push('operator');
+    if (['CONSUMER', 'ADMIN'].includes(role)) kinds.push('client');
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        role,
+        displayName: user.rows[0].display_name,
+        email: user.rows[0].email,
+        welcomeClaimed: Boolean(welcome.rows[0]?.claimed),
+        availableKinds: kinds,
+        operator,
+        client,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/admin/points/adjust
  * Body: { userId, kind, deltaPts, note? }
  * Positive deltaPts grants points; negative removes (cannot go below 0).
@@ -254,7 +375,7 @@ export const adjustPoints = async (req: AuthRequest, res: Response, next: NextFu
     if (kind === 'operator' && !['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(role)) {
       throw new ApiError(400, 'User is not an operator for operator points');
     }
-    if (kind === 'client' && role !== 'CONSUMER') {
+    if (kind === 'client' && !['CONSUMER', 'ADMIN'].includes(role)) {
       throw new ApiError(400, 'User is not a client for client points');
     }
 
