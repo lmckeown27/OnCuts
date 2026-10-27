@@ -283,3 +283,39 @@ export const adjustPoints = async (req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 };
+
+/**
+ * POST /api/admin/points/reset-welcome-claim
+ * Body: { userId }
+ * Deletes the admin_welcome_claim ledger row so the user can claim again.
+ * Does not change their points balance.
+ */
+export const resetWelcomeClaim = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    requireAdmin(req);
+    const userId = String(req.body?.userId || '').trim();
+    if (!userId) throw new ApiError(400, 'userId is required');
+
+    const user = await pool.query(`SELECT id FROM users WHERE id = $1 LIMIT 1`, [userId]);
+    if (!user.rows[0]) throw new ApiError(404, 'User not found');
+
+    const deleted = await pool.query(
+      `DELETE FROM points_ledger
+       WHERE user_id = $1 AND reason = 'admin_welcome_claim'
+       RETURNING id, delta_pts`,
+      [userId]
+    );
+
+    const removed = deleted.rowCount ?? 0;
+    res.json({
+      success: true,
+      data: {
+        userId,
+        reset: removed > 0,
+        removedLedgerRows: removed,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

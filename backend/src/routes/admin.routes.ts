@@ -95,6 +95,7 @@ router.get('/db/tables/:table', adminDbController.getDbTable);
 router.get('/points/balances', adminPointsController.getPointsBalances);
 router.get('/points/users', adminPointsController.searchPointsUsers);
 router.post('/points/adjust', adminPointsController.adjustPoints);
+router.post('/points/reset-welcome-claim', adminPointsController.resetWelcomeClaim);
 
 // Referral ledger + settings
 router.get('/referrals/attributions', adminReferralsController.listReferralAttributions);

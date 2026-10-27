@@ -428,7 +428,7 @@ export default function AdminPointsPanel() {
                   void submitAdjust(selected, distributeKind, n, { source: 'distribute' });
                 }}
               >
-                {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
+                {grantBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Points'}
               </Button>
               <Button
                 type="button"
@@ -735,7 +735,7 @@ export default function AdminPointsPanel() {
                     void submitAdjust(detail, kind, n, { source: 'detail' });
                   }}
                 >
-                  {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Give points'}
+                  {detailBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add Points'}
                 </Button>
                 <Button
                   type="button"
@@ -770,6 +770,44 @@ export default function AdminPointsPanel() {
                   Remove all
                 </Button>
               </div>
+              {detail.welcomeClaimed && (
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={detailBusy}
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          `Reset welcome claim for ${
+                            detail.displayName || detail.email || 'this user'
+                          }? They will be able to Claim again. Balance is unchanged.`
+                        )
+                      ) {
+                        return;
+                      }
+                      void (async () => {
+                        setDetailBusy(true);
+                        try {
+                          await api.post('/admin/points/reset-welcome-claim', {
+                            userId: detail.userId,
+                          });
+                          setDetail({ ...detail, welcomeClaimed: false });
+                          toast.success('Welcome claim reset');
+                          void load(kind, offset, listQueryApplied);
+                        } catch (err: any) {
+                          toast.error(err?.message || 'Could not reset welcome claim');
+                        } finally {
+                          setDetailBusy(false);
+                        }
+                      })();
+                    }}
+                  >
+                    Reset welcome claim
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
