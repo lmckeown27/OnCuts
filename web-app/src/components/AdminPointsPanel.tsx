@@ -433,7 +433,7 @@ export default function AdminPointsPanel() {
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
+                variant="danger"
                 disabled={grantBusy || selected.balancePts <= 0}
                 onClick={() => {
                   const n = parseInt(grantPts.trim(), 10);
@@ -442,12 +442,12 @@ export default function AdminPointsPanel() {
                   });
                 }}
               >
-                Remove Select points
+                Remove Select Points
               </Button>
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
+                variant="danger"
                 disabled={grantBusy || selected.balancePts <= 0}
                 onClick={() => {
                   if (
@@ -740,19 +740,19 @@ export default function AdminPointsPanel() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant="danger"
                   disabled={detailBusy || detail.balancePts <= 0}
                   onClick={() => {
                     const n = parseInt(detailPts.trim(), 10);
                     void submitAdjust(detail, kind, -Math.abs(n), { source: 'detail' });
                   }}
                 >
-                  Remove Select points
+                  Remove Select Points
                 </Button>
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant="danger"
                   disabled={detailBusy || detail.balancePts <= 0}
                   onClick={() => {
                     if (
@@ -771,11 +771,11 @@ export default function AdminPointsPanel() {
                 </Button>
               </div>
               {detail.welcomeClaimed && (
-                <div className="pt-1">
+                <div className="pt-1 flex justify-center">
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="danger"
                     disabled={detailBusy}
                     onClick={() => {
                       if (
@@ -804,7 +804,7 @@ export default function AdminPointsPanel() {
                       })();
                     }}
                   >
-                    Reset welcome claim
+                    Reset Welcome Claim
                   </Button>
                 </div>
               )}
