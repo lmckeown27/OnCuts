@@ -163,25 +163,29 @@ export default function ReferralsModal({
         <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
         </div>
-        <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Referrals</h2>
-          {pointsVisible && onOpenRewards && (
+        <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-stone-200/80 shrink-0">
+          <div className="justify-self-start">
+            {pointsVisible && onOpenRewards && (
+              <button
+                type="button"
+                onClick={onOpenRewards}
+                className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+              >
+                Rewards
+              </button>
+            )}
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 text-center">Referrals</h2>
+          <div className="justify-self-end">
             <button
               type="button"
-              onClick={onOpenRewards}
-              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-brand-700 hover:underline"
+              onClick={onClose}
+              className="p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+              aria-label="Close"
             >
-              Rewards
+              <X className="w-5 h-5 text-gray-600" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-stone-200/60 rounded-full transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-5">
@@ -189,12 +193,6 @@ export default function ReferralsModal({
             <p className="text-sm text-gray-600">Sign in to view referrals.</p>
           ) : (
             <>
-              <p className="text-sm text-gray-600">
-                Refer operators onto OnCuts — beauty pros included (braids, nails, lashes, makeup,
-                tanning). Earn up to {data?.rewardsHint.total ?? '—'} pts when they onboard and
-                complete bookings.
-              </p>
-
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">
                   {error}

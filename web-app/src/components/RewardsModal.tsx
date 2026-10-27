@@ -94,25 +94,29 @@ export default function RewardsModal({
         <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
         </div>
-        <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 flex items-center justify-center border-b border-stone-200/80 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Rewards</h2>
-          {onOpenReferrals && (
+        <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-stone-200/80 shrink-0">
+          <div className="justify-self-start">
+            {onOpenReferrals && (
+              <button
+                type="button"
+                onClick={onOpenReferrals}
+                className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+              >
+                Referrals
+              </button>
+            )}
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 text-center">Rewards</h2>
+          <div className="justify-self-end">
             <button
               type="button"
-              onClick={onOpenReferrals}
-              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-brand-700 hover:underline"
+              onClick={onClose}
+              className="p-2 hover:bg-stone-200/60 rounded-full transition-colors"
+              aria-label="Close"
             >
-              Referrals
+              <X className="w-5 h-5 text-gray-600" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-stone-200/60 rounded-full transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-5">
