@@ -32,6 +32,13 @@ interface RewardsModalProps {
   onOpenReferrals?: () => void;
 }
 
+function formatPointsReason(reason: string): string {
+  return reason
+    .replace(/_/g, ' ')
+    .replace(/\bgrant\b/gi, 'gift')
+    .replace(/\bclawback\b/gi, 'revokal');
+}
+
 export default function RewardsModal({
   open,
   visible,
@@ -180,7 +187,7 @@ export default function RewardsModal({
                       >
                         <div>
                           <p className="font-medium text-gray-900">
-                            {h.reason.replace(/_/g, ' ')}
+                            {formatPointsReason(h.reason)}
                           </p>
                           <p className="text-xs text-gray-500">
                             {new Date(h.createdAt).toLocaleString()}
