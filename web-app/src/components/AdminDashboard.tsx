@@ -51,17 +51,6 @@ function formatApplicationExperience(value: string | number | undefined | null):
   return labels[key] || (typeof value === 'number' ? `${value} years` : key);
 }
 
-function formatApplicationHours(value: string | undefined | null): string {
-  if (!value) return 'Not specified';
-  const labels: Record<string, string> = {
-    '5-10': '5-10 hours/week',
-    '10-20': '10-20 hours/week',
-    '20-30': '20-30 hours/week',
-    '30-plus': '30+ hours/week',
-  };
-  return labels[value] || value;
-}
-
 function formatApplicationSocial(value: string | undefined | null): string {
   const trimmed = (value || '').trim();
   if (!trimmed) return '';
@@ -4091,18 +4080,6 @@ export function AdminDashboard({
                     </div>
                   )}
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Available Hours</p>
-                  <p className="font-semibold text-gray-900">
-                    {formatApplicationHours(selectedApplication.available_hours)}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Tools</p>
-                  <p className="font-semibold text-gray-900">
-                    {selectedApplication.has_own_tools ? 'Has own tools' : 'Needs tools'}
-                  </p>
-                </div>
                 {selectedApplication.social_media && (
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">Social</p>
@@ -4111,6 +4088,32 @@ export function AdminDashboard({
                     </p>
                   </div>
                 )}
+                <div className="p-3 bg-gray-50 rounded-lg sm:col-span-2">
+                  <p className="text-xs text-gray-500 mb-1">Referral code</p>
+                  {selectedApplication.referral_code ? (
+                    <>
+                      <p className="font-semibold text-gray-900 font-mono tracking-widest">
+                        {selectedApplication.referral_code}
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedApplication.referrer_id
+                          ? `From ${
+                              [selectedApplication.referrer_first_name, selectedApplication.referrer_last_name]
+                                .filter(Boolean)
+                                .join(' ')
+                                .trim() || 'Unknown user'
+                            }${
+                              selectedApplication.referrer_email
+                                ? ` (${selectedApplication.referrer_email})`
+                                : ''
+                            }`
+                          : 'Submitted — referrer account not found for this code'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-semibold text-gray-900">None submitted</p>
+                  )}
+                </div>
               </div>
 
               {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (

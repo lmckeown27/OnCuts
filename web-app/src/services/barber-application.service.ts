@@ -57,6 +57,11 @@ export interface BarberApplication {
   first_name?: string;
   last_name?: string;
   campus_name?: string;
+  referral_code?: string | null;
+  referrer_id?: string | null;
+  referrer_first_name?: string | null;
+  referrer_last_name?: string | null;
+  referrer_email?: string | null;
   // Nested user object (for alternate response formats)
   user?: {
     id: string;

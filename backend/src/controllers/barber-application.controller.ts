@@ -333,6 +333,61 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
       paramIndex++;
     }
 
+    // Older DBs may predate referral_code on application tables
+    await Promise.all([
+      pool
+        .query(`ALTER TABLE barber_applications ADD COLUMN IF NOT EXISTS referral_code VARCHAR(9)`)
+        .catch(() => undefined),
+      pool
+        .query(
+          `ALTER TABLE guest_barber_applications ADD COLUMN IF NOT EXISTS referral_code VARCHAR(9)`
+        )
+        .catch(() => undefined),
+    ]);
+
+    const referralTables = await pool.query<{ codes: boolean; history: boolean }>(
+      `SELECT
+         to_regclass('public.referral_codes') IS NOT NULL AS codes,
+         to_regclass('public.referral_code_history') IS NOT NULL AS history`
+    );
+    const hasReferralLookups = Boolean(
+      referralTables.rows[0]?.codes && referralTables.rows[0]?.history
+    );
+
+    const regularReferrerJoin = hasReferralLookups
+      ? `LEFT JOIN LATERAL (
+          SELECT owner.user_id
+          FROM (
+            SELECT user_id FROM referral_codes WHERE code = ba.referral_code
+            UNION ALL
+            SELECT user_id FROM referral_code_history WHERE code = ba.referral_code
+          ) owner
+          LIMIT 1
+        ) code_owner ON ba.referral_code IS NOT NULL AND btrim(ba.referral_code) <> ''
+        LEFT JOIN users rf ON rf.id = code_owner.user_id`
+      : '';
+    const guestReferrerJoin = hasReferralLookups
+      ? `LEFT JOIN LATERAL (
+          SELECT owner.user_id
+          FROM (
+            SELECT user_id FROM referral_codes WHERE code = gba.referral_code
+            UNION ALL
+            SELECT user_id FROM referral_code_history WHERE code = gba.referral_code
+          ) owner
+          LIMIT 1
+        ) code_owner ON gba.referral_code IS NOT NULL AND btrim(gba.referral_code) <> ''
+        LEFT JOIN users rf ON rf.id = code_owner.user_id`
+      : '';
+    const referrerSelect = hasReferralLookups
+      ? `rf.id as referrer_id,
+          rf.first_name as referrer_first_name,
+          rf.last_name as referrer_last_name,
+          rf.email as referrer_email`
+      : `NULL::uuid as referrer_id,
+          NULL::text as referrer_first_name,
+          NULL::text as referrer_last_name,
+          NULL::text as referrer_email`;
+
     // Combined query using UNION ALL to get both regular and guest applications
     let query = `
       SELECT * FROM (
@@ -360,10 +415,13 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
           u.last_name,
           c.name as campus_name,
           ba.campus_id,
-          'regular' as application_type
+          'regular' as application_type,
+          ba.referral_code,
+          ${referrerSelect}
         FROM barber_applications ba
         JOIN users u ON ba.user_id = u.id
         LEFT JOIN campuses c ON ba.campus_id = c.id
+        ${regularReferrerJoin}
         WHERE 1=1
         ${statusFilter ? `AND ba.${statusFilter}` : ''}
         ${campusFilter ? `AND ba.${campusFilter}` : ''}
@@ -394,9 +452,12 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
           gba.last_name,
           c.name as campus_name,
           gba.campus_id,
-          'guest' as application_type
+          'guest' as application_type,
+          gba.referral_code,
+          ${referrerSelect}
         FROM guest_barber_applications gba
         LEFT JOIN campuses c ON gba.campus_id = c.id
+        ${guestReferrerJoin}
         WHERE 1=1
         ${statusFilter ? `AND gba.${statusFilter}` : ''}
         ${campusFilter ? `AND gba.${campusFilter}` : ''}
