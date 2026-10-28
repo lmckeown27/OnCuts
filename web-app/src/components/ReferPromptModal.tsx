@@ -249,8 +249,9 @@ export default function ReferPromptModal() {
                 <div className="text-sm text-gray-600 leading-relaxed pr-1">
                   <ul className="list-disc pl-5 space-y-1.5">
                     <li>
-                      Share your Referral Code with operators you know whether they be barbers or
-                      beauty professionals
+                      Share your Referral Code with operators you know whether they be{' '}
+                      <span className="font-semibold text-gray-900">barbers</span> or{' '}
+                      <span className="font-semibold text-gray-900">beauty</span> professionals
                     </li>
                     <li>
                       Earn up to{' '}
