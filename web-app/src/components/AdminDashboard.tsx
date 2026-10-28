@@ -2389,6 +2389,28 @@ export function AdminDashboard({
       setIsLoadingConsumerBookings(false);
     }
   };
+
+  const openReferrerFromApplication = async (app: BarberApplication) => {
+    if (!app.referrer_id) return;
+    const existing = users.find((u) => u.id === app.referrer_id);
+    const referrerUser: PlatformUser = existing || {
+      id: app.referrer_id,
+      first_name: app.referrer_first_name || '',
+      last_name: app.referrer_last_name || '',
+      email: app.referrer_email || '',
+      role: 'CONSUMER',
+      avatar_url: null,
+      campus_name: null,
+      created_at: '',
+      is_active: true,
+      customer_number: null,
+    };
+    setSelectedApplication(null);
+    setSelectedBarber(null);
+    setUsersPanelMounted(true);
+    startTransition(() => setAdminView('users'));
+    await handleConsumerClick(referrerUser);
+  };
   
   // Go back from consumer detail view
   const handleBackToConsumers = () => {
@@ -4070,32 +4092,53 @@ export function AdminDashboard({
                     </p>
                   </div>
                 )}
-                <div className="p-3 bg-gray-50 rounded-lg sm:col-span-2">
-                  <p className="text-xs text-gray-500 mb-1">Referral code</p>
-                  {selectedApplication.referral_code ? (
-                    <>
-                      <p className="font-semibold text-gray-900 font-mono tracking-widest">
-                        {selectedApplication.referral_code}
-                      </p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        {selectedApplication.referrer_id
-                          ? `From ${
-                              [selectedApplication.referrer_first_name, selectedApplication.referrer_last_name]
-                                .filter(Boolean)
-                                .join(' ')
-                                .trim() || 'Unknown user'
-                            }${
-                              selectedApplication.referrer_email
-                                ? ` (${selectedApplication.referrer_email})`
-                                : ''
-                            }`
-                          : 'Submitted — referrer account not found for this code'}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="font-semibold text-gray-900">None submitted</p>
-                  )}
-                </div>
+                {selectedApplication.referrer_id ? (
+                  <button
+                    type="button"
+                    onClick={() => void openReferrerFromApplication(selectedApplication)}
+                    className="p-3 bg-gray-50 rounded-lg sm:col-span-2 text-left w-full hover:bg-stone-100 border border-transparent hover:border-stone-200 transition-colors cursor-pointer"
+                  >
+                    <p className="text-xs text-gray-500 mb-1">Referral code</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 font-mono tracking-widest">
+                          {selectedApplication.referral_code}
+                        </p>
+                        <p className="text-sm text-gray-700 mt-1 truncate">
+                          From{' '}
+                          {[
+                            selectedApplication.referrer_first_name,
+                            selectedApplication.referrer_last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(' ')
+                            .trim() || 'Unknown user'}
+                          {selectedApplication.referrer_email
+                            ? ` (${selectedApplication.referrer_email})`
+                            : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-1">View referrer in Users</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" aria-hidden />
+                    </div>
+                  </button>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-lg sm:col-span-2">
+                    <p className="text-xs text-gray-500 mb-1">Referral code</p>
+                    {selectedApplication.referral_code ? (
+                      <>
+                        <p className="font-semibold text-gray-900 font-mono tracking-widest">
+                          {selectedApplication.referral_code}
+                        </p>
+                        <p className="text-sm text-gray-700 mt-1">
+                          Submitted — referrer account not found for this code
+                        </p>
+                      </>
+                    ) : (
+                      <p className="font-semibold text-gray-900">None submitted</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
