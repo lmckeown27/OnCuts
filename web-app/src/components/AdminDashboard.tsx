@@ -6809,15 +6809,16 @@ export function AdminDashboard({
             aria-modal="true"
             aria-label="Contact Applicant"
           >
-            <div className="relative px-6 py-4 bg-primary-600 flex items-center justify-center">
-              <h2 className="text-xl font-bold text-white">Contact Applicant</h2>
+            <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold">Contact Applicant</h2>
+              </div>
               <button
                 type="button"
                 onClick={closeContactModal}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
-                aria-label="Close"
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
               >
-                <X className="w-6 h-6" />
+                Close
               </button>
             </div>
             <div className="p-6 space-y-4">
