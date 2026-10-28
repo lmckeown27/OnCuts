@@ -700,7 +700,7 @@ export default function BarberPage() {
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Referrals
+                      Referral Code
                     </button>
                     {pointsVisible && (
                       <button

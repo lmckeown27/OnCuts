@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, Eye, EyeOff, MessageSquare, RefreshCw, X } from 'lucide-react';
+import { Copy, Eye, EyeOff, Info, MessageSquare, RefreshCw, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -70,6 +70,7 @@ export default function ReferralsModal({
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   useBodyScrollLock(open);
 
@@ -89,6 +90,7 @@ export default function ReferralsModal({
   useEffect(() => {
     if (!open || !user) return;
     setRevealed(null);
+    setShowInfo(false);
     void load();
   }, [open, user, load]);
 
@@ -158,7 +160,7 @@ export default function ReferralsModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Referrals"
+        aria-label="Referral Code"
       >
         <div className="flex justify-center pt-2 pb-1 sm:hidden shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300" aria-hidden />
@@ -175,8 +177,22 @@ export default function ReferralsModal({
               </button>
             )}
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 text-center">Referrals</h2>
-          <div className="justify-self-end">
+          <h2 className="text-lg font-semibold text-gray-900 text-center">
+            {showInfo ? 'About referrals' : 'Referral Code'}
+          </h2>
+          <div className="justify-self-end flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setShowInfo((v) => !v)}
+              className={`p-2 rounded-full transition-colors ${
+                showInfo ? 'bg-stone-200/80 text-gray-900' : 'hover:bg-stone-200/60 text-gray-600'
+              }`}
+              aria-label={showInfo ? 'Hide referral details' : 'About the referral system'}
+              aria-pressed={showInfo}
+              title="About the referral system"
+            >
+              <Info className="w-5 h-5" aria-hidden />
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -189,7 +205,52 @@ export default function ReferralsModal({
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-5">
-          {!user ? (
+          {showInfo ? (
+            <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">How referrals work</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                  <li>
+                    Share your referral code with operators you know — barbers and beauty
+                    professionals.
+                  </li>
+                  <li>
+                    When they apply with your code, Check 1 locks the referral to you.
+                  </li>
+                  <li>
+                    Check 2 runs when they finish Stripe Connect onboarding and verification.
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">How you earn points</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                  <li>
+                    +
+                    {(data?.rewardsHint.m1 ?? 0).toLocaleString()} pts when Check 2 passes
+                    (Milestone 1)
+                  </li>
+                  <li>
+                    +
+                    {(data?.rewardsHint.m2 ?? 0).toLocaleString()} pts after they complete 3
+                    qualifying paid bookings (Milestone 2)
+                  </li>
+                  <li>
+                    Up to {(data?.rewardsHint.total ?? 0).toLocaleString()} pts total per
+                    successful referral
+                  </li>
+                  <li>Points never expire.</li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">Your code</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                  <li>Reveal, copy, or text your code from this screen.</li>
+                  <li>Rotate anytime if you need a fresh code (old codes stop working).</li>
+                </ul>
+              </div>
+            </div>
+          ) : !user ? (
             <p className="text-sm text-gray-600">Sign in to view referrals.</p>
           ) : (
             <>
