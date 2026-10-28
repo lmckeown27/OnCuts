@@ -764,15 +764,137 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
     }
 
     // Check if email already has a user account
-    const existingUser = await pool.query('SELECT id, role FROM users WHERE email = $1', [email.toLowerCase()]);
-    
+    const existingUser = await pool.query(
+      `SELECT id, role, first_name, last_name, email FROM users WHERE email = $1`,
+      [email.toLowerCase()]
+    );
+
     if (existingUser.rows.length > 0) {
       const user = existingUser.rows[0];
       if (user.role === 'BARBER') {
         throw new ApiError(400, 'This email is already registered as a barber. Please sign in instead.');
       }
-      // If user exists but isn't a barber, suggest they sign in to apply
-      throw new ApiError(400, 'This email is already registered. Please sign in to complete your barber application.');
+
+      // Existing client/admin account: attach a normal barber_applications row so they can
+      // complete operator onboarding from the public apply flow without signing in first.
+      const existingApplication = await pool.query(
+        `SELECT id, status FROM barber_applications
+         WHERE user_id = $1 AND status IN ('pending', 'under_review', 'interview_scheduled')`,
+        [user.id]
+      );
+      if (existingApplication.rows.length > 0) {
+        const existing = existingApplication.rows[0];
+        throw new ApiError(
+          400,
+          `You already have a ${String(existing.status).replace(/_/g, ' ')} application. Please wait for it to be processed.`
+        );
+      }
+
+      const normalizedLinkedReferral =
+        typeof referralCode === 'string' && referralCode.trim()
+          ? normalizeReferralCode(referralCode)
+          : null;
+
+      if (normalizedLinkedReferral) {
+        await claimReferralAtCheck1({
+          code: normalizedLinkedReferral,
+          referredUserId: user.id,
+          referredPhoneE164: phoneNumber || null,
+        });
+      }
+
+      // Ensure referral_code column exists on older DBs before insert
+      await pool.query(
+        `ALTER TABLE barber_applications ADD COLUMN IF NOT EXISTS referral_code VARCHAR(9)`
+      ).catch(() => undefined);
+
+      const linkedResult = await pool.query(
+        `INSERT INTO barber_applications (
+          user_id, campus_id, phone_number, years_experience, has_license, license_number,
+          specialties, has_own_tools, available_hours, why_be_barber,
+          portfolio_description, social_media, additional_notes, status, referral_code
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', $14)
+        RETURNING id, status, created_at`,
+        [
+          user.id,
+          resolvedCampusId,
+          phoneNumber,
+          yearsExperience,
+          hasLicense || false,
+          licenseNumber || null,
+          specialties,
+          hasOwnTools !== false,
+          availableHours,
+          whyBeBarber,
+          portfolioDescription || null,
+          socialMedia || null,
+          additionalNotes || null,
+          normalizedLinkedReferral,
+        ]
+      );
+
+      const linkedApplication = linkedResult.rows[0];
+      logger.info(
+        `Guest apply linked to existing user ${user.id}: application ${linkedApplication.id}`
+      );
+
+      try {
+        const applicantName =
+          `${user.first_name || firstName || ''} ${user.last_name || lastName || ''}`.trim() ||
+          email.split('@')[0];
+        const applicationDetails = {
+          applicantName,
+          applicantEmail: user.email || email,
+          applicantPhone: phoneNumber || undefined,
+          campusName: campusName || 'Not specified',
+          yearsExperience,
+          hasLicense: hasLicense || false,
+          licenseNumber: licenseNumber || undefined,
+          specialties,
+          hasOwnTools: hasOwnTools !== false,
+          availableHours,
+          whyBeBarber,
+          portfolioDescription: portfolioDescription || undefined,
+          socialMedia: socialMedia || undefined,
+          additionalNotes: additionalNotes || undefined,
+          applicationId: linkedApplication.id,
+          submittedAt: new Date(linkedApplication.created_at).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          }),
+        };
+
+        const admins = await pool.query(
+          `SELECT id, first_name, last_name, email FROM users WHERE role = 'ADMIN'`
+        );
+        for (const admin of admins.rows) {
+          const adminName = `${admin.first_name} ${admin.last_name}`.trim() || 'Admin';
+          await sendBarberApplicationNotification(admin.email, adminName, applicationDetails);
+        }
+      } catch (emailError: any) {
+        logger.error(
+          `Failed to send linked guest application notification email:`,
+          emailError.message
+        );
+      }
+
+      res.status(201).json({
+        success: true,
+        message:
+          "Application submitted successfully! We'll review your application and contact you at the email address provided.",
+        data: {
+          id: linkedApplication.id,
+          email: email.toLowerCase(),
+          status: linkedApplication.status,
+          createdAt: linkedApplication.created_at,
+          linkedExistingUser: true,
+        },
+      });
+      return;
     }
 
     // Check for existing guest application with this email
