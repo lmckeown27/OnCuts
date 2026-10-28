@@ -18,7 +18,7 @@ ALTER TABLE platform_settings
   ADD COLUMN IF NOT EXISTS referral_hold_days INTEGER NOT NULL DEFAULT 7
     CHECK (referral_hold_days >= 0),
   ADD COLUMN IF NOT EXISTS referral_qualify_window_days INTEGER NOT NULL DEFAULT 60
-    CHECK (referral_qualify_window_days > 0),
+    CHECK (referral_qualify_window_days >= 0),
   ADD COLUMN IF NOT EXISTS referral_min_booking_cents INTEGER NOT NULL DEFAULT 2000
     CHECK (referral_min_booking_cents >= 0),
   ADD COLUMN IF NOT EXISTS referral_new_op_kickback_percent NUMERIC(5,2) NOT NULL DEFAULT 10
@@ -26,17 +26,17 @@ ALTER TABLE platform_settings
   ADD COLUMN IF NOT EXISTS referral_max_spend_percent INTEGER NOT NULL DEFAULT 100
     CHECK (referral_max_spend_percent >= 0 AND referral_max_spend_percent <= 100),
   ADD COLUMN IF NOT EXISTS referral_code_rotations_per_day INTEGER NOT NULL DEFAULT 3
-    CHECK (referral_code_rotations_per_day > 0),
+    CHECK (referral_code_rotations_per_day >= 0),
   ADD COLUMN IF NOT EXISTS referral_code_max_uses_per_month INTEGER NOT NULL DEFAULT 10
-    CHECK (referral_code_max_uses_per_month > 0),
+    CHECK (referral_code_max_uses_per_month >= 0),
   ADD COLUMN IF NOT EXISTS referral_validate_max_attempts INTEGER NOT NULL DEFAULT 5
-    CHECK (referral_validate_max_attempts > 0),
+    CHECK (referral_validate_max_attempts >= 0),
   ADD COLUMN IF NOT EXISTS referral_validate_lockout_hours INTEGER NOT NULL DEFAULT 24
-    CHECK (referral_validate_lockout_hours > 0),
+    CHECK (referral_validate_lockout_hours >= 0),
   ADD COLUMN IF NOT EXISTS referral_prompt_cooldown_days INTEGER NOT NULL DEFAULT 30
-    CHECK (referral_prompt_cooldown_days > 0),
+    CHECK (referral_prompt_cooldown_days >= 0),
   ADD COLUMN IF NOT EXISTS referral_prompt_max_dismissals INTEGER NOT NULL DEFAULT 3
-    CHECK (referral_prompt_max_dismissals > 0),
+    CHECK (referral_prompt_max_dismissals >= 0),
   ADD COLUMN IF NOT EXISTS referral_program_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   ADD COLUMN IF NOT EXISTS points_never_expire BOOLEAN NOT NULL DEFAULT TRUE;
 
