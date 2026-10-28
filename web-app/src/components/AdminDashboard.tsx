@@ -4856,8 +4856,8 @@ export function AdminDashboard({
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
-                            {app.years_experience !== undefined && app.years_experience !== null && (
-                              <p className="text-xs text-gray-600 mt-1">{formatApplicationExperience(app.years_experience)}</p>
+                            {app.phone_number && (
+                              <p className="text-xs text-gray-600 mt-1">{app.phone_number}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -5111,8 +5111,8 @@ export function AdminDashboard({
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
-                          {app.years_experience !== undefined && app.years_experience !== null && (
-                            <p className="text-xs text-gray-600 mt-1">{formatApplicationExperience(app.years_experience)}</p>
+                          {app.phone_number && (
+                            <p className="text-xs text-gray-600 mt-1">{app.phone_number}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
