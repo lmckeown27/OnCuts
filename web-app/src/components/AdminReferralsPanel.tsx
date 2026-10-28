@@ -149,6 +149,8 @@ export default function AdminReferralsPanel() {
   const [items, setItems] = useState<AttributionRow[]>([]);
   const [statusFilter, setStatusFilter] = useState('admin_review');
   const [settings, setSettings] = useState<ReferralSettings | null>(null);
+  /** In-progress number field text so users can clear digits before typing a new value. */
+  const [settingDrafts, setSettingDrafts] = useState<Partial<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -169,6 +171,7 @@ export default function AdminReferralsPanel() {
     try {
       const res = await api.get<ReferralSettings>('/admin/referrals/settings');
       setSettings(res);
+      setSettingDrafts({});
     } catch (e: any) {
       setError(e?.message || 'Failed to load settings');
     }
@@ -195,8 +198,16 @@ export default function AdminReferralsPanel() {
     if (!settings) return;
     try {
       setBusy(true);
-      const res = await api.put<ReferralSettings>('/admin/referrals/settings', settings);
+      // Blank number fields are treated as 0 (unlimited where that applies).
+      const payload: ReferralSettings = { ...settings };
+      for (const [key, draft] of Object.entries(settingDrafts)) {
+        if (draft !== undefined && draft.trim() === '') {
+          (payload as Record<string, unknown>)[key] = 0;
+        }
+      }
+      const res = await api.put<ReferralSettings>('/admin/referrals/settings', payload);
       setSettings(res);
+      setSettingDrafts({});
     } catch (e: any) {
       setError(e?.message || 'Save failed');
     } finally {
@@ -387,6 +398,11 @@ export default function AdminReferralsPanel() {
                         type="checkbox"
                         checked={unlimited}
                         onChange={(e) => {
+                          setSettingDrafts((d) => {
+                            const next = { ...d };
+                            delete next[key];
+                            return next;
+                          });
                           if (e.target.checked) {
                             setSettings({ ...settings, [key]: 0 });
                           } else {
@@ -415,10 +431,26 @@ export default function AdminReferralsPanel() {
                     min={unlimitedable ? 0 : undefined}
                     disabled={unlimited}
                     className="w-32 rounded-lg border border-stone-300 px-2 py-1.5 disabled:bg-stone-100 disabled:text-gray-500"
-                    value={Number(settings[key])}
-                    onChange={(e) =>
-                      setSettings({ ...settings, [key]: Number(e.target.value) })
+                    value={
+                      settingDrafts[key] !== undefined
+                        ? settingDrafts[key]
+                        : String(settings[key])
                     }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setSettingDrafts((d) => ({ ...d, [key]: raw }));
+                      if (raw.trim() === '') return;
+                      const n = Number(raw);
+                      if (!Number.isFinite(n)) return;
+                      setSettings({ ...settings, [key]: n });
+                    }}
+                    onBlur={() => {
+                      setSettingDrafts((d) => {
+                        const next = { ...d };
+                        delete next[key];
+                        return next;
+                      });
+                    }}
                   />
                 </div>
               </div>
