@@ -28,6 +28,12 @@ interface BarberApplicationModalProps {
   onSubmitSuccess?: () => void;
   /** When true, shows email field and uses guest submission endpoint (no auth required) */
   guestMode?: boolean;
+  /** Prefill referral code (e.g. from share link ?ref=XXXX-XXXX) */
+  initialReferralCode?: string;
+}
+
+function normalizeReferralCodeInput(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9);
 }
 
 interface ApplicationForm {
@@ -83,7 +89,13 @@ function formatSocialDisplay(value: string): string {
   return `@${normalizeSocialHandle(trimmed)}`;
 }
 
-export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess, guestMode = false }: BarberApplicationModalProps) {
+export default function BarberApplicationModal({
+  isOpen,
+  onClose,
+  onSubmitSuccess,
+  guestMode = false,
+  initialReferralCode = '',
+}: BarberApplicationModalProps) {
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,7 +238,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     
     if (isOpen) {
       setStep(1);
-      setForm(emptyApplicationForm());
+      const next = emptyApplicationForm();
+      const prefills = normalizeReferralCodeInput(initialReferralCode || '');
+      if (prefills) next.referralCode = prefills;
+      setForm(next);
       setIsDemotedBarber(false);
       // Skip existing application check for guest mode (no user to check)
       if (!guestMode) {
@@ -236,7 +251,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         setExistingApplication(null);
       }
     }
-  }, [isOpen, user?.id, guestMode]);
+  }, [isOpen, user?.id, guestMode, initialReferralCode]);
 
   const [form, setForm] = useState<ApplicationForm>(emptyApplicationForm);
 
@@ -266,7 +281,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           hasLicense: false,
           specialties: form.specialties,
           hasOwnTools: true,
-          availableHours: form.availableHours,
+          availableHours: form.availableHours || 'unspecified',
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
           socialMedia: form.socialMedia || undefined,
@@ -281,7 +296,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           hasLicense: false,
           specialties: form.specialties,
           hasOwnTools: true,
-          availableHours: form.availableHours,
+          availableHours: form.availableHours || 'unspecified',
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
           socialMedia: form.socialMedia || undefined,
@@ -413,7 +428,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   }, [catalogServices]);
 
   // Step 2: About You
-  const canProceedStep2 = form.whyBeBarber.trim().length > 0 && Boolean(form.availableHours);
+  const canProceedStep2 = form.whyBeBarber.trim().length > 0;
 
   const canSubmit = canProceedStep1 && canProceedStep2;
 
@@ -813,7 +828,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
+                      referralCode: normalizeReferralCodeInput(e.target.value),
                     })
                   }
                   placeholder="XXXX-XXXX"
@@ -912,42 +927,23 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Hours per week? *
-                  </label>
-                  <select
-                    value={form.availableHours}
-                    onChange={(e) => setForm({ ...form, availableHours: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                  >
-                    <option value="">Select availability</option>
-                    <option value="5-10">5-10 hours/week</option>
-                    <option value="10-20">10-20 hours/week</option>
-                    <option value="20-30">20-30 hours/week</option>
-                    <option value="30-plus">30+ hours/week</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Social Media (optional)
-                  </label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                      @
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="username"
-                      value={form.socialMedia}
-                      onChange={(e) =>
-                        setForm({ ...form, socialMedia: normalizeSocialHandle(e.target.value) })
-                      }
-                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Social Media (optional)
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="username"
+                    value={form.socialMedia}
+                    onChange={(e) =>
+                      setForm({ ...form, socialMedia: normalizeSocialHandle(e.target.value) })
+                    }
+                    className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
+                  />
                 </div>
               </div>
             </div>
@@ -1001,11 +997,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       <span key={s} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-sm">{s}</span>
                     ))}
                   </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Availability</p>
-                  <p className="font-medium">{form.availableHours} hours/week</p>
                 </div>
 
                 <div className="border-t pt-4">

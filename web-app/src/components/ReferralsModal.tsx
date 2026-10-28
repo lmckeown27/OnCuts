@@ -136,8 +136,9 @@ export default function ReferralsModal({
       code = res.code;
       setRevealed(code);
     }
+    const applyUrl = `${window.location.origin}/?apply=1&ref=${encodeURIComponent(code)}`;
     const body = encodeURIComponent(
-      `Join OnCuts with my referral code: ${code}.`
+      `Join OnCuts with my referral code: ${code}. Apply here: ${applyUrl}`
     );
     window.open(`sms:?&body=${body}`, '_blank');
   };

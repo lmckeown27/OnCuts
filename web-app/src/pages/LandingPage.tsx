@@ -30,6 +30,7 @@ export default function LandingPage() {
   const [contactVisible, setContactVisible] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [showBarberApplication, setShowBarberApplication] = useState(false);
+  const [applyReferralCode, setApplyReferralCode] = useState('');
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
@@ -75,6 +76,27 @@ export default function LandingPage() {
   // Handle scroll for sticky navigation
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Deep link: /?apply=1&ref=XXXX-XXXX opens guest operator apply with referral prefilled
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apply = params.get('apply');
+      const ref = (params.get('ref') || params.get('referral') || '').trim();
+      if (apply === '1' || apply === 'true' || apply === 'operator' || ref) {
+        if (ref) setApplyReferralCode(ref.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9));
+        setShowBarberApplication(true);
+        params.delete('apply');
+        params.delete('ref');
+        params.delete('referral');
+        const next = params.toString();
+        const path = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash}`;
+        window.history.replaceState({}, '', path);
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -629,8 +651,12 @@ export default function LandingPage() {
       {/* Barber Application Modal (Guest Mode) */}
       <BarberApplicationModal
         isOpen={showBarberApplication}
-        onClose={() => setShowBarberApplication(false)}
+        onClose={() => {
+          setShowBarberApplication(false);
+          setApplyReferralCode('');
+        }}
         guestMode={true}
+        initialReferralCode={applyReferralCode}
       />
 
       {/* Contact popup */}
