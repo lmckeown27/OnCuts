@@ -135,7 +135,7 @@ export default function ReferralsModal({
       setRevealed(code);
     }
     const body = encodeURIComponent(
-      `Join OnCuts with my referral code ${code}. Beauty pros welcome — braids, nails, lashes, makeup, tanning.`
+      `Join OnCuts with my referral code: ${code}.`
     );
     window.open(`sms:?&body=${body}`, '_blank');
   };
@@ -213,11 +213,11 @@ export default function ReferralsModal({
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                       Referral code
                     </h3>
-                    <p className="text-xs text-gray-500">
-                      {data.code.maxUsesPerMonth > 0
-                        ? `${data.code.usesThisMonth}/${data.code.maxUsesPerMonth} uses this month`
-                        : 'Unlimited uses'}
-                    </p>
+                    {data.code.maxUsesPerMonth > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {data.code.usesThisMonth}/{data.code.maxUsesPerMonth} uses this month
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-2xl font-semibold tracking-widest text-gray-900 tabular-nums">
@@ -256,13 +256,6 @@ export default function ReferralsModal({
                       <RefreshCw className="w-5 h-5" aria-hidden />
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Created {new Date(data.code.createdAt).toLocaleDateString()} ·{' '}
-                    {data.code.useCount} total uses
-                    {data.code.lastUsedAt
-                      ? ` · last used ${new Date(data.code.lastUsedAt).toLocaleDateString()}`
-                      : ''}
-                  </p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
