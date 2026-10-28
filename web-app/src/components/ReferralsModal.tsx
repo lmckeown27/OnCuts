@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, Eye, EyeOff, Info, MessageSquare, RefreshCw, X } from 'lucide-react';
+import { ChevronLeft, Copy, Eye, EyeOff, Info, MessageSquare, RefreshCw, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -167,14 +167,26 @@ export default function ReferralsModal({
         </div>
         <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-stone-200/80 shrink-0">
           <div className="justify-self-start">
-            {pointsVisible && onOpenRewards && (
+            {showInfo ? (
               <button
                 type="button"
-                onClick={onOpenRewards}
-                className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                onClick={() => setShowInfo(false)}
+                className="p-2 -ml-2 hover:bg-stone-200/60 rounded-full transition-colors"
+                aria-label="Back to Referral Code"
               >
-                Rewards
+                <ChevronLeft className="w-5 h-5 text-gray-700" aria-hidden />
               </button>
+            ) : (
+              pointsVisible &&
+              onOpenRewards && (
+                <button
+                  type="button"
+                  onClick={onOpenRewards}
+                  className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                >
+                  Rewards
+                </button>
+              )
             )}
           </div>
           <h2 className="text-lg font-semibold text-gray-900 text-center">

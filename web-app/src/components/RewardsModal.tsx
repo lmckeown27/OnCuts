@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { ChevronLeft, Info, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -72,6 +72,7 @@ export default function RewardsModal({
   const [data, setData] = useState<RewardsMe | null>(null);
   const [onboarding, setOnboarding] = useState<ReferralAttribution[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   useBodyScrollLock(open);
 
@@ -92,8 +93,11 @@ export default function RewardsModal({
 
   useEffect(() => {
     if (!open || !user || !pointsVisible) return;
+    setShowInfo(false);
     void load();
   }, [open, user, pointsVisible, load]);
+
+  const ptsPerDollar = data?.pointsPerDollar ?? 10;
 
   if (!open) return null;
 
@@ -120,18 +124,43 @@ export default function RewardsModal({
         </div>
         <div className="relative z-[80] bg-stone-50 px-4 sm:px-5 py-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-stone-200/80 shrink-0">
           <div className="justify-self-start">
-            {onOpenReferrals && (
+            {showInfo ? (
               <button
                 type="button"
-                onClick={onOpenReferrals}
-                className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                onClick={() => setShowInfo(false)}
+                className="p-2 -ml-2 hover:bg-stone-200/60 rounded-full transition-colors"
+                aria-label="Back to Rewards"
               >
-                Referral Code
+                <ChevronLeft className="w-5 h-5 text-gray-700" aria-hidden />
               </button>
+            ) : (
+              onOpenReferrals && (
+                <button
+                  type="button"
+                  onClick={onOpenReferrals}
+                  className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                >
+                  Referral Code
+                </button>
+              )
             )}
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 text-center">Rewards</h2>
-          <div className="justify-self-end">
+          <h2 className="text-lg font-semibold text-gray-900 text-center">
+            {showInfo ? 'About rewards' : 'Rewards'}
+          </h2>
+          <div className="justify-self-end flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setShowInfo((v) => !v)}
+              className={`p-2 rounded-full transition-colors ${
+                showInfo ? 'bg-stone-200/80 text-gray-900' : 'hover:bg-stone-200/60 text-gray-600'
+              }`}
+              aria-label={showInfo ? 'Hide rewards details' : 'About rewards'}
+              aria-pressed={showInfo}
+              title="About rewards"
+            >
+              <Info className="w-5 h-5" aria-hidden />
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -144,7 +173,52 @@ export default function RewardsModal({
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-5">
-          {!user ? (
+          {showInfo ? (
+            <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">How OnCuts Points work</p>
+                <p className="text-gray-600">
+                  {ptsPerDollar} pts = $1. Points never expire.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">How you earn</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                  <li>Share your referral code with operators you know.</li>
+                  <li>Earn points when they pass Check 2 and complete qualifying bookings.</li>
+                  <li>
+                    Track onboarding operators and your points history on this Rewards screen.
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-gray-900">How you spend</p>
+                {kind === 'operator' ? (
+                  <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                    <li>
+                      Apply points to a completed booking to{' '}
+                      <strong>earn a kickback</strong> from OnCuts
+                    </li>
+                    <li>
+                      If a client pays $30 for a service, apply 100 points to{' '}
+                      <strong>receive $10 from OnCuts</strong>
+                    </li>
+                  </ul>
+                ) : (
+                  <ul className="list-disc pl-5 space-y-1.5 text-gray-600">
+                    <li>
+                      <strong>Earn discounts</strong> on bookings that will be covered by OnCuts
+                    </li>
+                    <li>
+                      If a service costs $30, apply 100 points to{' '}
+                      <strong>receive $10 off of your service</strong>. Don&apos;t worry, that $10
+                      still goes to the operator complementary of OnCuts
+                    </li>
+                  </ul>
+                )}
+              </div>
+            </div>
+          ) : !user ? (
             <p className="text-sm text-gray-600">Sign in to view rewards.</p>
           ) : !pointsVisible ? (
             <p className="text-sm text-gray-600">Points are currently hidden.</p>
