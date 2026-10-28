@@ -25,6 +25,13 @@ type RewardsMe = {
   }>;
 };
 
+type ReferralAttribution = {
+  id: string;
+  displayName: string;
+  check1At: string | null;
+  check2Status: string;
+};
+
 interface RewardsModalProps {
   open: boolean;
   visible: boolean;
@@ -37,6 +44,17 @@ function formatPointsReason(reason: string): string {
     .replace(/_/g, ' ')
     .replace(/\bgrant\b/gi, 'gift')
     .replace(/\bclawback\b/gi, 'revokal');
+}
+
+function formatCheck2Status(status: string): string {
+  if (status === 'passed') return 'Passed';
+  if (status === 'admin_review') return 'In review';
+  if (status === 'failed') return 'Failed';
+  return 'Pending';
+}
+
+function isOnboardingAttribution(a: ReferralAttribution): boolean {
+  return a.check2Status !== 'passed' && a.check2Status !== 'failed';
 }
 
 export default function RewardsModal({
@@ -52,6 +70,7 @@ export default function RewardsModal({
       ? 'operator'
       : 'client';
   const [data, setData] = useState<RewardsMe | null>(null);
+  const [onboarding, setOnboarding] = useState<ReferralAttribution[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useBodyScrollLock(open);
@@ -59,9 +78,14 @@ export default function RewardsModal({
   const load = useCallback(async () => {
     try {
       setError(null);
-      const res = await api.get<RewardsMe>('/referrals/rewards/me', { kind });
-      setData(res);
+      const [rewards, referrals] = await Promise.all([
+        api.get<RewardsMe>('/referrals/rewards/me', { kind }),
+        api.get<{ attributions: ReferralAttribution[] }>('/referrals/me'),
+      ]);
+      setData(rewards);
+      setOnboarding((referrals.attributions || []).filter(isOnboardingAttribution));
     } catch (e: any) {
+      setOnboarding([]);
       setError(e?.message || 'Could not load rewards');
     }
   }, [kind]);
@@ -132,7 +156,7 @@ export default function RewardsModal({
                 </div>
               )}
 
-              {data?.empty && (
+              {data?.empty && onboarding.length === 0 && (
                 <div className="rounded-2xl border border-stone-200 bg-white p-6 text-center space-y-3">
                   <p className="text-gray-700">
                     No points yet. Refer an operator to start earning.
@@ -150,65 +174,84 @@ export default function RewardsModal({
               )}
 
               {data && !data.empty && (
-                <>
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-center">
-                    <p className="text-3xl font-semibold tabular-nums text-emerald-950">
-                      {data.balancePts.toLocaleString()} pts
-                    </p>
-                    <p className="text-sm text-emerald-800 mt-1">
-                      ≈ ${data.balanceDollars.toFixed(2)} ({data.pointsPerDollar} pts = $1)
-                    </p>
-                  </div>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-center">
+                  <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+                    {data.balancePts.toLocaleString()} pts
+                  </p>
+                  <p className="text-sm text-emerald-800 mt-1">
+                    ≈ ${data.balanceDollars.toFixed(2)} ({data.pointsPerDollar} pts = $1)
+                  </p>
+                </div>
+              )}
 
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl border border-stone-200 bg-white p-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">Earned</p>
-                      <p className="font-semibold text-gray-900 mt-1">
-                        {data.lifetimeEarnedPts.toLocaleString()} pts
-                      </p>
-                      <p className="text-gray-500">${data.lifetimeEarnedDollars.toFixed(2)}</p>
-                    </div>
-                    <div className="rounded-xl border border-stone-200 bg-white p-4">
-                      <p className="text-xs uppercase tracking-wide text-gray-500">On the way</p>
-                      <p className="font-semibold text-gray-900 mt-1">
-                        {data.pendingPts.toLocaleString()} pts
-                      </p>
-                      <p className="text-gray-500">${data.pendingDollars.toFixed(2)}</p>
-                    </div>
-                  </div>
-
-                  <section className="space-y-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                      History
-                    </h3>
-                    {data.history.length === 0 && (
-                      <p className="text-sm text-gray-500">No ledger entries yet.</p>
-                    )}
-                    {data.history.map((h) => (
-                      <div
-                        key={h.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {formatPointsReason(h.reason)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(h.createdAt).toLocaleString()}
+              {onboarding.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Onboarding
+                  </h3>
+                  {onboarding.map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-xl border border-stone-200 bg-white p-4 space-y-3"
+                    >
+                      <p className="font-medium text-gray-900">{a.displayName}</p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">Check 1</p>
+                          <p className="font-semibold text-gray-900 mt-1">
+                            {a.check1At ? 'Passed' : '—'}
                           </p>
                         </div>
-                        <p
-                          className={`font-semibold tabular-nums ${
-                            h.deltaPts >= 0 ? 'text-emerald-700' : 'text-gray-800'
-                          }`}
-                        >
-                          {h.deltaPts >= 0 ? '+' : ''}
-                          {h.deltaPts.toLocaleString()} pts
+                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">Check 2</p>
+                          <p className="font-semibold text-gray-900 mt-1">
+                            {formatCheck2Status(a.check2Status)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {data && !data.empty && (
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    History
+                  </h3>
+                  {data.history.length === 0 && (
+                    <p className="text-sm text-gray-500">No ledger entries yet.</p>
+                  )}
+                  {data.history.map((h) => (
+                    <div
+                      key={h.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {formatPointsReason(h.reason)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(h.createdAt).toLocaleString(undefined, {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
                         </p>
                       </div>
-                    ))}
-                  </section>
-                </>
+                      <p
+                        className={`font-semibold tabular-nums ${
+                          h.deltaPts >= 0 ? 'text-emerald-700' : 'text-gray-800'
+                        }`}
+                      >
+                        {h.deltaPts >= 0 ? '+' : ''}
+                        {h.deltaPts.toLocaleString()} pts
+                      </p>
+                    </div>
+                  ))}
+                </section>
               )}
             </>
           )}
