@@ -262,11 +262,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           lastName: form.lastName,
           email: form.email,
           phoneNumber: form.phoneNumber,
-          yearsExperience: form.yearsExperience,
+          yearsExperience: form.yearsExperience || 'unspecified',
           hasLicense: false,
           specialties: form.specialties,
-          hasOwnTools: !form.needsTools,
-          toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
+          hasOwnTools: true,
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
@@ -278,11 +277,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         // Authenticated mode - use regular endpoint
         result = await barberApplicationService.submit({
           phoneNumber: form.phoneNumber,
-          yearsExperience: form.yearsExperience,
+          yearsExperience: form.yearsExperience || 'unspecified',
           hasLicense: false,
           specialties: form.specialties,
-          hasOwnTools: !form.needsTools,
-          toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
+          hasOwnTools: true,
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
@@ -324,7 +322,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           years_experience: 0,
           has_license: false,
           specialties: form.specialties,
-          has_own_tools: !form.needsTools,
+          has_own_tools: true,
           available_hours: form.availableHours,
           why_be_barber: form.whyBeBarber
         });
@@ -364,9 +362,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     return true;
   };
   
-  // Step 1: Experience & Skills (+ name/email in guest mode)
+  // Step 1: Contact, referral, operator type & services (+ name/email in guest mode)
   const canProceedStep1 =
-    form.yearsExperience &&
     form.operatorType &&
     form.specialties.length > 0 &&
     phoneDigits(form.phoneNumber).length === 10 &&
@@ -806,58 +803,26 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
               </div>
 
-              {/* Experience and Tools - Side by side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Years of Experience *
-                  </label>
-                  <select
-                    value={form.yearsExperience}
-                    onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                  >
-                    <option value="">Select experience level</option>
-                    <option value="less-than-1">Less than 1 year</option>
-                    <option value="1-2">1-2 years</option>
-                    <option value="3-5">3-5 years</option>
-                    <option value="5-plus">5+ years</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Do you need tools?
-                  </label>
-                  <div className="flex gap-4 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={form.needsTools}
-                        onChange={() => setForm({ ...form, needsTools: true })}
-                        className="w-4 h-4 text-primary-600"
-                      />
-                      <span className="text-sm">Yes</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={!form.needsTools}
-                        onChange={() => setForm({ ...form, needsTools: false, toolsNeeded: '' })}
-                        className="w-4 h-4 text-primary-600"
-                      />
-                      <span className="text-sm">No</span>
-                    </label>
-                  </div>
-                  {form.needsTools && (
-                    <input
-                      type="text"
-                      placeholder="What tools do you need?"
-                      value={form.toolsNeeded}
-                      onChange={(e) => setForm({ ...form, toolsNeeded: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                    />
-                  )}
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Referral code (optional)
+                </label>
+                <input
+                  type="text"
+                  value={form.referralCode}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
+                    })
+                  }
+                  placeholder="XXXX-XXXX"
+                  maxLength={9}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 font-mono tracking-widest"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  If someone referred you, enter their code here.
+                </p>
               </div>
 
               <div>
@@ -947,28 +912,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Referral code (optional)
-                </label>
-                <input
-                  type="text"
-                  value={form.referralCode}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      referralCode: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
-                    })
-                  }
-                  placeholder="XXXX-XXXX"
-                  maxLength={9}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900 font-mono tracking-widest"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  If someone referred you, enter their code here.
-                </p>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1037,14 +980,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <p className="font-medium">{form.phoneNumber || 'Not provided'}</p>
                 </div>
 
-                <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Experience</p>
-                  <p className="font-medium">
-                    {form.yearsExperience === 'less-than-1' ? 'Less than 1 year' :
-                     form.yearsExperience === '1-2' ? '1-2 years' :
-                     form.yearsExperience === '3-5' ? '3-5 years' : '5+ years'}
-                  </p>
-                </div>
+                {form.referralCode.trim() && (
+                  <div className="border-t pt-4">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Referral code</p>
+                    <p className="font-medium font-mono tracking-widest">{form.referralCode.trim()}</p>
+                  </div>
+                )}
 
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Operator Type</p>
@@ -1065,13 +1006,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Availability</p>
                   <p className="font-medium">{form.availableHours} hours/week</p>
-                </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Tools</p>
-                  <p className="font-medium">
-                    {form.needsTools ? `Needs tools${form.toolsNeeded ? `: ${form.toolsNeeded}` : ''}` : 'Has own tools'}
-                  </p>
                 </div>
 
                 <div className="border-t pt-4">
