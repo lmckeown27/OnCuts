@@ -39,18 +39,6 @@ import { downloadBookingLinkQr } from '../utils/bookingQr';
 import { invalidateFrontendConfigCache } from '../hooks/useFrontendConfig';
 import { SERVICE_TYPES } from '../config/services';
 
-function formatApplicationExperience(value: string | number | undefined | null): string {
-  if (value === undefined || value === null || value === '') return 'Not specified';
-  const key = String(value);
-  const labels: Record<string, string> = {
-    'less-than-1': 'Less than 1 year',
-    '1-2': '1-2 years',
-    '3-5': '3-5 years',
-    '5-plus': '5+ years',
-  };
-  return labels[key] || (typeof value === 'number' ? `${value} years` : key);
-}
-
 function formatApplicationSocial(value: string | undefined | null): string {
   const trimmed = (value || '').trim();
   if (!trimmed) return '';
@@ -4046,12 +4034,6 @@ export function AdminDashboard({
             <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Application Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Experience</p>
-                  <p className="font-semibold text-gray-900">
-                    {formatApplicationExperience(selectedApplication.years_experience)}
-                  </p>
-                </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Operator Type</p>
                   <p className="font-semibold text-gray-900">
