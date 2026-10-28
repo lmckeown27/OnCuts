@@ -4005,9 +4005,6 @@ export function AdminDashboard({
             </button>
 
             <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                <Users className="w-6 h-6 text-primary-600" />
-              </div>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-gray-900">
                   {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'}{' '}
@@ -4117,7 +4114,6 @@ export function AdminDashboard({
                             ? ` (${selectedApplication.referrer_email})`
                             : ''}
                         </p>
-                        <p className="text-[11px] text-gray-500 mt-1">View referrer in Users</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" aria-hidden />
                     </div>
