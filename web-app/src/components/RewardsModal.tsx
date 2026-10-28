@@ -126,7 +126,7 @@ export default function RewardsModal({
                 onClick={onOpenReferrals}
                 className="min-w-[8rem] px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
               >
-                Referrals
+                Referral Code
               </button>
             )}
           </div>
@@ -167,7 +167,7 @@ export default function RewardsModal({
                       onClick={onOpenReferrals}
                       className="inline-flex px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold"
                     >
-                      Go to Referrals
+                      Go to Referral Code
                     </button>
                   )}
                 </div>
