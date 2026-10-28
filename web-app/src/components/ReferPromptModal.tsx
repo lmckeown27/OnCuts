@@ -208,20 +208,23 @@ export default function ReferPromptModal() {
                   {pointsAudience === 'operator' ? (
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>
-                        Apply points to a completed booking to earn a kickback from OnCuts
+                        Apply points to a completed booking to{' '}
+                        <strong>earn a kickback</strong> from OnCuts
                       </li>
                       <li>
-                        If a client pays $30 for a service, apply 100 points to receive $10 from
-                        OnCuts
+                        If a client pays $30 for a service, apply 100 points to{' '}
+                        <strong>receive $10 from OnCuts</strong>
                       </li>
                     </ul>
                   ) : (
                     <ul className="list-disc pl-5 space-y-1.5">
-                      <li>Earn discounts on bookings that will be covered by OnCuts</li>
                       <li>
-                        If a service costs $30, apply 100 points to receive $10 off of your service.
-                        Don&apos;t worry, that $10 still goes to the operator complementary of
-                        OnCuts
+                        <strong>Earn discounts</strong> on bookings that will be covered by OnCuts
+                      </li>
+                      <li>
+                        If a service costs $30, apply 100 points to{' '}
+                        <strong>receive $10 off of your service</strong>. Don&apos;t worry, that
+                        $10 still goes to the operator complementary of OnCuts
                       </li>
                     </ul>
                   )}
