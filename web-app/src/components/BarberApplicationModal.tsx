@@ -835,7 +835,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     onClick={() => handleOperatorTypeSelect('barber')}
                     className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-colors ${
                       form.operatorType === 'barber'
-                        ? 'border-gray-900 bg-primary-50 text-gray-900'
+                        ? 'border-brand-500 bg-brand-500 text-white hover:bg-brand-600 hover:border-brand-600'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -846,7 +846,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     onClick={() => handleOperatorTypeSelect('beauty')}
                     className={`flex-1 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-colors ${
                       form.operatorType === 'beauty'
-                        ? 'border-gray-900 bg-primary-50 text-gray-900'
+                        ? 'border-brand-500 bg-brand-500 text-white hover:bg-brand-600 hover:border-brand-600'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
