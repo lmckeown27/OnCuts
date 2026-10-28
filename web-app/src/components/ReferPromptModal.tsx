@@ -279,7 +279,7 @@ export default function ReferPromptModal() {
                   }}
                   className="mx-auto block rounded-xl bg-brand-600 text-white px-8 py-2.5 text-xl font-semibold text-center"
                 >
-                  Get referral code
+                  View Referral Code
                 </button>
               </div>
             )}
