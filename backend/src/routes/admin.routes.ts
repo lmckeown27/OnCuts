@@ -80,6 +80,7 @@ router.get('/barbers', adminController.getAllBarbers);
 router.put('/barbers/commission/bulk', adminController.bulkUpdateBarberCommission);
 router.get('/barbers/:barberRecordId/bookings', adminController.getBarberBookings);
 router.put('/barbers/:barberRecordId/visibility', adminController.updateBarberVisibility);
+router.put('/barbers/:barberRecordId/stripe-bypass', adminController.updateBarberStripeConnectBypass);
 router.put('/barbers/:barberRecordId/commission', adminController.updateBarberCommission);
 router.get('/bookings/:bookingId/messages', adminController.getBookingMessages);
 

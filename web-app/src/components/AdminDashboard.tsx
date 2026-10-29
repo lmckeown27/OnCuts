@@ -264,6 +264,8 @@ interface Barber {
   hasServiceLocation?: boolean;
   hasStripeSetup?: boolean; // Stripe fully complete (visible to consumers)
   hasStripeAccountOnly?: boolean; // Stripe account created but payouts not enabled (NOT visible to consumers)
+  /** Admin testing: treat Connect as onboarded without Express bank setup */
+  stripeConnectBypass?: boolean;
   createdAt?: string;
   completedBookings?: number;
   totalVolumeCents?: number;
@@ -1806,7 +1808,11 @@ export function AdminDashboard({
   );
 
   const stripeStatusBadge = (barber: Barber) =>
-    barber.hasStripeSetup ? (
+    barber.stripeConnectBypass ? (
+      <span className="text-[10px] text-white bg-amber-600 px-1.5 py-0.5 rounded shrink-0">
+        Stripe bypass
+      </span>
+    ) : barber.hasStripeSetup ? (
       <span className="text-[10px] text-white bg-purple-600 px-1.5 py-0.5 rounded shrink-0">
         Stripe
       </span>
@@ -2013,6 +2019,50 @@ export function AdminDashboard({
       toast.error(msg);
     } finally {
       setDemotingBarberId(null);
+    }
+  };
+
+  const handleToggleStripeConnectBypass = async (barber: Barber) => {
+    if (!barber.barberRecordId) {
+      toast.error('Missing provider profile id');
+      return;
+    }
+    const next = !Boolean(barber.stripeConnectBypass);
+    setSavingVisibilityBarberId(barber.barberRecordId);
+    try {
+      const data = await api.put<{
+        stripeConnectBypass?: boolean;
+        hasStripeSetup?: boolean;
+      }>(`/admin/barbers/${barber.barberRecordId}/stripe-bypass`, {
+        stripeConnectBypass: next,
+      });
+      const patched = {
+        stripeConnectBypass: data?.stripeConnectBypass ?? next,
+        hasStripeSetup: data?.hasStripeSetup ?? (next || Boolean(barber.hasStripeSetup)),
+      };
+      setAllBarbers((prev) =>
+        prev.map((b) =>
+          b.barberRecordId === barber.barberRecordId ? { ...b, ...patched } : b
+        )
+      );
+      setSelectedBarber((prev) =>
+        prev && prev.barberRecordId === barber.barberRecordId
+          ? { ...prev, ...patched }
+          : prev
+      );
+      toast.success(
+        next
+          ? 'Stripe Connect bypass on — operator can test without bank onboarding'
+          : 'Stripe Connect bypass off'
+      );
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to update Stripe bypass';
+      toast.error(msg);
+    } finally {
+      setSavingVisibilityBarberId(null);
     }
   };
 
@@ -3678,7 +3728,7 @@ export function AdminDashboard({
                       </div>
                     ) : null}
                   </div>
-                  <div className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 space-y-1.5">
+                  <div className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 space-y-3">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -3702,6 +3752,30 @@ export function AdminDashboard({
                         <span className="block text-[11px] text-gray-500 mt-0.5">
                           Keep this operator off the homepage, but let clients who already have
                           their booking link still book.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer border-t border-gray-100 pt-3">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 w-4 h-4 accent-gray-900 border-gray-300 rounded focus:ring-gray-400"
+                        checked={Boolean(selectedBarber.stripeConnectBypass)}
+                        disabled={
+                          !selectedBarber.barberRecordId ||
+                          savingVisibilityBarberId === selectedBarber.barberRecordId
+                        }
+                        onChange={() =>
+                          void handleToggleStripeConnectBypass(selectedBarber)
+                        }
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-900">
+                          Stripe Connect bypass
+                        </span>
+                        <span className="block text-[11px] text-gray-500 mt-0.5">
+                          Let this operator use the app as if Stripe were fully set up — for
+                          testing points and referrals without registering a bank account.
+                          Payouts to Stripe Express stay off until they complete real onboarding.
                         </span>
                       </span>
                     </label>

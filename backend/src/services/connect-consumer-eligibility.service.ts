@@ -1,5 +1,8 @@
 import { pool } from '../database/connection';
-import stripeService, { isStaleConnectAccountError } from './stripe.service';
+import stripeService, {
+  isStaleConnectAccountError,
+  isStripeConnectBypassAccount,
+} from './stripe.service';
 import { logger } from '../utils/logger';
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -28,6 +31,23 @@ export async function isProviderEligibleForConsumerBrowse(
   userId: string,
   stripeAccountId: string | null,
 ): Promise<boolean> {
+  const bypassRow = await pool.query(
+    `SELECT COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+     FROM users WHERE id = $1`,
+    [userId]
+  );
+  if (
+    bypassRow.rows[0]?.stripe_connect_bypass === true ||
+    isStripeConnectBypassAccount(stripeAccountId)
+  ) {
+    const cacheKey = stripeAccountId || `bypass:${userId}`;
+    eligibilityCache.set(cacheKey, {
+      eligible: true,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+    return true;
+  }
+
   if (!stripeAccountId) return false;
 
   const cached = eligibilityCache.get(stripeAccountId);

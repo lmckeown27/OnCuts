@@ -11,7 +11,10 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import { getDefaultStripeClient } from '../config/stripe';
-import { isStaleConnectAccountError } from '../services/stripe.service';
+import {
+  isStaleConnectAccountError,
+  isStripeConnectBypassAccount,
+} from '../services/stripe.service';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +54,18 @@ async function syncStripeStatus(): Promise<void> {
 
     for (const barber of barbers) {
       try {
+        if (isStripeConnectBypassAccount(barber.stripe_account_id)) {
+          await pool.query(
+            `UPDATE users
+             SET stripe_payouts_enabled = true, stripe_charges_enabled = true
+             WHERE id = $1`,
+            [barber.user_id]
+          );
+          console.log(` Bypass | ${barber.first_name} (${barber.email}) — acct_BYPASS (no Stripe API)`);
+          updated++;
+          continue;
+        }
+
         // Query Stripe API for account status
         const account = await stripeSdk().accounts.retrieve(barber.stripe_account_id);
 

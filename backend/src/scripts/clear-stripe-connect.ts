@@ -13,7 +13,10 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import { getDefaultStripeClient } from '../config/stripe';
-import { isStaleConnectAccountError } from '../services/stripe.service';
+import {
+  isStaleConnectAccountError,
+  isStripeConnectBypassAccount,
+} from '../services/stripe.service';
 
 dotenv.config();
 
@@ -86,6 +89,10 @@ async function validateAndClearStale(): Promise<void> {
   const staleUserIds: string[] = [];
 
   for (const row of found.rows) {
+    if (isStripeConnectBypassAccount(row.stripe_account_id)) {
+      console.log(`BYPASS   ${row.email}  ${row.stripe_account_id}`);
+      continue;
+    }
     try {
       await stripe.accounts.retrieve(row.stripe_account_id);
       console.log(`OK       ${row.email}  ${row.stripe_account_id}`);

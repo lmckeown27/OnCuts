@@ -28,7 +28,10 @@ import {
   getStripeClientConfigPayload,
   logIfPublishableKeyCannotRetrievePaymentIntent,
 } from '../config/stripe';
-import stripeService from '../services/stripe.service';
+import stripeService, {
+  isStripeConnectBypassAccount,
+  realStripeConnectAccountId,
+} from '../services/stripe.service';
 import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
@@ -1966,10 +1969,15 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const consumer = consumerResult.rows[0];
 
     const barberAccountResult = await pool.query(
-      'SELECT stripe_account_id FROM users WHERE id = $1',
+      `SELECT stripe_account_id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+       FROM users WHERE id = $1`,
       [booking.barber_user_id]
     );
-    const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
+    const barberStripeAccountId =
+      barberAccountResult.rows[0]?.stripe_connect_bypass === true ||
+      isStripeConnectBypassAccount(barberAccountResult.rows[0]?.stripe_account_id)
+        ? null
+        : realStripeConnectAccountId(barberAccountResult.rows[0]?.stripe_account_id);
 
     const serviceAmountCents = booking.priceUsdCents;
     const feeSplit = await resolveBookingPlatformFee(pool, {
@@ -2624,10 +2632,15 @@ router.post('/:id/create-tip-intent', authenticate, async (req, res, next) => {
     const stripe = getDefaultStripeClient();
     const consumerResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
     const barberAccountResult = await pool.query(
-      'SELECT stripe_account_id FROM users WHERE id = $1',
+      `SELECT stripe_account_id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+       FROM users WHERE id = $1`,
       [booking.barber_user_id]
     );
-    const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
+    const barberStripeAccountId =
+      barberAccountResult.rows[0]?.stripe_connect_bypass === true ||
+      isStripeConnectBypassAccount(barberAccountResult.rows[0]?.stripe_account_id)
+        ? null
+        : realStripeConnectAccountId(barberAccountResult.rows[0]?.stripe_account_id);
 
     const statementDescriptor = getOptionalStatementDescriptor();
     const paymentIntentConfig: any = {

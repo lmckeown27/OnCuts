@@ -65,6 +65,24 @@ function isStripeLiveKeyTestAccountError(error: unknown): boolean {
   return /livemode API key/i.test(msg) && /test account/i.test(msg);
 }
 
+/**
+ * Local/dev Connect stand-in (`acct_BYPASS…`) — unlocks operator UI without a real
+ * Express bank onboarding. Never sent to Stripe APIs.
+ */
+export function isStripeConnectBypassAccount(
+  accountId: string | null | undefined
+): boolean {
+  return typeof accountId === 'string' && /^acct_BYPASS/i.test(accountId.trim());
+}
+
+/** Real Connect acct_* usable with Stripe; null if missing or bypass. */
+export function realStripeConnectAccountId(
+  accountId: string | null | undefined
+): string | null {
+  if (!accountId || isStripeConnectBypassAccount(accountId)) return null;
+  return accountId;
+}
+
 /** Connected account cannot be used with the platform's current Stripe account/mode. */
 export function isStaleConnectAccountError(error: unknown): boolean {
   if (error instanceof ApiError) {

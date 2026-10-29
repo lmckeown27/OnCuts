@@ -14,7 +14,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import stripeService from '../services/stripe.service';
+import stripeService, {
+  isStripeConnectBypassAccount,
+  realStripeConnectAccountId,
+} from '../services/stripe.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -190,11 +193,16 @@ export const handlePaymentSuccess = async (
 
     // 4. Get barber's Stripe Connect account
     const barberResult = await client.query(
-      `SELECT stripe_account_id FROM users WHERE id = $1`,
+      `SELECT stripe_account_id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+       FROM users WHERE id = $1`,
       [barberId]
     );
 
-    const barberStripeAccountId = barberResult.rows[0]?.stripe_account_id;
+    const barberStripeAccountId =
+      barberResult.rows[0]?.stripe_connect_bypass === true ||
+      isStripeConnectBypassAccount(barberResult.rows[0]?.stripe_account_id)
+        ? null
+        : realStripeConnectAccountId(barberResult.rows[0]?.stripe_account_id);
 
     if (!barberStripeAccountId) {
       logger.error('Barber does not have Stripe Connect account', {

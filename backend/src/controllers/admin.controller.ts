@@ -3157,6 +3157,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
+        COALESCE(u.stripe_connect_bypass, FALSE) AS stripe_connect_bypass,
         u."isBanned" as is_banned,
         COALESCE(stats.completed_bookings, 0) as completed_bookings,
         COALESCE(stats.total_volume_cents, 0) as total_volume_cents
@@ -3196,7 +3197,10 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
           ? coarsenPublicLocationLabel(String(row.service_location_label))
           : null,
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
-        hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
+        hasStripeSetup:
+          row.stripe_connect_bypass === true ||
+          (!!row.stripe_account_id && row.stripe_payouts_enabled === true),
+        stripeConnectBypass: row.stripe_connect_bypass === true,
         isBanned: row.is_banned === true,
         role: row.role ? String(row.role).toUpperCase() : undefined,
         ...mapBarberCommissionFields(row),
@@ -3755,6 +3759,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
+        COALESCE(u.stripe_connect_bypass, FALSE) AS stripe_connect_bypass,
         u."isBanned" as is_banned,
         u."createdAt" as created_at,
         COALESCE(stats.completed_bookings, 0) as completed_bookings,
@@ -3804,8 +3809,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
           ? coarsenPublicLocationLabel(String(row.service_location_label))
           : null,
         hasServiceLocation: row.service_latitude != null && row.service_longitude != null,
-        hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
-        hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
+        hasStripeSetup:
+          row.stripe_connect_bypass === true ||
+          (!!row.stripe_account_id && row.stripe_payouts_enabled === true),
+        hasStripeAccountOnly:
+          !row.stripe_connect_bypass &&
+          !!row.stripe_account_id &&
+          row.stripe_payouts_enabled !== true,
+        stripeConnectBypass: row.stripe_connect_bypass === true,
         isBanned: row.is_banned === true,
         createdAt: row.created_at,
         role: row.role ? String(row.role).toUpperCase() : undefined,
@@ -3815,6 +3826,79 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
       total: result.rows.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/admin/barbers/:barberRecordId/stripe-bypass
+ * Toggle Connect onboarding bypass for testing (no Express bank account required).
+ */
+export const updateBarberStripeConnectBypass = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const { barberRecordId } = req.params;
+    if (!barberRecordId) {
+      throw new ApiError(400, 'barberRecordId is required');
+    }
+    if (!Object.prototype.hasOwnProperty.call(req.body ?? {}, 'stripeConnectBypass')) {
+      throw new ApiError(400, 'stripeConnectBypass is required');
+    }
+
+    const enabled = Boolean(req.body.stripeConnectBypass);
+
+    const existing = await pool.query(
+      `SELECT b.id AS barber_id, u.id AS user_id, COALESCE(u.stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+       FROM barbers b
+       JOIN users u ON u.id = b."userId"
+       WHERE b.id = $1::uuid`,
+      [barberRecordId]
+    );
+    if (existing.rows.length === 0) {
+      throw new ApiError(404, 'Operator not found');
+    }
+
+    const updated = await pool.query(
+      `UPDATE users
+       SET stripe_connect_bypass = $1,
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $2::uuid
+       RETURNING id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass,
+                 stripe_account_id, stripe_payouts_enabled`,
+      [enabled, existing.rows[0].user_id]
+    );
+    const row = updated.rows[0];
+
+    logger.info('admin_update_stripe_connect_bypass', {
+      barberRecordId,
+      userId: row.id,
+      adminId: req.user!.userId,
+      stripeConnectBypass: row.stripe_connect_bypass === true,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        barberRecordId,
+        userId: row.id,
+        stripeConnectBypass: row.stripe_connect_bypass === true,
+        hasStripeSetup:
+          row.stripe_connect_bypass === true ||
+          (!!row.stripe_account_id && row.stripe_payouts_enabled === true),
+      },
+      message: enabled
+        ? 'Stripe Connect bypass enabled — operator can use the app without bank onboarding'
+        : 'Stripe Connect bypass disabled',
     });
   } catch (error) {
     next(error);

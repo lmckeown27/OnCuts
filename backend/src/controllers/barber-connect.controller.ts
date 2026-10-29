@@ -11,7 +11,10 @@ import {
   getConnectRefreshUrl,
   getConnectReturnUrl,
 } from '../config/stripe-connect';
-import stripeService, { isStaleConnectAccountError } from '../services/stripe.service';
+import stripeService, {
+  isStaleConnectAccountError,
+  isStripeConnectBypassAccount,
+} from '../services/stripe.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -50,6 +53,7 @@ async function clearBarberConnectAccount(userId: string): Promise<void> {
  */
 async function resolveSavedConnectAccountId(userId: string, accountId: string | null): Promise<string | null> {
   if (!accountId) return null;
+  if (isStripeConnectBypassAccount(accountId)) return accountId;
 
   try {
     await stripeService.validateConnectAccountForCurrentPlatform(accountId);
@@ -215,7 +219,8 @@ export const getConnectStatus = async (
     // Role check is handled by requireRole middleware in routes
 
     const userResult = await pool.query(
-      `SELECT stripe_account_id FROM users WHERE id = $1`,
+      `SELECT stripe_account_id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass
+       FROM users WHERE id = $1`,
       [userId]
     );
 
@@ -223,7 +228,26 @@ export const getConnectStatus = async (
       throw new ApiError(404, 'User not found');
     }
 
-    const stripeAccountId = userResult.rows[0].stripe_account_id;
+    const stripeAccountId = userResult.rows[0].stripe_account_id as string | null;
+    const connectBypass =
+      userResult.rows[0].stripe_connect_bypass === true ||
+      isStripeConnectBypassAccount(stripeAccountId);
+
+    if (connectBypass) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          has_account: true,
+          account_id: stripeAccountId || 'acct_BYPASS',
+          needs_reconnect: false,
+          detailsSubmitted: true,
+          chargesEnabled: true,
+          payoutsEnabled: true,
+          connectBypass: true,
+          instantPayoutsEnabled: isInstantPayoutsEnabled(),
+        },
+      });
+    }
 
     if (!stripeAccountId) {
       return res.status(200).json({
