@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Clock, Check, Mail, UserX } from 'lucide-react';
+import { X, Clock, Check, Mail } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES, type ServiceType } from '../config/services';
@@ -509,29 +509,21 @@ export default function BarberApplicationModal({
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4 flex items-center justify-center relative">
-            <div className="flex flex-col items-center text-center">
-              <h2 className="text-xl font-bold text-white">Account Status</h2>
-            </div>
+          <div className="bg-brand-600 px-5 py-4 flex items-center justify-between shrink-0">
+            <h2 className="text-lg font-bold text-white">Account Status</h2>
             <button
+              type="button"
               onClick={handleClose}
-              className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              aria-label="Close"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Content */}
           <div className="p-6 text-center">
-            <div className="w-16 h-16 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center mx-auto mb-5">
-              <UserX className="w-8 h-8" />
-            </div>
-            
             <h3 className="text-xl font-bold text-gray-900 mb-3">Operator Access Removed</h3>
-            <p className="text-gray-600 mb-6">
-              Your operator privileges have been removed by the OnCuts team. You no longer have access to the operator dashboard or booking features.
-            </p>
 
             {/* Info box */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
@@ -565,10 +557,11 @@ export default function BarberApplicationModal({
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-50 border-t">
             <button
+              type="button"
               onClick={handleClose}
-              className="w-full px-6 py-2.5 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+              className="w-full px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
             >
-              I Understand
+              <span className="text-sm sm:text-base font-semibold text-white">I Understand</span>
             </button>
           </div>
         </div>
