@@ -6694,10 +6694,19 @@ export function AdminDashboard({
             role="dialog"
             aria-modal="true"
           >
-            <div className={`px-6 py-4 ${pendingApplicationAction.action === 'approve' ? 'bg-primary-500' : 'bg-red-500'}`}>
-              <h3 className="text-lg font-bold text-white">
-                {pendingApplicationAction.action === 'approve' ? 'Approve Application' : 'Reject Application'}
-              </h3>
+            <div className="sticky top-0 bg-brand-600 text-white px-4 sm:px-6 py-4 flex items-center justify-between z-30 shrink-0 gap-2">
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold">
+                  {pendingApplicationAction.action === 'approve' ? 'Approve Application' : 'Reject Application'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeApplicationActionConfirm}
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
+              >
+                Close
+              </button>
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
