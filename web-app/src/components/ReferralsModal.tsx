@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Copy, Eye, EyeOff, Info, MessageSquare, RefreshCw, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  Copy,
+  Eye,
+  EyeOff,
+  Info,
+  MessageSquare,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -71,6 +81,9 @@ export default function ReferralsModal({
   const [revealed, setRevealed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [expandedAttributionIds, setExpandedAttributionIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useBodyScrollLock(open);
 
@@ -367,64 +380,85 @@ export default function ReferralsModal({
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                     Progress
                   </h3>
-                  {data.attributions.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-xl border border-stone-200 bg-white p-4 space-y-2"
-                    >
-                      <p className="font-medium text-gray-900">{a.displayName}</p>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">
-                            Operator Onboarding
-                          </p>
-                          <p className="font-semibold text-gray-900 mt-1">
-                            {a.check2Status === 'passed'
-                              ? 'Complete'
-                              : a.check2Status === 'admin_review'
-                                ? 'In review'
-                                : a.check2Status === 'failed'
-                                  ? 'Failed'
-                                  : a.check1At
-                                    ? 'In progress'
-                                    : 'Pending'}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">
-                            Operator Bookings
-                          </p>
-                          <p className="font-semibold text-gray-900 mt-1 tabular-nums">
-                            {Math.min(3, Math.max(0, a.qualifyingBookingCount || 0))}/3
-                          </p>
-                          <div className="mt-2 flex gap-1.5" aria-hidden>
-                            {[1, 2, 3].map((n) => (
-                              <span
-                                key={n}
-                                className={`h-1.5 flex-1 rounded-full ${
-                                  (a.qualifyingBookingCount || 0) >= n
-                                    ? 'bg-brand-600'
-                                    : 'bg-stone-200'
-                                }`}
-                              />
-                            ))}
+                  {data.attributions.map((a) => {
+                    const bookings = Math.min(
+                      3,
+                      Math.max(0, Number(a.qualifyingBookingCount) || 0),
+                    );
+                    const expanded = expandedAttributionIds.has(a.id);
+                    return (
+                      <div
+                        key={a.id}
+                        className="rounded-xl border border-stone-200 bg-white"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedAttributionIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(a.id)) next.delete(a.id);
+                              else next.add(a.id);
+                              return next;
+                            });
+                          }}
+                          aria-expanded={expanded}
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                        >
+                          <p className="font-medium text-gray-900">{a.displayName}</p>
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 ease-out ${
+                              expanded ? 'rotate-180' : ''
+                            }`}
+                            aria-hidden
+                          />
+                        </button>
+                        <div
+                          className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                            expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                          }`}
+                        >
+                          <div className="min-h-0 overflow-hidden">
+                            <div className="grid grid-cols-2 gap-3 px-4 pb-4 text-sm">
+                              <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-gray-500">
+                                  Operator Onboarding
+                                </p>
+                                <p className="font-semibold text-gray-900 mt-1">
+                                  {a.check2Status === 'passed'
+                                    ? 'Complete'
+                                    : a.check2Status === 'admin_review'
+                                      ? 'In review'
+                                      : a.check2Status === 'failed'
+                                        ? 'Failed'
+                                        : a.check1At
+                                          ? 'In progress'
+                                          : 'Pending'}
+                                </p>
+                              </div>
+                              <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-gray-500">
+                                  Operator Bookings
+                                </p>
+                                <p className="font-semibold text-gray-900 mt-1 tabular-nums">
+                                  {bookings}/3
+                                </p>
+                                <div className="mt-2 flex gap-1.5" aria-hidden>
+                                  {[1, 2, 3].map((n) => (
+                                    <span
+                                      key={n}
+                                      className={`h-1.5 flex-1 rounded-full ${
+                                        bookings >= n ? 'bg-brand-600' : 'bg-stone-200'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      {(a.m1AwardedAt || a.m2HoldUntil || a.m2AwardedAt) && (
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          {a.m1AwardedAt && <li>Milestone 1 awarded</li>}
-                          {a.m2HoldUntil && !a.m2AwardedAt && (
-                            <li>
-                              Milestone 2 on hold until{' '}
-                              {new Date(a.m2HoldUntil).toLocaleDateString()}
-                            </li>
-                          )}
-                          {a.m2AwardedAt && <li>Milestone 2 awarded</li>}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </section>
               )}
 
