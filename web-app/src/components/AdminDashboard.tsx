@@ -6716,11 +6716,6 @@ export function AdminDashboard({
                   {pendingApplicationAction.app.last_name || pendingApplicationAction.app.user?.last_name || 'User'}
                 </strong>?
               </p>
-              {pendingApplicationAction.action === 'approve' && (
-                <p className="text-sm text-gray-500 mb-4">
-                  This will grant them barber access and they will be able to set up their profile and receive bookings.
-                </p>
-              )}
               {pendingApplicationAction.action === 'reject' && (
                 <p className="text-sm text-gray-500 mb-4">
                   This will reject their application. They will need to submit a new application if they want to apply again.
