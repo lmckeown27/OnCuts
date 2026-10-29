@@ -445,7 +445,7 @@ export default function BarberApplicationModal({
   if (showSuccessPopup) {
     return (
       <div 
-        className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${successPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+        className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[1100] p-4 transition-all duration-150 ease-out ${successPopupVisible ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleCloseSuccessPopup}
       >
         <div 
@@ -474,7 +474,7 @@ export default function BarberApplicationModal({
   if (checkingExistingApplication) {
     return (
       <div 
-        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1100] p-4 transition-all duration-150 ease-out ${
           isVisible ? 'bg-black/50' : 'bg-black/0'
         }`}
         onClick={handleClose}
@@ -498,7 +498,7 @@ export default function BarberApplicationModal({
   if (isDemotedBarber) {
     return (
       <div 
-        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1100] p-4 transition-all duration-150 ease-out ${
           isVisible ? 'bg-black/50' : 'bg-black/0'
         }`}
         onClick={handleClose}
@@ -616,7 +616,7 @@ export default function BarberApplicationModal({
 
     return (
       <div 
-        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1100] p-4 transition-all duration-150 ease-out ${
           isVisible ? 'bg-black/50' : 'bg-black/0'
         }`}
         onClick={handleClose}
@@ -712,7 +712,7 @@ export default function BarberApplicationModal({
 
   return (
     <div 
-      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-[1100] p-4 transition-all duration-150 ease-out ${
         isVisible ? 'bg-black/50' : 'bg-black/0'
       }`}
       onClick={handleClose}
