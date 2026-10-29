@@ -31,8 +31,11 @@ type ReferralAttribution = {
   check1At: string | null;
   check2Status: string;
   qualifyingBookingCount: number;
+  m1AwardedAt: string | null;
   m2AwardedAt: string | null;
 };
+
+type RewardsHint = { m1: number; m2: number; total: number };
 
 interface RewardsModalProps {
   open: boolean;
@@ -86,6 +89,7 @@ export default function RewardsModal({
       : 'client';
   const [data, setData] = useState<RewardsMe | null>(null);
   const [onboarding, setOnboarding] = useState<ReferralAttribution[]>([]);
+  const [rewardsHint, setRewardsHint] = useState<RewardsHint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [expandedReferralIds, setExpandedReferralIds] = useState<Set<string>>(
@@ -99,12 +103,16 @@ export default function RewardsModal({
       setError(null);
       const [rewards, referrals] = await Promise.all([
         api.get<RewardsMe>('/referrals/rewards/me', { kind }),
-        api.get<{ attributions: ReferralAttribution[] }>('/referrals/me'),
+        api.get<{ attributions: ReferralAttribution[]; rewardsHint: RewardsHint }>(
+          '/referrals/me',
+        ),
       ]);
       setData(rewards);
+      setRewardsHint(referrals.rewardsHint ?? null);
       setOnboarding((referrals.attributions || []).filter(isActiveReferralProgress));
     } catch (e: any) {
       setOnboarding([]);
+      setRewardsHint(null);
       setError(e?.message || 'Could not load rewards');
     }
   }, [kind]);
@@ -327,6 +335,12 @@ export default function RewardsModal({
                                 <p className="font-semibold text-gray-900 mt-1">
                                   {formatOperatorOnboardingStatus(a)}
                                 </p>
+                                {(a.check2Status === 'passed' || a.m1AwardedAt) &&
+                                  (rewardsHint?.m1 ?? 0) > 0 && (
+                                    <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-700">
+                                      +{(rewardsHint?.m1 ?? 0).toLocaleString()}
+                                    </p>
+                                  )}
                               </div>
                               <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
                                 <p className="text-xs uppercase tracking-wide text-gray-500">
@@ -335,6 +349,12 @@ export default function RewardsModal({
                                 <p className="font-semibold text-gray-900 mt-1 tabular-nums">
                                   {bookings}/3
                                 </p>
+                                {(bookings >= 3 || a.m2AwardedAt) &&
+                                  (rewardsHint?.m2 ?? 0) > 0 && (
+                                    <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-700">
+                                      +{(rewardsHint?.m2 ?? 0).toLocaleString()}
+                                    </p>
+                                  )}
                                 <div className="mt-2 flex gap-1.5" aria-hidden>
                                   {[1, 2, 3].map((n) => (
                                     <span

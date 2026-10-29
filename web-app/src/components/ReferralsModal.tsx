@@ -436,6 +436,12 @@ export default function ReferralsModal({
                                           ? 'In progress'
                                           : 'Pending'}
                                 </p>
+                                {(a.check2Status === 'passed' || a.m1AwardedAt) &&
+                                  (data.rewardsHint.m1 ?? 0) > 0 && (
+                                    <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-700">
+                                      +{(data.rewardsHint.m1 ?? 0).toLocaleString()}
+                                    </p>
+                                  )}
                               </div>
                               <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
                                 <p className="text-xs uppercase tracking-wide text-gray-500">
@@ -444,6 +450,12 @@ export default function ReferralsModal({
                                 <p className="font-semibold text-gray-900 mt-1 tabular-nums">
                                   {bookings}/3
                                 </p>
+                                {(bookings >= 3 || a.m2AwardedAt) &&
+                                  (data.rewardsHint.m2 ?? 0) > 0 && (
+                                    <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-700">
+                                      +{(data.rewardsHint.m2 ?? 0).toLocaleString()}
+                                    </p>
+                                  )}
                                 <div className="mt-2 flex gap-1.5" aria-hidden>
                                   {[1, 2, 3].map((n) => (
                                     <span
