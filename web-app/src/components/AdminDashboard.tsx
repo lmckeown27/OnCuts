@@ -2040,7 +2040,7 @@ export function AdminDashboard({
         stripeConnectBypass: data?.stripeConnectBypass ?? next,
         hasStripeSetup: data?.hasStripeSetup ?? (next || Boolean(barber.hasStripeSetup)),
       };
-      setAllBarbers((prev) =>
+      setBarbers((prev) =>
         prev.map((b) =>
           b.barberRecordId === barber.barberRecordId ? { ...b, ...patched } : b
         )
