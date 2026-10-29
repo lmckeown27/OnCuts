@@ -648,8 +648,13 @@ export async function listMyAttributions(referrerId: string) {
        FROM referral_attributions a
        JOIN users u ON u.id = a.referred_user_id
        WHERE a.referrer_id = $1
-         AND a.check2_status IN ('pending', 'admin_review')
-         AND COALESCE(u.stripe_connect_bypass, FALSE) = TRUE
+         AND (
+           (
+             a.check2_status IN ('pending', 'admin_review')
+             AND COALESCE(u.stripe_connect_bypass, FALSE) = TRUE
+           )
+           OR (a.check2_status = 'passed' AND a.m1_awarded_at IS NULL)
+         )
        LIMIT 20`,
       [referrerId]
     );

@@ -47,6 +47,17 @@ export async function runReferralCheck2(opts: {
   if (!attr.rows[0]) return null;
   const row = attr.rows[0];
   if (row.check2_status === 'passed' || row.check2_status === 'failed') {
+    // Check 2 may have been marked passed (e.g. Connect bypass) before M1 ran — backfill.
+    if (row.check2_status === 'passed' && !row.m1_awarded_at) {
+      try {
+        await awardReferralMilestone1(row.id);
+      } catch (e) {
+        logger.warn('referral_m1_backfill_soft_failed', {
+          attributionId: row.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
     return { status: row.check2_status, flags: row.check2_flags || {} };
   }
 
@@ -226,11 +237,20 @@ export async function awardReferralMilestone1(attributionId: string): Promise<vo
   const r = await pool.query(`SELECT * FROM referral_attributions WHERE id = $1`, [attributionId]);
   const row = r.rows[0];
   if (!row || row.m1_awarded_at) return;
-  if (row.check2_status !== 'passed') return;
+  if (row.check2_status !== 'passed') {
+    logger.warn('referral_m1_skipped_check2_not_passed', {
+      attributionId,
+      check2Status: row.check2_status,
+    });
+    return;
+  }
 
   const kind = row.referrer_kind as ReferrerKind;
   const pts = kind === 'operator' ? settings.operatorM1 : settings.clientM1;
-  if (pts <= 0) return;
+  if (pts <= 0) {
+    logger.warn('referral_m1_skipped_zero_pts', { attributionId, kind, pts });
+    return;
+  }
 
   try {
     const { ledgerId } = await applyPointsDelta({
@@ -244,11 +264,22 @@ export async function awardReferralMilestone1(attributionId: string): Promise<vo
     await pool.query(
       `UPDATE referral_attributions
        SET m1_awarded_at = NOW(), m1_ledger_id = $2, updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND m1_awarded_at IS NULL`,
       [attributionId, ledgerId]
     );
+    logger.info('referral_m1_awarded', {
+      attributionId,
+      referrerId: row.referrer_id,
+      kind,
+      pts,
+      ledgerId,
+    });
   } catch (err: any) {
     if (err?.code === '23505') return; // idempotent
+    logger.error('referral_m1_award_failed', {
+      attributionId,
+      error: err instanceof Error ? err.message : String(err),
+    });
     throw err;
   }
 }

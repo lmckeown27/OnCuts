@@ -42,6 +42,9 @@ interface RewardsModalProps {
 }
 
 function formatPointsReason(reason: string): string {
+  if (reason === 'referral_m1') return 'Referral onboarding (Check 2)';
+  if (reason === 'referral_m2') return 'Referral bookings (3 paid)';
+  if (reason === 'referral_m2_clawback') return 'Referral bookings revokal';
   return reason
     .replace(/_/g, ' ')
     .replace(/\bgrant\b/gi, 'gift')
