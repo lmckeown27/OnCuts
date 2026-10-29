@@ -614,7 +614,12 @@ export default function BarberPage() {
 
   return (
     <>
-    <ReferPromptModal />
+    <ReferPromptModal
+      enabled={
+        !stripeGate.enabled ||
+        (stripeGate.hasResolvedStatus && !stripeGate.isBlocking)
+      }
+    />
     <div className={stripeGate.isBlocking ? 'pointer-events-none select-none opacity-60' : undefined}>
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen || stripeGate.isBlocking}>
       <IosAppDownloadBanner variant="operator" />

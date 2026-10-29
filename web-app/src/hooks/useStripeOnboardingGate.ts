@@ -74,6 +74,7 @@ export function useStripeOnboardingGate(options: UseStripeOnboardingGateOptions 
   const isBlocking = enabled && hasResolvedStatus && !isFullyConnected;
 
   return {
+    enabled,
     status,
     isLoading,
     loadError,
