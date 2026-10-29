@@ -109,7 +109,7 @@ function formatPts(n: number): string {
 
 function formatLedgerReason(reason: string): string {
   if (reason === 'admin_welcome_claim') return 'Welcome claim';
-  if (reason === 'referral_m1') return 'Referral M1 (Check 2 / onboarding)';
+  if (reason === 'referral_m1') return 'Referral M1 (onboarding)';
   if (reason === 'referral_m2') return 'Referral M2 (3 paid bookings)';
   if (reason === 'referral_m2_clawback') return 'Referral M2 revokal';
   if (reason === 'admin_grant') return 'Admin gift';

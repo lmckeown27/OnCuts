@@ -339,7 +339,7 @@ export const getUserPointsBalances = async (req: AuthRequest, res: Response, nex
         { key: string; label: string; pts: number; count: number }
       > = {
         welcome: { key: 'welcome', label: 'Welcome claim', pts: 0, count: 0 },
-        m1: { key: 'm1', label: 'Referral M1 (Check 2 / onboarding)', pts: 0, count: 0 },
+        m1: { key: 'm1', label: 'Referral M1 (onboarding)', pts: 0, count: 0 },
         m2: { key: 'm2', label: 'Referral M2 (3 paid bookings)', pts: 0, count: 0 },
         admin_gift: { key: 'admin_gift', label: 'Admin gift', pts: 0, count: 0 },
         other: { key: 'other', label: 'Other earned', pts: 0, count: 0 },
