@@ -6,7 +6,7 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import { applyPointsDelta } from '../services/points-ledger.service';
+import { applyPointsDelta, getPointsHistory } from '../services/points-ledger.service';
 
 type PointsKind = 'operator' | 'client';
 
@@ -326,6 +326,39 @@ export const getUserPointsBalances = async (req: AuthRequest, res: Response, nex
     if (['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(role)) kinds.push('operator');
     if (['CONSUMER', 'ADMIN'].includes(role)) kinds.push('client');
 
+    const [operatorHistory, clientHistory] = await Promise.all([
+      getPointsHistory(userId, 'operator', 100).catch(() => []),
+      getPointsHistory(userId, 'client', 100).catch(() => []),
+    ]);
+
+    const summarizeAcquisition = (
+      history: Awaited<ReturnType<typeof getPointsHistory>>
+    ) => {
+      const buckets: Record<
+        string,
+        { key: string; label: string; pts: number; count: number }
+      > = {
+        welcome: { key: 'welcome', label: 'Welcome claim', pts: 0, count: 0 },
+        m1: { key: 'm1', label: 'Referral M1 (Check 2 / onboarding)', pts: 0, count: 0 },
+        m2: { key: 'm2', label: 'Referral M2 (3 paid bookings)', pts: 0, count: 0 },
+        admin_gift: { key: 'admin_gift', label: 'Admin gift', pts: 0, count: 0 },
+        other: { key: 'other', label: 'Other earned', pts: 0, count: 0 },
+      };
+      for (const entry of history) {
+        const delta = Number(entry.deltaPts) || 0;
+        if (delta <= 0) continue;
+        const reason = String(entry.reason || '');
+        let key: keyof typeof buckets = 'other';
+        if (reason === 'admin_welcome_claim') key = 'welcome';
+        else if (reason === 'referral_m1') key = 'm1';
+        else if (reason === 'referral_m2') key = 'm2';
+        else if (reason === 'admin_grant' || reason.startsWith('admin_')) key = 'admin_gift';
+        buckets[key].pts += delta;
+        buckets[key].count += 1;
+      }
+      return Object.values(buckets).filter((b) => b.count > 0 || b.pts > 0);
+    };
+
     res.json({
       success: true,
       data: {
@@ -337,6 +370,14 @@ export const getUserPointsBalances = async (req: AuthRequest, res: Response, nex
         availableKinds: kinds,
         operator,
         client,
+        history: {
+          operator: operatorHistory,
+          client: clientHistory,
+        },
+        acquisition: {
+          operator: summarizeAcquisition(operatorHistory),
+          client: summarizeAcquisition(clientHistory),
+        },
       },
     });
   } catch (error) {

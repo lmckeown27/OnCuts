@@ -31,6 +31,24 @@ interface PointsBalanceItem {
   updatedAt: string;
 }
 
+interface PointsLedgerEntry {
+  id: string;
+  deltaPts: number;
+  balanceAfterPts: number;
+  reason: string;
+  referralAttributionId?: string | null;
+  bookingId?: string | null;
+  createdAt: string;
+  meta?: Record<string, unknown> | null;
+}
+
+interface AcquisitionBucket {
+  key: string;
+  label: string;
+  pts: number;
+  count: number;
+}
+
 interface UserPointsBalances {
   userId: string;
   role: string | null;
@@ -40,6 +58,14 @@ interface UserPointsBalances {
   availableKinds: PointsKind[];
   operator: PointsBalanceItem | null;
   client: PointsBalanceItem | null;
+  history?: {
+    operator: PointsLedgerEntry[];
+    client: PointsLedgerEntry[];
+  };
+  acquisition?: {
+    operator: AcquisitionBucket[];
+    client: AcquisitionBucket[];
+  };
 }
 
 interface PointsBalancesPage {
@@ -79,6 +105,16 @@ function formatWhen(value: string | null | undefined): string {
 
 function formatPts(n: number): string {
   return n.toLocaleString();
+}
+
+function formatLedgerReason(reason: string): string {
+  if (reason === 'admin_welcome_claim') return 'Welcome claim';
+  if (reason === 'referral_m1') return 'Referral M1 (Check 2 / onboarding)';
+  if (reason === 'referral_m2') return 'Referral M2 (3 paid bookings)';
+  if (reason === 'referral_m2_clawback') return 'Referral M2 revokal';
+  if (reason === 'admin_grant') return 'Admin gift';
+  if (reason === 'admin_clawback') return 'Admin revokal';
+  return reason.replace(/_/g, ' ').replace(/\bclawback\b/gi, 'revokal').replace(/\bgrant\b/gi, 'gift');
 }
 
 export default function AdminPointsPanel() {
@@ -832,6 +868,80 @@ export default function AdminPointsPanel() {
                 </div>
               ))}
             </dl>
+
+            {(() => {
+              const acquisition =
+                (detailAdjustKind === 'operator'
+                  ? detailAccounts?.acquisition?.operator
+                  : detailAccounts?.acquisition?.client) || [];
+              const history =
+                (detailAdjustKind === 'operator'
+                  ? detailAccounts?.history?.operator
+                  : detailAccounts?.history?.client) || [];
+              return (
+                <div className="border-t border-stone-200 pt-3 space-y-3">
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    How points were acquired ({detailAdjustKind})
+                  </p>
+                  {acquisition.length === 0 ? (
+                    <p className="text-xs text-gray-500">No earned points recorded yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {acquisition.map((bucket) => (
+                        <li
+                          key={bucket.key}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs"
+                        >
+                          <span className="min-w-0 text-gray-800">
+                            <span className="font-semibold text-gray-900">{bucket.label}</span>
+                            <span className="text-gray-500">
+                              {' '}
+                              · {bucket.count} time{bucket.count === 1 ? '' : 's'}
+                            </span>
+                          </span>
+                          <span className="shrink-0 font-semibold tabular-nums text-emerald-700">
+                            +{formatPts(bucket.pts)} pts
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide pt-1">
+                    Ledger history
+                  </p>
+                  {history.length === 0 ? (
+                    <p className="text-xs text-gray-500">No ledger entries.</p>
+                  ) : (
+                    <ul className="max-h-56 overflow-y-auto space-y-1.5 pr-0.5">
+                      {history.map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {formatLedgerReason(entry.reason)}
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {formatWhen(entry.createdAt)}
+                            </p>
+                          </div>
+                          <p
+                            className={`shrink-0 font-semibold tabular-nums ${
+                              entry.deltaPts > 0 ? 'text-emerald-700' : 'text-gray-800'
+                            }`}
+                          >
+                            {entry.deltaPts > 0 ? '+' : ''}
+                            {formatPts(entry.deltaPts)} pts
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="border-t border-stone-200 pt-3 space-y-3">
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 Give or remove points
