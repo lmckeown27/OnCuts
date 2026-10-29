@@ -1,4 +1,3 @@
-import { MapPin } from 'lucide-react';
 import type { Barber } from '../types';
 import BarberPhotoTile from './BarberPhotoTile';
 import type { MyBarberEntry } from '../utils/myBarbersDiscover';
@@ -67,11 +66,11 @@ export default function MyBarbersView({
 
       {!loading && isAuthenticated && entries.length === 0 && !filterActive && (
         <div className="rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-white px-6 py-12 text-center">
-          <MapPin className="w-10 h-10 text-gray-400 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">No operators yet</h3>
-          <p className="mt-2 text-sm text-gray-600 max-w-sm mx-auto">
-            Book once and they&apos;ll land here as a regular. Find someone new on Discover.
-          </p>
+          <div className="mt-2 text-sm text-gray-600 max-w-sm mx-auto space-y-1">
+            <p>Book once and they&apos;ll land here as a regular.</p>
+            <p>Find someone new on Discover.</p>
+          </div>
           <button
             type="button"
             onClick={onGoDiscover}
