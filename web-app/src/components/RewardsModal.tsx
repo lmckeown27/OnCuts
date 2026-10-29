@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronUp, Info, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Info, X } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFrontendConfig } from '../hooks/useFrontendConfig';
@@ -306,42 +306,49 @@ export default function RewardsModal({
                           className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                         >
                           <p className="font-medium text-gray-900">{a.displayName}</p>
-                          {expanded ? (
-                            <ChevronUp className="h-4 w-4 shrink-0 text-gray-500" aria-hidden />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" aria-hidden />
-                          )}
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 ease-out ${
+                              expanded ? 'rotate-180' : ''
+                            }`}
+                            aria-hidden
+                          />
                         </button>
-                        {expanded && (
-                          <div className="grid grid-cols-2 gap-3 px-4 pb-4 text-sm">
-                            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                              <p className="text-xs uppercase tracking-wide text-gray-500">
-                                Operator Onboarding
-                              </p>
-                              <p className="font-semibold text-gray-900 mt-1">
-                                {formatOperatorOnboardingStatus(a)}
-                              </p>
-                            </div>
-                            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                              <p className="text-xs uppercase tracking-wide text-gray-500">
-                                Operator Bookings
-                              </p>
-                              <p className="font-semibold text-gray-900 mt-1 tabular-nums">
-                                {bookings}/3
-                              </p>
-                              <div className="mt-2 flex gap-1.5" aria-hidden>
-                                {[1, 2, 3].map((n) => (
-                                  <span
-                                    key={n}
-                                    className={`h-1.5 flex-1 rounded-full ${
-                                      bookings >= n ? 'bg-brand-600' : 'bg-stone-200'
-                                    }`}
-                                  />
-                                ))}
+                        <div
+                          className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                            expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                          }`}
+                        >
+                          <div className="min-h-0 overflow-hidden">
+                            <div className="grid grid-cols-2 gap-3 px-4 pb-4 text-sm">
+                              <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-gray-500">
+                                  Operator Onboarding
+                                </p>
+                                <p className="font-semibold text-gray-900 mt-1">
+                                  {formatOperatorOnboardingStatus(a)}
+                                </p>
+                              </div>
+                              <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-gray-500">
+                                  Operator Bookings
+                                </p>
+                                <p className="font-semibold text-gray-900 mt-1 tabular-nums">
+                                  {bookings}/3
+                                </p>
+                                <div className="mt-2 flex gap-1.5" aria-hidden>
+                                  {[1, 2, 3].map((n) => (
+                                    <span
+                                      key={n}
+                                      className={`h-1.5 flex-1 rounded-full ${
+                                        bookings >= n ? 'bg-brand-600' : 'bg-stone-200'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
