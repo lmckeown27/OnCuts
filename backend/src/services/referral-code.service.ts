@@ -640,6 +640,42 @@ export async function listCodeHistory(userId: string) {
 }
 
 export async function listMyAttributions(referrerId: string) {
+  // Sync Check 2 for referred operators who already have admin Connect bypass
+  // (bypass may have been enabled before Check 2 wiring, or without opening their dashboard).
+  try {
+    const pendingBypass = await pool.query(
+      `SELECT a.referred_user_id
+       FROM referral_attributions a
+       JOIN users u ON u.id = a.referred_user_id
+       WHERE a.referrer_id = $1
+         AND a.check2_status IN ('pending', 'admin_review')
+         AND COALESCE(u.stripe_connect_bypass, FALSE) = TRUE
+       LIMIT 20`,
+      [referrerId]
+    );
+    if (pendingBypass.rows.length) {
+      const { runReferralCheck2 } = await import('./referral-lifecycle.service');
+      for (const row of pendingBypass.rows) {
+        try {
+          await runReferralCheck2({
+            referredUserId: row.referred_user_id,
+            connectBypass: true,
+          });
+        } catch (e) {
+          logger.warn('list_attributions_bypass_check2_soft_failed', {
+            referredUserId: row.referred_user_id,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+    }
+  } catch (e) {
+    logger.warn('list_attributions_bypass_sync_failed', {
+      referrerId,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
   const r = await pool.query(
     `SELECT
        a.id,

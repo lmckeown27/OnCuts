@@ -54,16 +54,39 @@ export async function runReferralCheck2(opts: {
   const account = opts.stripeAccount;
   const connectBypass = Boolean(opts.connectBypass);
 
-  // Stripe identity / capabilities (or admin Connect bypass for testing)
-  const identityOk =
-    connectBypass ||
-    Boolean(
-      account &&
-        account.charges_enabled &&
-        account.payouts_enabled &&
-        (account.details_submitted || account.requirements?.disabled_reason == null)
+  // Admin Connect bypass: operator was explicitly cleared for testing — pass Check 2
+  // without waiting on Stripe Express / bank onboarding (and without fraud hard-fails).
+  if (connectBypass) {
+    flags.connectBypass = true;
+    await pool.query(
+      `UPDATE referral_attributions
+       SET check2_status = 'passed',
+           check2_at = COALESCE(check2_at, NOW()),
+           check2_flags = COALESCE(check2_flags, '{}'::jsonb) || $2::jsonb,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [row.id, JSON.stringify(flags)]
     );
-  if (connectBypass) flags.connectBypass = true;
+    if (!row.m1_awarded_at) {
+      await awardReferralMilestone1(row.id);
+    }
+    logger.info('referral_check2_result', {
+      attributionId: row.id,
+      referredUserId: opts.referredUserId,
+      status: 'passed',
+      flags,
+      via: 'connect_bypass',
+    });
+    return { status: 'passed', flags };
+  }
+
+  // Stripe identity / capabilities
+  const identityOk = Boolean(
+    account &&
+      account.charges_enabled &&
+      account.payouts_enabled &&
+      (account.details_submitted || account.requirements?.disabled_reason == null)
+  );
   if (!identityOk) flags.stripeIdentityIncomplete = true;
 
   // New to OnCuts: referred user should not already have prior completed operator bookings as barber before attribution
