@@ -298,7 +298,7 @@ export default function ReferralsModal({
               )}
 
               {!loading && data?.canRefer && data.code && (
-                <section className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
+                <section className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                       Referral code
@@ -309,68 +309,70 @@ export default function ReferralsModal({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-2xl font-semibold tracking-widest text-gray-900 tabular-nums">
-                      {revealed || data.code.masked}
-                    </code>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => (revealed ? setRevealed(null) : void reveal())}
-                      className="p-2 rounded-lg hover:bg-stone-100"
-                      aria-label={revealed ? 'Hide code' : 'Show code'}
-                    >
-                      {revealed ? (
-                        <EyeOff className="w-5 h-5" aria-hidden />
-                      ) : (
-                        <Eye className="w-5 h-5" aria-hidden />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void copyCode()}
-                      className="p-2 rounded-lg hover:bg-stone-100"
-                      aria-label="Copy code"
-                    >
-                      <Copy className="w-5 h-5" aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void rotate()}
-                      className="p-2 rounded-lg hover:bg-stone-100"
-                      aria-label="Rotate code"
-                      title="Rotate code"
-                    >
-                      <RefreshCw className="w-5 h-5" aria-hidden />
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void copyCode()}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
-                    >
-                      <Copy className="w-4 h-4" /> Copy
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void textCode()}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
-                    >
-                      <MessageSquare className="w-4 h-4" /> Text
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void rotate()}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-stone-300 text-sm font-medium hover:bg-stone-50"
-                    >
-                      <RefreshCw className="w-4 h-4" /> Rotate
-                    </button>
+                  <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-2xl font-semibold tracking-widest text-gray-900 tabular-nums">
+                        {revealed || data.code.masked}
+                      </code>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => (revealed ? setRevealed(null) : void reveal())}
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label={revealed ? 'Hide code' : 'Show code'}
+                      >
+                        {revealed ? (
+                          <EyeOff className="w-5 h-5" aria-hidden />
+                        ) : (
+                          <Eye className="w-5 h-5" aria-hidden />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void copyCode()}
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label="Copy code"
+                      >
+                        <Copy className="w-5 h-5" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void rotate()}
+                        className="p-2 rounded-lg hover:bg-stone-100"
+                        aria-label="Rotate code"
+                        title="Rotate code"
+                      >
+                        <RefreshCw className="w-5 h-5" aria-hidden />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void copyCode()}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
+                      >
+                        <Copy className="w-4 h-4" /> Copy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void textCode()}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 text-sm font-medium hover:bg-stone-200"
+                      >
+                        <MessageSquare className="w-4 h-4" /> Text
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void rotate()}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-stone-300 text-sm font-medium hover:bg-stone-50"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Rotate
+                      </button>
+                    </div>
                   </div>
                 </section>
               )}
@@ -378,7 +380,7 @@ export default function ReferralsModal({
               {!loading && data && data.attributions.length > 0 && (
                 <section className="space-y-3">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Progress
+                    Referral progress
                   </h3>
                   {data.attributions.map((a) => {
                     const bookings = Math.min(
