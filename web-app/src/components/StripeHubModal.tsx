@@ -559,10 +559,9 @@ export default function StripeHubModal({
             </div>
           </>
         )}
-        <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-8 py-5 z-10 shrink-0">
-          <div
-            className={`min-w-0 text-center${canDismiss ? ' pr-16' : ''}${showRequirementsDrawer ? ' pl-14' : ''}`}
-          >
+        <div className="sticky top-0 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-4 sm:px-6 py-5 z-10 shrink-0 grid grid-cols-[minmax(4.5rem,1fr)_minmax(0,auto)_minmax(4.5rem,1fr)] items-center gap-2">
+          <div aria-hidden="true" />
+          <div className="min-w-0 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold leading-tight">Payments Onboarding Guide</h2>
             {showWizard && (
               <p className="text-white/70 text-xs mt-1.5 leading-snug">
@@ -571,15 +570,17 @@ export default function StripeHubModal({
               </p>
             )}
           </div>
-          {canDismiss && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute top-5 right-8 text-white hover:bg-white/20 rounded-lg px-4 py-2 text-base font-medium transition-colors"
-            >
-              Close
-            </button>
-          )}
+          <div className="flex justify-end items-start self-start">
+            {canDismiss ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-white hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors shrink-0"
+              >
+                Close
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div
