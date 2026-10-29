@@ -41,14 +41,20 @@ interface RewardsModalProps {
   onOpenReferrals?: () => void;
 }
 
+function toPascalCaseWords(label: string): string {
+  return label.replace(/\b([a-z])/g, (c) => c.toUpperCase());
+}
+
 function formatPointsReason(reason: string): string {
-  if (reason === 'referral_m1') return 'Referral onboarding';
-  if (reason === 'referral_m2') return 'Referral bookings (3 paid)';
-  if (reason === 'referral_m2_clawback') return 'Referral bookings revokal';
-  return reason
-    .replace(/_/g, ' ')
-    .replace(/\bgrant\b/gi, 'gift')
-    .replace(/\bclawback\b/gi, 'revokal');
+  if (reason === 'referral_m1') return 'Referral Onboarding';
+  if (reason === 'referral_m2') return 'Referral Bookings (3 Paid)';
+  if (reason === 'referral_m2_clawback') return 'Referral Bookings Revokal';
+  return toPascalCaseWords(
+    reason
+      .replace(/_/g, ' ')
+      .replace(/\bgrant\b/gi, 'gift')
+      .replace(/\bclawback\b/gi, 'revokal'),
+  );
 }
 
 function formatOperatorOnboardingStatus(a: ReferralAttribution): string {
