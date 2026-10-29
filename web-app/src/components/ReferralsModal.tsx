@@ -228,7 +228,10 @@ export default function ReferralsModal({
                     professionals.
                   </li>
                   <li>
-                    When they apply with your code, Check 1 locks the referral to you.
+                    When they apply with your code, the referral is locked to you.
+                  </li>
+                  <li>
+                    Check 1 passes when OnCuts approves their operator application.
                   </li>
                   <li>
                     Check 2 runs when they finish Stripe Connect onboarding and verification.
@@ -370,28 +373,56 @@ export default function ReferralsModal({
                       className="rounded-xl border border-stone-200 bg-white p-4 space-y-2"
                     >
                       <p className="font-medium text-gray-900">{a.displayName}</p>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        <li>Check 1: {a.check1At ? 'Passed' : '—'}</li>
-                        <li>
-                          Check 2:{' '}
-                          {a.check2Status === 'passed'
-                            ? 'Passed'
-                            : a.check2Status === 'admin_review'
-                              ? 'In review'
-                              : a.check2Status === 'failed'
-                                ? 'Failed'
-                                : 'Pending'}
-                        </li>
-                        <li>Bookings toward 3: {a.qualifyingBookingCount}/3</li>
-                        {a.m1AwardedAt && <li>Milestone 1 awarded</li>}
-                        {a.m2HoldUntil && !a.m2AwardedAt && (
-                          <li>
-                            Milestone 2 on hold until{' '}
-                            {new Date(a.m2HoldUntil).toLocaleDateString()}
-                          </li>
-                        )}
-                        {a.m2AwardedAt && <li>Milestone 2 awarded</li>}
-                      </ul>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">
+                            Operator Onboarding
+                          </p>
+                          <p className="font-semibold text-gray-900 mt-1">
+                            {a.check2Status === 'passed'
+                              ? 'Complete'
+                              : a.check2Status === 'admin_review'
+                                ? 'In review'
+                                : a.check2Status === 'failed'
+                                  ? 'Failed'
+                                  : a.check1At
+                                    ? 'In progress'
+                                    : 'Pending'}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                          <p className="text-xs uppercase tracking-wide text-gray-500">
+                            Operator Bookings
+                          </p>
+                          <p className="font-semibold text-gray-900 mt-1 tabular-nums">
+                            {Math.min(3, Math.max(0, a.qualifyingBookingCount || 0))}/3
+                          </p>
+                          <div className="mt-2 flex gap-1.5" aria-hidden>
+                            {[1, 2, 3].map((n) => (
+                              <span
+                                key={n}
+                                className={`h-1.5 flex-1 rounded-full ${
+                                  (a.qualifyingBookingCount || 0) >= n
+                                    ? 'bg-brand-600'
+                                    : 'bg-stone-200'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {(a.m1AwardedAt || a.m2HoldUntil || a.m2AwardedAt) && (
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          {a.m1AwardedAt && <li>Milestone 1 awarded</li>}
+                          {a.m2HoldUntil && !a.m2AwardedAt && (
+                            <li>
+                              Milestone 2 on hold until{' '}
+                              {new Date(a.m2HoldUntil).toLocaleDateString()}
+                            </li>
+                          )}
+                          {a.m2AwardedAt && <li>Milestone 2 awarded</li>}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </section>

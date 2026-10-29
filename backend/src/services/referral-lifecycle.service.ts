@@ -66,7 +66,7 @@ export async function runReferralCheck2(opts: {
        AND created_at < $2
        AND COALESCE("paidAt", paid_at) IS NOT NULL
      LIMIT 1`,
-    [opts.referredUserId, row.check1_at]
+    [opts.referredUserId, row.check1_at || row.created_at || new Date()]
   );
   if (priorOps.rows.length) flags.notNewToOnCuts = true;
 

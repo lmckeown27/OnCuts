@@ -30,6 +30,8 @@ type ReferralAttribution = {
   displayName: string;
   check1At: string | null;
   check2Status: string;
+  qualifyingBookingCount: number;
+  m2AwardedAt: string | null;
 };
 
 interface RewardsModalProps {
@@ -46,15 +48,19 @@ function formatPointsReason(reason: string): string {
     .replace(/\bclawback\b/gi, 'revokal');
 }
 
-function formatCheck2Status(status: string): string {
-  if (status === 'passed') return 'Passed';
-  if (status === 'admin_review') return 'In review';
-  if (status === 'failed') return 'Failed';
+function formatOperatorOnboardingStatus(a: ReferralAttribution): string {
+  if (a.check2Status === 'passed') return 'Complete';
+  if (a.check2Status === 'admin_review') return 'In review';
+  if (a.check2Status === 'failed') return 'Failed';
+  if (a.check1At) return 'In progress';
   return 'Pending';
 }
 
-function isOnboardingAttribution(a: ReferralAttribution): boolean {
-  return a.check2Status !== 'passed' && a.check2Status !== 'failed';
+/** Still earning toward M2 (or still finishing onboarding). */
+function isActiveReferralProgress(a: ReferralAttribution): boolean {
+  if (a.m2AwardedAt) return false;
+  if (a.check2Status === 'failed') return false;
+  return true;
 }
 
 export default function RewardsModal({
@@ -84,7 +90,7 @@ export default function RewardsModal({
         api.get<{ attributions: ReferralAttribution[] }>('/referrals/me'),
       ]);
       setData(rewards);
-      setOnboarding((referrals.attributions || []).filter(isOnboardingAttribution));
+      setOnboarding((referrals.attributions || []).filter(isActiveReferralProgress));
     } catch (e: any) {
       setOnboarding([]);
       setError(e?.message || 'Could not load rewards');
@@ -261,30 +267,50 @@ export default function RewardsModal({
               {onboarding.length > 0 && (
                 <section className="space-y-3">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Onboarding
+                    Referral progress
                   </h3>
-                  {onboarding.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-xl border border-stone-200 bg-white p-4 space-y-3"
-                    >
-                      <p className="font-medium text-gray-900">{a.displayName}</p>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">Check 1</p>
-                          <p className="font-semibold text-gray-900 mt-1">
-                            {a.check1At ? 'Passed' : '—'}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">Check 2</p>
-                          <p className="font-semibold text-gray-900 mt-1">
-                            {formatCheck2Status(a.check2Status)}
-                          </p>
+                  {onboarding.map((a) => {
+                    const bookings = Math.min(
+                      3,
+                      Math.max(0, Number(a.qualifyingBookingCount) || 0)
+                    );
+                    return (
+                      <div
+                        key={a.id}
+                        className="rounded-xl border border-stone-200 bg-white p-4 space-y-3"
+                      >
+                        <p className="font-medium text-gray-900">{a.displayName}</p>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                            <p className="text-xs uppercase tracking-wide text-gray-500">
+                              Operator Onboarding
+                            </p>
+                            <p className="font-semibold text-gray-900 mt-1">
+                              {formatOperatorOnboardingStatus(a)}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+                            <p className="text-xs uppercase tracking-wide text-gray-500">
+                              Operator Bookings
+                            </p>
+                            <p className="font-semibold text-gray-900 mt-1 tabular-nums">
+                              {bookings}/3
+                            </p>
+                            <div className="mt-2 flex gap-1.5" aria-hidden>
+                              {[1, 2, 3].map((n) => (
+                                <span
+                                  key={n}
+                                  className={`h-1.5 flex-1 rounded-full ${
+                                    bookings >= n ? 'bg-brand-600' : 'bg-stone-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </section>
               )}
 

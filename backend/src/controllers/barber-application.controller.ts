@@ -6,7 +6,11 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
 import { barberProviderTypeInsertFragments } from '../services/barber-provider-schema.service';
 import { notifyOperatorApplicationApproved } from '../utils/notify-application-approved';
-import { claimReferralAtCheck1, normalizeReferralCode } from '../services/referral-code.service';
+import {
+  claimReferralAtCheck1,
+  markReferralCheck1Passed,
+  normalizeReferralCode,
+} from '../services/referral-code.service';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -633,10 +637,27 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                 code: applicationData.referral_code,
                 referredUserId: userId,
                 referredPhoneE164: applicationData.phone_number || null,
+                markCheck1Passed: true,
               });
             } catch (claimErr: any) {
+              // Attribution may already exist from apply-time lock — still pass Check 1.
               logger.warn(
                 `Guest referral claim failed for application ${id}: ${claimErr?.message || claimErr}`
+              );
+              try {
+                await markReferralCheck1Passed(userId);
+              } catch (passErr: any) {
+                logger.warn(
+                  `Guest referral Check 1 pass failed for application ${id}: ${passErr?.message || passErr}`
+                );
+              }
+            }
+          } else {
+            try {
+              await markReferralCheck1Passed(userId);
+            } catch (passErr: any) {
+              logger.warn(
+                `Guest referral Check 1 pass failed for application ${id}: ${passErr?.message || passErr}`
               );
             }
           }
@@ -719,6 +740,14 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              "updatedAt" = NOW()${providerTypeInsert.onConflict}`,
           [updatedApplication.user_id, specialties, JSON.stringify(pricing), 'barber']
         );
+
+        try {
+          await markReferralCheck1Passed(updatedApplication.user_id);
+        } catch (passErr: any) {
+          logger.warn(
+            `Referral Check 1 pass failed for application ${id}: ${passErr?.message || passErr}`
+          );
+        }
 
         logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
         void notifyOperatorApplicationApproved({

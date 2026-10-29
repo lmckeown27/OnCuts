@@ -521,12 +521,16 @@ export async function validateReferralCode(opts: {
 }
 
 /**
- * Check 1: lock attribution to referrer for a new operator user.
+ * Lock referral attribution for a new operator applicant.
+ * Check 1 (`check1_at`) is only set when the platform approves the application
+ * (see markReferralCheck1Passed) unless markCheck1Passed is true.
  */
 export async function claimReferralAtCheck1(opts: {
   code: string;
   referredUserId: string;
   referredPhoneE164?: string | null;
+  /** Pass Check 1 immediately (use when claiming at the same time as platform approval). */
+  markCheck1Passed?: boolean;
 }): Promise<{ attributionId: string; referrerId: string; referrerKind: ReferrerKind }> {
   const validated = await validateReferralCode({
     code: opts.code,
@@ -551,10 +555,11 @@ export async function claimReferralAtCheck1(opts: {
       [validated.codeId, monthBucket]
     );
 
+    const check1At = opts.markCheck1Passed ? new Date() : null;
     const ins = await client.query(
       `INSERT INTO referral_attributions
          (referrer_id, referred_user_id, code_id, code_snapshot, referrer_kind, referred_phone_e164, check1_at, check2_status)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
        RETURNING id`,
       [
         validated.referrerId,
@@ -563,6 +568,7 @@ export async function claimReferralAtCheck1(opts: {
         validated.code,
         validated.referrerKind,
         opts.referredPhoneE164 || null,
+        check1At,
       ]
     );
     await client.query('COMMIT');
@@ -570,6 +576,7 @@ export async function claimReferralAtCheck1(opts: {
       attributionId: ins.rows[0].id,
       referrerId: validated.referrerId,
       referredUserId: opts.referredUserId,
+      check1Passed: Boolean(opts.markCheck1Passed),
     });
     return {
       attributionId: ins.rows[0].id,
@@ -588,6 +595,27 @@ export async function claimReferralAtCheck1(opts: {
     throw err;
   } finally {
     client.release();
+  }
+}
+
+/**
+ * Mark Check 1 passed after the platform approves the referred operator's application.
+ */
+export async function markReferralCheck1Passed(referredUserId: string): Promise<void> {
+  const r = await pool.query(
+    `UPDATE referral_attributions
+     SET check1_at = COALESCE(check1_at, NOW()),
+         updated_at = NOW()
+     WHERE referred_user_id = $1
+     RETURNING id, check1_at`,
+    [referredUserId]
+  );
+  if (r.rows[0]) {
+    logger.info('referral_check1_passed', {
+      attributionId: r.rows[0].id,
+      referredUserId,
+      check1At: r.rows[0].check1_at,
+    });
   }
 }
 
