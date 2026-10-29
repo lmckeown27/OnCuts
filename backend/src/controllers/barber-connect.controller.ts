@@ -234,6 +234,16 @@ export const getConnectStatus = async (
       isStripeConnectBypassAccount(stripeAccountId);
 
     if (connectBypass) {
+      // Align referral Operator Onboarding (Check 2) with admin Connect bypass.
+      try {
+        const { runReferralCheck2 } = await import('../services/referral-lifecycle.service');
+        await runReferralCheck2({ referredUserId: userId, connectBypass: true });
+      } catch (check2Err: unknown) {
+        logger.warn('connect_bypass_check2_soft_failed', {
+          user_id: userId,
+          error: check2Err instanceof Error ? check2Err.message : String(check2Err),
+        });
+      }
       return res.status(200).json({
         success: true,
         data: {

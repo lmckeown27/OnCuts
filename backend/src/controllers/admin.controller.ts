@@ -3868,6 +3868,8 @@ export const updateBarberStripeConnectBypass = async (
       throw new ApiError(404, 'Operator not found');
     }
 
+    const userId = existing.rows[0].user_id as string;
+
     const updated = await pool.query(
       `UPDATE users
        SET stripe_connect_bypass = $1,
@@ -3875,15 +3877,32 @@ export const updateBarberStripeConnectBypass = async (
        WHERE id = $2::uuid
        RETURNING id, COALESCE(stripe_connect_bypass, FALSE) AS stripe_connect_bypass,
                  stripe_account_id, stripe_payouts_enabled`,
-      [enabled, existing.rows[0].user_id]
+      [enabled, userId]
     );
     const row = updated.rows[0];
+
+    let referralCheck2: { status: string; flags: Record<string, unknown> } | null = null;
+    if (enabled) {
+      try {
+        const { runReferralCheck2 } = await import('../services/referral-lifecycle.service');
+        referralCheck2 = await runReferralCheck2({
+          referredUserId: userId,
+          connectBypass: true,
+        });
+      } catch (check2Err: unknown) {
+        logger.warn('admin_stripe_bypass_check2_soft_failed', {
+          userId,
+          error: check2Err instanceof Error ? check2Err.message : String(check2Err),
+        });
+      }
+    }
 
     logger.info('admin_update_stripe_connect_bypass', {
       barberRecordId,
       userId: row.id,
       adminId: req.user!.userId,
       stripeConnectBypass: row.stripe_connect_bypass === true,
+      referralCheck2Status: referralCheck2?.status ?? null,
     });
 
     res.json({
@@ -3895,6 +3914,7 @@ export const updateBarberStripeConnectBypass = async (
         hasStripeSetup:
           row.stripe_connect_bypass === true ||
           (!!row.stripe_account_id && row.stripe_payouts_enabled === true),
+        referralCheck2Status: referralCheck2?.status ?? null,
       },
       message: enabled
         ? 'Stripe Connect bypass enabled — operator can use the app without bank onboarding'

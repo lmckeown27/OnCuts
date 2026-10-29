@@ -22,10 +22,13 @@ function namesDiffer(a: string, b: string): boolean {
 
 /**
  * Run Check 2 after Stripe Connect onboarding for a referred operator.
+ * Admin Connect bypass treats identity as complete (no Express bank account).
  */
 export async function runReferralCheck2(opts: {
   referredUserId: string;
   stripeAccount?: Stripe.Account | null;
+  /** Admin-enabled Connect bypass — same as a fully onboarded Express account for Check 2. */
+  connectBypass?: boolean;
 }): Promise<{ status: string; flags: Record<string, unknown> } | null> {
   if (!(await tablesReady())) return null;
 
@@ -49,14 +52,18 @@ export async function runReferralCheck2(opts: {
 
   const flags: Record<string, unknown> = {};
   const account = opts.stripeAccount;
+  const connectBypass = Boolean(opts.connectBypass);
 
-  // Stripe identity / capabilities
-  const identityOk = Boolean(
-    account &&
-      account.charges_enabled &&
-      account.payouts_enabled &&
-      (account.details_submitted || account.requirements?.disabled_reason == null)
-  );
+  // Stripe identity / capabilities (or admin Connect bypass for testing)
+  const identityOk =
+    connectBypass ||
+    Boolean(
+      account &&
+        account.charges_enabled &&
+        account.payouts_enabled &&
+        (account.details_submitted || account.requirements?.disabled_reason == null)
+    );
+  if (connectBypass) flags.connectBypass = true;
   if (!identityOk) flags.stripeIdentityIncomplete = true;
 
   // New to OnCuts: referred user should not already have prior completed operator bookings as barber before attribution
