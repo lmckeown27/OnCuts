@@ -1123,18 +1123,9 @@ export default function ConsumerBookingStatusPage() {
 
           {isAccepted && !isPaid && (
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary-500 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-primary-800">Booking Confirmed!</p>
-                  <p className="text-sm text-primary-600 mt-1">
-                    Your appointment with {booking.barberName} is confirmed.
-                    {payAfterService
-                      ? ' You’ll pay in-app after the service is completed.'
-                      : ' Pay now to finalize the booking.'}
-                  </p>
-                </div>
-              </div>
+              <p className="font-semibold text-primary-800">
+                {booking.barberName} has accepted your Booking Request
+              </p>
             </div>
           )}
 

@@ -400,7 +400,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       <h4 className="font-semibold text-gray-900 text-sm truncate">
                         {request.customerName}
                       </h4>
-                      <p className="text-xs text-gray-500">{request.customerProfile.stats.completionRate}% completion</p>
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">Tap for details →</span>
                   </div>
