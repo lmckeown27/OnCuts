@@ -61,7 +61,7 @@ function formatPointsReason(reason: string): string {
 }
 
 function formatOperatorOnboardingStatus(a: ReferralAttribution): string {
-  if (a.check2Status === 'passed') return 'Complete';
+  if (a.check2Status === 'passed') return 'Onboarded';
   if (a.check2Status === 'admin_review') return 'In review';
   if (a.check2Status === 'failed') return 'Failed';
   if (a.check1At) return 'In progress';

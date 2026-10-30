@@ -427,7 +427,7 @@ export default function ReferralsModal({
                                 </p>
                                 <p className="font-semibold text-gray-900 mt-1">
                                   {a.check2Status === 'passed'
-                                    ? 'Complete'
+                                    ? 'Onboarded'
                                     : a.check2Status === 'admin_review'
                                       ? 'In review'
                                       : a.check2Status === 'failed'
