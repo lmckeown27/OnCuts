@@ -973,7 +973,6 @@ export default function ConsumerBookingStatusPage() {
                 {/* User Info */}
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="font-semibold text-gray-900 truncate">{user?.first_name} {user?.last_name}</p>
-                  <p className="text-sm text-gray-500 truncate">{user?.email}</p>
                 </div>
                 
                 {/* Edit Profile */}
