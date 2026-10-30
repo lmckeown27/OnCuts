@@ -1115,8 +1115,7 @@ export default function ConsumerBookingStatusPage() {
           
           {isPending && (
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
-              <p className="font-semibold text-primary-800">Waiting for operator confirmation</p>
-              <p className="text-sm text-primary-600 mt-1">
+              <p className="font-semibold text-primary-800">
                 {booking.barberName} will review and confirm your booking request.
               </p>
             </div>
