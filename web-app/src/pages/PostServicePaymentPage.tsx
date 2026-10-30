@@ -1138,7 +1138,7 @@ function OperatorPointsApplyPanel({
       )}
       {maxPts > 0 ? (
         <>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <input
               type="number"
               inputMode="numeric"
@@ -1176,7 +1176,13 @@ function OperatorPointsApplyPanel({
               </span>
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-center text-sm tabular-nums text-gray-800">
+            Total ={' '}
+            <span className="font-semibold text-emerald-900">
+              ${(serviceDollars + kickbackDollars).toFixed(2)}
+            </span>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               disabled={busy}
