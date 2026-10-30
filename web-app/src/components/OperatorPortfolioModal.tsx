@@ -1075,7 +1075,7 @@ export default function OperatorPortfolioModal({
 
           {clientView ? (
             <div>
-              <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   {operatorPhoto ? (
                     <button
@@ -1103,7 +1103,7 @@ export default function OperatorPortfolioModal({
                     const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
                     navigate(`${platformPrefix}/consumer/book/${providerId}`);
                   }}
-                  className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50"
+                  className="h-16 w-full shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750] disabled:opacity-50 sm:w-48"
                 >
                   Book
                 </button>
