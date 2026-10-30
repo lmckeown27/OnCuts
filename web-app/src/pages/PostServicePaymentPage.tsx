@@ -86,6 +86,9 @@ interface BookingDetails {
   paymentMethod?: string | null;
   /** Admin↔admin only, and only when Controls cash toggle is on. */
   cashPaymentAllowed?: boolean;
+  operatorPointsPendingPts?: number;
+  operatorPointsAppliedPts?: number;
+  operatorPointsBoostCents?: number;
   scheduledTime: string;
   location?: string;
   notes?: string;
@@ -992,16 +995,43 @@ function ReviewForm({
 function OperatorPointsApplyPanel({
   bookingId,
   serviceDollars,
+  awaitingPayment,
+  pendingPts = 0,
+  appliedPts = 0,
+  boostCents = 0,
+  onStaged,
 }: {
   bookingId: string;
   serviceDollars: number;
+  /** True while waiting for customer payment — stage points to settle on pay. */
+  awaitingPayment: boolean;
+  pendingPts?: number;
+  appliedPts?: number;
+  boostCents?: number;
+  onStaged?: (pendingPts: number) => void;
 }) {
   const { pointsVisible } = useFrontendConfig();
   const [balancePts, setBalancePts] = useState(0);
   const [pointsPerDollar, setPointsPerDollar] = useState(10);
-  const [sliderPts, setSliderPts] = useState(0);
-  const [applied, setApplied] = useState<{ pts: number; dollars: number } | null>(null);
+  const [sliderPts, setSliderPts] = useState(pendingPts);
+  const [stagedPts, setStagedPts] = useState(pendingPts);
+  const [settled, setSettled] = useState(
+    appliedPts > 0
+      ? { pts: appliedPts, dollars: boostCents / 100 }
+      : null as { pts: number; dollars: number } | null
+  );
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setStagedPts(pendingPts);
+    setSliderPts(pendingPts);
+  }, [pendingPts]);
+
+  useEffect(() => {
+    if (appliedPts > 0) {
+      setSettled({ pts: appliedPts, dollars: boostCents / 100 });
+    }
+  }, [appliedPts, boostCents]);
 
   useEffect(() => {
     if (!pointsVisible) return;
@@ -1021,43 +1051,83 @@ function OperatorPointsApplyPanel({
 
   const maxPts = Math.min(balancePts, Math.floor(serviceDollars * pointsPerDollar));
 
-  const apply = async (pts: number) => {
+  const save = async (pts: number) => {
     try {
       setBusy(true);
-      const res = await api.post<{ appliedPts: number; payoutBoostDollars: number }>(
-        `/referrals/spend/operator/${bookingId}`,
-        { pointsPts: pts }
-      );
-      setApplied({ pts: res.appliedPts, dollars: res.payoutBoostDollars });
-      setBalancePts((b) => Math.max(0, b - res.appliedPts));
-      toast.success(`Applied ${res.appliedPts} pts (+$${res.payoutBoostDollars.toFixed(2)} payout)`);
+      const res = await api.post<{
+        mode: 'staged' | 'applied' | 'noop';
+        pendingPts: number;
+        appliedPts: number;
+        payoutBoostDollars: number;
+      }>(`/referrals/spend/operator/${bookingId}`, { pointsPts: pts });
+      if (res.mode === 'applied' || res.appliedPts > 0) {
+        setSettled({ pts: res.appliedPts, dollars: res.payoutBoostDollars });
+        setStagedPts(0);
+        setBalancePts((b) => Math.max(0, b - res.appliedPts));
+        toast.success(
+          `Kickback applied: ${res.appliedPts.toLocaleString()} pts (+$${res.payoutBoostDollars.toFixed(2)})`
+        );
+      } else {
+        setStagedPts(res.pendingPts);
+        setSliderPts(res.pendingPts);
+        onStaged?.(res.pendingPts);
+        toast.success(
+          res.pendingPts > 0
+            ? `Saved ${res.pendingPts.toLocaleString()} pts — kickback applies when they pay`
+            : 'Cleared staged points'
+        );
+      }
     } catch (e: any) {
-      toast.error(e?.message || 'Could not apply points');
+      toast.error(e?.message || 'Could not save points');
     } finally {
       setBusy(false);
     }
   };
 
-  if (!pointsVisible || (maxPts <= 0 && !applied)) return null;
+  if (!pointsVisible) return null;
+  if (settled) {
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left">
+        <p className="text-sm font-semibold text-emerald-900">Kickback applied</p>
+        <p className="text-sm text-emerald-800 mt-1">
+          {settled.pts.toLocaleString()} pts (+${settled.dollars.toFixed(2)} payout boost)
+        </p>
+      </div>
+    );
+  }
+  if (!awaitingPayment && stagedPts <= 0 && maxPts <= 0) return null;
+  if (!awaitingPayment && stagedPts > 0) {
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left">
+        <p className="text-sm font-semibold text-gray-900">Points kickback</p>
+        <p className="text-sm text-emerald-800 mt-1">
+          Settling {stagedPts.toLocaleString()} pts…
+        </p>
+      </div>
+    );
+  }
+  if (!awaitingPayment) return null;
 
   return (
     <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left space-y-3">
-      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points</p>
+      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points for a kickback</p>
       <p className="text-xs text-gray-600">
-        Boost your payout up to the service price. Client price stays the same. Balance:{' '}
-        {balancePts.toLocaleString()} pts.
+        Choose points now. When the customer pays, OnCuts spends them and boosts your payout.
+        Client price stays the same. Balance: {balancePts.toLocaleString()} pts.
       </p>
-      {applied ? (
-        <p className="text-sm text-emerald-800 font-medium">
-          Applied {applied.pts.toLocaleString()} pts (+${applied.dollars.toFixed(2)})
+      {stagedPts > 0 && (
+        <p className="text-xs font-medium text-emerald-800">
+          Staged {stagedPts.toLocaleString()} pts ≈ $
+          {(stagedPts / pointsPerDollar).toFixed(2)} — applies on payment
         </p>
-      ) : (
+      )}
+      {maxPts > 0 ? (
         <>
           <input
             type="range"
             min={0}
             max={maxPts}
-            value={sliderPts}
+            value={Math.min(sliderPts, maxPts)}
             onChange={(e) => setSliderPts(Number(e.target.value))}
             className="w-full"
           />
@@ -1070,7 +1140,7 @@ function OperatorPointsApplyPanel({
               disabled={busy}
               onClick={() => {
                 setSliderPts(maxPts);
-                void apply(maxPts);
+                void save(maxPts);
               }}
               className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold"
             >
@@ -1082,7 +1152,7 @@ function OperatorPointsApplyPanel({
               onClick={() => {
                 const half = Math.floor(maxPts / 2);
                 setSliderPts(half);
-                void apply(half);
+                void save(half);
               }}
               className="px-3 py-1.5 rounded-lg bg-stone-200 text-xs font-semibold"
             >
@@ -1090,14 +1160,16 @@ function OperatorPointsApplyPanel({
             </button>
             <button
               type="button"
-              disabled={busy || sliderPts <= 0}
-              onClick={() => void apply(sliderPts)}
+              disabled={busy}
+              onClick={() => void save(sliderPts)}
               className="px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold"
             >
-              Apply
+              Save for kickback
             </button>
           </div>
         </>
+      ) : (
+        <p className="text-xs text-gray-500">No points available to stage for this booking.</p>
       )}
     </div>
   );
@@ -1652,10 +1724,19 @@ export default function PostServicePaymentPage() {
               )}
             </div>
 
-            {servicePaid && booking.id && (
+            {booking.id && (
               <OperatorPointsApplyPanel
                 bookingId={booking.id}
                 serviceDollars={(booking.priceUsdCents || 0) / 100}
+                awaitingPayment={awaitingPostCompletePay || awaitingServicePay}
+                pendingPts={booking.operatorPointsPendingPts || 0}
+                appliedPts={booking.operatorPointsAppliedPts || 0}
+                boostCents={booking.operatorPointsBoostCents || 0}
+                onStaged={(pts) =>
+                  setBooking((prev) =>
+                    prev ? { ...prev, operatorPointsPendingPts: pts } : prev
+                  )
+                }
               />
             )}
 

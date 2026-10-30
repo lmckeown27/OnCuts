@@ -511,7 +511,10 @@ export const dismissReferPrompt = async (req: AuthRequest, res: Response, next: 
   }
 };
 
-/** Operator applies points to a completed paid booking (increases payout). */
+/**
+ * Operator stages points while waiting for payment, or settles immediately if already paid.
+ * Staged points are spent when payment confirms (before portfolio prompt).
+ */
 export const applyOperatorPointsToBooking = async (
   req: AuthRequest,
   res: Response,
@@ -523,68 +526,24 @@ export const applyOperatorPointsToBooking = async (
     const bookingId = String(req.params.bookingId || req.body?.bookingId || '');
     const pointsToApply = Math.floor(Number(req.body?.pointsPts));
     if (!bookingId) throw new ApiError(400, 'bookingId required');
-    if (!Number.isFinite(pointsToApply) || pointsToApply < 0) {
-      throw new ApiError(400, 'pointsPts must be a non-negative integer');
-    }
 
-    const settings = await getReferralProgramSettings();
-    const booking = await pool.query(
-      `SELECT id, "barberId" AS barber_id, "consumerId" AS consumer_id,
-              COALESCE(price, 0) AS price,
-              COALESCE("paidAt", paid_at) AS paid_at,
-              meta
-       FROM bookings WHERE id = $1`,
-      [bookingId]
+    const { stageOrApplyOperatorPointsKickback } = await import(
+      '../services/operator-points-kickback.service'
     );
-    if (!booking.rows[0]) throw new ApiError(404, 'Booking not found');
-    const b = booking.rows[0];
-    if (String(b.barber_id) !== userId) throw new ApiError(403, 'Not your booking');
-    if (!b.paid_at) throw new ApiError(400, 'Booking must be paid before applying points');
-
-    const serviceCents = Math.round(Number(b.price) * 100);
-    const maxPts = Math.floor(
-      (serviceCents / 100) * settings.pointsPerDollar * (settings.maxSpendPercent / 100)
-    );
-    const applyPts = Math.min(pointsToApply, maxPts);
-    if (applyPts <= 0) {
-      res.json({ success: true, data: { appliedPts: 0, payoutBoostDollars: 0 } });
-      return;
-    }
-
-    const dollars = applyPts / settings.pointsPerDollar;
-    await applyPointsDelta({
-      userId,
-      kind: 'operator',
-      deltaPts: -applyPts,
-      reason: 'operator_booking_kickback',
+    const result = await stageOrApplyOperatorPointsKickback({
       bookingId,
-      meta: { payoutBoostDollars: dollars },
+      operatorUserId: userId,
+      pointsPts: pointsToApply,
     });
-
-    // Stash on booking meta if column exists
-    try {
-      await pool.query(
-        `UPDATE bookings
-         SET meta = COALESCE(meta, '{}'::jsonb) || $2::jsonb
-         WHERE id = $1`,
-        [
-          bookingId,
-          JSON.stringify({
-            operatorPointsAppliedPts: applyPts,
-            operatorPointsPayoutBoostDollars: dollars,
-          }),
-        ]
-      );
-    } catch {
-      /* meta column may not exist */
-    }
 
     res.json({
       success: true,
       data: {
-        appliedPts: applyPts,
-        payoutBoostDollars: dollars,
-        maxPts,
+        mode: result.mode,
+        pendingPts: result.pendingPts,
+        appliedPts: result.appliedPts,
+        payoutBoostDollars: result.payoutBoostDollars,
+        maxPts: result.maxPts,
       },
     });
   } catch (error) {

@@ -935,6 +935,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."tipRequestedAt",
         b."tipDecidedAt",
         b.commission_free_applied,
+        COALESCE(b.operator_points_pending_pts, 0) AS operator_points_pending_pts,
+        COALESCE(b.operator_points_applied_pts, 0) AS operator_points_applied_pts,
+        COALESCE(b.operator_points_boost_cents, 0) AS operator_points_boost_cents,
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
@@ -1012,6 +1015,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
       tipRequestedAt: normalizeApiTimestamp(row.tipRequestedAt),
       tipDecidedAt: normalizeApiTimestamp(row.tipDecidedAt),
       commissionFreeApplied: row.commission_free_applied === true,
+      operatorPointsPendingPts: Number(row.operator_points_pending_pts) || 0,
+      operatorPointsAppliedPts: Number(row.operator_points_applied_pts) || 0,
+      operatorPointsBoostCents: Number(row.operator_points_boost_cents) || 0,
       /** True only for admin↔admin bookings when Controls cash toggle is on. */
       cashPaymentAllowed,
       location: mergeConversationLocation(row.conv_location, row.conv_location_details),
@@ -2330,6 +2336,19 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       );
     }
 
+    try {
+      const { settleOperatorPointsKickback } = await import(
+        '../services/operator-points-kickback.service'
+      );
+      await settleOperatorPointsKickback({ bookingId: id });
+    } catch (pointsKickbackError: any) {
+      logger.warn(
+        `Operator points kickback soft-failed on confirm-payment for ${id}: ${
+          pointsKickbackError?.message || pointsKickbackError
+        }`
+      );
+    }
+
     await sendTemplatedNotification({
       userId: booking.barber_user_id,
       key: 'payment_received',
@@ -2523,6 +2542,21 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     }
 
     if (markedPaid) await deleteBookingConversation(id);
+
+    if (markedPaid) {
+      try {
+        const { settleOperatorPointsKickback } = await import(
+          '../services/operator-points-kickback.service'
+        );
+        await settleOperatorPointsKickback({ bookingId: id });
+      } catch (pointsKickbackError: any) {
+        logger.warn(
+          `Operator points kickback soft-failed on cash payment for ${id}: ${
+            pointsKickbackError?.message || pointsKickbackError
+          }`
+        );
+      }
+    }
 
     const paymentMethodLabel = 'Cash';
     await sendTemplatedNotification({

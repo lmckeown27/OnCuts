@@ -668,6 +668,21 @@ async function handleCheckoutSessionCompleted(
       }
     }
 
+    try {
+      const { settleOperatorPointsKickback } = await import(
+        '../services/operator-points-kickback.service'
+      );
+      await settleOperatorPointsKickback({ bookingId: booking_id, client });
+    } catch (pointsKickbackError: unknown) {
+      const message =
+        pointsKickbackError instanceof Error
+          ? pointsKickbackError.message
+          : String(pointsKickbackError);
+      logger.warn(
+        `Operator points kickback soft-failed on checkout for ${booking_id}: ${message}`
+      );
+    }
+
     await client.query('COMMIT');
     logger.info(`✅ Checkout complete for booking ${booking_id}`);
 
@@ -849,6 +864,21 @@ async function handlePaymentIntentSucceeded(
       }
       logger.info(`✅ Booking ${booking_id} marked as PAID (service)`);
       await deleteBookingConversation(booking_id, client);
+
+      try {
+        const { settleOperatorPointsKickback } = await import(
+          '../services/operator-points-kickback.service'
+        );
+        await settleOperatorPointsKickback({ bookingId: booking_id, client });
+      } catch (pointsKickbackError: unknown) {
+        const message =
+          pointsKickbackError instanceof Error
+            ? pointsKickbackError.message
+            : String(pointsKickbackError);
+        logger.warn(
+          `Operator points kickback soft-failed on payment_intent.succeeded for ${booking_id}: ${message}`
+        );
+      }
 
       const syncedPlatformFee =
         paymentIntent.application_fee_amount != null
