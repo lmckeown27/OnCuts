@@ -278,9 +278,9 @@ export default function ScheduleServicePage() {
                 <button
                   type="button"
                   onClick={openPortfolio}
-                  className="flex w-full items-center justify-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-all shadow-sm hover:shadow-md"
+                  className="mx-auto flex w-fit items-center justify-center px-5 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-all shadow-sm hover:shadow-md"
                 >
-                  <span className="text-sm font-medium">Portfolio</span>
+                  <span className="text-base font-semibold">Portfolio</span>
                 </button>
               </div>
             </Card>
