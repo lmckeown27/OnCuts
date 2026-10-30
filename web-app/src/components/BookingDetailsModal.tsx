@@ -865,18 +865,37 @@ export default function BookingDetailsModal({
                 </div>
               )}
 
-              {/* Undo Complete Button (for COMPLETED bookings awaiting payment) */}
-              {canUndoComplete && !isUndoingComplete && !isRemoving && (
+              {/* Payment status + undo (COMPLETED bookings awaiting payment) */}
+              {(canUndoComplete ||
+                booking.status === 'COMPLETED' ||
+                booking.status === 'PAID') &&
+                !isUndoingComplete &&
+                !isRemoving && (
                 <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0 space-y-3">
-                  <p className="text-sm text-gray-500 text-center">
-                    Marked as complete by mistake?
-                  </p>
                   <button
-                    onClick={() => setIsUndoingComplete(true)}
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      navigate(`/web/payment/${booking.id}`);
+                    }}
                     className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
                   >
-                    Undo Complete
+                    View Payment Status
                   </button>
+                  {canUndoComplete && (
+                    <>
+                      <p className="text-sm text-gray-500 text-center">
+                        Marked as complete by mistake?
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsUndoingComplete(true)}
+                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
+                      >
+                        Undo Complete
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
