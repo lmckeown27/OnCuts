@@ -1013,7 +1013,7 @@ function OperatorPointsApplyPanel({
   const { pointsVisible } = useFrontendConfig();
   const [balancePts, setBalancePts] = useState(0);
   const [pointsPerDollar, setPointsPerDollar] = useState(10);
-  const [sliderPts, setSliderPts] = useState(pendingPts);
+  const [inputPts, setInputPts] = useState(String(pendingPts || ''));
   const [stagedPts, setStagedPts] = useState(pendingPts);
   const [settled, setSettled] = useState(
     appliedPts > 0
@@ -1024,7 +1024,7 @@ function OperatorPointsApplyPanel({
 
   useEffect(() => {
     setStagedPts(pendingPts);
-    setSliderPts(pendingPts);
+    setInputPts(pendingPts > 0 ? String(pendingPts) : '');
   }, [pendingPts]);
 
   useEffect(() => {
@@ -1050,8 +1050,13 @@ function OperatorPointsApplyPanel({
   }, [pointsVisible]);
 
   const maxPts = Math.min(balancePts, Math.floor(serviceDollars * pointsPerDollar));
+  const parsedPts = Math.floor(Number(inputPts));
+  const selectedPts = Number.isFinite(parsedPts) && parsedPts > 0 ? parsedPts : 0;
+  const clampedPts = Math.min(selectedPts, maxPts);
+  const kickbackDollars = clampedPts / pointsPerDollar;
 
   const save = async (pts: number) => {
+    const usePts = Math.min(Math.max(0, Math.floor(pts)), maxPts);
     try {
       setBusy(true);
       const res = await api.post<{
@@ -1059,17 +1064,18 @@ function OperatorPointsApplyPanel({
         pendingPts: number;
         appliedPts: number;
         payoutBoostDollars: number;
-      }>(`/referrals/spend/operator/${bookingId}`, { pointsPts: pts });
+      }>(`/referrals/spend/operator/${bookingId}`, { pointsPts: usePts });
       if (res.mode === 'applied' || res.appliedPts > 0) {
         setSettled({ pts: res.appliedPts, dollars: res.payoutBoostDollars });
         setStagedPts(0);
+        setInputPts('');
         setBalancePts((b) => Math.max(0, b - res.appliedPts));
         toast.success(
           `Kickback applied: ${res.appliedPts.toLocaleString()} pts (+$${res.payoutBoostDollars.toFixed(2)})`
         );
       } else {
         setStagedPts(res.pendingPts);
-        setSliderPts(res.pendingPts);
+        setInputPts(res.pendingPts > 0 ? String(res.pendingPts) : '');
         onStaged?.(res.pendingPts);
         toast.success(
           res.pendingPts > 0
@@ -1110,59 +1116,86 @@ function OperatorPointsApplyPanel({
 
   return (
     <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left space-y-3">
-      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points for a kickback</p>
-      <p className="text-xs text-gray-600">
-        Choose points now. When the customer pays, OnCuts spends them and boosts your payout.
-        Client price stays the same. Balance: {balancePts.toLocaleString()} pts.
-      </p>
+      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points</p>
+      <div className="space-y-1 text-xs text-gray-600">
+        <p>
+          Your balance:{' '}
+          <span className="font-semibold tabular-nums text-gray-900">
+            {balancePts.toLocaleString()} pts
+          </span>
+        </p>
+        <p>
+          Conversion:{' '}
+          <span className="font-semibold tabular-nums text-gray-900">
+            {pointsPerDollar.toLocaleString()} pts = $1
+          </span>{' '}
+          kickback
+        </p>
+        <p>
+          Max for this booking:{' '}
+          <span className="font-semibold tabular-nums text-gray-900">
+            {maxPts.toLocaleString()} pts
+          </span>{' '}
+          (client price unchanged)
+        </p>
+      </div>
       {stagedPts > 0 && (
         <p className="text-xs font-medium text-emerald-800">
-          Staged {stagedPts.toLocaleString()} pts ≈ $
-          {(stagedPts / pointsPerDollar).toFixed(2)} — applies on payment
+          Staged {stagedPts.toLocaleString()} pts → $
+          {(stagedPts / pointsPerDollar).toFixed(2)} kickback when they pay
         </p>
       )}
       {maxPts > 0 ? (
         <>
-          <input
-            type="range"
-            min={0}
-            max={maxPts}
-            value={Math.min(sliderPts, maxPts)}
-            onChange={(e) => setSliderPts(Number(e.target.value))}
-            className="w-full"
-          />
+          <label className="block">
+            <span className="text-xs font-medium text-gray-700">Points to use</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={maxPts}
+              step={1}
+              value={inputPts}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === '') {
+                  setInputPts('');
+                  return;
+                }
+                if (!/^\d+$/.test(raw)) return;
+                const n = Math.floor(Number(raw));
+                setInputPts(String(Math.min(Math.max(0, n), maxPts)));
+              }}
+              placeholder="0"
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </label>
           <p className="text-sm tabular-nums text-gray-800">
-            {sliderPts.toLocaleString()} pts ≈ ${(sliderPts / pointsPerDollar).toFixed(2)}
+            Kickback:{' '}
+            <span className="font-semibold text-emerald-800">
+              ${kickbackDollars.toFixed(2)}
+            </span>
+            {selectedPts > maxPts && (
+              <span className="text-xs text-amber-700"> (capped at max)</span>
+            )}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={busy}
               onClick={() => {
-                setSliderPts(maxPts);
+                setInputPts(String(maxPts));
                 void save(maxPts);
               }}
               className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold"
             >
-              Max
+              Use max
             </button>
             <button
               type="button"
-              disabled={busy}
-              onClick={() => {
-                const half = Math.floor(maxPts / 2);
-                setSliderPts(half);
-                void save(half);
-              }}
-              className="px-3 py-1.5 rounded-lg bg-stone-200 text-xs font-semibold"
-            >
-              Half
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void save(sliderPts)}
-              className="px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold"
+              disabled={busy || clampedPts <= 0}
+              onClick={() => void save(clampedPts)}
+              className="px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold disabled:opacity-50"
             >
               Save for kickback
             </button>
