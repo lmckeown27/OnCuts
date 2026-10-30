@@ -807,9 +807,9 @@ export default function ConsumerPage() {
               {user ? <PointsBalancePill kind="client" /> : null}
             </div>
             
-            {/* Center: My Operators / Discover (browse home only) */}
+            {/* Center: My Operators / Discover (desktop+; mobile places this above the browse bar) */}
             {consumerHomeMode !== 'waitlist' && (
-              <div className="absolute left-1/2 -translate-x-1/2 z-10">
+              <div className="absolute left-1/2 -translate-x-1/2 z-10 hidden sm:block">
                 <ConsumerHomeSegmentPill value={homeSegment} onChange={setHomeSegment} />
               </div>
             )}
@@ -2622,6 +2622,13 @@ function DiscoveryView({
           })}
         </div>
       )}
+
+      <div className="mb-3 flex justify-center sm:hidden">
+        <ConsumerHomeSegmentPill
+          value={homeSegment}
+          onChange={onHomeSegmentChange}
+        />
+      </div>
 
       <BrowseUtilityPill
         locationLabel={locationLabel}
