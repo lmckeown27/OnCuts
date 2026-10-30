@@ -1138,8 +1138,7 @@ function OperatorPointsApplyPanel({
       )}
       {maxPts > 0 ? (
         <>
-          <label className="block">
-            <span className="text-xs font-medium text-gray-700">Points to use</span>
+          <div className="flex items-center gap-3">
             <input
               type="number"
               inputMode="numeric"
@@ -1164,15 +1163,19 @@ function OperatorPointsApplyPanel({
                 }
               }}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              aria-label="Points to use"
+              className="w-28 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
-          </label>
-          <p className="text-sm tabular-nums text-gray-800">
-            Kickback:{' '}
-            <span className="font-semibold text-emerald-800">
-              ${kickbackDollars.toFixed(2)}
+            <span className="text-sm font-semibold text-gray-500" aria-hidden="true">
+              =
             </span>
-          </p>
+            <p className="text-sm tabular-nums text-gray-800">
+              Kickback:{' '}
+              <span className="font-semibold text-emerald-800">
+                ${kickbackDollars.toFixed(2)}
+              </span>
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
