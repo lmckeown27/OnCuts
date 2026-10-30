@@ -1,6 +1,6 @@
 /**
  * ConsumerBookingStatusPage - Shows consumer their active booking status
- * Displays pending → accepted flow and any changes made by barber
+ * Flow: request → operator confirmation → pay after service (or tip after pay-on-accept)
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
@@ -866,11 +866,17 @@ export default function ConsumerBookingStatusPage() {
     );
   }
 
+  const payAfterService = frontendConfig.paymentTimingMode === 'after_complete';
   const isPending = booking.status === 'PENDING';
   const isAccepted = booking.status === 'ACCEPTED';
-  const isPaid = booking.status === 'PAID';
-  /** Accepted or paid — appointment is confirmed / active. */
-  const isConfirmed = isAccepted || isPaid;
+  const isCompleted = booking.status === 'COMPLETED';
+  const isPaid = booking.status === 'PAID' || Boolean(booking.paidAt);
+  /** Operator has accepted the request (appointment is on the books). */
+  const isConfirmed = isAccepted || isCompleted || isPaid;
+  /** Current step index for the request → confirm → pay timeline (0–2). */
+  const statusStep = isPaid ? 2 : isConfirmed ? 1 : 0;
+  const awaitingPayment =
+    payAfterService && isCompleted && !isPaid;
 
   const handleGoToMessages = () => {
     navigate(`${platformPrefix}/consumer/messages`);
@@ -992,45 +998,90 @@ export default function ConsumerBookingStatusPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Status Timeline */}
+        {/* Status Timeline: request → confirmation → payment */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-bold text-gray-900 mb-6">Booking Status</h2>
           
           <div className="flex items-center justify-between relative">
-            {/* Progress Line */}
-            <div className="absolute top-5 left-10 right-10 h-1 bg-gray-200 rounded-full">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  isConfirmed ? 'w-full bg-green-500' : 'w-0 bg-primary-500'
+            <div className="absolute top-5 left-8 right-8 h-1 bg-gray-200 rounded-full">
+              <div
+                className={`h-full rounded-full bg-green-500 transition-all duration-500 ${
+                  statusStep === 0 ? 'w-0' : statusStep === 1 ? 'w-1/2' : 'w-full'
                 }`}
               />
             </div>
-            
-            {/* Step 1: Pending */}
-            <div className="flex flex-col items-center z-10">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isPending 
-                  ? 'bg-amber-100 text-amber-600 ring-4 ring-amber-50' 
-                  : 'bg-green-100 text-green-600'
-              }`}>
+
+            {/* Step 1: Request submitted */}
+            <div className="flex flex-col items-center z-10 max-w-[30%]">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  isPending
+                    ? 'bg-amber-100 text-amber-600 ring-4 ring-amber-50'
+                    : 'bg-green-100 text-green-600'
+                }`}
+              >
                 {isPending ? <Clock className="w-5 h-5" /> : <Check className="w-5 h-5" />}
               </div>
-              <span className={`text-sm mt-2 font-medium ${isPending ? 'text-amber-600' : 'text-green-600'}`}>
-                {isPending ? 'Pending' : 'Submitted'}
+              <span
+                className={`text-sm mt-2 font-medium text-center ${
+                  isPending ? 'text-amber-600' : 'text-green-600'
+                }`}
+              >
+                Requested
               </span>
             </div>
-            
-            {/* Step 2: Confirmed (accepted or paid) */}
-            <div className="flex flex-col items-center z-10">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isConfirmed 
-                  ? 'bg-green-100 text-green-600 ring-4 ring-green-50' 
-                  : 'bg-gray-100 text-gray-400'
-              }`}>
+
+            {/* Step 2: Operator confirmation */}
+            <div className="flex flex-col items-center z-10 max-w-[30%]">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  statusStep === 1
+                    ? awaitingPayment
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-green-100 text-green-600 ring-4 ring-green-50'
+                    : statusStep > 1
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-gray-100 text-gray-400'
+                }`}
+              >
                 {isConfirmed ? <CheckCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
               </div>
-              <span className={`text-sm mt-2 font-medium ${isConfirmed ? 'text-green-600' : 'text-gray-400'}`}>
-                {isPaid ? 'Paid' : 'Confirmed'}
+              <span
+                className={`text-sm mt-2 font-medium text-center ${
+                  isConfirmed ? 'text-green-600' : 'text-gray-400'
+                }`}
+              >
+                Confirmed
+              </span>
+            </div>
+
+            {/* Step 3: Payment (after service in after_complete mode) */}
+            <div className="flex flex-col items-center z-10 max-w-[30%]">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  isPaid
+                    ? 'bg-green-100 text-green-600 ring-4 ring-green-50'
+                    : awaitingPayment
+                      ? 'bg-amber-100 text-amber-600 ring-4 ring-amber-50'
+                      : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                {isPaid ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <DollarSign className="w-5 h-5" />
+                )}
+              </div>
+              <span
+                className={`text-sm mt-2 font-medium text-center ${
+                  isPaid
+                    ? 'text-green-600'
+                    : awaitingPayment
+                      ? 'text-amber-600'
+                      : 'text-gray-400'
+                }`}
+              >
+                {isPaid ? 'Paid' : awaitingPayment ? 'Pay now' : 'Payment'}
               </span>
             </div>
           </div>
@@ -1043,18 +1094,46 @@ export default function ConsumerBookingStatusPage() {
               </p>
             </div>
           )}
-          
-          {isConfirmed && (
+
+          {isAccepted && !isPaid && (
             <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-primary-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-primary-800">
-                    {isPaid ? 'Appointment Paid & Confirmed!' : 'Booking Confirmed!'}
-                  </p>
+                  <p className="font-semibold text-primary-800">Booking Confirmed!</p>
                   <p className="text-sm text-primary-600 mt-1">
-                    Your appointment with {booking.barberName} is confirmed
-                    {isPaid ? ' and paid.' : '.'}
+                    Your appointment with {booking.barberName} is confirmed.
+                    {payAfterService
+                      ? ' You’ll pay in-app after the service is completed.'
+                      : ' Pay now to finalize the booking.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {awaitingPayment && (
+            <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-900">Service completed — payment due</p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    {booking.barberName} marked your appointment complete. Please pay to finish.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isPaid && (
+            <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-primary-500 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-primary-800">Payment complete</p>
+                  <p className="text-sm text-primary-600 mt-1">
+                    Thanks — your appointment with {booking.barberName} is paid.
                   </p>
                 </div>
               </div>

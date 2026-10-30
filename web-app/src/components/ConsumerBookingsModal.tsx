@@ -80,16 +80,19 @@ function formatService(booking: BookingRow): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function statusBadge(status: string): { label: string; className: string; plain?: boolean } {
+function statusBadge(
+  status: string,
+  opts?: { payAfterService?: boolean },
+): { label: string; className: string; plain?: boolean } {
   const s = (status || '').toUpperCase();
   switch (s) {
     case 'PENDING':
-      return { label: 'Pending', className: 'bg-amber-100 text-amber-800' };
+      return { label: 'Requested', className: 'bg-amber-100 text-amber-800' };
     case 'ACCEPTED':
       return { label: 'Confirmed', className: 'bg-blue-100 text-blue-800' };
     case 'COMPLETED':
       return {
-        label: 'Awaiting tip',
+        label: opts?.payAfterService ? 'Awaiting payment' : 'Awaiting tip',
         className:
           'text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0 leading-tight pt-0.5',
         plain: true,
@@ -277,7 +280,7 @@ export default function ConsumerBookingsModal({
           ) : (
             <ul className="space-y-3">
               {filtered.map((b) => {
-                const badge = statusBadge(b.status);
+                const badge = statusBadge(b.status, { payAfterService: !payOnAccept });
                 const when = new Date(b.scheduledTime);
                 const dateStr = when.toLocaleDateString(undefined, {
                   weekday: 'short',
