@@ -294,7 +294,7 @@ export default function DiscoverClientPortfolio({
 
   return (
     <div className={className}>
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           {photo ? (
             <button
@@ -326,7 +326,7 @@ export default function DiscoverClientPortfolio({
             const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
             navigate(`${platformPrefix}/consumer/book/${barber.id}`);
           }}
-          className="h-16 w-48 shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750]"
+          className="h-16 w-full shrink-0 rounded-lg bg-[#5a7268] px-6 text-xl font-semibold text-white hover:bg-[#445750] sm:w-48"
         >
           Book
         </button>
