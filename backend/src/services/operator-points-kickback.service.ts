@@ -7,7 +7,7 @@ import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { applyPointsDelta } from './points-ledger.service';
 import { getReferralProgramSettings } from './referral-code.service';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 type DbClient = PoolClient | typeof pool;
 
