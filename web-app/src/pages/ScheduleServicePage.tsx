@@ -428,7 +428,7 @@ export default function ScheduleServicePage() {
                     disabled={isSubmitting}
                     className="flex-1"
                   >
-                    {isSubmitting ? 'Processing...' : 'Continue to Confirmation'}
+                    {isSubmitting ? 'Processing...' : 'Confirm'}
                   </Button>
                 </div>
 

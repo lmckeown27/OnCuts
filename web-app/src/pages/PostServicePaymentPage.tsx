@@ -1114,33 +1114,24 @@ function OperatorPointsApplyPanel({
   }
   if (!awaitingPayment) return null;
 
+  const balanceDollars = balancePts / pointsPerDollar;
+
   return (
-    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left space-y-3">
-      <p className="text-sm font-semibold text-gray-900">Apply OnCuts Points</p>
-      <div className="space-y-1 text-xs text-gray-600">
-        <p>
-          Your balance:{' '}
-          <span className="font-semibold tabular-nums text-gray-900">
-            {balancePts.toLocaleString()} pts
-          </span>
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 space-y-3">
+      <p className="text-center text-lg font-semibold text-gray-900">Apply OnCuts Points</p>
+      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-center">
+        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+          {balancePts.toLocaleString()} pts
         </p>
-        <p>
-          Conversion:{' '}
-          <span className="font-semibold tabular-nums text-gray-900">
-            {pointsPerDollar.toLocaleString()} pts = $1
-          </span>{' '}
-          kickback
+        <p className="text-sm text-emerald-800 mt-1">
+          ≈ ${balanceDollars.toFixed(2)} ({pointsPerDollar.toLocaleString()} pts = $1)
         </p>
-        <p>
-          Max for this booking:{' '}
-          <span className="font-semibold tabular-nums text-gray-900">
-            {maxPts.toLocaleString()} pts
-          </span>{' '}
-          (client price unchanged)
+        <p className="text-sm text-emerald-800 mt-1">
+          Max for this booking: {maxPts.toLocaleString()} pts
         </p>
       </div>
       {stagedPts > 0 && (
-        <p className="text-xs font-medium text-emerald-800">
+        <p className="text-center text-xs font-medium text-emerald-800">
           Staged {stagedPts.toLocaleString()} pts → $
           {(stagedPts / pointsPerDollar).toFixed(2)} kickback when they pay
         </p>
@@ -1166,6 +1157,12 @@ function OperatorPointsApplyPanel({
                 const n = Math.floor(Number(raw));
                 setInputPts(String(Math.min(Math.max(0, n), maxPts)));
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && clampedPts > 0) {
+                  e.preventDefault();
+                  void save(clampedPts);
+                }
+              }}
               placeholder="0"
               className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
@@ -1175,9 +1172,6 @@ function OperatorPointsApplyPanel({
             <span className="font-semibold text-emerald-800">
               ${kickbackDollars.toFixed(2)}
             </span>
-            {selectedPts > maxPts && (
-              <span className="text-xs text-amber-700"> (capped at max)</span>
-            )}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -1195,14 +1189,25 @@ function OperatorPointsApplyPanel({
               type="button"
               disabled={busy || clampedPts <= 0}
               onClick={() => void save(clampedPts)}
-              className="px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white text-xs font-semibold text-gray-800 disabled:opacity-50"
             >
-              Save for kickback
+              Apply
+            </button>
+            <button
+              type="button"
+              disabled={busy || (clampedPts <= 0 && stagedPts <= 0)}
+              onClick={() => {
+                setInputPts('');
+                if (stagedPts > 0) void save(0);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              Clear
             </button>
           </div>
         </>
       ) : (
-        <p className="text-xs text-gray-500">No points available to stage for this booking.</p>
+        <p className="text-center text-xs text-gray-500">No points available to stage for this booking.</p>
       )}
     </div>
   );
