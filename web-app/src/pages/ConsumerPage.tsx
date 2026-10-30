@@ -780,7 +780,7 @@ export default function ConsumerPage() {
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="cursor-pointer shrink-0"
+                className="hidden sm:block cursor-pointer shrink-0"
                 title="OnCuts home"
                 aria-label="Go to OnCuts landing page"
               >
@@ -790,18 +790,18 @@ export default function ConsumerPage() {
               {isOperator ? (
                 <button
                   onClick={() => navigate('/web/barber')}
-                  className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-gray-200"
                   title="Switch to operator view"
                 >
-                  <span className="text-xs sm:text-sm font-medium text-primary-700">Operator View</span>
+                  <span className="text-[11px] sm:text-sm font-medium text-primary-700">Operator View</span>
                 </button>
               ) : (
                 <button
                   onClick={handleBecomeBarberClick}
-                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
+                  className="px-2.5 py-1.5 sm:px-5 sm:py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
                   title="Apply to become an operator"
                 >
-                  <span className="text-sm sm:text-base font-semibold text-white">Become an Operator</span>
+                  <span className="text-[11px] sm:text-base font-semibold text-white">Become an Operator</span>
                 </button>
               )}
               {user ? <PointsBalancePill kind="client" /> : null}
