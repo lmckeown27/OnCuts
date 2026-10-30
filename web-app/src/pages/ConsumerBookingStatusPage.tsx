@@ -73,6 +73,13 @@ interface ActiveBooking {
   } | null;
 }
 
+/** True only when the API returned a real payment timestamp — never infer from status alone. */
+function hasValidPaidAt(paidAt: unknown): boolean {
+  if (paidAt == null || paidAt === '') return false;
+  const ms = Date.parse(String(paidAt));
+  return Number.isFinite(ms);
+}
+
 export default function ConsumerBookingStatusPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -387,7 +394,9 @@ export default function ConsumerBookingStatusPage() {
 
   const fetchActiveBooking = async () => {
     try {
-      // Active: PENDING / ACCEPTED / PAID, plus COMPLETED still awaiting tip
+      const payAfterService =
+        frontendConfig.paymentTimingMode === 'after_complete';
+      // Active: in-progress requests; PAID only when pay-on-accept still needs a tip decision
       const response = await api.get('/bookings-simple', { 
         role: 'consumer',
         status: 'PENDING,ACCEPTED,PAID,COMPLETED',
@@ -398,17 +407,29 @@ export default function ConsumerBookingStatusPage() {
       
       const activeBooking = bookings
         .filter((b: any) => {
-          if (b.status === 'PENDING' || b.status === 'ACCEPTED' || b.status === 'PAID') return true;
-          if (b.status === 'COMPLETED' && !b.tipDecidedAt) return true;
+          if (b.status === 'PENDING' || b.status === 'ACCEPTED') return true;
+          // After-complete: COMPLETED stays active until paidAt is recorded
+          if (b.status === 'COMPLETED' && !hasValidPaidAt(b.paidAt)) return true;
+          // Inconsistent PAID row with no receipt — still treat as unpaid/active
+          if (b.status === 'PAID' && !hasValidPaidAt(b.paidAt)) return true;
+          // Pay-on-accept: tip decision may still be pending after COMPLETED
+          if (
+            !payAfterService &&
+            b.status === 'COMPLETED' &&
+            !b.tipDecidedAt
+          ) {
+            return true;
+          }
+          // Do not surface settled (paidAt set) bookings as the live status card
           return false;
         })
         .sort((a: any, b: any) => {
-          // Tip-pending complete, then unpaid accept, then paid, then pending
+          // Prefer unpaid in-progress over anything already settled
           const statusPriority: Record<string, number> = {
             COMPLETED: 0,
             ACCEPTED: 1,
-            PAID: 2,
-            PENDING: 3,
+            PENDING: 2,
+            PAID: 3,
           };
           const priorityDiff = (statusPriority[a.status] || 4) - (statusPriority[b.status] || 4);
           if (priorityDiff !== 0) return priorityDiff;
@@ -870,13 +891,20 @@ export default function ConsumerBookingStatusPage() {
   const isPending = booking.status === 'PENDING';
   const isAccepted = booking.status === 'ACCEPTED';
   const isCompleted = booking.status === 'COMPLETED';
-  const isPaid = booking.status === 'PAID' || Boolean(booking.paidAt);
+  // Never treat ACCEPTED/CONFIRMED as paid — only a real paidAt receipt counts.
+  const isPaid = hasValidPaidAt(booking.paidAt);
   /** Operator has accepted the request (appointment is on the books). */
-  const isConfirmed = isAccepted || isCompleted || isPaid;
+  const isConfirmed = isAccepted || isCompleted || isPaid || booking.status === 'PAID';
   /** Current step index for the request → confirm → pay timeline (0–2). */
   const statusStep = isPaid ? 2 : isConfirmed ? 1 : 0;
-  const awaitingPayment =
-    payAfterService && isCompleted && !isPaid;
+  /** Payment is the active step but not yet collected. */
+  const paymentDue =
+    !isPaid &&
+    (payAfterService
+      ? isCompleted || booking.status === 'PAID'
+      : isAccepted);
+  /** After-complete: service finished, consumer still owes payment. */
+  const awaitingPayment = payAfterService && paymentDue;
 
   const handleGoToMessages = () => {
     navigate(`${platformPrefix}/consumer/messages`);
@@ -1036,7 +1064,7 @@ export default function ConsumerBookingStatusPage() {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   statusStep === 1
-                    ? awaitingPayment
+                    ? paymentDue
                       ? 'bg-green-100 text-green-600'
                       : 'bg-green-100 text-green-600 ring-4 ring-green-50'
                     : statusStep > 1
@@ -1061,7 +1089,7 @@ export default function ConsumerBookingStatusPage() {
                 className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   isPaid
                     ? 'bg-green-100 text-green-600 ring-4 ring-green-50'
-                    : awaitingPayment
+                    : paymentDue
                       ? 'bg-amber-100 text-amber-600 ring-4 ring-amber-50'
                       : 'bg-gray-100 text-gray-400'
                 }`}
@@ -1076,12 +1104,12 @@ export default function ConsumerBookingStatusPage() {
                 className={`text-sm mt-2 font-medium text-center ${
                   isPaid
                     ? 'text-green-600'
-                    : awaitingPayment
+                    : paymentDue
                       ? 'text-amber-600'
                       : 'text-gray-400'
                 }`}
               >
-                {isPaid ? 'Paid' : awaitingPayment ? 'Pay now' : 'Payment'}
+                {isPaid ? 'Paid' : paymentDue ? 'Pay now' : 'Payment'}
               </span>
             </div>
           </div>
@@ -1147,8 +1175,9 @@ export default function ConsumerBookingStatusPage() {
           // After-complete: service (+ tip) on unpaid COMPLETED.
           const payOnAccept = frontendConfig.paymentTimingMode !== 'after_complete';
           const needsServicePay = payOnAccept
-            ? booking.status === 'ACCEPTED' && !booking.paidAt
-            : booking.status === 'COMPLETED' && !booking.paidAt;
+            ? booking.status === 'ACCEPTED' && !hasValidPaidAt(booking.paidAt)
+            : (booking.status === 'COMPLETED' || booking.status === 'PAID') &&
+              !hasValidPaidAt(booking.paidAt);
           const needsTip =
             payOnAccept &&
             booking.status === 'COMPLETED' &&
