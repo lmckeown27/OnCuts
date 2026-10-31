@@ -1096,25 +1096,40 @@ function OperatorPointsApplyPanel({
   if (!pointsVisible) return null;
   if (settled) {
     return (
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left">
-        <p className="text-sm font-semibold text-emerald-900">Kickback applied</p>
-        <p className="text-sm text-emerald-800 mt-1">
-          {settled.pts.toLocaleString()} pts (+${settled.dollars.toFixed(2)} payout boost)
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-center space-y-1">
+        <p className="text-lg font-semibold text-emerald-900">Kickback locked in</p>
+        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+          {settled.pts.toLocaleString()} pts
+        </p>
+        <p className="text-sm text-emerald-800">
+          +${settled.dollars.toFixed(2)} payout boost
         </p>
       </div>
     );
   }
-  if (!awaitingPayment && stagedPts <= 0 && maxPts <= 0) return null;
-  if (!awaitingPayment && stagedPts > 0) {
+
+  // After one Apply, lock — no further edits until payment settles.
+  if (stagedPts > 0) {
+    const stagedKickback = stagedPts / pointsPerDollar;
     return (
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-left">
-        <p className="text-sm font-semibold text-gray-900">Points kickback</p>
-        <p className="text-sm text-emerald-800 mt-1">
-          Settling {stagedPts.toLocaleString()} pts…
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-center space-y-2">
+        <p className="text-lg font-semibold text-gray-900">Kickback saved</p>
+        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+          {stagedPts.toLocaleString()} pts
         </p>
+        <p className="text-sm text-emerald-800">
+          +${stagedKickback.toFixed(2)} when they pay
+        </p>
+        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+          Service + Kickback = ${(serviceDollars + stagedKickback).toFixed(2)}
+        </p>
+        {!awaitingPayment && (
+          <p className="text-xs text-emerald-800">Settling kickback…</p>
+        )}
       </div>
     );
   }
+
   if (!awaitingPayment) return null;
 
   const balanceDollars = balancePts / pointsPerDollar;
@@ -1198,11 +1213,8 @@ function OperatorPointsApplyPanel({
         </button>
         <button
           type="button"
-          disabled={busy || (clampedPts <= 0 && stagedPts <= 0)}
-          onClick={() => {
-            setInputPts('');
-            if (stagedPts > 0) void save(0);
-          }}
+          disabled={busy || clampedPts <= 0}
+          onClick={() => setInputPts('')}
           className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
           Clear
@@ -1317,7 +1329,7 @@ export default function PostServicePaymentPage() {
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
   const [isUndoing, setIsUndoing] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [portfolioFlow, setPortfolioFlow] = useState<'pending' | 'open' | 'closed'>('pending');
+  const [portfolioFlow, setPortfolioFlow] = useState<'pending' | 'ready' | 'open' | 'closed'>('pending');
   const barberPhoto = useResolvedProfilePhoto(booking?.barber, booking?.barber?.id);
 
   // Redirect to login if not authenticated (security: require identity verification)
@@ -1382,22 +1394,30 @@ export default function PostServicePaymentPage() {
 
   useEffect(() => {
     const providerId = booking?.barber?.recordId;
-    if (!isBarber || !booking?.tipDecidedAt || !providerId) return;
+    // Offer portfolio after the client has paid (tip decided, or paidAt after complete).
+    const clientPaid = !!booking?.tipDecidedAt || !!booking?.paidAt;
+    if (!isBarber || !clientPaid || !providerId) return;
     let cancelled = false;
     api
       .get<Array<{ booking_id?: string | null }>>(`/barbers/${providerId}/operator-portfolio`)
       .then((items) => {
         if (cancelled) return;
         const alreadyAdded = Array.isArray(items) && items.some((item) => item.booking_id === booking.id);
-        setPortfolioFlow((current) => (current === 'closed' ? current : alreadyAdded ? 'closed' : 'open'));
+        setPortfolioFlow((current) =>
+          current === 'closed' || current === 'open' ? current : alreadyAdded ? 'closed' : 'ready'
+        );
       })
       .catch(() => {
-        if (!cancelled) setPortfolioFlow((current) => (current === 'closed' ? current : 'open'));
+        if (!cancelled) {
+          setPortfolioFlow((current) =>
+            current === 'closed' || current === 'open' ? current : 'ready'
+          );
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [isBarber, booking?.id, booking?.tipDecidedAt, booking?.barber?.recordId]);
+  }, [isBarber, booking?.id, booking?.tipDecidedAt, booking?.paidAt, booking?.barber?.recordId]);
 
   const handlePayLater = () => {
     if (!bookingId) return;
@@ -1792,9 +1812,21 @@ export default function PostServicePaymentPage() {
                 }
               />
             )}
+
+            {(tipDone || (servicePaid && !awaitingTip && !awaitingPostCompletePay)) &&
+              portfolioFlow === 'ready' &&
+              booking.barber.recordId && (
+                <button
+                  type="button"
+                  onClick={() => setPortfolioFlow('open')}
+                  className="w-full mt-2 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors"
+                >
+                  Continue to Portfolio
+                </button>
+              )}
           </div>
         </div>
-        {tipDone && portfolioFlow === 'open' && booking.barber.recordId && (
+        {portfolioFlow === 'open' && booking.barber.recordId && (
           <PostServicePortfolioFlow
             bookingId={booking.id}
             providerId={booking.barber.recordId}
