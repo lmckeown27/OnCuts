@@ -269,7 +269,6 @@ export default function BookingDetailsModal({
   const scheduledTime = new Date(booking.scheduledTime);
   const formattedDate = scheduledTime.toLocaleDateString('en-US', { 
     weekday: 'long', 
-    year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
@@ -283,7 +282,7 @@ export default function BookingDetailsModal({
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACCEPTED': return 'bg-blue-100 text-blue-700';
+      case 'ACCEPTED': return 'bg-brand-100 text-brand-800';
       case 'COMPLETED': return 'bg-green-100 text-green-700';
       case 'CANCELLED': return 'bg-red-100 text-red-700';
       case 'PENDING': return 'bg-yellow-100 text-yellow-700';
@@ -661,7 +660,6 @@ export default function BookingDetailsModal({
                         <p className="text-sm text-amber-800 mt-1">
                           {new Date(booking.pendingRescheduleRequest.requestedTime).toLocaleDateString('en-US', {
                             weekday: 'long',
-                            year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           })}{' '}

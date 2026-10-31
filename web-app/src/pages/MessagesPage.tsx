@@ -2162,7 +2162,6 @@ export default function MessagesPage() {
                         weekday: 'short',
                         month: 'short', 
                         day: 'numeric',
-                        year: 'numeric'
                       })}
                     </p>
                   </div>

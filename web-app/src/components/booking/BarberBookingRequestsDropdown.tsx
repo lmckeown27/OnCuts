@@ -520,7 +520,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                           weekday: 'short',
                           month: 'short',
                           day: 'numeric',
-                          year: 'numeric',
                         })}
                       </span>
                     </div>

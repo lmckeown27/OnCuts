@@ -89,7 +89,7 @@ function statusBadge(
     case 'PENDING':
       return { label: 'Requested', className: 'bg-amber-100 text-amber-800' };
     case 'ACCEPTED':
-      return { label: 'Confirmed', className: 'bg-blue-100 text-blue-800' };
+      return { label: 'Confirmed', className: 'bg-brand-100 text-brand-800' };
     case 'COMPLETED':
       return {
         label: opts?.payAfterService ? 'Awaiting payment' : 'Awaiting tip',

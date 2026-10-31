@@ -685,7 +685,6 @@ export default function ConsumerBookingStatusPage() {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-      year: 'numeric'
     });
   };
 
