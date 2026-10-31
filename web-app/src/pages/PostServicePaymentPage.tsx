@@ -1184,33 +1184,33 @@ function OperatorPointsApplyPanel({
               ${(serviceDollars + kickbackDollars).toFixed(2)}
             </span>
           </p>
-          <div className="flex justify-center">
-            <button
-              type="button"
-              disabled={busy || (clampedPts <= 0 && stagedPts <= 0)}
-              onClick={() => {
-                setInputPts('');
-                if (stagedPts > 0) void save(0);
-              }}
-              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
-            >
-              Clear
-            </button>
-          </div>
         </>
       ) : (
         <p className="text-center text-xs text-gray-500">No points available to stage for this booking.</p>
       )}
     </div>
     {maxPts > 0 && (
-      <button
-        type="button"
-        disabled={busy || clampedPts <= 0}
-        onClick={() => void save(clampedPts)}
-        className="w-full py-3 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-gray-800 disabled:opacity-50"
-      >
-        Apply
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={busy || clampedPts <= 0}
+          onClick={() => void save(clampedPts)}
+          className="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          disabled={busy || (clampedPts <= 0 && stagedPts <= 0)}
+          onClick={() => {
+            setInputPts('');
+            if (stagedPts > 0) void save(0);
+          }}
+          className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          Clear
+        </button>
+      </div>
     )}
     </>
   );
