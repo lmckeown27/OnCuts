@@ -1139,9 +1139,9 @@ function OperatorPointsApplyPanel({
               setInputPts(String(stagedPts));
               setEditing(true);
             }}
-            className="w-full py-3 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-gray-800 hover:bg-stone-50 transition-colors disabled:opacity-50"
+            className="mx-auto block w-fit px-6 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-base font-semibold text-white transition-colors disabled:opacity-50"
           >
-            Edit
+            Edit Kickback
           </button>
         )}
       </>
