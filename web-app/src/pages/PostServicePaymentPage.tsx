@@ -1120,6 +1120,7 @@ function OperatorPointsApplyPanel({
   const balanceDollars = balancePts / pointsPerDollar;
 
   return (
+    <>
     <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 space-y-3">
       <p className="text-center text-lg font-semibold text-gray-900">Apply OnCuts Points</p>
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-center">
@@ -1183,26 +1184,7 @@ function OperatorPointsApplyPanel({
               ${(serviceDollars + kickbackDollars).toFixed(2)}
             </span>
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setInputPts(String(maxPts));
-                void save(maxPts);
-              }}
-              className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-semibold"
-            >
-              Use max
-            </button>
-            <button
-              type="button"
-              disabled={busy || clampedPts <= 0}
-              onClick={() => void save(clampedPts)}
-              className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white text-xs font-semibold text-gray-800 disabled:opacity-50"
-            >
-              Apply
-            </button>
+          <div className="flex justify-center">
             <button
               type="button"
               disabled={busy || (clampedPts <= 0 && stagedPts <= 0)}
@@ -1220,6 +1202,17 @@ function OperatorPointsApplyPanel({
         <p className="text-center text-xs text-gray-500">No points available to stage for this booking.</p>
       )}
     </div>
+    {maxPts > 0 && (
+      <button
+        type="button"
+        disabled={busy || clampedPts <= 0}
+        onClick={() => void save(clampedPts)}
+        className="w-full py-3 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-gray-800 disabled:opacity-50"
+      >
+        Apply
+      </button>
+    )}
+    </>
   );
 }
 
@@ -1772,6 +1765,21 @@ export default function PostServicePaymentPage() {
               )}
             </div>
 
+            {awaitingTip && (
+              <button
+                onClick={handleUndoComplete}
+                disabled={isUndoing}
+                className="w-full mb-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isUndoing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Undo2 className="w-5 h-5" />
+                )}
+                {isUndoing ? 'Reverting...' : 'Undo Completion'}
+              </button>
+            )}
+
             {booking.id && (
               <OperatorPointsApplyPanel
                 bookingId={booking.id}
@@ -1786,21 +1794,6 @@ export default function PostServicePaymentPage() {
                   )
                 }
               />
-            )}
-
-            {awaitingTip && (
-              <button
-                onClick={handleUndoComplete}
-                disabled={isUndoing}
-                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isUndoing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Undo2 className="w-5 h-5" />
-                )}
-                {isUndoing ? 'Reverting...' : 'Undo Completion'}
-              </button>
             )}
           </div>
         </div>
