@@ -1021,10 +1021,12 @@ function OperatorPointsApplyPanel({
       : null as { pts: number; dollars: number } | null
   );
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     setStagedPts(pendingPts);
     setInputPts(pendingPts > 0 ? String(pendingPts) : '');
+    if (pendingPts > 0) setEditing(false);
   }, [pendingPts]);
 
   useEffect(() => {
@@ -1079,6 +1081,7 @@ function OperatorPointsApplyPanel({
       } else {
         setStagedPts(res.pendingPts);
         setInputPts(res.pendingPts > 0 ? String(res.pendingPts) : '');
+        setEditing(false);
         onStaged?.(res.pendingPts);
         toast.success(
           res.pendingPts > 0
@@ -1108,25 +1111,40 @@ function OperatorPointsApplyPanel({
     );
   }
 
-  // After one Apply, lock — no further edits until payment settles.
-  if (stagedPts > 0) {
+  // After Apply, lock — Edit reopens the form while still awaiting payment.
+  if (stagedPts > 0 && !editing) {
     const stagedKickback = stagedPts / pointsPerDollar;
     return (
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-center space-y-2">
-        <p className="text-lg font-semibold text-gray-900">Kickback saved</p>
-        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
-          {stagedPts.toLocaleString()} pts
-        </p>
-        <p className="text-sm text-emerald-800">
-          +${stagedKickback.toFixed(2)} when they pay
-        </p>
-        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
-          Service + Kickback = ${(serviceDollars + stagedKickback).toFixed(2)}
-        </p>
-        {!awaitingPayment && (
-          <p className="text-xs text-emerald-800">Settling kickback…</p>
+      <>
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6 text-center space-y-2">
+          <p className="text-lg font-semibold text-gray-900">Kickback saved</p>
+          <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+            {stagedPts.toLocaleString()} pts
+          </p>
+          <p className="text-sm text-emerald-800">
+            +${stagedKickback.toFixed(2)} when they pay
+          </p>
+          <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+            Service + Kickback = ${(serviceDollars + stagedKickback).toFixed(2)}
+          </p>
+          {!awaitingPayment && (
+            <p className="text-xs text-emerald-800">Settling kickback…</p>
+          )}
+        </div>
+        {awaitingPayment && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setInputPts(String(stagedPts));
+              setEditing(true);
+            }}
+            className="w-full py-3 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-gray-800 hover:bg-stone-50 transition-colors disabled:opacity-50"
+          >
+            Edit
+          </button>
         )}
-      </div>
+      </>
     );
   }
 
@@ -1213,11 +1231,18 @@ function OperatorPointsApplyPanel({
         </button>
         <button
           type="button"
-          disabled={busy || clampedPts <= 0}
-          onClick={() => setInputPts('')}
+          disabled={busy}
+          onClick={() => {
+            if (editing && stagedPts > 0) {
+              setInputPts(String(stagedPts));
+              setEditing(false);
+              return;
+            }
+            setInputPts('');
+          }}
           className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          Clear
+          {editing ? 'Cancel' : 'Clear'}
         </button>
       </div>
     )}
