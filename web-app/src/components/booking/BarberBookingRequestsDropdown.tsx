@@ -396,8 +396,8 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                     <div className="w-10 h-10 bg-gradient-to-br from-gray-900 to-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {request.customerName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 text-sm truncate">
+                    <div className="flex-1 min-w-0 flex items-center min-h-[2.5rem]">
+                      <h4 className="font-semibold text-gray-900 text-lg leading-tight truncate">
                         {request.customerName}
                       </h4>
                     </div>
