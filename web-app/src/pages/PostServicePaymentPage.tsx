@@ -1856,7 +1856,10 @@ export default function PostServicePaymentPage() {
             bookingId={booking.id}
             providerId={booking.barber.recordId}
             serviceName={booking.serviceName || booking.serviceType}
-            onClose={() => setPortfolioFlow('closed')}
+            onClose={() => {
+              setPortfolioFlow('closed');
+              navigate('/web/barber');
+            }}
           />
         )}
       </div>
