@@ -412,18 +412,18 @@ export default function PostServicePortfolioFlow({
           <h2 id="portfolio-prompt-title" className="text-xl font-bold text-[#171717]">
             Add this service to your portfolio?
           </h2>
-          <div className="mt-6 flex flex-col gap-3">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => setStep('upload')}
-              className="w-full rounded-xl bg-[#5a7268] py-3 text-sm font-semibold text-white hover:bg-[#4e655c]"
+              className="w-fit rounded-xl bg-[#5a7268] px-5 py-3 text-base font-semibold text-white hover:bg-[#4e655c]"
             >
               Yes, add work
             </button>
             <button
               type="button"
               onClick={closeFlow}
-              className="w-full rounded-xl py-3 text-sm font-semibold text-[#171717] hover:bg-black/5"
+              className="w-fit rounded-xl bg-red-600 px-5 py-3 text-base font-semibold text-white hover:bg-red-700"
             >
               Not now
             </button>
