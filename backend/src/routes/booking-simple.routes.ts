@@ -2340,7 +2340,15 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       const { settleOperatorPointsKickback } = await import(
         '../services/operator-points-kickback.service'
       );
-      await settleOperatorPointsKickback({ bookingId: id });
+      const destRaw = paymentIntent.transfer_data?.destination;
+      const pointsConnectId =
+        typeof destRaw === 'string' ? destRaw : destRaw?.id;
+      await settleOperatorPointsKickback({
+        bookingId: id,
+        connectedAccountId: pointsConnectId,
+        paymentIntentId,
+        livemode: !!paymentIntent.livemode,
+      });
     } catch (pointsKickbackError: any) {
       logger.warn(
         `Operator points kickback soft-failed on confirm-payment for ${id}: ${
@@ -2548,7 +2556,10 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
         const { settleOperatorPointsKickback } = await import(
           '../services/operator-points-kickback.service'
         );
-        await settleOperatorPointsKickback({ bookingId: id });
+        await settleOperatorPointsKickback({
+          bookingId: id,
+          paymentIntentId: `cash_${id}`,
+        });
       } catch (pointsKickbackError: any) {
         logger.warn(
           `Operator points kickback soft-failed on cash payment for ${id}: ${

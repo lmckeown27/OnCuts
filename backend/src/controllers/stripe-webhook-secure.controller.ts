@@ -672,7 +672,25 @@ async function handleCheckoutSessionCompleted(
       const { settleOperatorPointsKickback } = await import(
         '../services/operator-points-kickback.service'
       );
-      await settleOperatorPointsKickback({ bookingId: booking_id, client });
+      let pointsConnectId: string | null | undefined;
+      if (paymentIntentId) {
+        try {
+          const stripePts = getStripeClientForLivemode(!!session.livemode);
+          const piPts = await stripePts.paymentIntents.retrieve(paymentIntentId);
+          const destRaw = piPts.transfer_data?.destination;
+          pointsConnectId =
+            typeof destRaw === 'string' ? destRaw : destRaw?.id;
+        } catch {
+          /* resolve Connect inside settle */
+        }
+      }
+      await settleOperatorPointsKickback({
+        bookingId: booking_id,
+        client,
+        connectedAccountId: pointsConnectId,
+        paymentIntentId: paymentIntentId || undefined,
+        livemode: !!session.livemode,
+      });
     } catch (pointsKickbackError: unknown) {
       const message =
         pointsKickbackError instanceof Error
@@ -869,7 +887,16 @@ async function handlePaymentIntentSucceeded(
         const { settleOperatorPointsKickback } = await import(
           '../services/operator-points-kickback.service'
         );
-        await settleOperatorPointsKickback({ bookingId: booking_id, client });
+        const destRaw = paymentIntent.transfer_data?.destination;
+        const pointsConnectId =
+          typeof destRaw === 'string' ? destRaw : destRaw?.id;
+        await settleOperatorPointsKickback({
+          bookingId: booking_id,
+          client,
+          connectedAccountId: pointsConnectId,
+          paymentIntentId: paymentIntent.id,
+          livemode: !!paymentIntent.livemode,
+        });
       } catch (pointsKickbackError: unknown) {
         const message =
           pointsKickbackError instanceof Error
