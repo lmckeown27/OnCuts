@@ -1178,11 +1178,8 @@ function OperatorPointsApplyPanel({
               </span>
             </p>
           </div>
-          <p className="text-center text-sm tabular-nums text-gray-800">
-            Total ={' '}
-            <span className="font-semibold text-emerald-900">
-              ${(serviceDollars + kickbackDollars).toFixed(2)}
-            </span>
+          <p className="text-center text-3xl font-semibold tabular-nums text-emerald-950">
+            Total = ${(serviceDollars + kickbackDollars).toFixed(2)}
           </p>
         </>
       ) : (
