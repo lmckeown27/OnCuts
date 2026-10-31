@@ -1054,6 +1054,9 @@ function OperatorPointsApplyPanel({
   const selectedPts = Number.isFinite(parsedPts) && parsedPts > 0 ? parsedPts : 0;
   const clampedPts = Math.min(selectedPts, maxPts);
   const kickbackDollars = clampedPts / pointsPerDollar;
+  const inputCommitted =
+    stagedPts > 0 && inputPts !== '' && Number(inputPts) === stagedPts;
+  const inputPendingStyle = inputPts !== '' && !inputCommitted;
 
   const save = async (pts: number) => {
     const usePts = Math.min(Math.max(0, Math.floor(pts)), maxPts);
@@ -1130,12 +1133,6 @@ function OperatorPointsApplyPanel({
           Max for this booking: {maxPts.toLocaleString()} pts
         </p>
       </div>
-      {stagedPts > 0 && (
-        <p className="text-center text-xs font-medium text-emerald-800">
-          Staged {stagedPts.toLocaleString()} pts → $
-          {(stagedPts / pointsPerDollar).toFixed(2)} kickback when they pay
-        </p>
-      )}
       {maxPts > 0 ? (
         <>
           <div className="flex items-center justify-center gap-3">
@@ -1164,7 +1161,11 @@ function OperatorPointsApplyPanel({
               }}
               placeholder="0"
               aria-label="Points to use"
-              className="w-28 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className={
+                inputPendingStyle
+                  ? 'w-28 rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm tabular-nums text-gray-500 focus:border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-300'
+                  : 'w-28 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500'
+              }
             />
             <span className="text-sm font-semibold text-gray-500" aria-hidden="true">
               =
@@ -1787,33 +1788,18 @@ export default function PostServicePaymentPage() {
               />
             )}
 
-            {awaitingTip ? (
-              <div className="space-y-3">
-                <button
-                  onClick={() => navigate('/web/barber')}
-                  className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
-                >
-                  Return to Dashboard
-                </button>
-                <button
-                  onClick={handleUndoComplete}
-                  disabled={isUndoing}
-                  className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isUndoing ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Undo2 className="w-5 h-5" />
-                  )}
-                  {isUndoing ? 'Reverting...' : 'Undo Completion'}
-                </button>
-              </div>
-            ) : (
+            {awaitingTip && (
               <button
-                onClick={() => navigate('/web/barber')}
-                className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors"
+                onClick={handleUndoComplete}
+                disabled={isUndoing}
+                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Return to Dashboard
+                {isUndoing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Undo2 className="w-5 h-5" />
+                )}
+                {isUndoing ? 'Reverting...' : 'Undo Completion'}
               </button>
             )}
           </div>
