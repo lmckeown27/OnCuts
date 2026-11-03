@@ -302,6 +302,7 @@ function ServicePaymentForm({
     serviceAmountCents: number;
     serviceFeeCents: number;
     amountCents: number;
+    pointsDiscountCents?: number;
   } | null>(null);
 
   const tipAmount = includeOptionalTip
@@ -348,6 +349,7 @@ function ServicePaymentForm({
         amountCents?: number;
         serviceAmountCents?: number;
         serviceFeeCents?: number;
+        pointsDiscountCents?: number;
       }>(`/bookings-simple/${booking.id}/create-payment-intent`, {
         tipAmountCents: includeOptionalTip ? tipCents : 0,
       });
@@ -356,6 +358,7 @@ function ServicePaymentForm({
       const serviceAmountCents = Number(response.serviceAmountCents);
       const feeCents = Number(response.serviceFeeCents);
       const amountCents = Number(response.amountCents);
+      const pointsDiscountCents = Number(response.pointsDiscountCents);
       if (Number.isFinite(amountCents) && amountCents > 0) {
         setIntentQuote({
           serviceAmountCents: Number.isFinite(serviceAmountCents)
@@ -363,6 +366,9 @@ function ServicePaymentForm({
             : booking.priceUsdCents,
           serviceFeeCents: Number.isFinite(feeCents) ? feeCents : 0,
           amountCents,
+          pointsDiscountCents: Number.isFinite(pointsDiscountCents)
+            ? pointsDiscountCents
+            : 0,
         });
       }
     } catch (err: any) {
@@ -461,8 +467,23 @@ function ServicePaymentForm({
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Service price</span>
-          <span className="font-medium">${(serviceCents / 100).toFixed(2)}</span>
+          <span className="font-medium">
+            $
+            {(
+              ((intentQuote?.pointsDiscountCents || 0) > 0
+                ? (booking.priceUsdCents || 0)
+                : serviceCents) / 100
+            ).toFixed(2)}
+          </span>
         </div>
+        {(intentQuote?.pointsDiscountCents || 0) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Points discount</span>
+            <span className="font-medium text-emerald-700">
+              −${((intentQuote?.pointsDiscountCents || 0) / 100).toFixed(2)}
+            </span>
+          </div>
+        )}
         {serviceFeeCents > 0 && (
           <div className="flex justify-between">
             <span className="text-gray-600">Service Fee</span>
@@ -1260,82 +1281,154 @@ function ClientPointsDiscountPanel({
   onDiscount?: (dollars: number) => void;
 }) {
   const { pointsVisible } = useFrontendConfig();
+  const [balancePts, setBalancePts] = useState(0);
   const [maxPts, setMaxPts] = useState(0);
   const [pointsPerDollar, setPointsPerDollar] = useState(10);
-  const [sliderPts, setSliderPts] = useState(0);
-  const [committed, setCommitted] = useState(false);
+  const [inputPts, setInputPts] = useState('');
+  const [committed, setCommitted] = useState<{ pts: number; dollars: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const quote = await api.post<{
+        balancePts: number;
         maxPts: number;
         pointsPerDollar: number;
-      }>('/referrals/spend/client/quote', { serviceDollars, pointsPts: 0 });
+        appliedPts?: number;
+        appliedDiscountDollars?: number;
+      }>('/referrals/spend/client/quote', { bookingId, serviceDollars, pointsPts: 0 });
+      setBalancePts(quote.balancePts || 0);
       setMaxPts(quote.maxPts || 0);
       setPointsPerDollar(quote.pointsPerDollar || 10);
+      if ((quote.appliedPts || 0) > 0) {
+        setCommitted({
+          pts: quote.appliedPts || 0,
+          dollars: quote.appliedDiscountDollars || 0,
+        });
+      }
     } catch {
       /* ignore */
     }
-  }, [serviceDollars]);
+  }, [bookingId, serviceDollars]);
 
   useEffect(() => {
     if (!pointsVisible) return;
     void refresh();
   }, [refresh, pointsVisible]);
 
+  const parsedPts = Math.floor(Number(inputPts));
+  const selectedPts = Number.isFinite(parsedPts) && parsedPts > 0 ? parsedPts : 0;
+  const clampedPts = Math.min(selectedPts, maxPts);
+  const discountDollars = clampedPts / pointsPerDollar;
+  const balanceDollars = balancePts / pointsPerDollar;
+
   if (!pointsVisible) return null;
 
-  if (maxPts <= 0 || committed) {
-    if (committed) {
-      return (
-        <p className="text-sm text-emerald-800 mb-3">
-          Points discount applied.
+  if (committed) {
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-4 text-center space-y-1">
+        <p className="text-lg font-semibold text-emerald-900">Discount applied</p>
+        <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+          {committed.pts.toLocaleString()} pts
         </p>
-      );
-    }
-    return null;
+        <p className="text-sm text-emerald-800">−${committed.dollars.toFixed(2)} off service</p>
+      </div>
+    );
   }
 
+  if (maxPts <= 0) return null;
+
   return (
-    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 mb-4 space-y-2">
-      <p className="text-sm font-semibold text-gray-900">Use OnCuts Points</p>
-      <p className="text-xs text-gray-600">Discount the service (not the tip).</p>
-      <input
-        type="range"
-        min={0}
-        max={maxPts}
-        value={sliderPts}
-        onChange={(e) => setSliderPts(Number(e.target.value))}
-        className="w-full"
-      />
-      <p className="text-sm tabular-nums">
-        {sliderPts.toLocaleString()} pts ≈ −${(sliderPts / pointsPerDollar).toFixed(2)}
-      </p>
-      <button
-        type="button"
-        disabled={busy || sliderPts <= 0}
-        onClick={async () => {
-          try {
-            setBusy(true);
-            const res = await api.post<{ discountDollars: number }>(
-              '/referrals/spend/client/commit',
-              { bookingId, pointsPts: sliderPts }
-            );
-            setCommitted(true);
-            onDiscount?.(res.discountDollars);
-            toast.success(`Saved $${res.discountDollars.toFixed(2)} with points`);
-          } catch (e: any) {
-            toast.error(e?.message || 'Could not apply points');
-          } finally {
-            setBusy(false);
-          }
-        }}
-        className="w-full py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold disabled:opacity-50"
-      >
-        Apply points
-      </button>
-    </div>
+    <>
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 mb-4 space-y-3">
+        <p className="text-center text-lg font-semibold text-gray-900">Use OnCuts Points</p>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-center">
+          <p className="text-3xl font-semibold tabular-nums text-emerald-950">
+            {balancePts.toLocaleString()} pts
+          </p>
+          <p className="text-sm text-emerald-800 mt-1">
+            ≈ ${balanceDollars.toFixed(2)} ({pointsPerDollar.toLocaleString()} pts = $1)
+          </p>
+          <p className="text-sm text-emerald-800 mt-1">
+            Max for this booking: {maxPts.toLocaleString()} pts
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={maxPts}
+            step={1}
+            value={inputPts}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === '') {
+                setInputPts('');
+                return;
+              }
+              if (!/^\d+$/.test(raw)) return;
+              const n = Math.floor(Number(raw));
+              setInputPts(String(Math.min(Math.max(0, n), maxPts)));
+            }}
+            placeholder="0"
+            aria-label="Points to use"
+            className="w-28 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm tabular-nums text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          />
+          <span className="text-sm font-semibold text-gray-500" aria-hidden="true">
+            =
+          </span>
+          <p className="text-sm tabular-nums text-gray-800">
+            Discount:{' '}
+            <span className="font-semibold text-emerald-800">
+              −${discountDollars.toFixed(2)}
+            </span>
+          </p>
+        </div>
+        <p className="text-center text-3xl font-semibold tabular-nums text-emerald-950">
+          Service − Discount = ${(Math.max(0, serviceDollars - discountDollars)).toFixed(2)}
+        </p>
+      </div>
+      <div className="flex gap-3 mb-4">
+        <button
+          type="button"
+          disabled={busy || clampedPts <= 0}
+          onClick={async () => {
+            try {
+              setBusy(true);
+              const res = await api.post<{
+                appliedPts: number;
+                discountDollars: number;
+              }>('/referrals/spend/client/commit', {
+                bookingId,
+                pointsPts: clampedPts,
+              });
+              setCommitted({
+                pts: res.appliedPts,
+                dollars: res.discountDollars,
+              });
+              onDiscount?.(res.discountDollars);
+              toast.success(`Saved $${res.discountDollars.toFixed(2)} with points`);
+            } catch (e: any) {
+              toast.error(e?.message || 'Could not apply points');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          disabled={busy || clampedPts <= 0}
+          onClick={() => setInputPts('')}
+          className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          Clear
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -1355,6 +1448,7 @@ export default function PostServicePaymentPage() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [portfolioFlow, setPortfolioFlow] = useState<'pending' | 'ready' | 'open' | 'closed'>('pending');
+  const [pointsDiscountKey, setPointsDiscountKey] = useState(0);
   const barberPhoto = useResolvedProfilePhoto(booking?.barber, booking?.barber?.id);
 
   // Redirect to login if not authenticated (security: require identity verification)
@@ -1959,9 +2053,11 @@ export default function PostServicePaymentPage() {
                 <ClientPointsDiscountPanel
                   bookingId={booking.id}
                   serviceDollars={(booking.priceUsdCents || 0) / 100}
+                  onDiscount={() => setPointsDiscountKey((k) => k + 1)}
                 />
               )}
               <PaymentForm
+                key={`${consumerMode}-${pointsDiscountKey}`}
                 booking={booking}
                 onSuccess={handlePaymentSuccess}
                 mode={consumerMode === 'tip' ? 'tip' : 'service'}

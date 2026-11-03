@@ -938,6 +938,8 @@ router.get('/:id', authenticate, async (req, res, next) => {
         COALESCE(b.operator_points_pending_pts, 0) AS operator_points_pending_pts,
         COALESCE(b.operator_points_applied_pts, 0) AS operator_points_applied_pts,
         COALESCE(b.operator_points_boost_cents, 0) AS operator_points_boost_cents,
+        COALESCE(b.client_points_discount_pts, 0) AS client_points_discount_pts,
+        COALESCE(b.client_points_discount_cents, 0) AS client_points_discount_cents,
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
@@ -1018,6 +1020,8 @@ router.get('/:id', authenticate, async (req, res, next) => {
       operatorPointsPendingPts: Number(row.operator_points_pending_pts) || 0,
       operatorPointsAppliedPts: Number(row.operator_points_applied_pts) || 0,
       operatorPointsBoostCents: Number(row.operator_points_boost_cents) || 0,
+      clientPointsDiscountPts: Number(row.client_points_discount_pts) || 0,
+      clientPointsDiscountCents: Number(row.client_points_discount_cents) || 0,
       /** True only for admin↔admin bookings when Controls cash toggle is on. */
       cashPaymentAllowed,
       location: mergeConversationLocation(row.conv_location, row.conv_location_details),
@@ -1916,6 +1920,8 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
               b.commission_free_applied, b."paidAt", b.paid_at,
+              COALESCE(b.client_points_discount_cents, 0) AS client_points_discount_cents,
+              COALESCE(b.client_points_discount_pts, 0) AS client_points_discount_pts,
               c.service_name,
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name
@@ -1985,7 +1991,14 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         ? null
         : realStripeConnectAccountId(barberAccountResult.rows[0]?.stripe_account_id);
 
-    const serviceAmountCents = booking.priceUsdCents;
+    const discountCents = Math.max(
+      0,
+      Math.min(
+        Number(booking.priceUsdCents) || 0,
+        Number(booking.client_points_discount_cents) || 0
+      )
+    );
+    const serviceAmountCents = Math.max(0, (Number(booking.priceUsdCents) || 0) - discountCents);
     const feeSplit = await resolveBookingPlatformFee(pool, {
       bookingId: id,
       barberRecordId: booking.barberId,
@@ -1994,6 +2007,15 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     });
     const platformFeeCents = feeSplit.platformFeeCents;
     const totalAmountCents = feeSplit.chargeAmountCents + tipAmountCents;
+    if (totalAmountCents < 50) {
+      return res.status(400).json({
+        success: false,
+        error:
+          totalAmountCents <= 0
+            ? 'Nothing left to charge after points discount — contact support to complete this booking'
+            : 'Total after points discount is below the $0.50 card minimum',
+      });
+    }
 
     const statementDescriptor = getOptionalStatementDescriptor();
     const tipInfo =
@@ -2020,6 +2042,8 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         fee_burden: feeSplit.feeBurden,
         commission_free: feeSplit.commissionFree ? 'true' : 'false',
         payment_timing: payOnAccept ? 'on_accept' : 'after_complete',
+        client_points_discount_cents: String(discountCents),
+        client_points_discount_pts: String(Number(booking.client_points_discount_pts) || 0),
         platform: 'OnCuts',
       },
       description: `OnCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}${tipInfo}`,
@@ -2073,6 +2097,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         serviceAmountCents,
         serviceFeeCents: feeSplit.serviceFeeCents,
         tipAmountCents,
+        pointsDiscountCents: discountCents,
         feeBurden: feeSplit.feeBurden,
         platformFeePercent: feeSplit.feePercentDisplay,
         paymentKind: 'service',
@@ -2110,7 +2135,8 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
 
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
-              b.commission_free_applied
+              b.commission_free_applied,
+              COALESCE(b.client_points_discount_cents, 0) AS client_points_discount_cents
        FROM bookings b
        WHERE b.id = $1 AND b."consumerId" = $2`,
       [id, userId]
@@ -2160,13 +2186,27 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
         error: 'Can only update payment for completed bookings awaiting payment',
       });
     }
+    const discountCents = Math.max(
+      0,
+      Math.min(
+        Number(booking.priceUsdCents) || 0,
+        Number(booking.client_points_discount_cents) || 0
+      )
+    );
+    const serviceAmountCents = Math.max(0, (Number(booking.priceUsdCents) || 0) - discountCents);
     const feeSplit = await resolveBookingPlatformFee(pool, {
       bookingId: id,
       barberRecordId: booking.barberId,
-      serviceAmountCents: booking.priceUsdCents,
+      serviceAmountCents,
       alreadyCommissionFreeApplied: booking.commission_free_applied === true,
     });
     const totalAmountCents = feeSplit.chargeAmountCents + tipCents;
+    if (totalAmountCents < 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Total after points discount is below the $0.50 card minimum',
+      });
+    }
     await stripe.paymentIntents.update(paymentIntentId, {
       amount: totalAmountCents,
       metadata: {
@@ -2175,6 +2215,7 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
         tip_amount_cents: tipCents.toString(),
         payment_kind: 'service',
         platform_fee_cents: String(feeSplit.platformFeeCents),
+        client_points_discount_cents: String(discountCents),
       },
     });
     logger.info('Service+tip payment intent updated', {
@@ -2182,14 +2223,16 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
       paymentIntentId,
       totalAmountCents,
       tipCents,
+      discountCents,
     });
     res.json({
       success: true,
       data: {
         totalAmountCents,
         tipAmountCents: tipCents,
-        serviceAmountCents: booking.priceUsdCents,
+        serviceAmountCents,
         serviceFeeCents: feeSplit.serviceFeeCents,
+        pointsDiscountCents: discountCents,
       },
     });
   } catch (error: any) {
@@ -2454,6 +2497,7 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
 
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              COALESCE(b.client_points_discount_cents, 0) AS client_points_discount_cents,
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
               barber_user.role as barber_user_role,
@@ -2506,10 +2550,18 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       });
     }
 
+    const discountCents = Math.max(
+      0,
+      Math.min(
+        Number(booking.priceUsdCents) || 0,
+        Number(booking.client_points_discount_cents) || 0
+      )
+    );
+    const serviceAmountCents = Math.max(0, (Number(booking.priceUsdCents) || 0) - discountCents);
     const feeSplit = await resolveBookingPlatformFee(pool, {
       bookingId: id,
       barberRecordId: booking.barberId,
-      serviceAmountCents: booking.priceUsdCents,
+      serviceAmountCents,
     });
     const totalAmountCents = feeSplit.chargeAmountCents + (payOnAccept ? 0 : tipAmountCents);
     const operatorEnrouteCents = feeSplit.barberEarningsCents + (payOnAccept ? 0 : tipAmountCents);

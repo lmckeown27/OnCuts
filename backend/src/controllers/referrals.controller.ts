@@ -560,12 +560,41 @@ export const quoteClientPointsDiscount = async (
   try {
     const userId = req.user?.userId;
     if (!userId) throw new ApiError(401, 'Authentication required');
-    const serviceDollars = Number(req.body?.serviceDollars ?? req.query.serviceDollars);
+    const bookingId = String(req.body?.bookingId || req.query.bookingId || '');
+    const serviceDollarsBody = Number(req.body?.serviceDollars ?? req.query.serviceDollars);
     const pointsPts = Math.floor(Number(req.body?.pointsPts ?? req.query.pointsPts));
-    if (!Number.isFinite(serviceDollars) || serviceDollars < 0) {
-      throw new ApiError(400, 'serviceDollars required');
-    }
+
     const settings = await getReferralProgramSettings();
+    let serviceDollars = Number.isFinite(serviceDollarsBody) ? serviceDollarsBody : NaN;
+    let alreadyPts = 0;
+    let alreadyCents = 0;
+
+    if (bookingId) {
+      const booking = await pool.query(
+        `SELECT "consumerId" AS consumer_id,
+                COALESCE("priceUsdCents", 0) AS price_usd_cents,
+                COALESCE(client_points_discount_pts, 0) AS discount_pts,
+                COALESCE(client_points_discount_cents, 0) AS discount_cents,
+                COALESCE("paidAt", paid_at) AS paid_at
+         FROM bookings WHERE id = $1`,
+        [bookingId]
+      );
+      if (!booking.rows[0]) throw new ApiError(404, 'Booking not found');
+      if (String(booking.rows[0].consumer_id) !== userId) {
+        throw new ApiError(403, 'Not your booking');
+      }
+      serviceDollars = (Number(booking.rows[0].price_usd_cents) || 0) / 100;
+      alreadyPts = Number(booking.rows[0].discount_pts) || 0;
+      alreadyCents = Number(booking.rows[0].discount_cents) || 0;
+      if (booking.rows[0].paid_at) {
+        throw new ApiError(400, 'Booking is already paid');
+      }
+    }
+
+    if (!Number.isFinite(serviceDollars) || serviceDollars < 0) {
+      throw new ApiError(400, 'serviceDollars or bookingId required');
+    }
+
     const bal = await pool.query(
       `SELECT balance_pts FROM client_points WHERE user_id = $1`,
       [userId]
@@ -575,7 +604,7 @@ export const quoteClientPointsDiscount = async (
       balancePts,
       Math.floor(serviceDollars * settings.pointsPerDollar * (settings.maxSpendPercent / 100))
     );
-    const applyPts = Math.max(0, Math.min(Number.isFinite(pointsPts) ? pointsPts : maxPts, maxPts));
+    const applyPts = Math.max(0, Math.min(Number.isFinite(pointsPts) ? pointsPts : 0, maxPts));
     const discountDollars = applyPts / settings.pointsPerDollar;
     res.json({
       success: true,
@@ -585,6 +614,8 @@ export const quoteClientPointsDiscount = async (
         applyPts,
         discountDollars,
         pointsPerDollar: settings.pointsPerDollar,
+        appliedPts: alreadyPts,
+        appliedDiscountDollars: alreadyCents / 100,
       },
     });
   } catch (error) {
@@ -597,6 +628,7 @@ export const commitClientPointsDiscount = async (
   res: Response,
   next: NextFunction
 ) => {
+  const client = await pool.connect();
   try {
     const userId = req.user?.userId;
     if (!userId) throw new ApiError(401, 'Authentication required');
@@ -607,22 +639,57 @@ export const commitClientPointsDiscount = async (
       throw new ApiError(400, 'pointsPts must be positive');
     }
 
+    await client.query('BEGIN');
     const settings = await getReferralProgramSettings();
-    const booking = await pool.query(
-      `SELECT id, "consumerId" AS consumer_id, COALESCE(price, 0) AS price
-       FROM bookings WHERE id = $1`,
+    const booking = await client.query(
+      `SELECT id,
+              "consumerId" AS consumer_id,
+              COALESCE("priceUsdCents", 0) AS price_usd_cents,
+              COALESCE(client_points_discount_pts, 0) AS discount_pts,
+              COALESCE(client_points_discount_cents, 0) AS discount_cents,
+              COALESCE("paidAt", paid_at) AS paid_at
+       FROM bookings WHERE id = $1 FOR UPDATE`,
       [bookingId]
     );
     if (!booking.rows[0]) throw new ApiError(404, 'Booking not found');
     if (String(booking.rows[0].consumer_id) !== userId) {
       throw new ApiError(403, 'Not your booking');
     }
-    const serviceDollars = Number(booking.rows[0].price) || 0;
-    const maxPts = Math.floor(
-      serviceDollars * settings.pointsPerDollar * (settings.maxSpendPercent / 100)
+    if (booking.rows[0].paid_at) {
+      throw new ApiError(400, 'Booking is already paid');
+    }
+
+    const alreadyPts = Number(booking.rows[0].discount_pts) || 0;
+    const alreadyCents = Number(booking.rows[0].discount_cents) || 0;
+    if (alreadyPts > 0) {
+      await client.query('COMMIT');
+      res.json({
+        success: true,
+        data: {
+          appliedPts: alreadyPts,
+          discountDollars: alreadyCents / 100,
+          alreadyApplied: true,
+        },
+      });
+      return;
+    }
+
+    const bal = await client.query(
+      `SELECT balance_pts FROM client_points WHERE user_id = $1`,
+      [userId]
+    );
+    const balancePts = Number(bal.rows[0]?.balance_pts) || 0;
+    const serviceDollars = (Number(booking.rows[0].price_usd_cents) || 0) / 100;
+    const maxPts = Math.min(
+      balancePts,
+      Math.floor(serviceDollars * settings.pointsPerDollar * (settings.maxSpendPercent / 100))
     );
     const applyPts = Math.min(pointsPts, maxPts);
+    if (applyPts <= 0) {
+      throw new ApiError(400, 'No points available to apply');
+    }
     const discountDollars = applyPts / settings.pointsPerDollar;
+    const discountCents = Math.round(discountDollars * 100);
 
     await applyPointsDelta({
       userId,
@@ -630,31 +697,32 @@ export const commitClientPointsDiscount = async (
       deltaPts: -applyPts,
       reason: 'client_checkout_discount',
       bookingId,
-      meta: { discountDollars },
+      meta: { discountDollars, discountCents },
+      client,
     });
 
+    await client.query(
+      `UPDATE bookings
+       SET client_points_discount_pts = $2,
+           client_points_discount_cents = $3,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      [bookingId, applyPts, discountCents]
+    );
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      data: { appliedPts: applyPts, discountDollars, discountCents },
+    });
+  } catch (error) {
     try {
-      await pool.query(
-        `UPDATE bookings
-         SET meta = COALESCE(meta, '{}'::jsonb) || $2::jsonb
-         WHERE id = $1`,
-        [
-          bookingId,
-          JSON.stringify({
-            clientPointsDiscountPts: applyPts,
-            clientPointsDiscountDollars: discountDollars,
-          }),
-        ]
-      );
+      await client.query('ROLLBACK');
     } catch {
       /* ignore */
     }
-
-    res.json({
-      success: true,
-      data: { appliedPts: applyPts, discountDollars },
-    });
-  } catch (error) {
     next(error);
+  } finally {
+    client.release();
   }
 };
