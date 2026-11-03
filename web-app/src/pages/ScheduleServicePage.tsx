@@ -86,9 +86,6 @@ export default function ScheduleServicePage() {
   const [time, setTime] = useState<string>(
     preservedFormData?.time || passedFilters?.time || ''
   );
-  const [locationDetails, setLocationDetails] = useState<string>(
-    preservedFormData?.locationDetails || passedFilters?.locationDetails || preservedFormData?.location || passedFilters?.location || ''
-  );
   const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -178,8 +175,8 @@ export default function ScheduleServicePage() {
           servicePrice: servicePrice,
           scheduledAt: scheduledAt,
           duration: selectedServiceDuration,
-          location: locationDetails.trim(),
-          locationDetails: locationDetails.trim(),
+          location: '',
+          locationDetails: '',
           notes: notes,
         }
       });
@@ -227,8 +224,6 @@ export default function ScheduleServicePage() {
                     serviceType,
                     date,
                     time,
-                    location: locationDetails.trim(),
-                    locationDetails: locationDetails.trim(),
                     notes
                   }
                 }
@@ -378,23 +373,6 @@ export default function ScheduleServicePage() {
                       {serviceType
                         ? `This service takes about ${selectedServiceDuration} minutes. Times shown match the operator's open hours.`
                         : 'Select a service first, then choose an available time.'}
-                    </p>
-                  </div>
-
-                  {/* Location */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={locationDetails}
-                      onChange={(e) => setLocationDetails(e.target.value)}
-                      placeholder="e.g., Smith Hall, Room 204"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-900"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Where the service will take place
                     </p>
                   </div>
 
