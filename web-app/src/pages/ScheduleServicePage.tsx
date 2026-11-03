@@ -322,6 +322,11 @@ export default function ScheduleServicePage() {
                     {errors.serviceType && (
                       <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>
                     )}
+                    {!serviceType && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select a service first, then choose an available time.
+                      </p>
+                    )}
                   </div>
 
                   {/* Date */}
@@ -369,11 +374,12 @@ export default function ScheduleServicePage() {
                     {errors.time && (
                       <p className="text-red-500 text-sm mt-1">{errors.time}</p>
                     )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {serviceType
-                        ? `This service takes about ${selectedServiceDuration} minutes. Times shown match the operator's open hours.`
-                        : 'Select a service first, then choose an available time.'}
-                    </p>
+                    {serviceType && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        This service takes about {selectedServiceDuration} minutes. Times shown match
+                        the operator's open hours.
+                      </p>
+                    )}
                   </div>
 
                   {/* Additional Notes */}
